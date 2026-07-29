@@ -1,0 +1,593 @@
+/* ==========================================================
+   白色 (White / Light) 主题样式表 (Qt QSS)
+   自动生成 - 如需微调请直接修改对应颜色变量后重新生成
+   ========================================================== */
+
+* {
+    outline: none;
+}
+
+QMainWindow, QDialog {
+    background-color: rgb(245, 245, 245);
+    border-color: rgb(200, 200, 200);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+}
+
+QWidget {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+    selection-background-color: rgb(0, 120, 215);
+    selection-color: white;
+}
+
+QWidget:disabled {
+    color: rgb(170,170,170);
+}
+
+/* ---------------- 分割线 / 容器 ---------------- */
+QSplitter::handle {
+    background-color: rgb(200, 200, 200);
+}
+QSplitter::handle:horizontal {
+    width: 2px;
+}
+QSplitter::handle:vertical {
+    height: 2px;
+}
+
+QFrame {
+    border-color: rgb(200, 200, 200);
+}
+
+QScrollArea {
+    background-color: rgb(255, 255, 255);
+    border: none;
+}
+
+/* ---------------- GraphicsView / DockWidget ---------------- */
+QGraphicsView {
+    background-color: rgb(250, 250, 250);
+    border: 1px solid rgb(200, 200, 200);
+    font: 9pt "Microsoft YaHei";
+}
+
+QDockWidget {
+    background-color: rgb(240, 240, 240);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+    titlebar-close-icon: none;
+}
+QDockWidget::title {
+    background-color: rgb(230,230,230);
+    padding: 4px 6px;
+    border: 1px solid rgb(200, 200, 200);
+}
+
+/* ---------------- GroupBox ---------------- */
+QGroupBox {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 4px;
+    margin-top: 10px;
+    padding-top: 6px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 8px;
+    padding: 0 4px;
+    color: rgb(30, 30, 30);
+}
+
+/* ---------------- Label ---------------- */
+QLabel {
+    background-color: transparent;
+    color: rgb(30, 30, 30);
+}
+QLabel:disabled {
+    color: rgb(170,170,170);
+}
+
+/* ---------------- Button ---------------- */
+QPushButton {
+    background-color: rgb(250, 250, 250);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 4px;
+    padding: 4px 14px;
+    min-height: 20px;
+}
+QPushButton:hover {
+    background-color: rgb(235, 240, 245);
+    border: 1px solid rgb(0, 120, 215);
+}
+QPushButton:pressed {
+    background-color: rgb(220,225,230);
+}
+QPushButton:disabled {
+    background-color: rgb(250, 250, 250);
+    color: rgb(170,170,170);
+    border: 1px solid rgb(200, 200, 200);
+}
+QPushButton:checked {
+    background-color: rgb(0, 120, 215);
+    color: white;
+    border: 1px solid rgb(0, 120, 215);
+}
+QPushButton:default {
+    border: 1px solid rgb(0, 120, 215);
+}
+
+QToolButton {
+    background-color: transparent;
+    color: rgb(30, 30, 30);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 3px;
+}
+QToolButton:hover {
+    background-color: rgb(235, 240, 245);
+    border: 1px solid rgb(0, 120, 215);
+}
+QToolButton:pressed {
+    background-color: rgb(220,225,230);
+}
+QToolButton:checked {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+
+/* ---------------- LineEdit / TextEdit ---------------- */
+QLineEdit {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 3px;
+    padding: 3px 6px;
+    font: 9pt "Microsoft YaHei";
+    selection-background-color: rgb(0, 120, 215);
+    selection-color: white;
+}
+QLineEdit:focus {
+    border: 1px solid rgb(0, 120, 215);
+}
+QLineEdit:disabled {
+    background-color: rgb(255, 255, 255);
+    color: rgb(170,170,170);
+}
+
+QTextEdit, QPlainTextEdit {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    font: 9pt "Microsoft YaHei";
+    selection-background-color: rgb(0, 120, 215);
+    selection-color: white;
+}
+QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid rgb(0, 120, 215);
+}
+
+/* ---------------- ComboBox ---------------- */
+QComboBox {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 3px;
+    padding: 3px 6px;
+    min-height: 20px;
+    font: 9pt "Microsoft YaHei";
+}
+QComboBox:hover {
+    border: 1px solid rgb(0, 120, 215);
+}
+QComboBox:disabled {
+    color: rgb(170,170,170);
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    border: none;
+    border-left: 1px solid rgb(200, 200, 200);
+    width: 20px;
+}
+QComboBox::down-arrow {
+    image: url(:/combo_down_white);
+    width: 10px;
+    height: 10px;
+}
+QComboBox::down-arrow:on {
+    top: 1px;
+}
+QComboBox QAbstractItemView {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    selection-background-color: rgb(0, 120, 215);
+    selection-color: white;
+    outline: none;
+}
+
+/* ---------------- CheckBox / RadioButton ---------------- */
+QCheckBox, QRadioButton {
+    background-color: transparent;
+    color: rgb(30, 30, 30);
+    spacing: 6px;
+    font: 9pt "Microsoft YaHei";
+}
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 15px;
+    height: 15px;
+    border: 1px solid rgb(200, 200, 200);
+    background-color: rgb(255, 255, 255);
+}
+QCheckBox::indicator {
+    border-radius: 3px;
+}
+QRadioButton::indicator {
+    border-radius: 8px;
+}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: rgb(0, 120, 215);
+    border: 1px solid rgb(0, 120, 215);
+}
+QCheckBox::indicator:hover, QRadioButton::indicator:hover {
+    border: 1px solid rgb(0, 120, 215);
+}
+
+/* ---------------- SpinBox ---------------- */
+QSpinBox, QDoubleSpinBox {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 3px;
+    padding: 2px 4px;
+    font: 9pt "Microsoft YaHei";
+}
+QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 1px solid rgb(0, 120, 215);
+}
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    background-color: rgb(250, 250, 250);
+    border: none;
+    border-left: 1px solid rgb(200, 200, 200);
+    border-bottom: 1px solid rgb(200, 200, 200);
+    width: 16px;
+    height: 12px;
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    background-color: rgb(250, 250, 250);
+    border: none;
+    border-left: 1px solid rgb(200, 200, 200);
+    width: 16px;
+    height: 12px;
+}
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+    background-color: rgb(235, 240, 245);
+}
+QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed,
+QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
+    background-color: rgb(220,225,230);
+}
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+    image: url(:/spin_up_white);
+    width: 9px;
+    height: 9px;
+}
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    image: url(:/spin_down_white);
+    width: 9px;
+    height: 9px;
+}
+QSpinBox::up-arrow:disabled, QSpinBox::up-arrow:off,
+QDoubleSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:off,
+QSpinBox::down-arrow:disabled, QSpinBox::down-arrow:off,
+QDoubleSpinBox::down-arrow:disabled, QDoubleSpinBox::down-arrow:off {
+    width: 9px;
+    height: 9px;
+}
+
+/* ---------------- Slider ---------------- */
+QSlider::groove:horizontal {
+    height: 4px;
+    background: rgb(200, 200, 200);
+    border-radius: 2px;
+}
+QSlider::handle:horizontal {
+    background: rgb(0, 120, 215);
+    width: 14px;
+    margin: -6px 0;
+    border-radius: 7px;
+}
+QSlider::groove:vertical {
+    width: 4px;
+    background: rgb(200, 200, 200);
+    border-radius: 2px;
+}
+QSlider::handle:vertical {
+    background: rgb(0, 120, 215);
+    height: 14px;
+    margin: 0 -6px;
+    border-radius: 7px;
+}
+
+/* ---------------- ProgressBar ---------------- */
+QProgressBar {
+    background-color: rgb(255, 255, 255);
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 3px;
+    text-align: center;
+    color: rgb(30, 30, 30);
+}
+QProgressBar::chunk {
+    background-color: rgb(0, 120, 215);
+    border-radius: 3px;
+}
+
+/* ---------------- TabWidget / TabBar ---------------- */
+QTabWidget::pane {
+    border: 1px solid rgb(200, 200, 200);
+    background-color: rgb(255, 255, 255);
+}
+QTabBar::tab {
+    background-color: rgb(250, 250, 250);
+    color: rgb(30, 30, 30);
+    padding: 6px 14px;
+    border: 1px solid rgb(200, 200, 200);
+    border-bottom: none;
+}
+QTabBar::tab:selected {
+    background-color: rgb(255, 255, 255);
+    border-bottom: 2px solid rgb(0, 120, 215);
+}
+QTabBar::tab:hover:!selected {
+    background-color: rgb(235, 240, 245);
+}
+
+/* ---------------- MenuBar / Menu ---------------- */
+QMenuBar {
+    background-color: rgb(245, 245, 245);
+    color: rgb(30, 30, 30);
+    font: 9pt "Microsoft YaHei";
+}
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 10px;
+}
+QMenuBar::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+QMenu {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+}
+QMenu::item {
+    padding: 5px 20px 5px 20px;
+}
+QMenu::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+QMenu::separator {
+    height: 1px;
+    background: rgb(200, 200, 200);
+    margin: 4px 4px;
+}
+
+/* ---------------- ToolBar / StatusBar ---------------- */
+QToolBar {
+    background-color: rgb(240, 240, 240);
+    border: none;
+    spacing: 3px;
+}
+QStatusBar {
+    background-color: rgb(240, 240, 240);
+    color: rgb(30, 30, 30);
+}
+
+/* ---------------- ScrollBar ---------------- */
+QScrollBar:vertical {
+    background: rgb(240,240,240);
+    width: 12px;
+    margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: rgb(200,200,200);
+    min-height: 24px;
+    border-radius: 5px;
+    margin: 2px;
+}
+QScrollBar::handle:vertical:hover {
+    background: rgb(0, 120, 215);
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QScrollBar:horizontal {
+    background: rgb(240,240,240);
+    height: 12px;
+    margin: 0;
+}
+QScrollBar::handle:horizontal {
+    background: rgb(200,200,200);
+    min-width: 24px;
+    border-radius: 5px;
+    margin: 2px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: rgb(0, 120, 215);
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+/* ---------------- ListWidget / ListView ---------------- */
+QListWidget, QListView {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    alternate-background-color: rgb(245, 247, 250);
+}
+QListWidget::item, QListView::item {
+    height: 30px;
+    padding-left: 5px;
+}
+QListWidget::item:selected, QListView::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+QListWidget::item:hover, QListView::item:hover {
+    background-color: rgb(235, 240, 245);
+}
+
+/* ---------------- TreeWidget / TreeView ---------------- */
+QTreeWidget, QTreeView {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    alternate-background-color: rgb(245, 247, 250);
+}
+QTreeWidget::item, QTreeView::item {
+    height: 30px;
+    padding-left: 5px;
+}
+QTreeWidget::item:selected, QTreeView::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+QTreeWidget::item:hover, QTreeView::item:hover {
+    background-color: rgb(235, 240, 245);
+}
+QTreeView::branch {
+    background-color: transparent;
+}
+
+/* ---------------- TableWidget / TableView / HeaderView ---------------- */
+QTableWidget, QTableView {
+    background-color: rgb(255, 255, 255);
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    gridline-color: rgb(200, 200, 200);
+    alternate-background-color: rgb(245, 247, 250);
+}
+QTableWidget::item, QTableView::item {
+    padding: 4px;
+}
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+}
+QHeaderView::section {
+    background-color: rgb(235, 235, 235);
+    color: rgb(30, 30, 30);
+    padding: 5px;
+    border: 1px solid rgb(200, 200, 200);
+}
+QHeaderView::section:hover {
+    background-color: rgb(235, 240, 245);
+}
+
+/* ---------------- ToolTip ---------------- */
+QToolTip {
+    background-color: rgb(50,50,50);
+    color: white;
+    border: 1px solid rgb(200, 200, 200);
+    padding: 4px;
+}
+
+
+/* ===== 顶部状态卡片 ===== */
+#statusCard {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e2;
+    border-radius: 12px;
+}
+
+#cpuIconLabel {
+    color: #6b6c76;
+    font-size: 13px;
+}
+
+#cpuTitleLabel {
+    color: #1a1a1c;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#cpuSubLabel {
+    color: #78797f;
+    font-size: 12px;
+}
+
+/* ===== CUDA 后端标题区域 ===== */
+#cudaSectionTitle {
+    color: #16161a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#cudaSectionDesc {
+    color: #6b6c76;
+    font-size: 12px;
+}
+
+/* ===== 分隔线 ===== */
+#sectionDivider {
+    color: #e5e5e8;
+    background-color: #e5e5e8;
+}
+
+/* ===== 下载行 ===== */
+#downloadTitleLabel {
+    color: #1a1a1c;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#downloadSizeLabel {
+    color: #78797f;
+    font-size: 12px;
+}
+
+#downloadProgressBar {
+    background-color: #ececef;
+    border-radius: 3px;
+}
+#downloadProgressBar::chunk {
+    background-color: #d9a63d;
+    border-radius: 3px;
+}
+
+#downloadButton {
+    background-color: #d9a63d;
+    color: #ffffff;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+#downloadButton:hover {
+    background-color: #e6b955;
+}
+#downloadButton:disabled {
+    background-color: #d0d0d3;
+    color: #a0a0a3;
+}
+
+
+#gpu_backend_widget{
+    background-color:#e0e0e2;
+    border: 1px solid #e0e0e2;
+    border-radius: 12px;
+}

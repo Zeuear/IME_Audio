@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="title_icon">../resources/title_icon.png</file>
+        <file alias="combo_down_black">../resources/icons/combo_down_black.svg</file>
+        <file alias="combo_down_gray">../resources/icons/combo_down_gray.svg</file>
+        <file alias="combo_down_white">../resources/icons/combo_down_white.svg</file>
+        <file alias="spin_down_black">../resources/icons/spin_down_black.svg</file>
+        <file alias="spin_down_gray">../resources/icons/spin_down_gray.svg</file>
+        <file alias="spin_down_white">../resources/icons/spin_down_white.svg</file>
+        <file alias="spin_up_black">../resources/icons/spin_up_black.svg</file>
+        <file alias="spin_up_gray">../resources/icons/spin_up_gray.svg</file>
+        <file alias="spin_up_white">../resources/icons/spin_up_white.svg</file>       
+	<file alias="pause">../resources/icons/pause.svg</file>        
+	<file alias="play">../resources/icons/play.svg</file>
+    </qresource>
+</RCC>

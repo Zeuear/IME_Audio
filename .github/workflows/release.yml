@@ -1,0 +1,128 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Build & Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest  
+            platform: windows
+            asset_name: VoiceIME_Windows_x64.exe 
+          - os: ubuntu-24.04
+            platform: linux
+            asset_name: VoiceIME-x86_64.AppImage
+          - os: macos-latest
+            platform: macos
+            asset_name: VoiceIME_macOS.dmg
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.x'
+          host: ${{ matrix.platform }}
+          target: 'desktop'
+          arch: ${{ matrix.platform == 'macos' && 'clang_64' || '' }}
+
+      - name: Setup MSVC
+        if: matrix.platform == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux Dependencies (Linux Only)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+          sudo apt-get install -y libgl1-mesa-dev libxcb-xinerama0-dev \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-shape0 libxcb-util1 libxcb-xkb1 \
+            libxkbcommon-x11-0 wget
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" == "macos" ]; then
+            cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} \
+              -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+          else
+            cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }}
+          fi
+
+      - name: Build Project
+        run: cmake --build build --config Release
+
+      # ---- WINDOWS 打包 ----
+      - name: Deploy & Package (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          windeployqt --release --compiler-runtime build/Release/VoiceIME.exe
+          iscc installer.iss
+          mv build/Installer/VoiceIME_Windows_x64.exe .
+
+
+      # ---- MACOS 打包 ----
+      - name: Deploy & Package (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          # 1. 运行 macdeployqt 并直接生成 .dmg 镜像
+          macdeployqt build/VoiceIME.app -dmg
+          # 2. 重命名输出文件
+          mv build/VoiceIME.dmg ./VoiceIME_macOS.dmg
+
+      # ---- LINUX 打包 ----
+      - name: Deploy & Package (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          # 1. 下载 linuxdeployqt
+          wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
+          
+          # 2. 创建符合 AppDir 规范的目录结构
+          mkdir -p appdir/usr/bin
+          mkdir -p appdir/usr/share/applications
+          mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
+          
+          # 3. 复制可执行文件、.desktop 文件和图标 (请根据你项目实际路径修改)
+          cp build/VoiceIME appdir/usr/bin/
+          cp deployment/linux/VoiceIME.desktop appdir/usr/share/applications/
+          cp deployment/linux/VoiceIME.png appdir/usr/share/icons/hicolor/256x256/apps/
+          
+          # 4. 运行打包，排除免检库，直接输出 AppImage
+          export VERSION=${{ github.ref_name }}
+          ./linuxdeployqt-continuous-x86_64.AppImage appdir/usr/share/applications/VoiceIME.desktop -appimage -unsupported-allow-new-glibc
+
+          # 5. 重命名输出文件
+          APPIMAGE_FILE=$(find . -maxdepth 1 -name "VoiceIME*.AppImage" | head -n 1)
+          mv "$APPIMAGE_FILE" VoiceIME-x86_64.AppImage
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ matrix.asset_name }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset_name }}
+          draft: true 
