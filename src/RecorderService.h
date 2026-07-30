@@ -15,6 +15,29 @@ extern "C" {
 }
 #endif
 
+
+class SpectrumWorker : public QObject {
+    Q_OBJECT
+public:
+    explicit SpectrumWorker(int sampleRate);
+    ~SpectrumWorker();
+
+public slots:
+    void processChunk(const QByteArray chunk);
+
+signals:
+    void spectrumReady(const QVector<float>& bands);
+
+private:
+    static constexpr int kFftSize = 512;
+    static constexpr int kBandCount = 16;
+    void* m_kissFftCfg = nullptr;
+
+    std::vector<float> m_fftInputBuffer;
+    int m_sampleRate;
+};
+
+
 class AudioRecorderService : public QObject {
     Q_OBJECT
 public:
@@ -71,11 +94,9 @@ private:
     bool m_manualActive = false;
     bool m_autoStopEnabled = true;
 
-    // FFT 窗口大小,决定频率分辨率
-    static constexpr int kFftSize = 512;      
-    static constexpr int kBandCount = 16;     
-    std::vector<float> m_fftInputBuffer;   
-    void* m_kissFftCfg = nullptr;
+    SpectrumWorker* m_spectrumWorker;
+    QThread* m_spectrumThread = nullptr;
+
 
     // 整段录音原始 PCM，仅用于调试导出
     QByteArray m_fullSessionBuffer;   

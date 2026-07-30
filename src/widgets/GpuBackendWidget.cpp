@@ -27,11 +27,10 @@ GpuBackendWidget::GpuBackendWidget(QWidget *parent)
 GpuBackendWidget::~GpuBackendWidget()
 {}
 
-void GpuBackendWidget::setBackendInstaller(QNetworkAccessManager* nam)
+void GpuBackendWidget::setBackendInstaller(CudaInstaller* cudaInstaller)
 {
-    m_cudaInstaller = new CudaInstaller(nam, this);
+    m_cudaInstaller = cudaInstaller;
     connect(m_cudaInstaller, &CudaInstaller::installStarted, this, &GpuBackendWidget::onInstallerStatusChanged);
-    connect(m_cudaInstaller, &CudaInstaller::progressUpdated, this, &GpuBackendWidget::onInstallerProgressUpdated);
     connect(m_cudaInstaller, &CudaInstaller::installFinished, this, &GpuBackendWidget::onInstallerFinished);
 
     detectGpuAsync();
@@ -89,6 +88,7 @@ void GpuBackendWidget::setupUi()
 
     // 下载行
     m_downloadRow = new QWidget(this);
+    m_downloadRow->setAttribute(Qt::WidgetAttribute::WA_TranslucentBackground);
     auto *downloadLayout = new QHBoxLayout(m_downloadRow);
     downloadLayout->setContentsMargins(0, 8, 0, 8);
     downloadLayout->setSpacing(10);
@@ -102,15 +102,6 @@ void GpuBackendWidget::setupUi()
     m_downloadSizeLabel->setWordWrap(true);
     downloadTextCol->addWidget(m_downloadTitleLabel);
     downloadTextCol->addWidget(m_downloadSizeLabel);
-
-    m_progressBar = new QProgressBar(m_downloadRow);
-    m_progressBar->setObjectName("downloadProgressBar");
-    m_progressBar->setRange(0, 100);
-    m_progressBar->setValue(0);
-    m_progressBar->setFixedHeight(6);
-    m_progressBar->setTextVisible(false);
-    m_progressBar->setVisible(false);
-    downloadTextCol->addWidget(m_progressBar);
 
     m_downloadButton = new QPushButton(m_downloadRow);
     m_downloadButton->setObjectName("downloadButton");
@@ -127,7 +118,9 @@ void GpuBackendWidget::setupUi()
 
     m_modeSwitchRow = new QWidget(this);
     m_modeSwitchRow->setAttribute(Qt::WidgetAttribute::WA_TranslucentBackground);
-    auto* modeLayout = new QHBoxLayout(m_modeSwitchRow);
+    auto* vLayout = new QVBoxLayout(m_modeSwitchRow);
+
+    auto* modeLayout = new QHBoxLayout();
     modeLayout->setContentsMargins(0, 8, 0, 8);
     modeLayout->setSpacing(10);
 
@@ -180,7 +173,6 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
         m_downloadSizeLabel->setText(tr("Approximately 3 GB. Requires NVIDIA GPU with CUDA support."));
         m_downloadButton->setText(tr("Download"));
         m_downloadButton->setEnabled(true);
-        m_progressBar->setVisible(false);
         break;
 
     case GpuStatus::Downloading:
@@ -188,14 +180,11 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
         m_downloadTitleLabel->setText(QString(tr("Downloading CUDA offline package…")));
         m_downloadButton->setText(QString(tr("Cancel")));
         m_downloadButton->setEnabled(true);
-        m_progressBar->setVisible(true);
         break;
 
     case GpuStatus::Installing:
         m_downloadRow->setVisible(true);
         m_downloadTitleLabel->setText(QString(tr("Installing CUDA…")));
-        m_progressBar->setVisible(true);
-        m_progressBar->setRange(0, 0);
         m_downloadButton->setText(QString(tr("Installing…")));
         m_downloadButton->setEnabled(false); 
         break;
@@ -206,14 +195,11 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
         m_downloadButton->setText(QString(tr("Downloaded")));
         m_downloadButton->setEnabled(false);
         m_downloadRow->setVisible(false);
-        m_progressBar->setVisible(false);
         m_modeSwitchRow->setVisible(true);
         break;
 
     case GpuStatus::Failed:
         m_downloadRow->setVisible(true);
-        m_progressBar->setVisible(false);
-        m_progressBar->setRange(0, 100); // 恢复正常模式,避免残留 Installing 阶段的不确定模式
         m_downloadButton->setText(QString(tr("Retry")));
         m_downloadButton->setEnabled(true);
         break;
@@ -281,6 +267,7 @@ void GpuBackendWidget::detectGpuAsync()
 
 void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
 {
+    m_detail = result;
     if (!result.hasNvidiaGpu) {
         m_computeMode = ComputeMode::CPU;
         applyStatus(GpuStatus::NoGpu);
@@ -292,6 +279,9 @@ void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
 
     if (result.isFullyReady) {
         applyStatus(GpuStatus::Ready);
+        if (m_computeMode == ComputeMode::CUDA) {
+            m_cudaInstaller->setEnvironment();
+        }
         emit detectFinished(m_computeMode == ComputeMode::CUDA);
     }
     else {
@@ -305,34 +295,24 @@ void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
 void GpuBackendWidget::onDownloadClicked()
 {
     if (m_status == GpuStatus::Downloading) {
-        m_cudaInstaller->cancelInstallCuda();
+        m_cudaInstaller->cancelDownload();
         applyStatus(GpuStatus::GpuAvailable);
         return;
     }
 
     if (m_status == GpuStatus::Failed) {
         applyStatus(GpuStatus::Downloading);
-        m_progressBar->setValue(0);
-        m_cudaInstaller->startInstallCuda();
+        m_cudaInstaller->startDownload(m_detail);
         return;
     }
 
     applyStatus(GpuStatus::Downloading);
-    m_progressBar->setValue(0);
-    m_cudaInstaller->startInstallCuda();
+    m_cudaInstaller->startDownload(m_detail);
 }
 
 void GpuBackendWidget::onInstallerStatusChanged()
 {
     applyStatus(GpuStatus::Installing);
-}
-
-void GpuBackendWidget::onInstallerProgressUpdated(int percentage)
-{
-    if (m_status == GpuStatus::Downloading) {
-        m_progressBar->setRange(0, 100);
-        m_progressBar->setValue(percentage);
-    }
 }
 
 void GpuBackendWidget::onInstallerFinished(bool success, const QString& msg)

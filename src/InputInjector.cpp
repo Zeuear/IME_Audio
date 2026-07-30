@@ -74,7 +74,7 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
         UINT sent = SendInput(expected, inputs.data(), sizeof(INPUT));
         if (sent != expected) {
             // 常见原因:目标窗口权限高于本进程(UAC/管理员),被 UIPI 拦截
-            LOG_ERROR(QString("pasteViaUnicodeTyping partial failure at batch [%1,%2), sent=%3/%4, GetLastError=%5")
+            LOG_WARN(QString("pasteViaUnicodeTyping partial failure at batch [%1,%2), sent=%3/%4, GetLastError=%5")
                 .arg(i).arg(batchEnd).arg(sent).arg(expected).arg(GetLastError()));
             return false; // 部分失败,不再继续发送,避免后续错位
         }
@@ -176,7 +176,7 @@ bool InputInjector::inject(const QString& text, Mode mode) {
     case Mode::PreferClipboard:
     default:
         if (pasteViaClipboard(text)) return true;
-        LOG_ERROR("Clipboard paste failed, falling back to unicode typing.");
+        LOG_WARN("Clipboard paste failed, falling back to unicode typing.");
         return pasteViaUnicodeTyping(text);
     }
 }

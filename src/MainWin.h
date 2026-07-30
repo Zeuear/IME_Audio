@@ -11,7 +11,6 @@
 #include <QTableWidgetItem>
 #include <QNetworkAccessManager>
 #include "AppConfig.h"
-#include "qhotkey.h"
 #include "WorkflowManager.h"
 
 class UpdateManager;
@@ -24,6 +23,7 @@ class SherpaInstaller;
 class SherpaManager;
 class SphereOverlay;
 class GeminiClient;
+class CudaInstaller;
 
 
 namespace Ui {
@@ -90,13 +90,13 @@ private:
     QAction* quitAction;
     QAction* separatorAction;
 
-    QThread* m_updateThread = nullptr;
     QNetworkAccessManager* m_networkManager = nullptr;
     SphereOverlay* m_sphereOverlay = nullptr;
 
     GeminiClient* m_geminiClient = nullptr;
     SherpaManager* m_sherpaManager = nullptr;
     SherpaInstaller* m_sherpaInstaller = nullptr;
+    CudaInstaller* m_cudaInstaller = nullptr;
     TermsLibraryManager* m_termsManager = nullptr;
     UpdateManager* m_updateManager = nullptr;
     AudioRecorderService *m_recorderService = nullptr;

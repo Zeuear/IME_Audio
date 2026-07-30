@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QtConcurrent> 
 #include "../utils/Logger.h"
+#include "../utils/ExtractTool.h"
 
 
 SherpaManager::SherpaManager(QObject* parent)
@@ -76,7 +77,8 @@ void SherpaManager::loadModel(const QString& repoId, int numThreads, bool useGpu
     QMutexLocker locker(&m_recognizerMutex);
 
     if (m_isLoaded && m_currentRepoId == repoId) {
-        LOG_INFO(QString("Model %1 already loaded, reusing cached recognizer.").arg(repoId));
+        LOG_INFO("模型已经加载了");
+        LOG_DEBUG(QString("Model %1 already loaded, reusing cached recognizer.").arg(repoId));
         return;
     }
 
@@ -89,7 +91,8 @@ void SherpaManager::loadModel(const QString& repoId, int numThreads, bool useGpu
 	auto result = ModelRegistry::GetConfig(repoId, numThreads, useGpu);
 	m_isLoaded = result.isLoaded;
     if (!result.isLoaded) {
-        LOG_ERROR("Model or tokens file does not exist!");
+        LOG_ERROR("Load Model Failed");
+        LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(repoId));
         return;
     }
 
@@ -101,7 +104,7 @@ void SherpaManager::loadModel(const QString& repoId, int numThreads, bool useGpu
             m_kind = RecognizerKind::Offline;
         }
         else {
-            LOG_ERROR("Variant content does not match RecognizerKind::Offline!");
+            LOG_WARN("Variant content does not match RecognizerKind::Offline!");
         }
 		break;
 	case RecognizerKind::Online:
@@ -110,7 +113,7 @@ void SherpaManager::loadModel(const QString& repoId, int numThreads, bool useGpu
             m_kind = RecognizerKind::Online;
         }
         else {
-            LOG_ERROR("Variant content does not match RecognizerKind::Online!");
+            LOG_WARN("Variant content does not match RecognizerKind::Online!");
         }
 		break;
     default:
@@ -266,16 +269,20 @@ void SherpaManager::workerLoop()
 
 SherpaInstaller::SherpaInstaller(QNetworkAccessManager* nam, QObject* parent) : QObject(parent)
 {
-    connect(this, &SherpaInstaller::installationProgress, 
-        this, [this](const QString& msg) {  LOG_INFO(msg); });
-    connect(this, &SherpaInstaller::installationFinished, 
-        this, [this](bool ok, const QString& msg) { ok ? LOG_INFO(msg) : LOG_ERROR(msg); });
-    connect(this, &SherpaInstaller::installFileError, 
-        this, [this](const QString&, const QString&, const QString& error) { LOG_ERROR(error); });
-    connect(this, &SherpaInstaller::installGroupFinished, 
-        this, [this](const QString&, bool success, const QString& msg) { success ? LOG_INFO(msg) : LOG_ERROR(msg);});
+    connect(this, &SherpaInstaller::installationProgress, this, [this](const QString& msg) {  LOG_DEBUG(msg); });
+    connect(this, &SherpaInstaller::installationFinished, this, [this](bool ok, const QString& msg) { ok ? LOG_DEBUG(msg) : LOG_WARN(msg); });
+    connect(this, &SherpaInstaller::installFileError, this, [this](const QString&, const QString&, const QString& error) { LOG_WARN(error); });
+    connect(this, &SherpaInstaller::installGroupFinished, this, [this](const QString&, bool success, const QString& msg) { 
+        if (success) {
+            LOG_DEBUG(msg);
+            LOG_INFO("下载并配置完成");
+        }
+        else {
+            LOG_ERROR(msg);
+        }
+    });
 
-    m_downloadManager = &DownloadManager::instance(nam);
+    m_downloadManager = new DownloadManager(nam);
 
     connect(m_downloadManager, &DownloadManager::groupFileProgress, this, &SherpaInstaller::onGroupFileProgress);
     connect(m_downloadManager, &DownloadManager::groupFileFinished, this, &SherpaInstaller::onGroupFileFinished);
@@ -300,8 +307,8 @@ void SherpaInstaller::installModel(const QString& repoId)
     QString repoName = repoId.split("/").last();
     QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
     if (QFile::exists(modelPath)) {
-        LOG_INFO(QString("%1 is exist.").arg(repoId));
-        emit installGroupFinished(repoId, true, tr("Download Complete"));
+        emit installGroupFinished(repoId, true, tr("%1 is exist.").arg(repoId));
+        emit loadModel(repoId, true, tr("Download Complete"));
         return;
     }
 
@@ -319,7 +326,6 @@ void SherpaInstaller::installModel(const QString& repoId)
     }
     emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
 }
-
 
 void SherpaInstaller::uninstallAll()
 {
@@ -359,65 +365,78 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
     auto it = m_activeManifests.find(groupId);
     if (it == m_activeManifests.end()) {
         emit installGroupFinished(groupId, true, tr("Download Complete"));
+        emit loadModel(groupId, true, tr("Download Complete"));
         return;
+    }
+
+    if (groupId == SHERPA_RUNTIME) {
+       
     }
 
     const ModelInstallManifest& manifest = it.value();
     emit installationProgress(tr("正在解压 %1 ...").arg(manifest.displayName));
 
-    QString root = ModelConfigFactory::getSherpaRoot();
-    if (!extractTarBz2(manifest.archiveLocalPath, root)) {
+    if (!ExtractTool::extractAll(manifest.archiveLocalPath, manifest.archiveTargetDir)) {
         emit installGroupFinished(groupId, false, tr("Extract Error"));
         return;
     }
-    QString extractedDir = root + "/" + manifest.archiveExtractedDirName;
-    if (!moveDirContents(extractedDir, manifest.archiveTargetDir)) {
-        emit installGroupFinished(groupId, false, tr("Move Error"));
-        return;
-    }
-    QDir(extractedDir).removeRecursively();
-    QFile::remove(manifest.archiveLocalPath);
 
     m_activeManifests.remove(groupId);
     emit installGroupFinished(groupId, true, tr("Download Complete"));
+    emit loadModel(groupId, true, tr("Download Complete"));
+
 }
 
-bool SherpaInstaller::extractTarBz2(const QString& archivePath, const QString& destDir) const
+SherpaDependencyManager::SherpaDependencyManager(QNetworkAccessManager* nam, QObject* parent)
+    : QObject(parent)
+{}
+
+void SherpaDependencyManager::checkAndRepairDependencies(const QString& targetDir, bool useCuda, Downloader* downloader)
 {
-    if (!QFile::exists(archivePath))
-        return false;
+    m_targetDir = targetDir;
+    m_downloader = downloader;
+    m_isCuda = useCuda;
+    m_currentIndex = 0;
+    m_queue.clear();
 
-    QDir().mkpath(destDir);
-
-    QProcess proc;
-    proc.setProgram("tar");
-    proc.setArguments({ "-xjf", QDir::toNativeSeparators(archivePath), "-C", QDir::toNativeSeparators(destDir) });
-    proc.start();
-    if (!proc.waitForFinished(5 * 60 * 1000))
-        return false;
-
-    return proc.exitCode() == 0;
+    connect(m_downloader, &Downloader::finished, this, &SherpaDependencyManager::onDownloadFinished);
+    connect(m_downloader, &Downloader::error, this, &SherpaDependencyManager::onDownloadError);
+    startNext();
 }
 
-bool SherpaInstaller::moveDirContents(const QString& srcDir, const QString& destDir) const
+void SherpaDependencyManager::startNext()
 {
-    QDir().mkpath(destDir);
-    QDir src(srcDir);
-    if (!src.exists()) return false;
-
-    QDirIterator it(srcDir, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString srcFile = it.next();
-        QString relPath = src.relativeFilePath(srcFile);
-        QString destFile = destDir + "/" + relPath;
-
-        QDir().mkpath(QFileInfo(destFile).absolutePath());
-        if (QFile::exists(destFile)) {
-            QFile::remove(destFile);
-        }
-        if (!QFile::rename(srcFile, destFile)) {
-            return false;
-        }
+    if (m_currentIndex >= m_queue.size()) {
+        emit finished(true, "All dependencies downloaded successfully.");
+        return;
     }
-    return true;
+
+    const auto& dep = m_queue[m_currentIndex];
+    QString savePath = QDir(m_targetDir).filePath(dep.archiveName);
+
+    emit progress(QString("Downloading %1...").arg(dep.archiveName), 0);
+    m_downloader->start(dep.url, savePath);
+}
+
+
+void SherpaDependencyManager::onDownloadFinished(const QString& path)
+{
+    emit progress("Extracting files...", 90);
+
+    ExtractOptions opts;
+    opts.destinationDir = m_targetDir;
+    opts.filter = [](const QFileInfo& fi) {
+        return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
+        };
+    if (ExtractTool::extractAndDeploy(path, opts)) {
+        m_currentIndex++;
+        startNext();
+    }else {
+        emit finished(false, "Extraction failed. Please check disk space or permissions.");
+    }
+}
+
+void SherpaDependencyManager::onDownloadError(const QString& err)
+{
+    emit finished(false, "Download failed: " + err);
 }

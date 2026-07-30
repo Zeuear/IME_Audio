@@ -88,10 +88,13 @@ signals:
     void installationFinished(bool ok, const QString& msg);
     
     void installGroupStarted(const QString& repoId, const QString& displayName, int totalFiles);
+    void installGroupFinished(const QString& repoId, bool success, const QString& msg);
+
     void installFileProgress(const QString& repoId, const QString& filename, qint64 recv, qint64 total, int overallPercent);
     void installFileFinished(const QString& repoId, const QString& filename);
     void installFileError(const QString& repoId, const QString& filename, const QString& error);
-    void installGroupFinished(const QString& repoId, bool success, const QString& msg);
+
+    void loadModel(const QString& repoId, bool success, const QString& msg);
 
 private slots:
     void onGroupFileProgress(const QString& groupId, const QString& taskId, const QString& filename,
@@ -101,10 +104,41 @@ private slots:
     void onGroupFinished(const QString& groupId, bool success);
 
 private:
-    bool extractTarBz2(const QString& archivePath, const QString& destDir) const;
-    bool moveDirContents(const QString& srcDir, const QString& destDir) const;
-
     DownloadManager* m_downloadManager = nullptr;
     QHash<QString, ModelInstallManifest> m_activeManifests;
 
+    QString SHERPA_RUNTIME = "Sherpa Runtime";
+
+};
+
+
+struct DependencyResource {
+    QString archiveName; 
+    QUrl url;
+    bool isCuda;
+};
+
+class SherpaDependencyManager : public QObject
+{
+    Q_OBJECT
+public:
+    explicit SherpaDependencyManager(QNetworkAccessManager* nam, QObject* parent = nullptr);
+    void checkAndRepairDependencies(const QString& targetDir, bool useCuda, Downloader* downloader);
+
+signals:
+    void progress(const QString& msg, int percent);
+    void finished(bool success, const QString& message);
+
+private slots:
+    void onDownloadFinished(const QString& path);
+    void onDownloadError(const QString& err);
+
+private:
+    void startNext();
+
+    QString m_targetDir;
+    Downloader* m_downloader = nullptr;
+    QList<DependencyResource> m_queue;
+    int m_currentIndex = 0;
+    bool m_isCuda = false;
 };

@@ -7,6 +7,8 @@
 
 #include "utils/Logger.h"
 #include "ConfigManager.h"
+#include "widgets/inforbar/inforbarmanager.h"
+#include "widgets/inforbar/inforposmanager.h"
 
 Application::Application(int& argc, char** argv):QApplication(argc, argv) {
 	Initialize();
@@ -31,6 +33,14 @@ void Application::Initialize() {
 		configManager.applyDefaults();
 		configManager.save();
 	}
+
+
+	InforBarManager::registerManager<TopInforBarManager>(InforBarPosition::I_TOP);
+	InforBarManager::registerManager<TopRightInfoBarManager>(InforBarPosition::I_TOP_RIGHT);
+	InforBarManager::registerManager<BottomRightInfoBarManager>(InforBarPosition::I_BOTTOM_RIGHT);
+	InforBarManager::registerManager<TopLeftInfoBarManager>(InforBarPosition::I_TOP_LEFT);
+	InforBarManager::registerManager<BottomLeftInfoBarManager>(InforBarPosition::I_BOTTOM_LEFT);
+	InforBarManager::registerManager<BottomInfoBarManager>(InforBarPosition::I_BOTTOM);
 }
 
 

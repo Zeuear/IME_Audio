@@ -26,6 +26,9 @@
 #include "widgets/SphereOverlay.h"
 #include "qhotkey.h"
 
+#include "widgets/inforbar/inforbarmanager.h"
+#include "widgets/inforbar/inforposmanager.h"
+
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
 
@@ -46,6 +49,8 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   m_recorderService = new AudioRecorderService(config, this);
   m_sherpaManager = new SherpaManager(this);
   m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
+  m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
+
   m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_geminiClient, config, this);
   m_termsManager = new TermsLibraryManager(this);
   m_updateManager = new UpdateManager(m_networkManager, this);
@@ -62,7 +67,14 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   //m_sphereOverlay->setListening();
   //m_sphereOverlay->showAtBottomCenter();
 
-  m_updateThread = QThread::create([this]() { m_updateManager->checkForUpdates();});
+  auto* periodicTimer = new QTimer(this);
+  periodicTimer->setInterval(4 * 60 * 60 * 1000);
+  connect(periodicTimer, &QTimer::timeout, this, [this]() {
+      m_updateManager->checkForUpdates();
+  });
+
+
+  periodicTimer->start();
 
   initSystemTray();
   initialize();
@@ -124,7 +136,8 @@ void MainWin::initialize() {
     ui->translate_language_comb->addItems(translate_language_comb);
 
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
-    ui->gpu_backend_widget->setBackendInstaller(m_networkManager);
+    ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
+    ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
 }   
 
@@ -147,11 +160,13 @@ void MainWin::connection(){
 	});
 
     connect(ui->download_model_btn, &QPushButton::clicked, this, [this]() {
-        onSaveConfig();
+        AppConfig uiConfig = extractConfigFromUI();
+        ConfigManager::instance().updateConfig(uiConfig);
+        ConfigManager::instance().save();
 
         const AppConfig& config = ConfigManager::instance().config();
         QString repoId = config.sherpa.localModelRepoId;
-        LOG_INFO(QString("Download %1...").arg(repoId));
+        LOG_DEBUG(QString("Download %1...").arg(repoId));
         m_sherpaInstaller->installModel(repoId);
     });
 
@@ -181,6 +196,7 @@ void MainWin::connection(){
         params.style = config.gemini.geminiStyle;
         params.customPrompt = config.gemini.prompt;
         params.aiVocab = config.gemini.vocab;
+        params.targetLang = config.gemini.targetLang;
         m_geminiClient->testConnection(params);
     });
     connect(ui->identification_log_btn, &QPushButton::clicked, this, [this](){ onToggleDrawer(0);});
@@ -188,7 +204,7 @@ void MainWin::connection(){
     connect(ui->download_list_btn, &QPushButton::clicked, this, [this]() { onToggleDrawer(2); });
 
     // 更新检查
-    connect(ui->actionUpdate, &QAction::triggered, this, [this]() { m_updateThread->start(); });
+    connect(ui->actionUpdate, &QAction::triggered, this, [this]() {  m_updateManager->checkForUpdates(); });
     connect(m_updateManager, &UpdateManager::updateAvailable, this, &MainWin::onUpdateFound);
     connect(m_updateManager, &UpdateManager::downloadFinished, this, &MainWin::onUpdateDownloaded);
     connect(m_updateManager, &UpdateManager::updateError, this, [this](const QString& message) { LOG_ERROR(message); });
@@ -209,13 +225,14 @@ void MainWin::connection(){
     connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_sphereOverlay, &SphereOverlay::setSpectrumLevels);
 
 	// Sherpa 模型安装器
-    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished,
+    connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
         this, [this](const QString& repoId, bool success, const QString& msg) {
-            if (success) {
+            if (success && !repoId.isEmpty()) {
                 const AppConfig& config = ConfigManager::instance().config();
                 int threads = config.sherpa.threads;
                 bool useGpu = config.sherpa.useGpu;
                 m_sherpaManager->loadModel(repoId, threads, useGpu);
+
             }
         });
 
@@ -281,13 +298,14 @@ void MainWin::closeEvent(QCloseEvent* event)
 
 
 void MainWin::showEvent(QShowEvent* event) {
-    m_updateThread->start();
+    //m_updateThread->start();
     QWidget::showEvent(event);
 }
 
 AppConfig MainWin::extractConfigFromUI() {
     AppConfig uiConfig;
     // 基础/全局设置 (Global/Misc)
+    uiConfig.gemini.aiEngineIndex = ui->ai_engine_comb->currentIndex();
     uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
     uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
     uiConfig.hotkey = ui->shortcut_edit->getShortCut();
@@ -311,7 +329,7 @@ AppConfig MainWin::extractConfigFromUI() {
 	uiConfig.sherpa.localModelRepoId = ui->local_model_comb->currentText();
 
     // Gemini/AI 设置 (Gemini Group)
-    uiConfig.gemini.aiEngineIndex = ui->ai_engine_comb->currentIndex();
+    uiConfig.gemini.enableGemini = ui->enable_gemini_checkbox->isChecked();
     uiConfig.gemini.model = ui->gemini_model_comb->currentText();
     uiConfig.gemini.geminiStyle = ui->gemini_style_comb->currentText();
     uiConfig.gemini.apiUrl = ui->api_url_edit->text();
@@ -339,6 +357,7 @@ void MainWin::loadConfigToUI() {
     ConfigManager::instance().load();
     const AppConfig& cfg = ConfigManager::instance().config();
     // 基础/全局
+    ui->ai_engine_comb->setCurrentIndex(cfg.gemini.aiEngineIndex);
     int audioIndex = ui->recording_equ_comb->findText(cfg.audio.deviceName);
     if (audioIndex != -1) ui->recording_equ_comb->setCurrentIndex(audioIndex);
     ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
@@ -368,7 +387,7 @@ void MainWin::loadConfigToUI() {
     }
 
     // Gemini
-    ui->ai_engine_comb->setCurrentIndex(cfg.gemini.aiEngineIndex);
+    ui->enable_gemini_checkbox->setChecked(cfg.gemini.enableGemini);
     ui->gemini_model_comb->setCurrentText(cfg.gemini.model);
     ui->api_url_edit->setText(cfg.gemini.apiUrl);
     ui->api_key_edit->setText(cfg.gemini.apiKey);
@@ -433,7 +452,6 @@ void MainWin::readIni() {
 
   if(loadOk) qApp->installTranslator(&mTranslator);
 }
-
 
 void MainWin::on_actionAbout_Qt_triggered() {
   QMessageBox::aboutQt(this, "About Qt");
@@ -527,7 +545,7 @@ void MainWin::on_actionEnglish_triggered() {
 void MainWin::on_actionExit_triggered() { qApp->exit(0); }
 
 void MainWin::onHotkeyPressed() {
-    LOG_INFO(QString("Activated:" + ui->shortcut_edit->getShortCut()));
+    LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
     if (m_workflow->currentState() == WorkflowState::Idle) {
         m_workflow->startRecording();
     }
@@ -594,7 +612,8 @@ void MainWin::onNewLogEntry(const QString& entry)
         QTextCharFormat format;
         if (entry.contains("ERROR", Qt::CaseInsensitive) || entry.contains("[E]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#FF3333")); 
-            format.setFontWeight(QFont::Bold);       
+            format.setFontWeight(QFont::Bold);  
+            InforBar::error("", entry, InforBarPosition::I_BOTTOM_RIGHT, this);
         }
         else if (entry.contains("WARN", Qt::CaseInsensitive) || entry.contains("[W]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#FFA500"));
@@ -607,6 +626,7 @@ void MainWin::onNewLogEntry(const QString& entry)
         else if (entry.contains("INFO", Qt::CaseInsensitive) || entry.contains("[I]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#00A854"));
             format.setFontWeight(QFont::Normal);
+            InforBar::success("", entry, InforBarPosition::I_BOTTOM_RIGHT, this);
         }
         else {
             format.setForeground(QColor("#333333"));
@@ -617,8 +637,6 @@ void MainWin::onNewLogEntry(const QString& entry)
         cursor.insertText(entry + "\n");
     }   
 }
-
-
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
     QMessageBox msgBox(this);
@@ -670,18 +688,20 @@ void MainWin::onUpdateDownloaded(const QString& filePath) {
 
 void MainWin::onLoadConfig()
 {
-    LOG_INFO("Load Configuration");
+    LOG_DEBUG("Load Configuration");
     loadConfigToUI();
     readIni();
+
 }
 
 void MainWin::onSaveConfig()
 {
-    LOG_INFO("Save Configuration");
+    LOG_DEBUG("Save Configuration");
     AppConfig uiConfig = extractConfigFromUI();
     ConfigManager::instance().updateConfig(uiConfig);
     if (ConfigManager::instance().save()) {
-		LOG_INFO("Save Configuration Success");
+        LOG_INFO("配置保存成功");
+		LOG_DEBUG("Save Configuration Success");
     }
     else {
         LOG_ERROR("Save Configuration Failed");

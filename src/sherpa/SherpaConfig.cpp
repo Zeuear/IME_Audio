@@ -21,7 +21,11 @@ QString ModelConfigFactory::getSherpaModel()
 {
     QString appDir = QCoreApplication::applicationDirPath();
     QDir dir(appDir);
-    return dir.absoluteFilePath("sherpa/models");
+    QString dirPath = dir.absoluteFilePath("sherpa/models");
+    if (!QFile::exists(dirPath)) {
+        QDir().mkpath(dirPath);
+    }
+    return dirPath;
 }
 
 
@@ -969,16 +973,16 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         return result;
     }
     if (desc->arch == ModelArch::Unsupported) {
-        LOG_ERROR(tr("This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1").arg(repoId));
+        //LOG_ERROR(tr("This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1").arg(repoId));
         return result;
     }
 
     RecognizerKind kind = RecognizerKind::None;
 	bool isCudaAvailable = useGpu;
     if (isCudaAvailable) {
-        LOG_INFO("Sherpa initialized successfully with [CUDA] acceleration.");
+        LOG_DEBUG("Sherpa initialized successfully with [CUDA] acceleration.");
     }else {
-        LOG_INFO("CUDA not available. Sherpa fallback to [CPU].");
+        LOG_DEBUG("CUDA not available. Sherpa fallback to [CPU].");
     }
 
 	QString hotwords = ConfigManager::instance().config().sherpa.hotwords;
@@ -1109,7 +1113,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         break;
     }
     default:
-        LOG_ERROR("The builder for this architecture has not yet been implemented.: repo=" + repoId);
+        LOG_WARN("The builder for this architecture has not yet been implemented.: repo=" + repoId);
         return result;
     }
 
@@ -1129,7 +1133,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 if constexpr (requires { config.decoding_method; }) {
                     config.decoding_method = "modified_beam_search";
                 }
-                LOG_INFO(tr("Hotwords applied for arch=%1, score=%2").arg(int(desc->arch)).arg(hotscores));
+                LOG_DEBUG(tr("Hotwords applied for arch=%1, score=%2").arg(int(desc->arch)).arg(hotscores));
             }
             else if (!hotwords.isEmpty()) {
                 LOG_WARN(tr("Hotwords configured but architecture does not support contextual biasing, ignored: %1").arg(repoId));
@@ -1138,7 +1142,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             if (useGpu) {
                 try {
                     config.model_config.provider = "cuda";
-                    LOG_INFO("Attempting to initialize Sherpa with [CUDA] acceleration...");
+                    LOG_DEBUG("Attempting to initialize Sherpa with [CUDA] acceleration...");
                     if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
                         return std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
                     } else {
@@ -1154,7 +1158,8 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             }
 
             config.model_config.provider = "cpu";
-            LOG_INFO("Sherpa initialized successfully with [CPU].");
+            LOG_INFO("Sherpa使用[CPU]初始化");
+            LOG_DEBUG("Sherpa initialized successfully with [CPU].");
             if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
                 return std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
             } else {
@@ -1162,88 +1167,6 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             }
         }
     }, configVar);
-
-
-
-    //if (modelId == "funasr") {
-    //    QString modelDir = root + "/models/funasr";
-    //    QDir(modelDir).mkpath(".");
-    //    QDir(modelDir + "/Qwen3-0.6B").mkpath(".");
-    //    QString base = hfMirror + "/csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30/resolve/main";
-
-    //    auto onComplete = [this, modelId]() { finishModelInstall(true, modelId + " 模型安装完成"); };
-    //    auto onError = [this](const QString& err) { finishModelInstall(false, "下载失败: " + err); };
-
-    //    downloadFile(QUrl(base + "/embedding.int8.onnx"), modelDir + "/embedding.int8.onnx", onComplete, onError);
-    //    downloadFile(QUrl(base + "/encoder_adaptor.int8.onnx"), modelDir + "/encoder_adaptor.int8.onnx", onComplete, onError);
-    //    downloadFile(QUrl(base + "/llm.int8.onnx"), modelDir + "/llm.int8.onnx", onComplete, onError);
-    //    downloadFile(QUrl(base + "/tokens.txt"), modelDir + "/tokens.txt", onComplete, onError);
-
-    //    QString qwenDir = modelDir + "/Qwen3-0.6B";
-    //    downloadFile(QUrl(base + "/Qwen3-0.6B/merges.txt"), qwenDir + "/merges.txt", onComplete, onError);
-    //    downloadFile(QUrl(base + "/Qwen3-0.6B/tokenizer.json"), qwenDir + "/tokenizer.json", onComplete, onError);
-    //    downloadFile(QUrl(base + "/Qwen3-0.6B/vocab.json"), qwenDir + "/vocab.json", onComplete, onError);
-    //    return;
-    //}
-
-    //if (modelId == "qwen3asr") {
-    //    m_qwen3ArchivePath = root + "/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2";
-    //    m_qwen3ExtractedDirName = "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25";
-    //    m_qwen3ModelDir = root + "/models/qwen3-asr";
-    //    QDir(m_qwen3ModelDir).mkpath(".");
-
-    //    if (QFile::exists(m_qwen3ModelDir + "/encoder.int8.onnx")) {
-    //        emit installationProgress("Qwen3-ASR 模型已存在，跳过下载");
-    //        emit installationFinished(true, "");
-    //        return;
-    //    }
-    //    auto onComplete = [this, modelId]() {
-    //        emit installationProgress("正在解压 Qwen3-ASR 模型...");
-    //        QString root = getSherpaRoot();
-    //        if (!extractTarBz2(m_qwen3ArchivePath, root)) {
-    //            finishModelInstall(false, "解压失败");
-    //            return;
-    //        }
-    //        QString extractedDir = root + "/" + m_qwen3ExtractedDirName;
-    //        if (!QDir(extractedDir).exists()) {
-    //            finishModelInstall(false, "解压后未找到目录: " + extractedDir);
-    //            return;
-    //        }
-    //        if (!moveDirContents(extractedDir, m_qwen3ModelDir)) {
-    //            finishModelInstall(false, "移动模型文件失败: " + extractedDir + " -> " + m_qwen3ModelDir);
-    //            return;
-    //        }
-    //        QDir(extractedDir).removeRecursively();
-    //        finishModelInstall(true, "Qwen3-ASR 模型安装完成");
-    //        };
-
-    //    auto onError = [this](const QString& err) { finishModelInstall(false, "下载失败: " + err); };
-    //    emit installationProgress("正在下载 Qwen3-ASR 模型归档...");
-    //    downloadFile(QUrl("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/" + m_qwen3ExtractedDirName + ".tar.bz2"),
-    //        m_qwen3ArchivePath, onComplete, onError);
-    //    return;
-    //}
-
-    //if (modelId == "sensevoice") {
-    //    QString modelDir = root + "/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17";
-    //    QDir(modelDir).mkpath(".");
-
-    //    QString localSrc = "C:/Users/" + qgetenv("USERNAME") + "/Desktop/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17";
-    //    if (QFile::exists(localSrc + "/model.int8.onnx")) {
-    //        emit installationProgress("检测到桌面本地 SenseVoice 模型，正在复制...");
-    //        QFile::copy(localSrc + "/model.int8.onnx", modelDir + "/model.int8.onnx");
-    //        QFile::copy(localSrc + "/tokens.txt", modelDir + "/tokens.txt");
-    //        emit installationFinished(true, "SenseVoice 模型复制完成");
-    //        return;
-    //    }
-    //    auto onComplete = [this, modelId]() { finishModelInstall(true, modelId + " 模型安装完成"); };
-    //    auto onError = [this](const QString& err) { finishModelInstall(false, "下载失败: " + err); };
-
-    //    QString base = hfMirror + "/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17/resolve/main";
-    //    downloadFile(QUrl(base + "/model.int8.onnx"), modelDir + "/model.int8.onnx", onComplete, onError);
-    //    downloadFile(QUrl(base + "/tokens.txt"), modelDir + "/tokens.txt", onComplete, onError);
-    //    return;
-    //}
 
     result.repoId = repoId;
     result.isLoaded = true;
@@ -1276,7 +1199,7 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
         if (auto* p = std::get_if<T>(&desc->files)) {
             return *p;
         }
-        LOG_ERROR(tr("ModelDescriptor.files type mismatch for %1, using default values").arg(repoId));
+        LOG_WARN(tr("ModelDescriptor.files type mismatch for %1, using default values").arg(repoId));
         return T{};
     };
 
@@ -1339,8 +1262,11 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
     }
 
     case ModelArch::Moonshine: {
-        LOG_ERROR(tr("BuildManifest: Moonshine file list not yet implemented, "
-            "please provide buildMoonshine's actual file naming convention"));
+        addFile("", "tokens.txt");
+        addFile("", "encode.int8.onnx");
+        addFile("", "uncached_decode.int8.onnx");
+        addFile("", "cached_decode.int8.onnx");
+        addFile("", "preprocess.onnx");
         break;
     }
 
@@ -1363,14 +1289,14 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
         QDir().mkpath(ModelConfigFactory::getSherpaRoot());
 
         manifest.archiveExtractedDirName = files.extractedDirName;
-        manifest.archiveTargetDir = ModelConfigFactory::getSherpaModel() + "/qwen3-asr";
+        manifest.archiveTargetDir = ModelConfigFactory::getSherpaModel() + "/" + files.extractedDirName;
         QDir().mkpath(manifest.archiveTargetDir);
         break;
     }
 
     case ModelArch::Unsupported:
     default:
-        LOG_ERROR(tr("BuildManifest: unsupported or unmapped ModelArch for %1").arg(repoId));
+        LOG_WARN(tr("BuildManifest: unsupported or unmapped ModelArch for %1").arg(repoId));
         break;
     }
 

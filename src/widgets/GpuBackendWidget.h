@@ -34,7 +34,7 @@ public:
     explicit GpuBackendWidget(QWidget *parent = nullptr);
     ~GpuBackendWidget();
 
-    void setBackendInstaller(QNetworkAccessManager* nam);
+    void setBackendInstaller(CudaInstaller* cudaInstaller);
 
     void redetect();
     bool isGpuAccelerationReady() const;
@@ -54,10 +54,10 @@ signals:
 private slots:
     void onDownloadClicked();
     void onDetectionFinished(const GpuDetectionResult& result);
+
     void onInstallerStatusChanged();
-    void onInstallerProgressUpdated(int percentage);
     void onInstallerFinished(bool success, const QString& msg);
-    void onModeSwitchClicked();   // 新增
+    void onModeSwitchClicked();  
 
 private:
     void retranslateUi();
@@ -68,6 +68,7 @@ private:
 
 private:
     QFutureWatcher<GpuDetectionResult>* m_detectWatcher = nullptr;
+    GpuDetectionResult m_detail;
 
     GpuStatus m_status = GpuStatus::Detecting;
     ComputeMode m_computeMode = ComputeMode::CPU;
@@ -94,6 +95,9 @@ private:
     QWidget* m_modeSwitchRow = nullptr;
     QLabel* m_modeSwitchLabel = nullptr;
     QPushButton* m_modeSwitchButton = nullptr;
+
+    QLabel* m_sherpaLabel = nullptr;
+    QPushButton* m_sherpaButton = nullptr;
 
     QVBoxLayout *m_rootLayout = nullptr;
     QScopedPointer<class QFile> m_downloadFile;

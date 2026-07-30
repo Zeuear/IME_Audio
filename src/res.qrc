@@ -10,7 +10,10 @@
         <file alias="spin_up_black">../resources/icons/spin_up_black.svg</file>
         <file alias="spin_up_gray">../resources/icons/spin_up_gray.svg</file>
         <file alias="spin_up_white">../resources/icons/spin_up_white.svg</file>       
-	<file alias="pause">../resources/icons/pause.svg</file>        
-	<file alias="play">../resources/icons/play.svg</file>
+        <file alias="info">../resources/icons/info.svg</file>        
+        <file alias="info_close">../resources/icons/info_close.svg</file>    
+        <file alias="info_error">../resources/icons/info_error.svg</file>        
+        <file alias="info_success">../resources/icons/info_success.svg</file>    
+        <file alias="info_warning">../resources/icons/info_warning.svg</file>        
     </qresource>
 </RCC>

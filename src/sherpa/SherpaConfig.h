@@ -11,8 +11,6 @@
 #include <variant>
 #include "cxx-api.h"
 
-#include "utils/DownloadManager.h"
-
 
 enum class ModelArch {
     Paraformer,

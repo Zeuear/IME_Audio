@@ -27,7 +27,7 @@ QString DownloadManager::addTask(const QUrl& url, const QString& savePath, TaskF
 
 void DownloadManager::startNext()
 {
-    if (m_runningCount >= m_maxConcurrent || m_queue.isEmpty()) {
+    if (m_runningCount >= 1 || m_queue.isEmpty()) {
         return;
     }
 

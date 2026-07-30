@@ -22,6 +22,7 @@ struct AudioConfig {
 };
 
 struct SherpaConfig {
+    QString vadPath;
     bool useGpu = false;
     int threads = 4;
     QString languageModel;

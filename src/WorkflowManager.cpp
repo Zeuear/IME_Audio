@@ -27,7 +27,7 @@ void WorkflowManager::initialize(AudioRecorderService *recorder,
 
 void WorkflowManager::startRecording() {
     if (m_currentState != WorkflowState::Idle) return;
-    LOG_INFO("Start Recording");
+    LOG_DEBUG("Start Recording");
     transitionTo(WorkflowState::Loading);
     if (m_config.backend == AsrBackendKind::Sherpa) {
         m_sherpaManager->loadModel(m_config.sherpa.localModelRepoId, m_config.sherpa.threads, m_config.sherpa.useGpu);
@@ -50,7 +50,7 @@ void WorkflowManager::startRecording() {
 
 void WorkflowManager::stopRecording() {
     if (m_currentState != WorkflowState::Recording) return;
-    LOG_INFO("Stop Recording");
+    LOG_DEBUG("Stop Recording");
 
     m_recorder->stopListening();
     m_pendingTranscriptions = 0;
@@ -66,11 +66,11 @@ WorkflowState WorkflowManager::currentState() const
 }
 
 void WorkflowManager::onVoiceStarted() {
-    LOG_INFO("Voice detected...");
+    LOG_DEBUG("Voice detected...");
 }
 
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
-    LOG_INFO(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
+    LOG_DEBUG(tr("Utterance captured, size: %1 bytes").arg(pcmData.size()));
     m_pendingTranscriptions++;
     transitionTo(WorkflowState::Transcribing);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
@@ -83,14 +83,14 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
 
     if (success) {
         if (!finalText.isEmpty()) {
-            LOG_INFO(QString("Transcription success: %1").arg(finalText));
+            LOG_DEBUG(QString("Transcription success: %1").arg(finalText));
             emit transcriptionResultReady(finalText);
         }
     }
     else {
         QMessageBox::warning(nullptr, tr("Error"), errorMsg);
-        LOG_ERROR(QString("Transcription failed: %1").arg(errorMsg));
-        LOG_ERROR(errorMsg);
+        LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
+        LOG_WARN(errorMsg);
     }
 
     if (m_pendingTranscriptions == 0 && m_currentState == WorkflowState::Transcribing) {
@@ -119,7 +119,7 @@ void WorkflowManager::processInjectQueue() {
 
     bool ok = InputInjector::inject(text);
     if (!ok) {
-        LOG_ERROR(QString("InputInjector failed for text: %1").arg(text));
+        LOG_WARN(QString("InputInjector failed for text: %1").arg(text));
     }
 
     m_injecting = false;

@@ -1,32 +1,47 @@
 #include "CudaInstaller.h"
 #include <QLibrary>
-CudaInstaller::CudaInstaller(QNetworkAccessManager* nam, QObject* parent) : QObject(parent)
+#ifdef Q_OS_WIN32
+#include <Windows.h>
+#endif
+
+
+
+CudaInstaller::CudaInstaller(QNetworkAccessManager* nam, SherpaInstaller* sherpaInstaller, QObject* parent) : QObject(parent)
 {
-    m_cudaDownloader = new Downloader(nam, this);
-    m_cudnnDownloader = new Downloader(nam, this);
-    m_installProcess = new QProcess(this);
+    m_cudaDownloader = new DownloadManager(nam);
+    m_taskManager = new TaskQueueManager(this);
+    m_sherpaInstaller = sherpaInstaller;
 
-    // CUDA 下载信号
-    connect(m_cudaDownloader, &Downloader::progress, this, &CudaInstaller::onCudaDownloadProgress);
-    connect(m_cudaDownloader, &Downloader::finished, this, &CudaInstaller::onCudaDownloadFinished);
-    connect(m_cudaDownloader, &Downloader::error, this, &CudaInstaller::onCudaDownloadError);
-
-    // cuDNN 下载信号
-    connect(m_cudnnDownloader, &Downloader::progress, this, &CudaInstaller::onCudnnDownloadProgress);
-    connect(m_cudnnDownloader, &Downloader::finished, this, &CudaInstaller::onCudnnDownloadFinished);
-    connect(m_cudnnDownloader, &Downloader::error, this, &CudaInstaller::onCudnnDownloadError);
-
-    connect(m_installProcess, &QProcess::finished, this, &CudaInstaller::onProcessFinished);
+    connect(m_cudaDownloader, &DownloadManager::groupFileProgress, this, &CudaInstaller::onGroupFileProgress);
+    connect(m_cudaDownloader, &DownloadManager::groupFileFinished, this, &CudaInstaller::onGroupFileFinished);
+    connect(m_cudaDownloader, &DownloadManager::groupFileError, this, &CudaInstaller::onGroupFileError);
+    connect(m_cudaDownloader, &DownloadManager::groupFinished, this, &CudaInstaller::onGroupFinished);
 }
 
-CudaInstaller::~CudaInstaller()
-{
+CudaInstaller::~CudaInstaller(){}
+
+
+
+void CudaInstaller::setEnvironment() {
+#ifdef Q_OS_WIN32
+    QString cudnnBinDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/CUDNN/v9.x/bin";
+    if (!QFile::exists(cudnnBinDir)) {
+        return;
+    }
+    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+    std::wstring wPath = QDir::toNativeSeparators(cudnnBinDir).toStdWString();
+    DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(wPath.c_str());
+    if (!cookie) {
+        LOG_ERROR("Failed to add DLL directory: %1" +  GetLastError());
+    }
+#endif
 }
 
 GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
 {
     GpuDetectionResult result;
-    // ---- 第一层:硬件检测 ----
+    // 第一层:硬件检测
     QString gpuName;
     if (!detectNvidiaGpuPresent(&gpuName)) {
         result.hasNvidiaGpu = false;
@@ -36,10 +51,7 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
     result.hasNvidiaGpu = true;
     result.gpuName = gpuName;
 
-    // ---- 第二层:CUDA Runtime 动态库检测 ----
-    // 不同平台/版本的 cudart 命名不同,按常见版本号依次尝试
-    // Windows: cudart64_110.dll, cudart64_118.dll, cudart64_12.dll ...
-    // Linux:   libcudart.so.11.0, libcudart.so.12, libcudart.so (符号链接)
+    // 第二层:CUDA Runtime 动态库检测
     struct CudaLibCandidate { QString libName; QString version; };
 
     QVector<CudaLibCandidate> candidates;
@@ -76,7 +88,7 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         return result;
     }
 
-    // ---- 第三层(按需):cuDNN 检测,如果 sherpa-onnx 的 GPU 推理依赖 cudnn ----
+    // 第三层(按需):cuDNN 检测,如果 sherpa-onnx 的 GPU 推理依赖 cudnn
     if (requireCudnn) {
         QVector<QString> cudnnCandidates;
 #ifdef Q_OS_WIN
@@ -137,8 +149,9 @@ bool CudaInstaller::detectNvidiaGpuPresent(QString* gpuNameOut)
     return true;
 }
 
-void CudaInstaller::startInstallCuda()
+void CudaInstaller::startDownload(const GpuDetectionResult& result)
 {
+    m_detail = result;
     emit statusChanged(QString(tr("Preparation for CUDA 12.6 offline installation package...")));
     QString downloadDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     if (downloadDir.isEmpty()) {
@@ -149,143 +162,122 @@ void CudaInstaller::startInstallCuda()
     QUrl cudaUrl("https://developer.download.nvidia.com/compute/cuda/12.6.0/local_installers/cuda_12.6.0_560.76_windows.exe");
   
     m_cudnnZipPath = QDir(downloadDir).filePath("cudnn-windows-x86_64-9.6.0.29_cuda12-archive.zip");
-    QUrl cudnnUrl("https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.6.0.29_cuda12-archive.zip");
+    QUrl cudnnUrl("https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.6.0.74_cuda12-archive.zip");
 
-    m_cudaDownloader->start(cudaUrl, m_cudaInstallerPath);
-    m_cudnnDownloader->start(cudnnUrl, m_cudnnZipPath);
+    m_sherpaZipPath = QDir(downloadDir).filePath("sherpa-onnx-v1.13.4.tar.bz2");
+    QUrl sherpaUrl("https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.4/sherpa-onnx-v1.13.4-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2");
+
+    int count = 0;
+    if (!result.hasCudaRuntime) {
+        m_cudaDownloader->addGroupTask(GROUP_ID, "CUDA 12.6", cudaUrl, m_cudaInstallerPath);
+        count++;
+    }
+
+    if (!result.hasCudnn) {
+        m_cudaDownloader->addGroupTask(GROUP_ID, "CUDNN 9.6", cudnnUrl, m_cudnnZipPath);
+        count++;
+    }
+
+    QString targetDir = QApplication::applicationDirPath();
+    if (QFile::exists(QDir(targetDir).filePath("onnxruntime_providers_cuda.dll"))) {
+        LOG_DEBUG("Dependencies already satisfied.");
+    }
+    else {
+        m_cudaDownloader->addGroupTask(GROUP_ID, "Sherpa Runtime", sherpaUrl, m_sherpaZipPath);
+        count++;
+    }
+
+    emit installGroupStarted(GROUP_ID, "GPU", count);
 }
 
-
-void CudaInstaller::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
+void CudaInstaller::cancelDownload()
 {
-    bool cudaSuccess = (exitStatus == QProcess::NormalExit && exitCode == 0);
+    m_cudaDownloader->cancelAll();
+}
 
-    QFile::remove(m_cudaInstallerPath);   // 清理安装包
+void CudaInstaller::onGroupFileProgress(const QString& groupId, const QString&, const QString& filename,
+    qint64 received, qint64 total, int overallPercent)
+{
+    emit installFileProgress(groupId, filename, received, total, overallPercent);
+}
 
-    if (!cudaSuccess) {
-        emit installFileError(GROUP_ID, "CUDA 12.6 Installer.exe", tr("Installation failed with code %1").arg(exitCode));
-        finishInstallation(false, tr("CUDA installation failed"));
+void CudaInstaller::onGroupFileFinished(const QString& groupId, const QString&, const QString& filename)
+{
+    emit installFileFinished(groupId, filename);
+}
+
+void CudaInstaller::onGroupFileError(const QString& groupId, const QString&, const QString& filename, const QString& error)
+{
+    emit installFileError(groupId, filename, error);
+}
+
+void CudaInstaller::onGroupFinished(const QString& groupId, bool success)
+{
+    if (!success) {
+        emit installGroupFinished(groupId, false, tr("Download Error"));
         return;
     }
-
-    emit installFileFinished(GROUP_ID, "CUDA 12.6 Installer.exe");  // 标记 CUDA 安装完成
-    emit statusChanged(tr("CUDA installed successfully. Installing cuDNN..."));
-
-    startCudnnInstallation();
-}
-
-void CudaInstaller::onCudaDownloadProgress(const QString& fileName, qint64 received, qint64 total, double speed)
-{
-    int percent = total > 0 ? static_cast<int>(received * 100 / total) : 0;
-    int overall = (percent * 65) / 100;   // CUDA 占整体进度的 65%
-    emit installFileProgress(GROUP_ID, "CUDA 12.6 Installer.exe", received, total, overall);
-}
-
-void CudaInstaller::onCudnnDownloadProgress(const QString& /*fileName*/, qint64 received, qint64 total, double /*speed*/)
-{
-    int filePercent = total > 0 ? static_cast<int>(received * 100 / total) : 0;
-    int overall = 70 + (filePercent * 30) / 100;   // cuDNN 占剩下30%
-    emit installFileProgress(GROUP_ID, "cuDNN 9.x", received, total, overall);
-}
-
-void CudaInstaller::onCudaDownloadFinished(const QString&)
-{
-    m_cudaDownloaded = true;
-    emit installFileFinished(GROUP_ID, "CUDA 12.6 Installer.exe");
-    checkDownloadComplete();
-}
-
-void CudaInstaller::onCudnnDownloadFinished(const QString& savePath)
-{
-    m_cudnnDownloaded = true;
-    emit installFileFinished(GROUP_ID, "cuDNN 9.x Package");
-    checkDownloadComplete();
-}
-
-void CudaInstaller::onCudaDownloadError(const QString& err)
-{
-    emit installFileError(GROUP_ID, "CUDA 12.6 Installer.exe", err);
-    finishInstallation(false, tr("CUDA download failed: ") + err);
-}
-
-void CudaInstaller::onCudnnDownloadError(const QString& errorString)
-{
-    emit installFinished(false, tr("cuDNN Download Error: %1").arg(errorString));
-}
-
-
-void CudaInstaller::checkDownloadComplete()
-{
-    if (m_cudaDownloaded && m_cudnnDownloaded && !m_isInstalling) {
-        m_isInstalling = true;
-        emit statusChanged(tr("Download completed. Starting installation..."));
-        startCudaInstallation();
+    else {
+        emit installStarted();
+        startInstall();
     }
 }
 
-void CudaInstaller::startCudaInstallation()
+void CudaInstaller::startInstall()
 {
-    emit statusChanged(tr("Installing CUDA 12.6 (this may take several minutes)..."));
+    emit statusChanged(tr("Starting installation sequence..."));
+    connect(m_taskManager, &TaskQueueManager::allTasksFinished, this, [this](bool success, const QString& msg) {
+        LOG_INFO("任务全部执行完成");
+        LOG_DEBUG("Task All Complete");
+        if (QFile::exists(m_cudaInstallerPath)) {
+            QFile::remove(m_cudaInstallerPath);
+        }
+        if (QFile::exists(m_cudnnZipPath)) {
+            QFile::remove(m_cudnnZipPath);
+        }
 
-    QStringList args = { "/s", "-n", "nvcc_12.6", "cusparse_12.6", "cublas_12.6", "cudart_12.6" };
-
-    m_installProcess->setProgram(m_cudaInstallerPath);
-    m_installProcess->setArguments(args);
-    m_installProcess->start();
-}
-
-void CudaInstaller::startCudnnInstallation()
-{
-    emit statusChanged(tr("Extracting and installing cuDNN 9.x..."));
-
-    // 解压并复制到标准目录
-    QString tempExtractPath = QDir::tempPath() + "/cudnn_extract";
-    QDir().mkpath(tempExtractPath);
-
-    // 使用 PowerShell 解压
-    QProcess unzip;
-    unzip.setProgram("powershell");
-    unzip.setArguments({
-        "-NoProfile", "-Command",
-        QString("Expand-Archive -Path '%1' -DestinationPath '%2' -Force")
-            .arg(QDir::toNativeSeparators(m_cudnnZipPath))
-            .arg(QDir::toNativeSeparators(tempExtractPath))
+        if (success) {
+            finishInstallation(true, tr("Full CUDA + cuDNN installation completed."));
+        }
+        else {
+            finishInstallation(false, tr("Installation sequence failed: ") + msg);
+        }
         });
 
-    unzip.start();
-    unzip.waitForFinished(120000); // 最长等待 2 分钟
-
-    QString targetBase = "C:/Program Files/NVIDIA/CUDNN/v9.x";
-    QDir(targetBase).mkpath(".");
-
-    // 复制 bin、include、lib（实际文件夹名可能为 cudnn-*-archive）
-    QDir extractDir(tempExtractPath);
-    QStringList subDirs = extractDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    if (!subDirs.isEmpty()) {
-        QString sourceRoot = extractDir.absoluteFilePath(subDirs.first());
-        // 复制 bin、include、lib
-        QProcess::execute("xcopy", { sourceRoot + "\\bin", targetBase + "\\bin", "/E", "/I", "/Y" });
-        QProcess::execute("xcopy", { sourceRoot + "\\include", targetBase + "\\include", "/E", "/I", "/Y" });
-        QProcess::execute("xcopy", { sourceRoot + "\\lib", targetBase + "\\lib", "/E", "/I", "/Y" });
+    if (QFile::exists(m_cudaInstallerPath) && !m_detail.hasCudaRuntime) {
+        QStringList cudaArgs = { "/s", "-n", "nvcc_12.6", "cusparse_12.6", "cublas_12.6", "cudart_12.6" };
+        ElevatedProcessTask* cudaTask = new ElevatedProcessTask(m_cudaInstallerPath, cudaArgs, m_taskManager);
+        connect(cudaTask, &ElevatedProcessTask::installProgress, this, [this](const QString& msg) { LOG_INFO(msg); });
+        
+        if (!m_detail.hasCudaRuntime) {
+            m_taskManager->addTask(cudaTask);
+        }
     }
 
-    QFile::remove(m_cudnnZipPath);
-    QDir(tempExtractPath).removeRecursively();
+    if (QFile::exists(m_cudnnZipPath) && !m_detail.hasCudnn) {
+        QString cudnnInstallDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/CUDNN/v9.x";
+        QDir().mkpath(cudnnInstallDir);
+        ExtractTask* cudnnTask = new ExtractTask(m_cudnnZipPath, cudnnInstallDir, m_taskManager);
+        if (!m_detail.hasCudnn) {
+            m_taskManager->addTask(cudnnTask);
+        }
+    }
 
-    finishInstallation(true, tr("CUDA + cuDNN installed successfully"));
+    if (QFile::exists(m_sherpaZipPath)) {
+
+        ExtractOptions opts;
+        opts.destinationDir = QApplication::applicationDirPath();
+        opts.filter = [](const QFileInfo& fi) {
+            return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
+        };
+        ExtractExTask* sherpaTask = new ExtractExTask(m_cudnnZipPath, opts, m_taskManager);
+        m_taskManager->addTask(sherpaTask);
+    }
 }
 
 void CudaInstaller::finishInstallation(bool success, const QString& message)
 {
-    emit installGroupFinished(GROUP_ID, success, success ? QString() : message);
-    emit installFinished(success, message);
+    emit installFinished(success, success ? QString() : message);
 }
 
 
-void CudaInstaller::cancelInstallCuda()
-{
-    m_cudaDownloader->cancel();
-    m_cudnnDownloader->cancel();
-    if (m_installProcess->state() != QProcess::NotRunning)
-        m_installProcess->kill();
-}

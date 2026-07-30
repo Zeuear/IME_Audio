@@ -19,7 +19,7 @@ design/
 *.dll
 *.lib
 *.dylib
-third_party/*
+
 
 # Qt-es
 

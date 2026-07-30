@@ -138,7 +138,7 @@ private:
     void unregisterHotkey() {
         if (globalHotkey) {
             if (globalHotkey->isRegistered()) {
-                LOG_INFO("Unregister global hotkey");
+                LOG_DEBUG("Unregister global hotkey");
                 globalHotkey->setRegistered(false);
             }
             delete globalHotkey;
@@ -152,7 +152,7 @@ private:
 
         globalHotkey = new QHotkey(QKeySequence(shortcutStr), true, this);
         if (globalHotkey->isRegistered()) {
-            LOG_INFO("Register global hotkey");
+            LOG_DEBUG("Register global hotkey");
             connect(globalHotkey, &QHotkey::activated, this, &ShortcutEdit::hotkeyActivated);
         }
     }

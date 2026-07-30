@@ -13,6 +13,11 @@ void Logger::setLogPath(const QString& path) {
 void Logger::log(const QString& level, const QString& message) {
     QMutexLocker locker(&m_mutex); 
 
+    if (level == "INFO") {
+        emit newLogEntry(QString("%1 | %2").arg(level, message));
+        return;
+    }
+
     if (m_logPath.isEmpty()) {
         qDebug() << QString("[%1] %2 | %3").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz"), level, message);
         return;

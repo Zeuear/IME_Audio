@@ -6,17 +6,110 @@
 #include <QDataStream>
 #include <QApplication>
 #include <QDir>
+#include <QThread>
+#include "utils/Logger.h"
 
 
 
-AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *parent) : QObject(parent), m_config(config) {
+SpectrumWorker::SpectrumWorker(int sampleRate):QObject(nullptr), m_sampleRate(sampleRate){
     m_kissFftCfg = kiss_fftr_alloc(kFftSize, 0, nullptr, nullptr);
 }
 
-AudioRecorderService::~AudioRecorderService() { 
+SpectrumWorker::~SpectrumWorker() {
     if (m_kissFftCfg) {
         kiss_fftr_free(static_cast<kiss_fftr_cfg>(m_kissFftCfg));
     }
+};
+
+void SpectrumWorker::processChunk(const QByteArray chunk)
+{
+    const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
+    const int count = chunk.size() / 2;
+
+    for (int i = 0; i < count; ++i) {
+        m_fftInputBuffer.push_back(samples[i] / 32768.0f);
+    }
+
+    if (static_cast<int>(m_fftInputBuffer.size()) < kFftSize) {
+        return;
+    }
+
+    std::vector<float> window(m_fftInputBuffer.end() - kFftSize, m_fftInputBuffer.end());
+    m_fftInputBuffer.clear();
+
+    for (int i = 0; i < kFftSize; ++i) {
+        float w = 0.5f - 0.5f * std::cos(2.0f * M_PI * i / (kFftSize - 1));
+        window[i] *= w;
+    }
+
+    std::vector<kiss_fft_cpx> fftOut(kFftSize / 2 + 1);
+    kiss_fftr(static_cast<kiss_fftr_cfg>(m_kissFftCfg), window.data(), fftOut.data());
+
+    std::vector<float> magnitudes(kFftSize / 2 + 1);
+    for (size_t i = 0; i < magnitudes.size(); ++i) {
+        magnitudes[i] = std::sqrt(fftOut[i].r * fftOut[i].r + fftOut[i].i * fftOut[i].i);
+    }
+
+    const double sampleRate = m_sampleRate;
+    const double binHz = sampleRate / kFftSize;
+
+    const double voiceMinHz = 80.0;
+    const double voiceMaxHz = 1000.0;
+
+    int minBin = qMax(1, static_cast<int>(voiceMinHz / binHz));
+    int maxBin = qMin(static_cast<int>(magnitudes.size()) - 1,
+        static_cast<int>(voiceMaxHz / binHz));
+    if (maxBin <= minBin) maxBin = minBin + 1;
+
+    QVector<float> bands(kBandCount, 0.0f);
+    double logMin = std::log10(static_cast<double>(minBin));
+    double logMax = std::log10(static_cast<double>(maxBin));
+
+    for (int b = 0; b < kBandCount; ++b) {
+        double lowLog = logMin + (logMax - logMin) * (static_cast<double>(b) / kBandCount);
+        double highLog = logMin + (logMax - logMin) * (static_cast<double>(b + 1) / kBandCount);
+
+        int lowBin = static_cast<int>(std::pow(10.0, lowLog));
+        int highBin = static_cast<int>(std::pow(10.0, highLog));
+        highBin = qMax(highBin, lowBin + 1);
+        highBin = qMin(highBin, maxBin);
+        lowBin = qMin(lowBin, highBin - 1);
+
+        float peak = 0.0f;
+        for (int i = lowBin; i < highBin && i < static_cast<int>(magnitudes.size()); ++i) {
+            peak = qMax(peak, magnitudes[i]);
+        }
+        bands[b] = peak;
+    }
+
+    for (int b = 0; b < kBandCount; ++b) {
+        float mag = bands[b];
+        float db = 20.0f * std::log10(mag + 1.0f);
+
+        const float dbMin = 0.0f;
+        const float dbMax = 45.0f;
+
+        float normalized = (db - dbMin) / (dbMax - dbMin);
+        bands[b] = qBound(0.0f, normalized, 1.0f);
+    }
+
+    QVector<float> result(bands.begin(), bands.end());
+    emit spectrumReady(bands);
+}
+
+
+AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *parent) : QObject(parent), m_config(config) {
+    m_spectrumThread = new QThread(this); 
+    m_spectrumWorker = new SpectrumWorker(m_config.audio.sampleRate); 
+    m_spectrumWorker->moveToThread(m_spectrumThread); 
+    connect(m_spectrumThread, &QThread::finished, m_spectrumWorker, &QObject::deleteLater); 
+    connect(m_spectrumWorker, &SpectrumWorker::spectrumReady, this, &AudioRecorderService::spectrumUpdated); 
+    m_spectrumThread->start();
+}
+
+AudioRecorderService::~AudioRecorderService() {
+    m_spectrumThread->quit();
+    m_spectrumThread->wait();
 }
 
 QStringList AudioRecorderService::availableMicrophones() {
@@ -48,19 +141,20 @@ bool AudioRecorderService::startListening() {
     }
 
     if (!device.isFormatSupported(format)) {
-        qWarning() << "Default format not supported, trying to use the nearest.";
+        LOG_DEBUG("Default format not supported, trying to use the nearest.");
         format = device.preferredFormat();
     }
 
     m_audioSource = new QAudioSource(device, format, this);
+    m_audioSource->setBufferSize(bytesPerMs() * 200);
     m_audioDevice = m_audioSource->start();
     if (!m_audioDevice) return false;
 
 
     auto _format = m_audioSource->format();
-    qDebug() << "Sample Rate: " << _format.sampleRate();
-    qDebug() << "Channels: " << _format.channelCount();
-    qDebug() << "Sample Format: " << _format.sampleFormat();
+    LOG_DEBUG(QString("Sample Rate: %1").arg(_format.sampleRate()));
+    LOG_DEBUG(QString("Channels: %1").arg(_format.channelCount()));
+    LOG_DEBUG(QString("Sample Format: %1").arg(static_cast<int>(_format.sampleFormat())));
 
     connect(m_audioDevice, &QIODevice::readyRead, this, &AudioRecorderService::onAudioDataReady);
 
@@ -85,23 +179,23 @@ void AudioRecorderService::stopListening() {
         finalizeSegmentIfNeeded(true);
     }
 
-    if (!m_fullSessionBuffer.isEmpty()) {
-        QString path = QApplication::applicationDirPath() + "/tmp";
+    //if (!m_fullSessionBuffer.isEmpty()) {
+    //    QString path = QApplication::applicationDirPath() + "/tmp";
 
-        QDir dir(path);
-        dir.mkdir(".");
+    //    QDir dir(path);
+    //    dir.mkdir(".");
 
-        QString wavPath = path + "/debug_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".wav";
-        if (writeWavFile(wavPath, m_fullSessionBuffer,
-            m_config.audio.sampleRate,
-            m_config.audio.channels,
-            m_config.audio.bitsPerSample)) {
-            qDebug() << "[debug] wav saved to" << path;
-        }
-        else {
-            qDebug() << "[debug] wav save failed:" << path;
-        }
-    }
+    //    QString wavPath = path + "/debug_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".wav";
+    //    if (writeWavFile(wavPath, m_fullSessionBuffer,
+    //        m_config.audio.sampleRate,
+    //        m_config.audio.channels,
+    //        m_config.audio.bitsPerSample)) {
+    //        qDebug() << "[debug] wav saved to" << path;
+    //    }
+    //    else {
+    //        qDebug() << "[debug] wav save failed:" << path;
+    //    }
+    //}
 
     m_audioSource->stop();
     m_audioSource->deleteLater();
@@ -135,7 +229,7 @@ void AudioRecorderService::onAudioDataReady() {
     QByteArray chunk = m_audioDevice->readAll();
     if (chunk.isEmpty()) return;
 
-    m_fullSessionBuffer.append(chunk);
+    //m_fullSessionBuffer.append(chunk);
     updateVadState(chunk);
     //qDebug() << "RMS Level: " << m_status.rmsLevel;
     emit levelUpdated(m_status.rmsLevel);
@@ -229,82 +323,9 @@ bool AudioRecorderService::isListening() const { return m_status.isListening; }
 bool AudioRecorderService::isPaused() const { return m_status.isPaused; }
 AudioRecorderService::RuntimeStatus AudioRecorderService::runtimeStatus() const { return m_status; }
 
-
-
-void AudioRecorderService::updateSpectrum(const QByteArray& chunk)
-{
-    const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
-    const int count = chunk.size() / 2;
-
-    for (int i = 0; i < count; ++i) {
-        m_fftInputBuffer.push_back(samples[i] / 32768.0f);
-    }
-
-    if (static_cast<int>(m_fftInputBuffer.size()) < kFftSize) {
-        return;
-    }
-
-    std::vector<float> window(m_fftInputBuffer.end() - kFftSize, m_fftInputBuffer.end());
-    m_fftInputBuffer.clear();
-
-    for (int i = 0; i < kFftSize; ++i) {
-        float w = 0.5f - 0.5f * std::cos(2.0f * M_PI * i / (kFftSize - 1));
-        window[i] *= w;
-    }
-
-    std::vector<kiss_fft_cpx> fftOut(kFftSize / 2 + 1);
-    kiss_fftr(static_cast<kiss_fftr_cfg>(m_kissFftCfg), window.data(), fftOut.data());
-
-    std::vector<float> magnitudes(kFftSize / 2 + 1);
-    for (size_t i = 0; i < magnitudes.size(); ++i) {
-        magnitudes[i] = std::sqrt(fftOut[i].r * fftOut[i].r + fftOut[i].i * fftOut[i].i);
-    }
-
-    const double sampleRate = m_config.audio.sampleRate; 
-    const double binHz = sampleRate / kFftSize;         
-
-    const double voiceMinHz = 80.0;   
-    const double voiceMaxHz = 1000.0; 
-
-    int minBin = qMax(1, static_cast<int>(voiceMinHz / binHz));      
-    int maxBin = qMin(static_cast<int>(magnitudes.size()) - 1,
-        static_cast<int>(voiceMaxHz / binHz));
-    if (maxBin <= minBin) maxBin = minBin + 1; 
-
-    QVector<float> bands(kBandCount, 0.0f);
-    double logMin = std::log10(static_cast<double>(minBin));
-    double logMax = std::log10(static_cast<double>(maxBin));
-
-    for (int b = 0; b < kBandCount; ++b) {
-        double lowLog = logMin + (logMax - logMin) * (static_cast<double>(b) / kBandCount);
-        double highLog = logMin + (logMax - logMin) * (static_cast<double>(b + 1) / kBandCount);
-
-        int lowBin = static_cast<int>(std::pow(10.0, lowLog));
-        int highBin = static_cast<int>(std::pow(10.0, highLog));
-        highBin = qMax(highBin, lowBin + 1);
-        highBin = qMin(highBin, maxBin);
-        lowBin = qMin(lowBin, highBin - 1);
-
-        float peak = 0.0f; 
-        for (int i = lowBin; i < highBin && i < static_cast<int>(magnitudes.size()); ++i) {
-            peak = qMax(peak, magnitudes[i]);
-        }
-        bands[b] = peak;
-    }
-
-    for (int b = 0; b < kBandCount; ++b) {
-        float mag = bands[b];
-        float db = 20.0f * std::log10(mag + 1.0f);
-
-        const float dbMin = 0.0f;
-        const float dbMax = 45.0f;
-
-        float normalized = (db - dbMin) / (dbMax - dbMin);
-        bands[b] = qBound(0.0f, normalized, 1.0f);
-    }
-
-    QVector<float> result(bands.begin(), bands.end());
-    emit spectrumUpdated(bands);
+void AudioRecorderService::updateSpectrum(const QByteArray& chunk) {
+    QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
+        Q_ARG(QByteArray, chunk));
 }
 
 bool AudioRecorderService::writeWavFile(const QString& filePath, const QByteArray& pcmData,

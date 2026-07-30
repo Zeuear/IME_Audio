@@ -183,9 +183,6 @@ void DownloadListWidget::setSherpaInstaller(SherpaInstaller* installer)
 
 void DownloadListWidget::setCudaInstaller(CudaInstaller* installer)
 {
-    if (m_cudaInstaller) {
-        // 断开旧连接（可选）
-    }
     m_cudaInstaller = installer;
 
     connect(m_cudaInstaller, &CudaInstaller::installGroupStarted, this, &DownloadListWidget::onInstallGroupStarted);
@@ -210,6 +207,7 @@ void DownloadListWidget::onInstallGroupStarted(const QString& repoId, const QStr
 {
     ensureCard(repoId, displayName, totalFiles);
 }
+
 
 void DownloadListWidget::onInstallFileProgress(const QString& repoId, const QString& filename, qint64 recv, qint64 total, int overallPercent)
 {

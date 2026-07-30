@@ -43,6 +43,7 @@ void ConfigManager::applyDefaults() {
     m_config.sherpa.threads = 4;
     m_config.sherpa.useGpu = false;
 
+    m_config.gemini.enableGemini = false;
     m_config.gemini.aiEngineIndex = 0;
     m_config.gemini.geminiStyle = "智慧预设";
     m_config.gemini.targetLang = "不翻译";
@@ -82,6 +83,7 @@ bool ConfigManager::load() {
     s.endGroup();
 
     s.beginGroup("gemini");
+    m_config.gemini.enableGemini = s.value("enableGemini").toBool();
     m_config.gemini.apiKey = s.value("apiKey").toString();
     m_config.gemini.apiUrl = s.value("apiUrl").toString();
     m_config.gemini.projectId = s.value("projectId").toString();
@@ -132,6 +134,7 @@ bool ConfigManager::save() {
     s.endGroup();
 
     s.beginGroup("gemini");
+    s.setValue("enableGemini", m_config.gemini.enableGemini);
     s.setValue("apiKey", m_config.gemini.apiKey);
     s.setValue("apiUrl", m_config.gemini.apiUrl);
     s.setValue("projectId", m_config.gemini.projectId);
