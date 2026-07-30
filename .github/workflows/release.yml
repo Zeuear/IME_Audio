@@ -37,7 +37,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.x'
-          host: ${{ matrix.platform }}
+          host: ${{ matrix.platform == 'macos' && 'mac' || matrix.platform }}
           target: 'desktop'
           arch: ${{ matrix.platform == 'macos' && 'clang_64' || '' }}
 
@@ -78,7 +78,7 @@ jobs:
         run: |
           windeployqt --release --compiler-runtime build/Release/VoiceIME.exe
           iscc installer.iss
-          mv build/Installer/VoiceIME_Windows_x64.exe .
+          mv dist/Installer/VoiceIME_Windows_x64.exe .
 
 
       # ---- MACOS 打包 ----
