@@ -21,13 +21,13 @@ jobs:
         include:
           - os: windows-latest  
             platform: windows
-            asset_name: VoiceIME_Windows_x64.exe 
+            asset_name: ImeAudio_Windows_x64.exe 
           - os: ubuntu-24.04
             platform: linux
-            asset_name: VoiceIME-x86_64.AppImage
+            asset_name: ImeAudio-x86_64.AppImage
           - os: macos-latest
             platform: macos
-            asset_name: VoiceIME_macOS.dmg
+            asset_name: ImeAudio_macOS.dmg
 
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
       - name: Setup Qt6
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.x'
+          version: '6.11.*'
           host: ${{ matrix.platform == 'macos' && 'mac' || matrix.platform }}
           target: 'desktop'
           arch: ${{ matrix.platform == 'macos' && 'clang_64' || '' }}
@@ -76,9 +76,9 @@ jobs:
       - name: Deploy & Package (Windows)
         if: matrix.platform == 'windows'
         run: |
-          windeployqt --release --compiler-runtime build/Release/VoiceIME.exe
+          windeployqt --release --compiler-runtime build/Release/ImeAudio.exe
           iscc installer.iss
-          mv dist/Installer/VoiceIME_Windows_x64.exe .
+          mv dist/Installer/ImeAudio_Setup.exe ./ImeAudio_Windows_x64.exe
 
 
       # ---- MACOS 打包 ----
@@ -86,9 +86,9 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           # 1. 运行 macdeployqt 并直接生成 .dmg 镜像
-          macdeployqt build/VoiceIME.app -dmg
+          macdeployqt build/ImeAudio.app -dmg
           # 2. 重命名输出文件
-          mv build/VoiceIME.dmg ./VoiceIME_macOS.dmg
+          mv build/ImeAudio.dmg ./ImeAudio_macOS.dmg
 
       # ---- LINUX 打包 ----
       - name: Deploy & Package (Linux)
@@ -104,17 +104,17 @@ jobs:
           mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
           
           # 3. 复制可执行文件、.desktop 文件和图标 (请根据你项目实际路径修改)
-          cp build/VoiceIME appdir/usr/bin/
-          cp deployment/linux/VoiceIME.desktop appdir/usr/share/applications/
-          cp deployment/linux/VoiceIME.png appdir/usr/share/icons/hicolor/256x256/apps/
+          cp build/ImeAudio appdir/usr/bin/
+          cp deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
+          cp deployment/linux/ImeAudio.png appdir/usr/share/icons/hicolor/256x256/apps/
           
           # 4. 运行打包，排除免检库，直接输出 AppImage
           export VERSION=${{ github.ref_name }}
-          ./linuxdeployqt-continuous-x86_64.AppImage appdir/usr/share/applications/VoiceIME.desktop -appimage -unsupported-allow-new-glibc
+          ./linuxdeployqt-continuous-x86_64.AppImage appdir/usr/share/applications/ImeAudio.desktop -appimage -unsupported-allow-new-glibc
 
           # 5. 重命名输出文件
-          APPIMAGE_FILE=$(find . -maxdepth 1 -name "VoiceIME*.AppImage" | head -n 1)
-          mv "$APPIMAGE_FILE" VoiceIME-x86_64.AppImage
+          APPIMAGE_FILE=$(find . -maxdepth 1 -name "ImeAudio*.AppImage" | head -n 1)
+          mv "$APPIMAGE_FILE" ImeAudio-x86_64.AppImage
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
