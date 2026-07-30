@@ -35,7 +35,7 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
 
     QTimer stallTimer;
     stallTimer.setSingleShot(true);
-    const int stallTimeoutMs = options.stallTimeoutMs > 0 ? options.stallTimeoutMs : 30000;
+    const int stallTimeoutMs = options.stallTimeoutMs > 0 ? options.stallTimeoutMs : 90000;
 
     auto resetStallTimer = [&]() {
         stallTimer.start(stallTimeoutMs);
@@ -80,6 +80,7 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
     if (!tarProcess.waitForStarted(5000)) {
         LOG_WARN("Failed to start tar process.");
         QDir(tempExtractDir).removeRecursively();
+        QDir(options.destinationDir).removeRecursively();
         return false;
     }
 
@@ -89,6 +90,7 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
     if (timedOutByStall) {
         LOG_WARN("Extraction aborted: process stalled with no output.");
         QDir(tempExtractDir).removeRecursively();
+        QDir(options.destinationDir).removeRecursively();
         return false;
     }
 
@@ -96,6 +98,7 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
         LOG_WARN(QString("Extraction failed. exitCode:%1 stderr: %2")
             .arg(tarProcess.exitCode()).arg(tarProcess.readAllStandardError()));
         QDir(tempExtractDir).removeRecursively();
+        QDir(options.destinationDir).removeRecursively();
         return false;
     }
 
@@ -177,7 +180,7 @@ bool ExtractTool::extractAll(const QString& archivePath,
 
     QTimer stallTimer;
     stallTimer.setSingleShot(true);
-    const int effectiveStallTimeout = stallTimeoutMs > 0 ? stallTimeoutMs : 30000;
+    const int effectiveStallTimeout = stallTimeoutMs > 0 ? stallTimeoutMs : 900000;
 
     auto resetStallTimer = [&]() {
         stallTimer.start(effectiveStallTimeout);
@@ -231,6 +234,7 @@ bool ExtractTool::extractAll(const QString& archivePath,
     if (timedOutByStall) {
         LOG_WARN("Extraction aborted: process stalled with no output.");
         QDir(tempExtractDir).removeRecursively();
+        QDir(destinationDir).removeRecursively();
         return false;
     }
 
@@ -238,6 +242,7 @@ bool ExtractTool::extractAll(const QString& archivePath,
         LOG_WARN(QString("Extraction failed. exitCode:%1 stderr: %2")
             .arg(tarProcess.exitCode()).arg(QString::fromUtf8(tarProcess.readAllStandardError())));
         QDir(tempExtractDir).removeRecursively();
+        QDir(destinationDir).removeRecursively();
         return false;
     }
 
@@ -248,12 +253,13 @@ bool ExtractTool::extractAll(const QString& archivePath,
     if (topEntries.size() == 1 && topEntries.first().isDir()) {
         sourceRoot = topEntries.first().absoluteFilePath();
         LOG_DEBUG(QString("Detected single wrapper directory '%1', stripping this level.")
-            .arg(topEntries.first().fileName()));
+                .arg(topEntries.first().fileName()));
     }
 
     if (!QDir().mkpath(destinationDir)) {
         LOG_WARN("Failed to create destination dir: " + destinationDir);
         QDir(tempExtractDir).removeRecursively();
+        QDir(destinationDir).removeRecursively();
         return false;
     }
 
@@ -297,6 +303,9 @@ bool ExtractTool::extractAll(const QString& archivePath,
 
     LOG_DEBUG(QString("Extraction complete: %1 -> %2, success=%3")
         .arg(archivePath, destinationDir, success ? "true" : "false"));
+    if (!success) {
+        QDir(destinationDir).removeRecursively();
+    }
 
     return success;
 }

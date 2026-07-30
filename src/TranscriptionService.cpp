@@ -31,16 +31,6 @@ TranscriptionService::TranscriptionService(
                 emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
             });
 
-    connect(m_geminiClient, &GeminiClient::connectionTested, this,
-        [this](bool success, const QString& message) {
-            if (success) {
-                QMessageBox::information(nullptr, "Info", message);
-            }
-            else {
-                QMessageBox::warning(nullptr, "Error", message);
-            }
-        });
-
     connect(m_sherpaManager, &SherpaManager::utteranceTranscribed, this,
             [this](bool ok, const QString &text, const QString &err) {
                 if (m_config.gemini.enableGemini) {
@@ -205,12 +195,12 @@ QString TranscriptionService::applySimpleSherpaPunctuation(const QString& text) 
         return QString();
     }
     if (m_config.backend != AsrBackendKind::Sherpa) {
-        return QString();
+        return text;
     }
 
     QString finalText = text.trimmed();
     if (finalText.isEmpty() || textEndsWithSentencePunctuation(text)) {
-        return QString();
+        return text;
     }
 
     QString suffix = pickAutoPunctuationSuffix(text);

@@ -8,6 +8,7 @@
 #include <QCoreApplication>
 #include <QUrl>
 #include <QUrlQuery>
+#include "utils/Logger.h"
 
 GeminiClient::GeminiClient(QNetworkAccessManager* networkManager, QObject* parent)
     : QObject(parent), m_manager(networkManager) {
@@ -228,8 +229,8 @@ QString GeminiClient::buildEndpoint(const RequestParams& params, bool) const {
         ? QStringLiteral("https://generativelanguage.googleapis.com/v1beta/models/")
         : params.customUrl;
 
-    QString model = params.model.isEmpty() ? QStringLiteral("gemini-1.5-flash") : params.model;
-    return QStringLiteral("%1%2:generateContent?key=%3").arg(base, model, params.apiKey);
+    QString model = params.model.isEmpty() ? QStringLiteral("gemini-1.5-flash") : QStringLiteral("gemini-1.5-flash");
+    return QString("%1%2:generateContent").arg(base, model);
 }
 
 QByteArray GeminiClient::buildAudioRequestBody(const QByteArray& audioBase64, const RequestParams& params) const {
@@ -418,6 +419,7 @@ void GeminiClient::polishText(const QString& inputText, const RequestParams& par
 
 void GeminiClient::testConnection(const RequestParams& params) {
     QNetworkRequest req(QUrl(buildEndpoint(params, true)));
+    req.setRawHeader("x-goog-api-key", params.apiKey.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     if (params.apiKey.isEmpty()) {
@@ -426,18 +428,30 @@ void GeminiClient::testConnection(const RequestParams& params) {
     }
 
     QJsonObject textPart{ {"text", "ping"} };
-    QJsonObject content{ {"role", "user"}, {"parts", QJsonArray{textPart}} };
-    QJsonObject root{ {"contents", QJsonArray{content}} };
+    QJsonArray partsArray{ textPart };
+    QJsonObject content{ {"parts", partsArray} };
+    QJsonArray contentsArray{ content };
+    QJsonObject root{ {"contents", contentsArray} };
 
-    QNetworkReply* reply = m_manager->post(req, QJsonDocument(root).toJson(QJsonDocument::Compact));
+    QByteArray postData = QJsonDocument(root).toJson(QJsonDocument::Compact);
+    
+    QNetworkReply* reply = m_manager->post(req, postData);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit connectionTested(false, reply->errorString());
+            QString errorString = reply->errorString();
+            LOG_DEBUG(errorString);
+            emit connectionTested(false, errorString);
             return;
         }
         QString error;
         extractTextFromResponse(reply->readAll(), &error);
-        emit connectionTested(error.isEmpty(), error.isEmpty() ? QStringLiteral("连接成功") : error);
+
+        if (!error.isEmpty()) {
+            emit connectionTested(false, QStringLiteral("连接失败"));
+        }
+        else {
+            emit connectionTested(true, QStringLiteral("连接成功"));
+        }
     });
 }

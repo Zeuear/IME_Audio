@@ -271,12 +271,15 @@ SherpaInstaller::SherpaInstaller(QNetworkAccessManager* nam, QObject* parent) : 
     connect(this, &SherpaInstaller::installationProgress, this, [this](const QString& msg) {  LOG_DEBUG(msg); });
     connect(this, &SherpaInstaller::installationFinished, this, [this](bool ok, const QString& msg) { ok ? LOG_DEBUG(msg) : LOG_WARN(msg); });
     connect(this, &SherpaInstaller::installFileError, this, [this](const QString&, const QString&, const QString& error) { LOG_WARN(error); });
-    connect(this, &SherpaInstaller::installGroupFinished, this, [this](const QString&, bool success, const QString& msg) { 
+    connect(this, &SherpaInstaller::installGroupFinished, this, [this](const QString&repoId, bool success, const QString& msg) { 
         if (success) {
             LOG_DEBUG(msg);
             LOG_INFO("下载并配置完成");
         }
         else {
+            QString repoName = repoId.split("/").last();
+            QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
+            QDir(modelPath).removeRecursively();
             LOG_ERROR(msg);
         }
     });

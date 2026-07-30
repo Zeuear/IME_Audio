@@ -57,7 +57,8 @@ struct FireRedAsrFiles {
 };
 
 struct SenseVoiceFiles {
-    QString modelFile = "model.onnx";
+    QString modelFile = "model.int8.onnx";
+    QString tokenFile = "tokens.txt";
     QString language = "auto";
     bool useItn = true;
 };
@@ -91,7 +92,9 @@ struct Qwen3AsrFiles {
     QString archiveFileName;                    // 下载到本地的文件名,如 "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2"
     QString extractedDirName;                   // 解压后归档内的目录名,用于识别、之后移动内容到目标目录
     QString encoderFile = "encoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
-    QString tokensFile = "tokens.txt";
+    QString decoderFile = "decoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
+    QString convFile = "conv_frontend.onnx";  // 用于判断"是否已安装"的探测文件
+    QString tokenizer = "tokenizer";
     QString hotwords;
 };
 
@@ -210,6 +213,7 @@ public:
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildSenseVoice(
         const QString& repoId,
         const QString& modelFile,
+        const QString& tokensFile,
         const QString& language,
         bool useItn,
         int numThreads);
@@ -244,8 +248,6 @@ public:
         const QString& repoId,
         const Qwen3AsrFiles& files,
         int numThreads);
-
-    static void installQwen3Asr(const QString& repoId, const ModelDescriptor& desc);
 
 };
 

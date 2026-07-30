@@ -1,5 +1,5 @@
 #include "MainWin.h"
-#include "ui_mainwin.h"
+#include "ui_MainWin.h"
 
 #include <QActionGroup>
 #include <QClipboard>
@@ -262,6 +262,16 @@ void MainWin::connection(){
 
     connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);
     connect(ui->setting_cancel_btn, &QPushButton::clicked, this, &MainWin::onLoadConfig);
+
+    connect(m_geminiClient, &GeminiClient::connectionTested, this,
+        [this](bool success, const QString& message) {
+            if (!success) {
+                LOG_ERROR("Gemini连接失败!");
+            }
+            else {
+                LOG_INFO("Gemini连接成功!");
+            }
+        });
 
 }
 

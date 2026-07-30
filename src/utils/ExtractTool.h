@@ -40,7 +40,7 @@ public:
                            const QString& destinationDir,
                            bool removeArchiveAfterExtract = true,
                            const std::function<void(const QString&)>& onProgressLine = nullptr,
-                           int stallTimeoutMs = 30000);
+                           int stallTimeoutMs = 90000);
 };
 
 

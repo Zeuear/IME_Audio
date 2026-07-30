@@ -47,16 +47,43 @@ set(SHERPA_ONNX_VERSION "1.13.4")
 # 避免每次 configure 都重新检查/下载,同时避免和"用户自己手动放置的目录"混淆
 set(SHERPA_ONNX_STAMP_FILE "${SHERPA_ONNX_ROOT}/.sherpa_onnx_version_${SHERPA_ONNX_VERSION}")
 
+
+if(WIN32)
+    set(_sherpa_platform_dir "windows")
+    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-win-x64-shared-MD-Release-no-tts-lib.tar.bz2")
+
+elseif(APPLE)
+    set(_sherpa_platform_dir "macos")
+    # 自动识别 macOS 是 Apple Silicon (arm64) 还是 Intel (x86_64)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-arm64-static-no-tts-lib.tar.bz2")
+    else()
+        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-x86_64-static-no-tts-lib.tar.bz2")
+    endif()
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(_sherpa_platform_dir "linux")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
+        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-linux-x64-static-no-tts-lib.tar.bz2")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-linux-arm64-static-no-tts-lib.tar.bz2")
+    else()
+        message(FATAL_ERROR "Unsupported Linux architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+
+else()
+    message(FATAL_ERROR "Unsupported platform for auto-downloading sherpa-onnx")
+endif()
+
+
 if(WIN32 AND NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
     message(STATUS "======================================")
     message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} not found or version mismatch, downloading...")
     message(STATUS "======================================")
 
-    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-win-x64-shared-MD-Release-no-tts-lib.tar.bz2")
     set(_sherpa_url "https://github.com/k2-fsa/sherpa-onnx/releases/download/v${SHERPA_ONNX_VERSION}/${_sherpa_archive_name}")
     set(_sherpa_archive_path "${CMAKE_BINARY_DIR}/_downloads/${_sherpa_archive_name}")
     set(_sherpa_extract_dir "${CMAKE_BINARY_DIR}/_downloads/sherpa-onnx-extracted")
-
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_downloads")
 
     # 如果之前下载过但没下完整(比如网络中断),重新下载
@@ -99,21 +126,35 @@ if(WIN32 AND NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
         set(_sherpa_inner_root "${_sherpa_extract_dir}")
     endif()
 
+
+    if(WIN32)
+        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.dll" "${_sherpa_inner_root}/lib/*.lib")
+    elseif(APPLE)
+        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.a" "${_sherpa_inner_root}/lib/*.dylib")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.a" "${_sherpa_inner_root}/lib/*.so*")
+    else()
+        message(FATAL_ERROR "Unsupported platform for auto-downloading sherpa-onnx")
+    endif()
+
+
     if(NOT EXISTS "${_sherpa_inner_root}/lib")
         message(FATAL_ERROR "Unexpected sherpa-onnx archive structure, expected lib/ under ${_sherpa_inner_root}")
     endif()
 
-    file(REMOVE_RECURSE "${SHERPA_ONNX_ROOT}/lib/windows")
-    file(MAKE_DIRECTORY "${SHERPA_ONNX_ROOT}/lib/windows")
-
-    file(GLOB _sherpa_dlls_libs "${_sherpa_inner_root}/lib/*.dll" "${_sherpa_inner_root}/lib/*.lib")
-    if(NOT _sherpa_dlls_libs)
-        message(FATAL_ERROR "No dll/lib files found under ${_sherpa_inner_root}/lib")
+    file(REMOVE_RECURSE "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
+    file(MAKE_DIRECTORY "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
+    
+    file(GLOB_RECURSE _sherpa_libs CONFIGURE_DEPENDS ${_sherpa_match_patterns})
+    if(NOT _sherpa_libs)
+        message(FATAL_ERROR "No library files found under ${_sherpa_inner_root} matching current platform patterns")
     endif()
-    file(COPY ${_sherpa_dlls_libs} DESTINATION "${SHERPA_ONNX_ROOT}/lib/windows")
 
+    # 拷贝到目标平台的文件夹中
+    file(COPY ${_sherpa_libs} DESTINATION "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
+    
     file(WRITE "${SHERPA_ONNX_STAMP_FILE}" "sherpa-onnx v${SHERPA_ONNX_VERSION} downloaded and prepared.\n")
-    message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} ready at ${SHERPA_ONNX_ROOT}")
+    message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} ready at ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
 else()
     if(WIN32)
         message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} already present, skip downloading.")
@@ -121,15 +162,43 @@ else()
 endif()
 
 
-set(SHERPA_CXX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-cxx-api.dll")
-set(SHERPA_C_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-c-api.dll")
-set(ONNX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/onnxruntime.dll")
+if(WIN32)
+    set(_sherpa_runtime_libs
+        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/sherpa-onnx-cxx-api.dll"
+        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/sherpa-onnx-c-api.dll"
+        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/onnxruntime.dll"
+    )
+elseif(APPLE)
+    file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.dylib")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.so*")
+endif()
 
-add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNX_DLL_PATH}"   "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-)
+if(_sherpa_runtime_libs)
+    set(_copy_commands "")
+    foreach(_lib_path IN LISTS _sherpa_runtime_libs)
+        if(EXISTS "${_lib_path}")
+            list(APPEND _copy_commands COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_lib_path}" "$<TARGET_FILE_DIR:${TARGET_NAME}>")
+        endif()
+    endforeach()
+
+    if(_copy_commands)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMENT "Copying sherpa-onnx runtime libraries to output directory..."
+            ${_copy_commands}
+        )
+    endif()
+endif()
+
+# set(SHERPA_CXX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-cxx-api.dll")
+# set(SHERPA_C_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-c-api.dll")
+# set(ONNX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/onnxruntime.dll")
+# 
+# add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNX_DLL_PATH}"   "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+# )
 
 
 # ============================================================

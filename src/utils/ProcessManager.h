@@ -115,7 +115,7 @@ private slots:
             }
             else {
                 errMsg = QString("ShellExecuteEx failed with error %1").arg(err);
-                LOG_ERROR(errMsg);
+                LOG_WARN(errMsg);
                 emit taskFinished(TaskResult::Failed, errMsg);
             }
             emit elevatedFinished();

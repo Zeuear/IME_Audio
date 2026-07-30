@@ -77,12 +77,13 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildParaformer(
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildSenseVoice(
     const QString& repoId,
     const QString& modelFile,
+    const QString& tokensFile,
     const QString& language,
     bool useItn,
     int numThreads)
 {
     sherpa_onnx::cxx::OfflineRecognizerConfig config;
-    config.model_config.tokens = getModelPath(repoId, "", "tokens.txt").toStdString();
+    config.model_config.tokens = getModelPath(repoId, "", tokensFile).toStdString();
     config.model_config.sense_voice.model = getModelPath(repoId, "", modelFile).toStdString();
     config.model_config.sense_voice.language = language.toStdString();
     config.model_config.sense_voice.use_itn = useItn;
@@ -346,13 +347,15 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildQwen3Asr(
     const Qwen3AsrFiles& files,
     int numThreads)
 {
-    QString modelDir = getSherpaModel() + "/qwen3-asr";
+    QString folderName = repoId.split("/")[1];
+    QString modelDir = getSherpaModel() + "/" + folderName;
 
     sherpa_onnx::cxx::OfflineRecognizerConfig config;
-    config.model_config.tokens = QDir(modelDir).filePath(files.tokensFile).toStdString();
-
-    // 同样需要你核实 sherpa-onnx 里 Qwen3-ASR 模型对应的具体 config 子字段名称
+    config.model_config.qwen3_asr.tokenizer = QDir(modelDir).filePath(files.tokenizer).toStdString();
     config.model_config.qwen3_asr.encoder = QDir(modelDir).filePath(files.encoderFile).toStdString();
+    config.model_config.qwen3_asr.decoder = QDir(modelDir).filePath(files.decoderFile).toStdString();
+    config.model_config.qwen3_asr.conv_frontend = QDir(modelDir).filePath(files.convFile).toStdString();
+    config.model_config.qwen3_asr.hotwords = files.hotwords.toStdString();
 
     config.model_config.num_threads = numThreads;
     return config;
@@ -436,9 +439,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
         {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en",
             {ModelArch::ParaformerStreaming}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.int8.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
     };
     return table;
 }
@@ -491,9 +494,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
         {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en",
             {ModelArch::ParaformerStreaming}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.int8.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
     };
     return table;
 }
@@ -501,12 +504,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
 
 const std::vector<std::pair<QString, ModelDescriptor>>& FunasrNano31LangModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
-        {"LukeJacob2023/sherpa-onnx-funasr-mult-nano-2512",
-            {ModelArch::FunasrNano}},
         {"csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17",
-            {ModelArch::FunasrNano}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-funasr-nano-2025-12-17",
-            {ModelArch::FunasrNano}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30",
             {ModelArch::FunasrNano}},
     };
@@ -622,9 +623,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseCantoneseEnglishM
 const std::vector<std::pair<QString, ModelDescriptor>>& ChineseCantoneseEnglishJapaneseKoreanModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.int8.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
     };
     return table;
 }
@@ -660,9 +661,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& JapaneseModels() {
             }
         }},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.int8.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
     };
     return table;
 }
@@ -682,9 +683,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& KoreanModels() {
         {"k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16",
             {ModelArch::TransducerOnline}},
          {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
-            {ModelArch::SenseVoice, SenseVoiceFiles{.modelFile = "model.int8.onnx", .language = "auto", .useItn = true}}},
+            {ModelArch::SenseVoice}},
     };
     return table;
 }
@@ -972,7 +973,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         return result;
     }
     if (desc->arch == ModelArch::Unsupported) {
-        //LOG_ERROR(tr("This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1").arg(repoId));
+        LOG_WARN(tr("This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1").arg(repoId));
         return result;
     }
 
@@ -1017,7 +1018,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }
     case ModelArch::SenseVoice: {
         auto files = std::get<SenseVoiceFiles>(desc->files);
-        configVar = ModelConfigFactory::buildSenseVoice(repoId, files.modelFile, files.language, files.useItn, numThreads);
+        configVar = ModelConfigFactory::buildSenseVoice(repoId, files.modelFile, files.tokenFile, files.language, files.useItn, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
@@ -1101,9 +1102,10 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     case ModelArch::Qwen3Asr: {
         auto files = std::get<Qwen3AsrFiles>(desc->files);
 
-        QString modelDir = ModelConfigFactory::getSherpaModel() + "/qwen3-asr";
-        if (!QFile::exists(modelDir + "/" + files.encoderFile)) {
-            LOG_ERROR(tr("Qwen3-ASR model files not found, please install the model first: %1").arg(repoId));
+        QString folderName = repoId.split("/")[1];
+        QString modelDir = ModelConfigFactory::getSherpaModel() + "/" + folderName;
+        if (!QFile::exists(modelDir)) {
+            LOG_WARN(tr("Qwen3-ASR model files not found, please install the model first: %1").arg(repoId));
             return result; 
         }
 
@@ -1239,7 +1241,7 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
 
     case ModelArch::SenseVoice: {
         auto files = safeGet(SenseVoiceFiles{});
-        addFile("", "tokens.txt");
+        addFile("", files.tokenFile);
         addFile("", files.modelFile);
         break;
     }
