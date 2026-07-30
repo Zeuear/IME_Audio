@@ -40,14 +40,12 @@ find_package(QT NAMES Qt6 COMPONENTS
             Core 
             Widgets 
             Network 
-            WebSockets 
             Concurrent REQUIRED)
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS 
             Core 
             Widgets 
             Network 
-            WebSockets 
             Multimedia 
             Concurrent 
             Qml 
@@ -61,7 +59,6 @@ set(QtModules
       Qt${QT_VERSION_MAJOR}::Widgets 
       Qt${QT_VERSION_MAJOR}::Network 
       Qt${QT_VERSION_MAJOR}::Concurrent 
-      Qt${QT_VERSION_MAJOR}::WebSockets      
       Qt${QT_VERSION_MAJOR}::Multimedia  
       Qt${QT_VERSION_MAJOR}::Qml 
       Qt${QT_VERSION_MAJOR}::Quick 
