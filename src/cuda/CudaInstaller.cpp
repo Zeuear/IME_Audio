@@ -28,12 +28,12 @@ void CudaInstaller::setEnvironment() {
     if (!QFile::exists(cudnnBinDir)) {
         return;
     }
-    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
+    QString path = qEnvironmentVariable("PATH");
+    QString nativeCudnnPath = QDir::toNativeSeparators(cudnnBinDir);
 
-    std::wstring wPath = QDir::toNativeSeparators(cudnnBinDir).toStdWString();
-    DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(wPath.c_str());
-    if (!cookie) {
-        LOG_ERROR("Failed to add DLL directory: %1" +  GetLastError());
+    if (!path.contains(nativeCudnnPath, Qt::CaseInsensitive)) {
+        // 动态修改当前进程及其子进程的环境变量
+        qputenv("PATH", (nativeCudnnPath + ";" + path).toLocal8Bit());
     }
 #endif
 }
@@ -270,7 +270,7 @@ void CudaInstaller::startInstall()
         opts.filter = [](const QFileInfo& fi) {
             return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
         };
-        ExtractExTask* sherpaTask = new ExtractExTask(m_cudnnZipPath, opts, m_taskManager);
+        ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts, m_taskManager);
         m_taskManager->addTask(sherpaTask);
     }
 }

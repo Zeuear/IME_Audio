@@ -1,6 +1,5 @@
 #include "SherpaManager.h"
 #include <QFileInfo>
-#include <QWebSocket>
 #include <QFile>
 #include <QCoreApplication>
 #include <QDir>

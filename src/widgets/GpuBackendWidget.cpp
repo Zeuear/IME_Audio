@@ -118,9 +118,8 @@ void GpuBackendWidget::setupUi()
 
     m_modeSwitchRow = new QWidget(this);
     m_modeSwitchRow->setAttribute(Qt::WidgetAttribute::WA_TranslucentBackground);
-    auto* vLayout = new QVBoxLayout(m_modeSwitchRow);
 
-    auto* modeLayout = new QHBoxLayout();
+    auto* modeLayout = new QHBoxLayout(m_modeSwitchRow);
     modeLayout->setContentsMargins(0, 8, 0, 8);
     modeLayout->setSpacing(10);
 
@@ -196,6 +195,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
         m_downloadButton->setEnabled(false);
         m_downloadRow->setVisible(false);
         m_modeSwitchRow->setVisible(true);
+        updateModeSwitchUi();
         break;
 
     case GpuStatus::Failed:
@@ -246,6 +246,7 @@ void GpuBackendWidget::redetect()
 
 void GpuBackendWidget::detectGpuAsync()
 {
+    m_cudaInstaller->setEnvironment();
     applyStatus(GpuStatus::Detecting);
     if (m_detectWatcher) {
         m_detectWatcher->cancel();
@@ -279,9 +280,6 @@ void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
 
     if (result.isFullyReady) {
         applyStatus(GpuStatus::Ready);
-        if (m_computeMode == ComputeMode::CUDA) {
-            m_cudaInstaller->setEnvironment();
-        }
         emit detectFinished(m_computeMode == ComputeMode::CUDA);
     }
     else {
