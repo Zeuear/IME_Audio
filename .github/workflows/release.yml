@@ -39,7 +39,7 @@ jobs:
           version: '6.10.*'
           host: ${{ matrix.platform == 'macos' && 'mac' || matrix.platform }}
           target: 'desktop'
-          arch: ${{ matrix.platform == 'macos' && 'clang_64' || '' }}
+          arch: ${{ matrix.platform == 'macos' && 'clang_64' || (matrix.platform == 'windows' && 'win64_msvc2022_64' || '') }}
 
       - name: Setup MSVC
         if: matrix.platform == 'windows'
