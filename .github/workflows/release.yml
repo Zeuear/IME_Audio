@@ -32,7 +32,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          submodules: recursive
+          
       - name: Setup Qt6
         uses: jurplel/install-qt-action@v3
         with:

@@ -14,8 +14,13 @@ jobs:
         os: [windows-latest, ubuntu-24.04, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: jurplel/install-qt-action@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Qt6 
+        uses: jurplel/install-qt-action@v3
         with:
           version: '6.10.*'
           arch: ${{ matrix.os == 'macos-latest' && 'clang_64' || (matrix.os == 'windows-latest' && 'win64_msvc2022_64' || '') }}
