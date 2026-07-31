@@ -6,6 +6,8 @@
 #include <QHBoxLayout>
 #include <QFrame>
 #include <QScrollArea>
+#include <QStyleOption>
+#include <QPainter>
 #include "../sherpa/SherpaManager.h"
 #include "../cuda/CudaInstaller.h"
 
@@ -13,14 +15,6 @@ ProjectGroupCard::ProjectGroupCard(const QString& repoId, const QString& display
     : QWidget(parent), m_repoId(repoId), m_totalFiles(totalFiles)
 {
     setObjectName("projectGroupCard");
-    setStyleSheet(
-        "#projectGroupCard {"
-        "  background-color: #17181c;"
-        "  border: 1px solid #2a2b30;"
-        "  border-radius: 10px;"
-        "}"
-    );
-
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(16, 12, 16, 12);
     rootLayout->setSpacing(6);
@@ -28,10 +22,10 @@ ProjectGroupCard::ProjectGroupCard(const QString& repoId, const QString& display
     // 顶部标题行:项目名称 + 整体进度
     auto* headerLayout = new QHBoxLayout();
     m_titleLabel = new QLabel(displayName, this);
-    m_titleLabel->setStyleSheet("color:#f0f0f2; font-size:13px; font-weight:600;");
+    m_titleLabel->setObjectName("titleLabel");
 
     m_overallLabel = new QLabel(QString("0/%1").arg(totalFiles), this);
-    m_overallLabel->setStyleSheet("color:#9a9ba3; font-size:12px;");
+    m_overallLabel->setObjectName("overallLabel");
     m_overallLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     headerLayout->addWidget(m_titleLabel, 1);
@@ -39,19 +33,15 @@ ProjectGroupCard::ProjectGroupCard(const QString& repoId, const QString& display
     rootLayout->addLayout(headerLayout);
 
     m_overallBar = new QProgressBar(this);
+    m_overallBar->setObjectName("overallBar");
     m_overallBar->setRange(0, 100);
     m_overallBar->setValue(0);
     m_overallBar->setFixedHeight(5);
     m_overallBar->setTextVisible(false);
-    m_overallBar->setStyleSheet(
-        "QProgressBar { background-color:#2a2b30; border-radius:2px; }"
-        "QProgressBar::chunk { background-color:#d9b35d; border-radius:2px; }"
-    );
     rootLayout->addWidget(m_overallBar);
 
     auto* divider = new QFrame(this);
     divider->setFrameShape(QFrame::HLine);
-    divider->setStyleSheet("color:#2a2b30; background-color:#2a2b30;");
     divider->setFixedHeight(1);
     rootLayout->addWidget(divider);
 
@@ -68,27 +58,25 @@ ProjectGroupCard::FileRow& ProjectGroupCard::ensureFileRow(const QString& filena
 
     FileRow row;
     row.container = new QWidget(this);
+    row.container->setObjectName("fileRowContainer");
     auto* rowLayout = new QHBoxLayout(row.container);
     rowLayout->setContentsMargins(0, 0, 0, 0);
     rowLayout->setSpacing(8);
 
     row.nameLabel = new QLabel(filename, row.container);
-    row.nameLabel->setStyleSheet("color:#d0d0d3; font-size:12px;");
+    row.nameLabel->setObjectName("fileNameLabel");
     row.nameLabel->setMinimumWidth(160);
     row.nameLabel->setToolTip(filename);
 
     row.progressBar = new QProgressBar(row.container);
+    row.progressBar->setObjectName("fileProgressBar");
     row.progressBar->setRange(0, 100);
     row.progressBar->setValue(0);
     row.progressBar->setFixedHeight(6);
     row.progressBar->setTextVisible(false);
-    row.progressBar->setStyleSheet(
-        "QProgressBar { background-color:#2a2b30; border-radius:3px; }"
-        "QProgressBar::chunk { background-color:#5b8ee8; border-radius:3px; }"
-    );
 
     row.statusLabel = new QLabel(tr("等待中"), row.container);
-    row.statusLabel->setStyleSheet("color:#8a8b93; font-size:11px;");
+    row.statusLabel->setObjectName("fileStatusLabel");
     row.statusLabel->setFixedWidth(70);
     row.statusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
@@ -151,18 +139,36 @@ void ProjectGroupCard::updateGroupFinished(bool success, const QString& msg)
     }
 }
 
+
+void ProjectGroupCard::paintEvent(QPaintEvent* event)
+{
+    QStyleOption opt;
+    opt.initFrom(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+    QWidget::paintEvent(event);
+}
+
 DownloadListWidget::DownloadListWidget(QWidget* parent): QWidget(parent)
 {
+    this->setContentsMargins(0, 0, 0, 0);
+    
+    this->setObjectName("download_list_widget");
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(0, 0, 0, 0);
 
     auto* scrollArea = new QScrollArea(this);
+    scrollArea->setContentsMargins(0, 0, 0, 0);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setObjectName("download_list_container");
 
     auto* container = new QWidget(scrollArea);
+    container->setContentsMargins(0, 0, 0, 0);
+    container->setObjectName("download_list_viewport");
+
     m_cardListLayout = new QVBoxLayout(container);
-    m_cardListLayout->setContentsMargins(12, 12, 12, 12);
+    //m_cardListLayout->setContentsMargins(12, 12, 12, 12);
     m_cardListLayout->setSpacing(10);
     m_cardListLayout->addStretch(1); 
 

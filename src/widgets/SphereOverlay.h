@@ -1,6 +1,7 @@
 #pragma once
 #include <QWidget>
 #include <QQuickWidget>
+#include <QTimer>
 #include "SphereController.h"
 
 class SphereOverlay : public QWidget
@@ -18,6 +19,8 @@ public slots:
     void setPaused();
     void showAtBottomCenter();
     void hideOverlay();
+    void hideTimerStart();
+    void hideTimerStop();
 
 signals:
     void sphereClicked(); 
@@ -25,4 +28,5 @@ signals:
 private:
     QQuickWidget *m_quickWidget;
     SphereController *m_controller;
+    QTimer* m_idleFadeTimer;
 };

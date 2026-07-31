@@ -205,7 +205,7 @@ QString TranscriptionService::applySimpleSherpaPunctuation(const QString& text) 
 
     QString suffix = pickAutoPunctuationSuffix(text);
     finalText.append(suffix);
-    LOG_DEBUG(QString("Auto punctuation appended for sherpa text suffix =").arg(suffix));
+    LOG_DEBUG(QString("Auto punctuation appended for sherpa text suffix = %1").arg(suffix));
     return finalText;
 }
 

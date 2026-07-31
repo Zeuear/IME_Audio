@@ -15,6 +15,19 @@ Item {
         }
     }
 
+    LoadingDots {
+        id: transcribingDots
+        dotColor: "#FFC107" 
+        anchors.fill: parent  
+        opacity: sphereController.state === 3 ? 1.0 : 0.0  
+        visible: opacity > 0.01
+
+        Behavior on opacity {
+            NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+        }
+    }
+
+
     // 定义不同状态下的颜色方案
     readonly property color colorLoadingMid: "#8cc7fa" 
     readonly property color colorLoadingDeep: "#1a6bd5"
@@ -30,18 +43,12 @@ Item {
         id: fluidView
         anchors.fill: parent
 
-        colorMid: sphereController.state === 3 ? colorProcessingMid : 
-                  (sphereController.state === 2 ? colorRecordingMid :
-                  (sphereController.state === 1 ? colorRecordingMid : colorLoadingMid))
-                  
-        colorDeep: sphereController.state === 3 ? colorProcessingDeep : 
-                   (sphereController.state === 2 ? colorRecordingDeep :
-                   (sphereController.state === 1 ? colorRecordingDeep : colorLoadingDeep))
-
+        colorMid: colorRecordingMid 
+        colorDeep: colorRecordingDeep
 
         level: sphereController.state === 2 ? 0.0 : sphereController.level
         levels: sphereController.spectrumLevels
-        opacity: sphereController.state === 0 ? 0.0 : 1.0
+        opacity:  (sphereController.state === 1 || sphereController.state === 2) ? 1.0 : 0.0
         enableColorAnimation: sphereController.state !== 1 ? false : true
 
         visible: opacity > 0.01

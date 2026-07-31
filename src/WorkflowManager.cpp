@@ -30,7 +30,8 @@ void WorkflowManager::startRecording() {
     LOG_DEBUG("Start Recording");
     transitionTo(WorkflowState::Loading);
     if (m_config.backend == AsrBackendKind::Sherpa) {
-        m_sherpaManager->loadModel(m_config.sherpa.localModelRepoId, m_config.sherpa.threads, m_config.sherpa.useGpu);
+
+        m_sherpaManager->loadModel(m_config);
         if (!m_sherpaManager->isModelLoaded()) {
             transitionTo(WorkflowState::Error);
             LOG_ERROR("Model failed to load");
@@ -54,7 +55,7 @@ void WorkflowManager::stopRecording() {
 
     m_recorder->stopListening();
     m_pendingTranscriptions = 0;
-
+    transitionTo(WorkflowState::Idle);
     //if (m_config.backend == AsrBackendKind::Sherpa) {
     //    m_sherpaManager->unloadModel();
     //}

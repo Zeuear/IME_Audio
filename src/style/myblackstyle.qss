@@ -590,3 +590,134 @@ QToolTip {
     border: 1px solid #2a2b30;
     border-radius: 12px;
 }
+
+
+
+
+/* ==========================================================================
+   DARK THEME (深色模式)
+   ========================================================================== */
+QScrollArea#download_list_container {
+    border: 1px solid #2c2c2e;
+    background: transparent;
+}
+QWidget#download_list_viewport {
+    background-color: rgb(35, 35, 35);
+}
+
+/* 项目卡片容器 */
+#projectGroupCard {
+    background-color: #212121;
+    border: 1px solid #2c2c2e;
+    border-radius: 12px;
+}
+
+/* 顶部标题与进度 */
+#titleLabel {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+}
+#overallLabel {
+    color: #8e8e93;
+    font-size: 12px;
+}
+
+/* 整体大进度条 */
+#overallBar {
+    background-color: #2c2c2e;
+    border-radius: 2px;
+}
+#overallBar::chunk {
+    background-color: #d9b35d; /* 金色，突出整体任务进度 */
+    border-radius: 2px;
+}
+
+/* 分割线 */
+QFrame[frameShape="HLine"] {
+    background-color: #2c2c2e;
+}
+
+/* 文件行容器 */
+#fileRowContainer {
+    background-color: transparent;
+    border-radius: 6px;
+}
+#fileRowContainer:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* 悬停微亮 */
+}
+
+/* 文件名与状态 */
+#fileNameLabel {
+    color: #d1d1d6;
+    font-size: 12px;
+}
+#fileStatusLabel {
+    color: #8e8e93;
+    font-size: 11px;
+}
+
+/* 文件单行进度条 */
+#fileProgressBar {
+    background-color: #2c2c2e;
+    border-radius: 3px;
+}
+#fileProgressBar::chunk {
+    background-color: #5b8ee8; /* 蓝色，代表单个任务进度 */
+    border-radius: 3px;
+}
+
+
+
+
+
+/* ==========================================================================
+   NavListWidget
+   ========================================================================== */
+#nav_list_widget{
+    background-color: #121212;
+}
+
+/* 导航列表容器 */
+#navListWidget {
+    background-color: transparent;
+    border: none;
+    outline: none;
+}
+
+/* 选中的条目样式 (QListWidget 的 item 选中状态) */
+QListWidget::item:selected {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 导航条目整体 (NavListItemWidget) */
+#navItemContainer {
+    background-color: transparent;
+    border-radius: 8px;
+}
+#navItemContainer:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 图标与文字 */
+#navItemIcon {
+    color: #a1a1a6;
+    font-size: 16px;
+}
+#navItemText {
+    color: #e5e5e7;
+    font-size: 10px;
+}
+
+/* 指示灯 (Indicator Dot) */
+#navItemIndicator {
+    border-radius: 4px;
+    background-color: #3a3a3c; /* 默认灰色 */
+}
+#navItemIndicator[indicatorColor="yellow"] {
+    background-color: #ffcc00; /* 下载中 */
+}
+#navItemIndicator[indicatorColor="green"] {
+    background-color: #32d74b; /* 已完成 */
+}
+

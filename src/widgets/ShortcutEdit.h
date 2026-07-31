@@ -8,7 +8,7 @@
 #include <QKeySequence>
 #include <QKeyEvent>
 #include "qhotkey.h"
-#include "animatedcheckbox.h"
+#include "AnimatedCheckbox.h"
 #include "../utils/Logger.h"
 
 class SingleCharEdit : public QLineEdit {

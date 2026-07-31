@@ -591,3 +591,98 @@ QToolTip {
     border: 1px solid #e0e0e2;
     border-radius: 12px;
 }
+
+
+
+/* ==========================================================================
+   WHITE THEME (亮色模式)
+   ========================================================================== */
+QScrollArea#download_list_container {
+    border: 1px solid rgb(200, 200, 200);
+    background: transparent;
+}
+QWidget#download_list_viewport {
+    background-color: #ffffff;
+}
+
+#projectGroupCard {
+    background-color: #f5f5f7;
+    border: 1px solid #d2d2d7;
+    border-radius: 12px;
+}
+
+#titleLabel {
+    color: #1d1d1f;
+    font-size: 14px;
+    font-weight: 600;
+}
+#overallLabel {
+    color: #86868b;
+}
+
+#overallBar {
+    background-color: #e5e5e7;
+    border-radius: 2px;
+}
+#overallBar::chunk {
+    background-color: #ff9500;
+}
+
+#fileRowContainer:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+#fileNameLabel {
+    color: #1d1d1f;
+}
+#fileStatusLabel {
+    color: #86868b;
+}
+
+#fileProgressBar {
+    background-color: #e5e5e7;
+    border-radius: 3px;
+}
+#fileProgressBar::chunk {
+    background-color: #007aff;
+}
+
+
+
+
+/* ==========================================================================
+   NavListWidget
+   ========================================================================== */
+#nav_list_widget{
+    background-color: #ffffff;
+}
+
+QListWidget::item:selected {
+    background-color: #f2f2f7;
+}
+
+#navItemContainer {
+    background-color: transparent;
+    border-radius: 8px;
+}
+#navItemContainer:hover {
+    background-color: #f5f5f7;
+}
+
+#navItemIcon {
+    color: #8e8e93;
+}
+#navItemText {
+    color: #000000;
+}
+
+#navItemIndicator {
+    background-color: #d1d1d6;
+}
+#navItemIndicator[indicatorColor="yellow"] {
+    background-color: #ffcc00;
+}
+#navItemIndicator[indicatorColor="green"] {
+    background-color: #34c759;
+}
+

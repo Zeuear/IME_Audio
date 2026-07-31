@@ -22,6 +22,9 @@ public:
     void markFileError(const QString& filename, const QString& error);
     void updateGroupFinished(bool success, const QString& msg);
 
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
 private:
     struct FileRow {
         QWidget* container = nullptr;
@@ -52,6 +55,7 @@ public:
     explicit DownloadListWidget(QWidget* parent = nullptr);
     void setSherpaInstaller(SherpaInstaller* installer);
     void setCudaInstaller(CudaInstaller* installer);
+
 
 private slots:
     void onInstallGroupStarted(const QString& repoId, const QString& displayName, int totalFiles);

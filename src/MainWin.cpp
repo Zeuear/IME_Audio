@@ -16,6 +16,7 @@
 #include <QTextStream>
 #include <QThread>
 #include <QTimer>
+#include <QListWidget>
 #include <QDesktopServices>
 
 #include "ConfigManager.h"
@@ -26,55 +27,12 @@
 #include "widgets/SphereOverlay.h"
 #include "qhotkey.h"
 
+#include "widgets/NavListWidget.h"
 #include "widgets/inforbar/inforbarmanager.h"
 #include "widgets/inforbar/inforposmanager.h"
 
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
-
-  m_networkManager = new QNetworkAccessManager(this);
-
-  QActionGroup *styleActionGroup = new QActionGroup(this);
-  styleActionGroup->addAction(ui->action_light);
-  styleActionGroup->addAction(ui->action_gray);  
-  styleActionGroup->addAction(ui->action_dark);
-
-  QActionGroup *langActionGroup = new QActionGroup(this);
-  langActionGroup->addAction(ui->actionSystem);
-  langActionGroup->addAction(ui->actionChinese);
-  langActionGroup->addAction(ui->actionEnglish);
-
-  const AppConfig& config = ConfigManager::instance().config();
-  m_geminiClient = new GeminiClient(m_networkManager, this);
-  m_recorderService = new AudioRecorderService(config, this);
-  m_sherpaManager = new SherpaManager(this);
-  m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
-  m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
-
-  m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_geminiClient, config, this);
-  m_termsManager = new TermsLibraryManager(this);
-  m_updateManager = new UpdateManager(m_networkManager, this);
-
-  m_workflow = new WorkflowManager(config, this);
-  m_workflow->initialize(m_recorderService, m_transcriptionService, m_sherpaManager);
-
-  // 初始化动画
-  m_drawerAnimation = new QPropertyAnimation(ui->drawer_stack, "maximumHeight", this);
-  m_drawerAnimation->setDuration(300);
-  m_drawerAnimation->setEasingCurve(QEasingCurve::InOutQuart);
-
-  m_sphereOverlay = new SphereOverlay();
-  //m_sphereOverlay->setListening();
-  //m_sphereOverlay->showAtBottomCenter();
-
-  auto* periodicTimer = new QTimer(this);
-  periodicTimer->setInterval(4 * 60 * 60 * 1000);
-  connect(periodicTimer, &QTimer::timeout, this, [this]() {
-      m_updateManager->checkForUpdates();
-  });
-
-
-  periodicTimer->start();
 
   initSystemTray();
   initialize();
@@ -84,11 +42,8 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
     
 void MainWin::initialize() {
     ui->recording_equ_comb->clear();
-    auto items = m_recorderService->availableMicrophones();
+    auto items = AudioRecorderService::availableMicrophones();
     ui->recording_equ_comb->addItems(items);
-    QTimer::singleShot(0, [this]() {
-        ui->recording_equ_comb->setCurrentIndex(0);
-    });
 
     auto languages = ModelRegistry::GetLanguages();
     ui->language_comb->addItems(languages);
@@ -135,6 +90,48 @@ void MainWin::initialize() {
     translate_language_comb << "简体中文";
     ui->translate_language_comb->addItems(translate_language_comb);
 
+    ui->nav_list_widget->addNavItem("identification", "", "声音识别");
+    ui->nav_list_widget->addNavItem("config", "", "日志配置");
+    ui->nav_list_widget->addNavItem("download", "", "下载列表");
+
+    m_networkManager = new QNetworkAccessManager(this);
+    QActionGroup* styleActionGroup = new QActionGroup(this);
+    styleActionGroup->addAction(ui->action_light);
+    styleActionGroup->addAction(ui->action_gray);
+    styleActionGroup->addAction(ui->action_dark);
+
+    QActionGroup* langActionGroup = new QActionGroup(this);
+    langActionGroup->addAction(ui->actionSystem);
+    langActionGroup->addAction(ui->actionChinese);
+    langActionGroup->addAction(ui->actionEnglish);
+
+    const AppConfig& config = ConfigManager::instance().config();
+    m_geminiClient = new GeminiClient(m_networkManager, this);
+    m_recorderService = new AudioRecorderService(config, this);
+    m_sherpaManager = new SherpaManager(this);
+    m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
+    m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
+
+    m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_geminiClient, config, this);
+    m_termsManager = new TermsLibraryManager(this);
+    m_updateManager = new UpdateManager(m_networkManager, this);
+
+    m_workflow = new WorkflowManager(config, this);
+    m_workflow->initialize(m_recorderService, m_transcriptionService, m_sherpaManager);
+
+    // 初始化动画
+    m_drawerAnimation = new QPropertyAnimation(ui->drawer_stack, "maximumHeight", this);
+    m_drawerAnimation->setDuration(300);
+    m_drawerAnimation->setEasingCurve(QEasingCurve::InOutQuart);
+
+    // 声音控件
+    m_sphereOverlay = new SphereOverlay();
+
+    auto* periodicTimer = new QTimer(this);
+    periodicTimer->setInterval(4 * 60 * 60 * 1000);
+    connect(periodicTimer, &QTimer::timeout, this, [this]() { m_updateManager->checkForUpdates(); });
+    periodicTimer->start();
+
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
@@ -165,7 +162,13 @@ void MainWin::connection(){
         ConfigManager::instance().save();
 
         const AppConfig& config = ConfigManager::instance().config();
-        QString repoId = config.sherpa.localModelRepoId;
+        QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel, 
+                                                          config.sherpa.localModelRepoId);
+        if (repoId.isEmpty()) {
+            LOG_ERROR("没有找到对应的模型!");
+            return;
+        }
+
         LOG_DEBUG(QString("Download %1...").arg(repoId));
         m_sherpaInstaller->installModel(repoId);
     });
@@ -199,9 +202,10 @@ void MainWin::connection(){
         params.targetLang = config.gemini.targetLang;
         m_geminiClient->testConnection(params);
     });
-    connect(ui->identification_log_btn, &QPushButton::clicked, this, [this](){ onToggleDrawer(0);});
-    connect(ui->config_log_btn, &QPushButton::clicked, this, [this](){ onToggleDrawer(1); });
-    connect(ui->download_list_btn, &QPushButton::clicked, this, [this]() { onToggleDrawer(2); });
+
+    connect(ui->nav_list_widget, &QListWidget::currentItemChanged, this, [this]() {
+        onToggleDrawer(ui->nav_list_widget->currentRow());
+    });
 
     // 更新检查
     connect(ui->actionUpdate, &QAction::triggered, this, [this]() {  m_updateManager->checkForUpdates(); });
@@ -224,15 +228,24 @@ void MainWin::connection(){
     connect(m_recorderService, &AudioRecorderService::levelUpdated, m_sphereOverlay, &SphereOverlay::setLevel);
     connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_sphereOverlay, &SphereOverlay::setSpectrumLevels);
 
+    connect(m_recorderService, &AudioRecorderService::voiceStarted, this, [this]() {
+        m_sphereOverlay->hideTimerStop();        
+        if (m_workflow->currentState() == WorkflowState::Recording) {
+            m_sphereOverlay->setListening();
+            m_sphereOverlay->showAtBottomCenter();
+        }
+    });
+
+    connect(m_recorderService, &AudioRecorderService::voiceStopped, this, [this]() {
+        m_sphereOverlay->hideTimerStart();   
+    });
+
 	// Sherpa 模型安装器
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
         this, [this](const QString& repoId, bool success, const QString& msg) {
             if (success && !repoId.isEmpty()) {
                 const AppConfig& config = ConfigManager::instance().config();
-                int threads = config.sherpa.threads;
-                bool useGpu = config.sherpa.useGpu;
-                m_sherpaManager->loadModel(repoId, threads, useGpu);
-
+                m_sherpaManager->loadModel(config);
             }
         });
 
@@ -272,7 +285,6 @@ void MainWin::connection(){
                 LOG_INFO("Gemini连接成功!");
             }
         });
-
 }
 
 MainWin::~MainWin() {
@@ -308,7 +320,6 @@ void MainWin::closeEvent(QCloseEvent* event)
 
 
 void MainWin::showEvent(QShowEvent* event) {
-    //m_updateThread->start();
     QWidget::showEvent(event);
 }
 
@@ -319,7 +330,7 @@ AppConfig MainWin::extractConfigFromUI() {
     uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
     uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
     uiConfig.hotkey = ui->shortcut_edit->getShortCut();
-    //uiConfig.autoStopEnabled = ui->autiomatic_mute_checkbox->isChecked(); 
+    uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();
 
     // 音频设置 (Audio Group)
     uiConfig.audio.deviceId = ui->recording_equ_comb->currentIndex();
@@ -366,17 +377,14 @@ AppConfig MainWin::extractConfigFromUI() {
 void MainWin::loadConfigToUI() {
     ConfigManager::instance().load();
     const AppConfig& cfg = ConfigManager::instance().config();
+
     // 基础/全局
     ui->ai_engine_comb->setCurrentIndex(cfg.gemini.aiEngineIndex);
-    int audioIndex = ui->recording_equ_comb->findText(cfg.audio.deviceName);
-    if (audioIndex != -1) ui->recording_equ_comb->setCurrentIndex(audioIndex);
     ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
     ui->shortcut_edit->setShortCut(cfg.hotkey);
-	int backendIndex = static_cast<int>(cfg.backend);
-	ui->identification_backend_comb->setCurrentIndex(backendIndex);
-    //ui->autiomatic_mute_checkbox->setChecked(cfg.autoStopEnabled);
+	ui->identification_backend_comb->setCurrentIndex(static_cast<int>(cfg.backend));
+    ui->cpu_thread_number_spin->setValue(cfg.sherpa.threads);
     
-    // 音频
     ui->recording_equ_comb->setCurrentIndex(cfg.audio.deviceId);
     ui->volume_threshold_spin->setValue(cfg.audio.voiceThreshold);
     ui->mute_duration_spin->setValue(cfg.audio.silenceTimeoutMs);
@@ -391,9 +399,7 @@ void MainWin::loadConfigToUI() {
     if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
 
     if (cfg.backend == AsrBackendKind::Sherpa) {
-		if (m_sherpaInstaller->isInstalled(cfg.sherpa.localModelRepoId)) {
-			m_sherpaManager->loadModel(cfg.sherpa.localModelRepoId, cfg.sherpa.threads, cfg.sherpa.useGpu);
-		}
+		m_sherpaManager->loadModel(cfg);
     }
 
     // Gemini
@@ -592,25 +598,18 @@ void MainWin::onStateChanged(WorkflowState state)
 }
 
 void MainWin::onToggleDrawer(int pageIndex) {
-    if (pageIndex == ui->drawer_stack->currentIndex()) {
-        m_drawerAnimation->setTargetObject(ui->drawer_stack);
-
-        if (isTriggered) {
-            isTriggered = false;
-            m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
-            m_drawerAnimation->setEndValue(0);
-        }
-        else {
-            isTriggered = true;
-            m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
-            m_drawerAnimation->setEndValue(m_drawerHeight);
-        }
-
-        m_drawerAnimation->start();
-    }
-    else {
-        ui->drawer_stack->setCurrentIndex(pageIndex);
-    }
+    ui->drawer_stack->setCurrentIndex(pageIndex);
+    // if (isTriggered) {
+    //     isTriggered = false;
+    //     m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
+    //     m_drawerAnimation->setEndValue(0);
+    // }
+    // else {
+    //     isTriggered = true;
+    //     m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
+    //     m_drawerAnimation->setEndValue(200);
+    // }
+    // m_drawerAnimation->start();
 }
 
 void MainWin::onNewLogEntry(const QString& entry)
@@ -702,6 +701,7 @@ void MainWin::onLoadConfig()
     loadConfigToUI();
     readIni();
 
+    m_recorderService->updateConfig();
 }
 
 void MainWin::onSaveConfig()
@@ -709,13 +709,20 @@ void MainWin::onSaveConfig()
     LOG_DEBUG("Save Configuration");
     AppConfig uiConfig = extractConfigFromUI();
     ConfigManager::instance().updateConfig(uiConfig);
+
     if (ConfigManager::instance().save()) {
         LOG_INFO("配置保存成功");
 		LOG_DEBUG("Save Configuration Success");
+
+        // 重新加载模型;
+        if (uiConfig.backend == AsrBackendKind::Sherpa) {
+            m_sherpaManager->reloadModel(uiConfig);
+        }
     }
     else {
         LOG_ERROR("Save Configuration Failed");
     }
+    
 }
 
 void MainWin::initSystemTray()

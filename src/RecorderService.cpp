@@ -23,6 +23,8 @@ SpectrumWorker::~SpectrumWorker() {
 
 void SpectrumWorker::processChunk(const QByteArray chunk)
 {
+    updateVadState(chunk);
+
     const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
     const int count = chunk.size() / 2;
 
@@ -97,19 +99,126 @@ void SpectrumWorker::processChunk(const QByteArray chunk)
     emit spectrumReady(bands);
 }
 
+void SpectrumWorker::updateVadState(const QByteArray& chunk) {
+    const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
+    const int count = chunk.size() / 2;
+    if (count == 0) return;
+
+    int peak = 0;
+    double sumSquares = 0.0;
+    for (int i = 0; i < count; ++i) {
+        int v = static_cast<int>(samples[i]);
+        peak = qMax(peak, qAbs(v));
+        sumSquares += static_cast<double>(v) * v;
+    }
+
+    double rms = std::sqrt(sumSquares / count);
+    m_rmsLevel = static_cast<float>(qMin(1.0, rms / 12000.0));
+    m_peakLevel = peak;
+
+    emit levelUpdated(m_rmsLevel);
+}
+
+
+void SpectrumWorker::resetLevel() {
+    m_peakLevel = 0.f;
+    m_rmsLevel = 0.f;
+    emit levelUpdated(m_rmsLevel);
+}
+
+VadWorker::VadWorker(const AppConfig& config, int sampleRate, QObject* parent)
+    : QObject(parent), m_sampleRate(sampleRate), m_config(config)
+{}
+
+
+void VadWorker::rebuildDetector()
+{
+    if (!QFile::exists(m_config.sherpa.vadPath)) {
+        LOG_ERROR("没有找到vad模型??");
+        return;
+    }
+        
+    sherpa_onnx::cxx::VadModelConfig vadConfig;
+    vadConfig.silero_vad.model = m_config.sherpa.vadPath.toStdString();
+    vadConfig.silero_vad.threshold = static_cast<float>(m_config.audio.voiceThreshold) / 1000;
+    vadConfig.silero_vad.min_silence_duration = static_cast<float>(m_config.audio.silenceTimeoutMs) / 1000;
+    vadConfig.silero_vad.min_speech_duration = static_cast<float>(m_config.audio.minRecordMs) / 1000;
+    vadConfig.silero_vad.max_speech_duration = static_cast<float>(m_config.audio.maxRecordMs) / 1000;
+    vadConfig.sample_rate = m_config.audio.sampleRate;
+
+    m_vad = std::make_unique<sherpa_onnx::cxx::VoiceActivityDetector>(
+        sherpa_onnx::cxx::VoiceActivityDetector::Create(vadConfig, static_cast<float>(m_config.audio.maxRecordMs) / 1000.0f + 5.0f));
+}
+
+void VadWorker::processChunk(const QByteArray chunk)
+{
+    if (!m_vad) return;  
+    const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
+    const int count = chunk.size() / 2;
+
+    std::vector<float> floatSamples(count);
+    for (int i = 0; i < count; ++i) {
+        floatSamples[i] = samples[i] / 32768.0f;
+    }
+
+    m_vad->AcceptWaveform(floatSamples.data(), count);
+
+    bool isSpeaking = m_vad->IsDetected();
+    if (isSpeaking && !m_wasSpeaking) {
+        qDebug() << "开始说话了";
+        emit speechStarted();
+    }else if (!isSpeaking && m_wasSpeaking) {
+        emit speechEnded();
+    }
+    m_wasSpeaking = isSpeaking;
+
+    while (!m_vad->IsEmpty()) {
+        auto segment = m_vad->Front();
+
+        std::vector<int16_t> pcm16(segment.samples.size());
+        for (size_t i = 0; i < segment.samples.size(); ++i) {
+            float v = qBound(-1.0f, segment.samples[i], 1.0f);
+            pcm16[i] = static_cast<int16_t>(v * 32767.0f);
+        }
+        QByteArray pcm(reinterpret_cast<const char*>(pcm16.data()),
+            static_cast<int>(pcm16.size() * sizeof(int16_t)));
+        emit speechSegmentReady(pcm, m_sampleRate);
+        m_vad->Pop();
+    }
+}
+
+void VadWorker::reset()
+{
+    m_vad->Reset();
+    m_wasSpeaking = false;
+}
+
+
 
 AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *parent) : QObject(parent), m_config(config) {
     m_spectrumThread = new QThread(this); 
     m_spectrumWorker = new SpectrumWorker(m_config.audio.sampleRate); 
     m_spectrumWorker->moveToThread(m_spectrumThread); 
     connect(m_spectrumThread, &QThread::finished, m_spectrumWorker, &QObject::deleteLater); 
-    connect(m_spectrumWorker, &SpectrumWorker::spectrumReady, this, &AudioRecorderService::spectrumUpdated); 
+    connect(m_spectrumWorker, &SpectrumWorker::spectrumReady, this, &AudioRecorderService::spectrumUpdated);
+    connect(m_spectrumWorker, &SpectrumWorker::levelUpdated, this, &AudioRecorderService::levelUpdated);
     m_spectrumThread->start();
+
+    m_vadThread = new QThread(this);
+    m_vadWorker = new VadWorker(config, m_config.audio.sampleRate);
+    m_vadWorker->moveToThread(m_vadThread);
+    connect(m_vadThread, &QThread::finished, m_vadWorker, &QObject::deleteLater);
+    connect(m_vadWorker, &VadWorker::speechStarted, this, &AudioRecorderService::onVadSpeechStarted);
+    connect(m_vadWorker, &VadWorker::speechEnded, this, &AudioRecorderService::onVadSpeechEnded);
+    connect(m_vadWorker, &VadWorker::speechSegmentReady, this, &AudioRecorderService::onVadSegmentReady);
+    m_vadThread->start();
 }
 
 AudioRecorderService::~AudioRecorderService() {
     m_spectrumThread->quit();
     m_spectrumThread->wait();
+    m_vadThread->quit();
+    m_vadThread->wait();
 }
 
 QStringList AudioRecorderService::availableMicrophones() {
@@ -118,6 +227,10 @@ QStringList AudioRecorderService::availableMicrophones() {
     for (const auto &dev : QMediaDevices::audioInputs())
         names << dev.description();
     return names;
+}
+
+void AudioRecorderService::updateConfig() {
+    QMetaObject::invokeMethod(m_vadWorker, "rebuildDetector", Qt::QueuedConnection);
 }
 
 int AudioRecorderService::bytesPerMs() const
@@ -146,10 +259,9 @@ bool AudioRecorderService::startListening() {
     }
 
     m_audioSource = new QAudioSource(device, format, this);
-    m_audioSource->setBufferSize(bytesPerMs() * 200);
+    m_audioSource->setBufferSize(bytesPerMs() * 800);
     m_audioDevice = m_audioSource->start();
     if (!m_audioDevice) return false;
-
 
     auto _format = m_audioSource->format();
     LOG_DEBUG(QString("Sample Rate: %1").arg(_format.sampleRate()));
@@ -181,18 +293,15 @@ void AudioRecorderService::stopListening() {
 
     //if (!m_fullSessionBuffer.isEmpty()) {
     //    QString path = QApplication::applicationDirPath() + "/tmp";
-
     //    QDir dir(path);
     //    dir.mkdir(".");
-
     //    QString wavPath = path + "/debug_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss") + ".wav";
     //    if (writeWavFile(wavPath, m_fullSessionBuffer,
     //        m_config.audio.sampleRate,
     //        m_config.audio.channels,
     //        m_config.audio.bitsPerSample)) {
     //        qDebug() << "[debug] wav saved to" << path;
-    //    }
-    //    else {
+    //    }else {
     //        qDebug() << "[debug] wav save failed:" << path;
     //    }
     //}
@@ -204,15 +313,14 @@ void AudioRecorderService::stopListening() {
     m_segmentBuffer.clear();
     m_fullSessionBuffer.clear();
     m_status = RuntimeStatus{};
-    emit levelUpdated(0.0f);
+    QMetaObject::invokeMethod(m_spectrumWorker, "resetLevel", Qt::QueuedConnection);
 }
 
 void AudioRecorderService::pause() {
     if (!m_audioSource || m_status.isPaused) return;
     m_audioSource->suspend();  
     m_status.isPaused = true;
-    m_status.rmsLevel = 0.0f;
-    emit levelUpdated(0.0f);
+    QMetaObject::invokeMethod(m_spectrumWorker, "resetLevel", Qt::QueuedConnection);
 }
 
 void AudioRecorderService::resume() {
@@ -222,56 +330,48 @@ void AudioRecorderService::resume() {
     m_silenceAccumMs = 0;
 }
 
-
-// TODO: 需要进行优化，添加VAD，通过VAD来判断切割
 void AudioRecorderService::onAudioDataReady() {
     if (!m_audioDevice) return;
     QByteArray chunk = m_audioDevice->readAll();
     if (chunk.isEmpty()) return;
 
-    //m_fullSessionBuffer.append(chunk);
-    updateVadState(chunk);
-    //qDebug() << "RMS Level: " << m_status.rmsLevel;
-    emit levelUpdated(m_status.rmsLevel);
-    updateSpectrum(chunk);
+    QMetaObject::invokeMethod(m_vadWorker, "processChunk", Qt::QueuedConnection,
+        Q_ARG(QByteArray, chunk));
 
-    if (m_config.continuousMode) {
-        if (m_status.hadVoice) {
-            m_segmentBuffer.append(chunk);
-            m_status.currentSegmentMs = static_cast<int>(m_segmentBuffer.size() / bytesPerMs());
-        }
+    QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
+        Q_ARG(QByteArray, chunk));
 
-        // 强制切断:一句话讲太长,防止用户长时间不停顿导致缓冲区无限增长
-        if (m_status.hadVoice && m_status.currentSegmentMs >= m_config.audio.maxRecordMs) {
+    if (m_manualActive) {
+        m_segmentBuffer.append(chunk);
+        m_status.currentSegmentMs = static_cast<int>(m_segmentBuffer.size() / bytesPerMs());
+
+        if (m_status.currentSegmentMs >= m_config.audio.maxRecordMs) {
             finalizeSegmentIfNeeded(true);
-            return;
-        }
-
-        int chunkMs = static_cast<int>(chunk.size() / bytesPerMs());
-        if (m_status.peakLevel < m_config.audio.voiceThreshold) {
-            m_silenceAccumMs += chunkMs;
-        }
-        else {
-            m_silenceAccumMs = 0;
-        }
-
-        if (m_status.hadVoice && m_silenceAccumMs >= m_config.audio.silenceTimeoutMs) {
-            finalizeSegmentIfNeeded(false);
-        }
-	}
-	else {  
-        if (m_manualActive) {
-            m_segmentBuffer.append(chunk);
-            m_status.currentSegmentMs = static_cast<int>(m_segmentBuffer.size() / bytesPerMs());
-
-            if (m_status.currentSegmentMs >= m_config.audio.maxRecordMs) {
-                finalizeSegmentIfNeeded(true);
-                m_manualActive = false;
-            }
+            m_manualActive = false;
         }
     }
 }
 
+void AudioRecorderService::onVadSpeechStarted()
+{
+    m_status.hadVoice = true;
+    emit voiceStarted();   
+}
+
+void AudioRecorderService::onVadSpeechEnded()
+{
+    m_status.hadVoice = false;
+    emit voiceStopped();   
+}
+
+void AudioRecorderService::onVadSegmentReady(const QByteArray& pcmData, int sampleRate)
+{
+    if (m_config.continuousMode) {
+        if (!pcmData.isEmpty()) {
+            emit utteranceReady(pcmData, sampleRate);
+        }
+    }
+}
 
 void AudioRecorderService::finalizeSegmentIfNeeded(bool forceCut)
 {
@@ -295,38 +395,9 @@ void AudioRecorderService::finalizeSegmentIfNeeded(bool forceCut)
     m_status.currentSegmentMs = 0;
 }
 
-
-void AudioRecorderService::updateVadState(const QByteArray &chunk) {
-    const int16_t* samples = reinterpret_cast<const int16_t*>(chunk.constData());
-    const int count = chunk.size() / 2;
-    if (count == 0) return;
-
-    int peak = 0;
-    double sumSquares = 0.0;
-    for (int i = 0; i < count; ++i) {
-        int v = static_cast<int>(samples[i]);
-        peak = qMax(peak, qAbs(v));
-        sumSquares += static_cast<double>(v) * v;
-    }
-
-    double rms = std::sqrt(sumSquares / count);
-    m_status.rmsLevel = static_cast<float>(qMin(1.0, rms / 12000.0));
-    m_status.peakLevel = peak;
-
-    if (peak >= m_config.audio.voiceThreshold && !m_status.hadVoice) {
-        m_status.hadVoice = true;
-        emit voiceStarted();
-    }
-}
-
 bool AudioRecorderService::isListening() const { return m_status.isListening; }
 bool AudioRecorderService::isPaused() const { return m_status.isPaused; }
 AudioRecorderService::RuntimeStatus AudioRecorderService::runtimeStatus() const { return m_status; }
-
-void AudioRecorderService::updateSpectrum(const QByteArray& chunk) {
-    QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
-        Q_ARG(QByteArray, chunk));
-}
 
 bool AudioRecorderService::writeWavFile(const QString& filePath, const QByteArray& pcmData,
     int sampleRate, int channels, int bitsPerSample) const

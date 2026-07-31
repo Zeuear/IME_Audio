@@ -7,6 +7,7 @@
 #include <QtConcurrent> 
 #include "../utils/Logger.h"
 #include "../utils/ExtractTool.h"
+#include "../ConfigManager.h"
 
 
 SherpaManager::SherpaManager(QObject* parent)
@@ -71,11 +72,43 @@ void SherpaManager::unloadModel()
     qDebug() << "Sherpa model unloaded, memory released.";
 }
 
-void SherpaManager::loadModel(const QString& repoId, int numThreads, bool useGpu)
+void SherpaManager::reloadModel(const AppConfig& config) {
+    QString repoId = ModelRegistry::FindByDisplayName(
+        config.sherpa.languageModel,
+        config.sherpa.localModelRepoId);
+
+    if (repoId.isEmpty()) {
+        LOG_ERROR("没有找到对应的模型!");
+        return;
+    }
+
+    // 如果模型加载了则重新加载
+    if (m_isLoaded) {
+        loadModel(config, true);
+    }
+}
+
+void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 {
     QMutexLocker locker(&m_recognizerMutex);
+    QString repoId = ModelRegistry::FindByDisplayName(
+        config.sherpa.languageModel,
+        config.sherpa.localModelRepoId);
 
-    if (m_isLoaded && m_currentRepoId == repoId) {
+    if (repoId.isEmpty()) {
+        LOG_ERROR("没有找到对应的模型!");
+        return;
+    }
+
+    if (!SherpaInstaller::isInstalled(repoId)) {
+        LOG_ERROR("没有安装模型!");
+        return;
+    }
+
+    int numThreads = config.sherpa.threads;
+    bool useGpu = config.sherpa.useGpu;
+
+    if (!isReload && m_isLoaded && m_currentRepoId == repoId) {
         LOG_INFO("模型已经加载了");
         LOG_DEBUG(QString("Model %1 already loaded, reusing cached recognizer.").arg(repoId));
         return;
@@ -297,7 +330,7 @@ bool SherpaInstaller::isInstalling(const QString& repoId) const
     return m_activeManifests.contains(repoId) || !m_downloadManager->tasksInGroup(repoId).isEmpty();
 }
 
-bool SherpaInstaller::isInstalled(const QString& repoId) const
+bool SherpaInstaller::isInstalled(const QString& repoId)
 {
 	QString repoName = repoId.split("/").last();
 	QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
@@ -376,7 +409,7 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
     }
 
     const ModelInstallManifest& manifest = it.value();
-    emit installationProgress(tr("正在解压 %1 ...").arg(manifest.displayName));
+    emit installationProgress(tr("Decoding in progress %1 ...").arg(manifest.displayName));
 
     if (!ExtractTool::extractAll(manifest.archiveLocalPath, manifest.archiveTargetDir)) {
         emit installGroupFinished(groupId, false, tr("Extract Error"));

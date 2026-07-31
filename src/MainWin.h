@@ -108,8 +108,6 @@ private:
 
     QString style;
     QString Language;
-
-    int m_drawerHeight = 200; 
 };
 
 #endif 

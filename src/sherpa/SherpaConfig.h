@@ -103,7 +103,11 @@ using ModelFiles = std::variant<SingleFileModelFiles, TransducerFiles, SenseVoic
     ParaformerStreamingFiles, WhisperFiles, MoonshineFiles, FireRedAsrFiles,
     FunasrFiles, Qwen3AsrFiles>;
 
+
+
+
 struct ModelDescriptor {
+    QString displayName;
     ModelArch arch;
     ModelFiles files;
     QString hotwords;
@@ -112,11 +116,19 @@ struct ModelDescriptor {
     int numThreads = 2;
 
     ModelDescriptor(ModelArch a)
-        : arch(a), files(DefaultFilesFor(a)) {
+        : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {
     }
 
     ModelDescriptor(ModelArch a, ModelFiles f)
-        : arch(a), files(std::move(f)) {
+        : arch(a), files(std::move(f)), displayName(modelArchToString(a)) {
+    }
+
+    ModelDescriptor(ModelArch a, QString name)
+        : arch(a), files(DefaultFilesFor(a)), displayName(std::move(name)) {
+    }
+
+    ModelDescriptor(ModelArch a, ModelFiles f, QString name)
+        : arch(a), files(std::move(f)), displayName(std::move(name)) {
     }
 
     static ModelFiles DefaultFilesFor(ModelArch a)
@@ -170,6 +182,36 @@ struct ModelDescriptor {
             return SingleFileModelFiles{};
         }
     }
+
+        static QString modelArchToString(ModelArch arch) {
+            switch (arch) {
+            case ModelArch::Paraformer:          return "Paraformer (非流式/默认)";
+            case ModelArch::ParaformerStreaming: return "Paraformer (流式)";
+            case ModelArch::TransducerOffline:   return "Transducer (非流式)";
+            case ModelArch::TransducerOnline:    return "Transducer (流式)";
+            case ModelArch::ZipformerCtcOffline: return "Zipformer (非流式/高性能)";
+            case ModelArch::ZipformerCtcStreaming: return "Zipformer (流式/高性能)";
+            case ModelArch::NemoCtc:             return "Nemo CTC";
+            case ModelArch::NemoTransducer:      return "Nemo Transducer";
+            case ModelArch::TeleSpeechCtc:       return "TeleSpeech CTC";
+            case ModelArch::SenseVoice:          return "SenseVoice (多语言/标点)";
+            case ModelArch::DolphinCtc:          return "Dolphin CTC";
+            case ModelArch::FireRedAsr:          return "FireRed ASR";
+            case ModelArch::WenetCtcOffline:     return "Wenet CTC";
+            case ModelArch::OmnilingualAsr:      return "Omnilingual (多语言)";
+            case ModelArch::TOneCtcStreaming:    return "T-One Streaming";
+            case ModelArch::Whisper:             return "Whisper (OpenAI)";
+            case ModelArch::Moonshine:           return "Moonshine";
+            case ModelArch::FunasrNano:          return "FunASR Nano (2025)";
+            case ModelArch::Qwen3Asr:            return "Qwen3-ASR (大语言声学模型)";
+            default:                             return "Unknown";
+            }
+    }
+};
+
+struct ModelEntry {
+    QString displayName;   // 用户看到的： "SenseVoice-Small (多语言/标点/事件)"
+    QString repoPath;      // 程序用的： "csukuangfj/sherpa-onnx-sense-voice-..."
 };
 
 
@@ -311,7 +353,7 @@ public:
     static QStringList GetLanguagesByModel(const QString& repoId); 
 
     static ModelInstallManifest BuildManifest(const QString& repoId);
-
+    static const QString FindByDisplayName(const QString& language, const QString& displayName);
 
 private:
     static const QMap<QString, ModelDescriptor>& Table();

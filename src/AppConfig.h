@@ -1,6 +1,7 @@
 #pragma once
 #include <QString>
 #include <QKeySequence>
+#include <QApplication>
 
 enum class AsrBackendKind {
     Sherpa = 0,
@@ -22,7 +23,7 @@ struct AudioConfig {
 };
 
 struct SherpaConfig {
-    QString vadPath;
+    QString vadPath = QApplication::applicationDirPath() + "/sherpa/vad/silero_vad.onnx";
     bool useGpu = false;
     int threads = 4;
     QString languageModel;

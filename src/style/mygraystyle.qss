@@ -590,3 +590,95 @@ QToolTip {
     border: 1px solid #4d4e54;
     border-radius: 12px;
 }
+
+/* ==========================================================================
+   GRAY THEME (中间灰色模式)
+   ========================================================================== */
+
+QScrollArea#download_list_container {
+    border: 1px solid #d1d1d6;
+    background: transparent;
+}
+QWidget#download_list_viewport {
+    background-color: rgb(210, 210, 210);
+}
+
+#download_list_widget #projectGroupCard {
+    background-color: #ffffff;
+    border: 1px solid #d1d1d6;
+    border-radius: 12px;
+}
+
+#download_list_widget #titleLabel {
+    color: #1c1c1e;
+    font-size: 14px;
+    font-weight: 600;
+}
+#download_list_widget #overallLabel {
+    color: #636366;
+}
+
+#download_list_widget #overallBar {
+    background-color: #e5e5e7;
+}
+#download_list_widget #overallBar::chunk {
+    background-color: #5856d6;
+}
+
+#download_list_widget #fileNameLabel {
+    color: #3a3a3c;
+}
+#download_list_widget #fileStatusLabel {
+    color: #636366;
+}
+
+#download_list_widget #fileProgressBar {
+    background-color: #e5e5e7;
+}
+#download_list_widget #fileProgressBar::chunk {
+    background-color: #5856d6;
+}
+
+
+
+/* ==========================================================================
+   NavListWidget
+   ========================================================================== */
+#nav_list_widget{
+    background-color: #f2f2f7;
+}
+
+#navListWidget {
+    background-color: transparent;
+    border: none;
+}
+
+QListWidget::item:selected {
+    background-color: #e5e5e7;
+}
+
+#navItemContainer {
+    background-color: transparent;
+    border-radius: 8px;
+}
+#navItemContainer:hover {
+    background-color: #e5e5e7;
+}
+
+#navItemIcon {
+    color: #636366;
+}
+#navItemText {
+    color: #1c1c1e;
+    font-size: 10px;
+}
+
+#navItemIndicator {
+    background-color: #d1d1d6;
+}
+#navItemIndicator[indicatorColor="yellow"] {
+    background-color: #ffcc00;
+}
+#navItemIndicator[indicatorColor="green"] {
+    background-color: #34c759;
+}

@@ -9,23 +9,23 @@ NavListItemWidget::NavListItemWidget(const QString& iconText, const QString& tex
     layout->setContentsMargins(14, 10, 14, 10);
     layout->setSpacing(10);
 
-    m_iconLabel = new QLabel(iconText, this);
-    m_iconLabel->setObjectName("navItemIcon");
-    m_iconLabel->setFixedWidth(20);
-    m_iconLabel->setAlignment(Qt::AlignCenter);
+    //if (iconText.isEmpty()) {
+    //    m_iconLabel = new QLabel(iconText, this);
+    //    m_iconLabel->setObjectName("navItemIcon");
+    //    m_iconLabel->setFixedWidth(20);
+    //    m_iconLabel->setAlignment(Qt::AlignCenter);
+    //    layout->addWidget(m_iconLabel);
+    //}
 
     m_textLabel = new QLabel(text, this);
     m_textLabel->setObjectName("navItemText");
-
-    // 指示灯:一个固定大小的小圆点,默认隐藏
-    m_indicatorDot = new QLabel(this);
-    m_indicatorDot->setObjectName("navItemIndicator");
-    m_indicatorDot->setFixedSize(8, 8);
-    m_indicatorDot->hide();
-
-    layout->addWidget(m_iconLabel);
     layout->addWidget(m_textLabel, 1);
-    layout->addWidget(m_indicatorDot, 0, Qt::AlignVCenter);
+
+    //m_indicatorDot = new QLabel(this);
+    //m_indicatorDot->setObjectName("navItemIndicator");
+    //m_indicatorDot->setFixedSize(8, 8);
+    //m_indicatorDot->hide();
+    //layout->addWidget(m_indicatorDot, 0, Qt::AlignVCenter);
 }
 
 void NavListItemWidget::setIndicatorState(IndicatorState state)
@@ -60,6 +60,11 @@ NavListWidget::NavListWidget(QWidget* parent)
     setFocusPolicy(Qt::NoFocus);
     setFrameShape(QFrame::NoFrame);
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    setViewMode(QListView::IconMode); 
+    setFlow(QListView::LeftToRight);
+    setResizeMode(QListView::Adjust);
+    setMovement(QListWidget::Static);
+
 
     connect(this, &QListWidget::currentRowChanged, this, &NavListWidget::onCurrentRowChanged);
 }
@@ -67,7 +72,7 @@ NavListWidget::NavListWidget(QWidget* parent)
 void NavListWidget::addNavItem(const QString& id, const QString& iconText, const QString& text)
 {
     auto* item = new QListWidgetItem(this);
-    item->setSizeHint(QSize(0, 44));
+    item->setSizeHint(QSize(90, 32));
 
     addItem(item);
 

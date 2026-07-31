@@ -31,6 +31,7 @@ void ConfigManager::applyDefaults() {
     QWriteLocker locker(&m_lock);
     m_config = AppConfig();
 
+    m_config.audio.deviceId = 0;
     m_config.audio.deviceName = "系统默认录音设备";
     m_config.audio.sampleRate = 16000;
     m_config.audio.channels = 1;

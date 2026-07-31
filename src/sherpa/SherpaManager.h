@@ -15,6 +15,7 @@
 
 #include "utils/DownloadManager.h"
 #include "SherpaConfig.h"
+#include "../AppConfig.h"
 
 
 
@@ -25,8 +26,10 @@ public:
     explicit SherpaManager(QObject* parent = nullptr);
     ~SherpaManager();
 
-    void loadModel(const QString& repoId, int numThreads = 4, bool useGpu = false);
+    void loadModel(const AppConfig& config, bool isReload = false);
+    void reloadModel(const AppConfig& config);
     void unloadModel();
+
     bool isModelLoaded() const;
 
     bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
@@ -81,7 +84,7 @@ public:
     void installModel(const QString& repoId);
 
     bool isInstalling(const QString& repoId) const;
-    bool isInstalled(const QString& repoId) const;
+    static bool isInstalled(const QString& repoId);
 
 signals:
     void installationProgress(const QString& msg);

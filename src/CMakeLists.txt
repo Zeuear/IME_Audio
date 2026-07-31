@@ -76,7 +76,7 @@ else()
 endif()
 
 
-if(WIN32 AND NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
+if(NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
     message(STATUS "======================================")
     message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} not found or version mismatch, downloading...")
     message(STATUS "======================================")
@@ -190,15 +190,9 @@ if(_sherpa_runtime_libs)
     endif()
 endif()
 
-# set(SHERPA_CXX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-cxx-api.dll")
-# set(SHERPA_C_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/sherpa-onnx-c-api.dll")
-# set(ONNX_DLL_PATH "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows/onnxruntime.dll")
-# 
-# add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SHERPA_CXX_DLL_PATH}" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-#     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNX_DLL_PATH}"   "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-# )
+set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
+target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
+target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
 
 # ============================================================
@@ -221,13 +215,58 @@ qt_add_shaders(${TARGET_NAME} "shaders"
 set(QHOTKEY_ROOT "${CMAKE_SOURCE_DIR}/third_party/QHotkey")
 target_include_directories(${TARGET_NAME} PRIVATE ${QHOTKEY_ROOT}/QHotkey)
 
-set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
-target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
-target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/windows)
-
-
 target_compile_definitions(${TARGET_NAME}
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
+
+
+# ============================================================
+# VAD Model Download
+# ============================================================
+set(VAD_MODEL_URL "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx")
+set(VAD_MODEL_DIR "${CMAKE_BINARY_DIR}/sherpa/vad")
+set(VAD_MODEL_PATH "${VAD_MODEL_DIR}/silero_vad.onnx")
+
+# 官方发布的 silero_vad.onnx 的 SHA256（建议自己算一次填进去，防止下载损坏或被篡改）
+set(VAD_MODEL_SHA256 "" CACHE STRING "Expected SHA256 of silero_vad.onnx")
+
+if(NOT EXISTS "${VAD_MODEL_PATH}")
+    message(STATUS "Downloading silero_vad.onnx ...")
+    file(MAKE_DIRECTORY "${VAD_MODEL_DIR}")
+
+    if(VAD_MODEL_SHA256)
+        file(DOWNLOAD
+            "${VAD_MODEL_URL}"
+            "${VAD_MODEL_PATH}"
+            EXPECTED_HASH SHA256=${VAD_MODEL_SHA256}
+            SHOW_PROGRESS
+            TLS_VERIFY ON
+        )
+    else()
+        file(DOWNLOAD
+            "${VAD_MODEL_URL}"
+            "${VAD_MODEL_PATH}"
+            SHOW_PROGRESS
+            TLS_VERIFY ON
+        )
+    endif()
+
+    if(NOT EXISTS "${VAD_MODEL_PATH}")
+        message(FATAL_ERROR "Failed to download silero_vad.onnx from ${VAD_MODEL_URL}")
+    endif()
+else()
+    message(STATUS "silero_vad.onnx already exists, skip downloading.")
+endif()
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${VAD_MODEL_PATH}"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad/silero_vad.onnx"
+    COMMENT "Copying silero_vad.onnx to output directory"
+)
+
+
 
 
 if(WIN32)

@@ -26,6 +26,13 @@ SphereOverlay::SphereOverlay(QWidget *parent)
     layout->addWidget(m_quickWidget);
 
     connect(m_controller, &SphereController::sphereClicked, this, &SphereOverlay::sphereClicked);
+
+    m_idleFadeTimer = new QTimer(this);
+    m_idleFadeTimer->setSingleShot(true);
+    m_idleFadeTimer->setInterval(4000); 
+    connect(m_idleFadeTimer, &QTimer::timeout, this, [this]() {
+        hideOverlay();
+    });
 }
 
 void SphereOverlay::setLevel(float normalizedLevel)
@@ -55,3 +62,5 @@ void SphereOverlay::showAtBottomCenter()
 }
 
 void SphereOverlay::hideOverlay() { hide(); }
+void SphereOverlay::hideTimerStart() { m_idleFadeTimer->start(); }
+void SphereOverlay::hideTimerStop() { m_idleFadeTimer->stop(); }

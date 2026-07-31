@@ -350,3 +350,5 @@ void GpuBackendWidget::paintEvent(QPaintEvent* event)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QWidget::paintEvent(event);
 }
+
+

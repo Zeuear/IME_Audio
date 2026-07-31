@@ -4,6 +4,8 @@
 #include <QIODevice>
 #include "AppConfig.h"
 
+#include "cxx-api.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,29 +26,54 @@ public:
 
 public slots:
     void processChunk(const QByteArray chunk);
+    void updateVadState(const QByteArray& chunk);
+    void resetLevel();
 
 signals:
     void spectrumReady(const QVector<float>& bands);
+    void levelUpdated(float rmsLevel);
 
 private:
     static constexpr int kFftSize = 512;
     static constexpr int kBandCount = 16;
     void* m_kissFftCfg = nullptr;
+    float m_rmsLevel = 0;
+    float m_peakLevel = 0;
 
     std::vector<float> m_fftInputBuffer;
     int m_sampleRate;
 };
 
 
-class AudioRecorderService : public QObject {
+class VadWorker : public QObject {
+    Q_OBJECT
+public:
+    explicit VadWorker(const AppConfig& config, int sampleRate, QObject* parent = nullptr);
+
+public slots:
+    void processChunk(const QByteArray chunk);
+    void reset();
+    void rebuildDetector();
+
+signals:
+    void speechStarted();
+    void speechSegmentReady(const QByteArray& pcmData, int sampleRate); 
+    void speechEnded(); 
+
+private:
+    std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_vad;
+    int m_sampleRate;
+    bool m_wasSpeaking = false;
+    const AppConfig& m_config;
+};
+
+class AudioRecorderService: public QObject {
     Q_OBJECT
 public:
     struct RuntimeStatus {
         bool isListening = false;
         bool isPaused = false;
         bool hadVoice = false;
-        int peakLevel = 0;
-        float rmsLevel = 0.0f;
         int currentSegmentMs = 0;
     };
 
@@ -63,6 +90,7 @@ public:
     RuntimeStatus runtimeStatus() const;
 
     static QStringList availableMicrophones();
+    void updateConfig();
 
 signals:
     void utteranceReady(const QByteArray& pcmData, int sampleRate);
@@ -75,10 +103,11 @@ signals:
 
 private slots:
     void onAudioDataReady();
+    void onVadSpeechStarted();
+    void onVadSpeechEnded();
+    void onVadSegmentReady(const QByteArray& pcmData, int sampleRate);
 
 private:
-    void updateSpectrum(const QByteArray& chunk);
-    void updateVadState(const QByteArray &chunk);
     void finalizeSegmentIfNeeded(bool forceCut);
     int bytesPerMs() const;
 
@@ -97,6 +126,11 @@ private:
     SpectrumWorker* m_spectrumWorker;
     QThread* m_spectrumThread = nullptr;
 
+    VadWorker* m_vadWorker = nullptr;
+    QThread* m_vadThread = nullptr;
+
+    QByteArray m_preRollBuffer;
+    static constexpr int kPreRollMs = 300;
 
     // 整段录音原始 PCM，仅用于调试导出
     QByteArray m_fullSessionBuffer;   
