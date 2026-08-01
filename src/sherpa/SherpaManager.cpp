@@ -40,7 +40,6 @@ bool SherpaManager::isModelLoaded() const
 
 bool SherpaManager::isBusy() const
 {
-    QMutexLocker locker(&m_queueMutex);
     return m_busyFlag;
 }
 
@@ -70,6 +69,7 @@ void SherpaManager::unloadModel()
         m_currentRepoId.clear();
     }
     LOG_DEBUG("Sherpa model unloaded, memory released.");
+    LOG_INFO("卸载成功");
 }
 
 void SherpaManager::reloadModel(const AppConfig& config) {
@@ -88,8 +88,18 @@ void SherpaManager::reloadModel(const AppConfig& config) {
 
     // 如果模型加载了则重新加载
     if (m_isLoaded) {
-        loadModel(config, true);
+        loadModelAsync(config, true);
     }
+}
+
+void SherpaManager::loadModelAsync(const AppConfig& config, bool isReload)
+{
+    {
+        QMutexLocker locker(&m_queueMutex);
+        m_queue.enqueue({ TaskType::Load, {}, 0, config, isReload });
+        m_queueNotEmpty.wakeOne();
+    }
+    emit queueSizeChanged(pendingCount());
 }
 
 void SherpaManager::loadModel(const AppConfig& config, bool isReload)
@@ -100,12 +110,12 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         config.sherpa.localModelRepoId);
 
     if (repoId.isEmpty()) {
-        LOG_ERROR("没有找到对应的模型!");
+        LOG_WARN("没有找到对应的模型!");
         return;
     }
 
     if (!SherpaInstaller::isInstalled(repoId)) {
-        LOG_ERROR("没有安装模型!");
+        LOG_WARN("没有安装模型!");
         return;
     }
 
@@ -127,7 +137,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 	auto result = ModelRegistry::GetConfig(repoId, numThreads, useGpu);
 	m_isLoaded = result.isLoaded;
     if (!result.isLoaded) {
-        LOG_ERROR("Load Model Failed");
+        LOG_ERROR("加载失败，模型文件缺失或者是不存在");
         LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(repoId));
         return;
     }
@@ -265,7 +275,7 @@ void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
 
     {
         QMutexLocker locker(&m_queueMutex);
-        m_queue.enqueue({ pcmData, sampleRate });
+        m_queue.enqueue({ TaskType::Transcribe, pcmData, sampleRate });
         m_queueNotEmpty.wakeOne(); // 唤醒可能正在休眠等待任务的 worker 线程
     }
     emit queueSizeChanged(pendingCount());
@@ -274,7 +284,7 @@ void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
 void SherpaManager::workerLoop()
 {
     forever{
-        PendingUtterance task;
+        PendingTask  task;
 
         {
             QMutexLocker locker(&m_queueMutex);
@@ -289,14 +299,24 @@ void SherpaManager::workerLoop()
         }
         emit queueSizeChanged(pendingCount());
 
-        QString text, error;
-        bool success = transcribeSync(task.pcmData, task.sampleRate, &text, &error);
-        
+        switch (task.type) {
+        case TaskType::Load:
+            loadModel(task.config, task.isReload);
+            emit modelLoadFinished(m_isLoaded);      
+            break;
+        case TaskType::Transcribe: {
+            QString text, error;
+            bool success = transcribeSync(task.pcmData, task.sampleRate, &text, &error);
+            emit utteranceTranscribed(success, text, error);
+            break;
+        }
+        default: break;
+        }
+
         {
             QMutexLocker locker(&m_queueMutex);
             m_busyFlag = false;
         }
-        emit utteranceTranscribed(success, text, error);
     }
 }
 

@@ -13,13 +13,50 @@
 
 SpectrumWorker::SpectrumWorker(int sampleRate):QObject(nullptr), m_sampleRate(sampleRate){
     m_kissFftCfg = kiss_fftr_alloc(kFftSize, 0, nullptr, nullptr);
-}
 
+    computeBandLayout();
+
+    const float frameRateHz = static_cast<float>(m_sampleRate) / static_cast<float>(kFftSize);
+    m_controller = std::make_unique<AdaptiveSpectrumController>(kBandCount, frameRateHz, m_bandCenterHz);
+}
+        
 SpectrumWorker::~SpectrumWorker() {
     if (m_kissFftCfg) {
         kiss_fftr_free(static_cast<kiss_fftr_cfg>(m_kissFftCfg));
     }
 };
+
+void SpectrumWorker::computeBandLayout()
+{
+    const double binHz = static_cast<double>(m_sampleRate) / kFftSize;
+    const int totalBins = kFftSize / 2 + 1;
+
+    int minBin = qMax(1, static_cast<int>(kVoiceMinHz / binHz));
+    int maxBin = qMin(totalBins - 1, static_cast<int>(kVoiceMaxHz / binHz));
+    if (maxBin <= minBin) maxBin = minBin + 1;
+
+    m_bandRanges.resize(kBandCount);
+    m_bandCenterHz.resize(kBandCount);
+
+    double logMin = std::log10(static_cast<double>(minBin));
+    double logMax = std::log10(static_cast<double>(maxBin));
+
+    for (int b = 0; b < kBandCount; ++b) {
+        double lowLog = logMin + (logMax - logMin) * (static_cast<double>(b) / kBandCount);
+        double highLog = logMin + (logMax - logMin) * (static_cast<double>(b + 1) / kBandCount);
+
+        int lowBin = static_cast<int>(std::pow(10.0, lowLog));
+        int highBin = static_cast<int>(std::pow(10.0, highLog));
+        highBin = qMax(highBin, lowBin + 1);
+        highBin = qMin(highBin, maxBin);
+        lowBin = qMin(lowBin, highBin - 1);
+
+        m_bandRanges[b] = { lowBin, highBin };
+
+        double centerBin = (lowBin + highBin) / 2.0;
+        m_bandCenterHz[b] = static_cast<float>(centerBin * binHz);
+    }
+}
 
 void SpectrumWorker::processChunk(const QByteArray chunk)
 {
@@ -52,50 +89,29 @@ void SpectrumWorker::processChunk(const QByteArray chunk)
         magnitudes[i] = std::sqrt(fftOut[i].r * fftOut[i].r + fftOut[i].i * fftOut[i].i);
     }
 
-    const double sampleRate = m_sampleRate;
-    const double binHz = sampleRate / kFftSize;
-
-    const double voiceMinHz = 80.0;
-    const double voiceMaxHz = 1000.0;
-
-    int minBin = qMax(1, static_cast<int>(voiceMinHz / binHz));
-    int maxBin = qMin(static_cast<int>(magnitudes.size()) - 1,
-        static_cast<int>(voiceMaxHz / binHz));
-    if (maxBin <= minBin) maxBin = minBin + 1;
-
-    QVector<float> bands(kBandCount, 0.0f);
-    double logMin = std::log10(static_cast<double>(minBin));
-    double logMax = std::log10(static_cast<double>(maxBin));
-
+    // RMS（能量平均）
+    std::vector<float> bandsDb(kBandCount);
     for (int b = 0; b < kBandCount; ++b) {
-        double lowLog = logMin + (logMax - logMin) * (static_cast<double>(b) / kBandCount);
-        double highLog = logMin + (logMax - logMin) * (static_cast<double>(b + 1) / kBandCount);
-
-        int lowBin = static_cast<int>(std::pow(10.0, lowLog));
-        int highBin = static_cast<int>(std::pow(10.0, highLog));
-        highBin = qMax(highBin, lowBin + 1);
-        highBin = qMin(highBin, maxBin);
-        lowBin = qMin(lowBin, highBin - 1);
-
-        float peak = 0.0f;
-        for (int i = lowBin; i < highBin && i < static_cast<int>(magnitudes.size()); ++i) {
-            peak = qMax(peak, magnitudes[i]);
+        const auto& range = m_bandRanges[b];
+        double sumSq = 0.0;
+        int binCount = 0;
+        for (int i = range.lowBin; i < range.highBin && i < static_cast<int>(magnitudes.size()); ++i) {
+            sumSq += static_cast<double>(magnitudes[i]) * magnitudes[i];
+            ++binCount;
         }
-        bands[b] = peak;
+        float rms = (binCount > 0) ? static_cast<float>(std::sqrt(sumSq / binCount)) : 0.0f;
+        bandsDb[b] = 20.0f * std::log10(std::max(rms, 1e-6f));
     }
 
-    for (int b = 0; b < kBandCount; ++b) {
-        float mag = bands[b];
-        float db = 20.0f * std::log10(mag + 1.0f);
+    // 分频段自适应量程 + 心理声学权重 + 全局响度增益
+    const std::vector<float>& visualBands = m_controller->process(bandsDb, m_rmsLevel);
 
-        const float dbMin = 0.0f;
-        const float dbMax = 45.0f;
-
-        float normalized = (db - dbMin) / (dbMax - dbMin);
-        bands[b] = qBound(0.0f, normalized, 1.0f);
+    float targetGate = m_vadVoiceActive ? 1.0f : 0.0f;
+    QVector<float> qVec(visualBands.size());
+    for (int i = 0; i < static_cast<int>(visualBands.size()); ++i) {
+        qVec[i] = visualBands[i] * targetGate;
     }
-
-    emit spectrumReady(bands);
+    emit spectrumReady(qVec);
 }
 
 void SpectrumWorker::updateVadState(const QByteArray& chunk) {
@@ -103,27 +119,50 @@ void SpectrumWorker::updateVadState(const QByteArray& chunk) {
     const int count = chunk.size() / 2;
     if (count == 0) return;
 
-    int peak = 0;
+    // 计算当前帧的瞬时 RMS
     double sumSquares = 0.0;
     for (int i = 0; i < count; ++i) {
-        int v = static_cast<int>(samples[i]);
-        peak = qMax(peak, qAbs(v));
-        sumSquares += static_cast<double>(v) * v;
+        double v = static_cast<double>(samples[i]);
+        sumSquares += v * v;
     }
+    double instantRms = std::sqrt(sumSquares / count);
 
-    double rms = std::sqrt(sumSquares / count);
-    m_rmsLevel = static_cast<float>(qMin(1.0, rms / 12000.0));
-    m_peakLevel = peak;
+    // 转成 dBFS，映射到 [0,1]
+    double instantDb = 20.0 * std::log10(std::max(instantRms, 1.0) / 32768.0);
+    float instantNormalized = std::clamp(static_cast<float>((instantDb + 60.0) / 45.0), 0.0f, 1.0f);
 
-    emit levelUpdated(m_rmsLevel);
+    float dtMs = (static_cast<float>(count) / m_sampleRate) * 1000.0f;
+    float targetMs = (instantNormalized > m_rmsLevel)
+                    ? m_rmsEnvelopeParams.attackMs
+                    : m_rmsEnvelopeParams.releaseMs;
+    float alpha = 1.0f - std::exp(-dtMs / targetMs);
+
+    m_rmsLevel += alpha * (instantNormalized - m_rmsLevel);
+    if (m_vadVoiceActive) {
+        float nextLevel = 0.50f * (m_rmsLevel / (m_rmsLevel + 0.50f));
+        emit levelUpdated(nextLevel);
+    }
+    else {
+        emit levelUpdated(0.0f);
+    }
 }
-
 
 void SpectrumWorker::resetLevel() {
-    m_peakLevel = 0.f;
-    m_rmsLevel = 0.f;
+    m_rmsLevel = 0.0f;
+    //m_vadVoiceActive = false;
     emit levelUpdated(m_rmsLevel);
 }
+
+void SpectrumWorker::onVadSpeechStarted()
+{
+    m_vadVoiceActive = true;
+}
+
+void SpectrumWorker::onVadSpeechEnded()
+{
+    m_vadVoiceActive = false;
+}
+
 
 VadWorker::VadWorker(const AppConfig& config, int sampleRate, QObject* parent)
     : QObject(parent), m_sampleRate(sampleRate), m_config(config)
@@ -166,74 +205,6 @@ void VadWorker::rebuildDetector()
 }
 
 
-
-void VadWorker::applyAgc(std::vector<float>& samples)
-{
-    if (samples.empty()) return;
-
-    float peak = 0.0f;
-    for (float v : samples) peak = std::max(peak, std::fabs(v));
-
-    constexpr float kTargetPeak = 0.7f;
-    constexpr float kMinGain = 0.5f;
-    constexpr float kMaxGain = 6.0f;
-    constexpr float kAttack = 0.3f;   // 声音突然变大时，快速把增益降下来，防止削波
-    constexpr float kRelease = 0.02f;  // 声音变小时，缓慢提升增益，避免"呼吸泵浦"感
-
-    if (peak > 1e-4f) {
-        float desiredGain = qBound(kMinGain, kTargetPeak / peak, kMaxGain);
-        float alpha = (desiredGain < m_agcGain) ? kAttack : kRelease;
-        m_agcGain += (desiredGain - m_agcGain) * alpha;
-    }
-
-    for (float& v : samples) {
-        v = qBound(-1.0f, v * m_agcGain, 1.0f);
-    }
-}
-
-void VadWorker::emitPaddedSegment(const sherpa_onnx::cxx::SpeechSegment& segment)
-{
-    constexpr int kPrePadMs = 150;
-    constexpr int kPostPadMs = 150;
-    const int prePadSamples = static_cast<int>(kPrePadMs / 1000.0 * m_sampleRate);
-    const int postPadSamples = static_cast<int>(kPostPadMs / 1000.0 * m_sampleRate);
-
-    int64_t segStart = segment.start;
-    int64_t segEnd = segStart + static_cast<int64_t>(segment.samples.size());
-
-    int64_t wantStart = segStart - prePadSamples;
-    int64_t wantEnd = segEnd + postPadSamples;
-
-    int64_t histStart = m_historyStartSample;
-    int64_t histEnd = m_historyStartSample + static_cast<int64_t>(m_processedHistory.size());
-
-    int64_t actualStart = qMax(wantStart, histStart);
-    int64_t actualEnd = qMin(wantEnd, histEnd);
-    actualStart = qMin(actualStart, segStart);
-    actualEnd = qMax(actualEnd, segEnd);
-
-    std::vector<int16_t> pcm16;
-    pcm16.reserve(static_cast<size_t>(actualEnd - actualStart));
-
-    for (int64_t idx = actualStart; idx < segStart; ++idx) {
-        pcm16.push_back(m_processedHistory[static_cast<size_t>(idx - histStart)]);
-    }
-    // 语音本体：直接用 VAD 内部存的样本(已经是 AGC 之后的)
-    for (float v : segment.samples) {
-        float c = qBound(-1.0f, v, 1.0f);
-        pcm16.push_back(static_cast<int16_t>(c * 32767.0f));
-    }
-    // 后置 padding：从历史缓冲取（此时静音期的样本理应已经进了缓冲）
-    for (int64_t idx = segEnd; idx < actualEnd; ++idx) {
-        pcm16.push_back(m_processedHistory[static_cast<size_t>(idx - histStart)]);
-    }
-
-    QByteArray pcm(reinterpret_cast<const char*>(pcm16.data()),
-        static_cast<int>(pcm16.size() * sizeof(int16_t)));
-    emit speechSegmentReady(pcm, m_sampleRate);
-}
-
-
 void VadWorker::processChunk(const QByteArray chunk)
 {
     if (!m_vad) return;  
@@ -244,17 +215,6 @@ void VadWorker::processChunk(const QByteArray chunk)
     for (int i = 0; i < count; ++i) {
         floatSamples[i] = samples[i] / 32768.0f;
     }
-
-    //applyAgc(floatSamples);
-    //for (float v : floatSamples) {
-    //    float c = qBound(-1.0f, v, 1.0f);
-    //    m_processedHistory.push_back(static_cast<int16_t>(c * 32767.0f));
-    //}
-    //m_totalSamplesFed += count;
-    //while (static_cast<int>(m_processedHistory.size()) > m_historyCapacity) {
-    //    m_processedHistory.pop_front();
-    //    m_historyStartSample++;
-    //}
 
     m_vad->AcceptWaveform(floatSamples.data(), count);
 
@@ -268,8 +228,6 @@ void VadWorker::processChunk(const QByteArray chunk)
 
     while (!m_vad->IsEmpty()) {
         auto segment = m_vad->Front();
-        //emitPaddedSegment(segment);
-        //m_vad->Pop();
 
         std::vector<int16_t> pcm16(segment.samples.size());
         for (size_t i = 0; i < segment.samples.size(); ++i) {
@@ -307,6 +265,7 @@ AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *par
     connect(m_vadWorker, &VadWorker::speechStarted, this, &AudioRecorderService::onVadSpeechStarted);
     connect(m_vadWorker, &VadWorker::speechEnded, this, &AudioRecorderService::onVadSpeechEnded);
     connect(m_vadWorker, &VadWorker::speechSegmentReady, this, &AudioRecorderService::onVadSegmentReady);
+
     m_vadThread->start();
 }
 

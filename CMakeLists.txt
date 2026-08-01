@@ -73,6 +73,7 @@ add_subdirectory(third_party/kissfft)
 
 add_subdirectory(third_party/QHotkey)
 
+
 # src
 add_subdirectory(src)
 

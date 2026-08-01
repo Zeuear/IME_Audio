@@ -31,15 +31,13 @@ public:
     void unloadModel();
 
     bool isModelLoaded() const;
-
-    bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
-    
     bool isBusy() const;       
     int  pendingCount() const;   
 
     std::shared_ptr<sherpa_onnx::cxx::OnlineRecognizer> onlineRecognizerSnapshot() const;
     
 public slots:
+    void loadModelAsync(const AppConfig& config, bool isReload);
     void transcribeAsync(const QByteArray& pcmData, int sampleRate);
     void shutdown(); 
     void workerLoop(); 
@@ -47,32 +45,43 @@ public slots:
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount); 
+	void modelLoadFinished(bool success);
 
 private:
+    bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
     bool transcribeOffline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
     bool transcribeOnline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
 
-    struct PendingUtterance {
-        QByteArray pcmData;
-        int sampleRate;
+    enum class TaskType { Transcribe, Load, Unload };
+
+    struct PendingTask {
+        // Transcribe
+        TaskType type;
+        QByteArray pcmData;  
+        int sampleRate = 0;   
+
+        // Load
+        AppConfig config;   
+        bool isReload = false;
     };
 
     RecognizerKind m_kind = RecognizerKind::None;
     std::unique_ptr<sherpa_onnx::cxx::OfflineRecognizer> m_offlineRecognizer;
     std::unique_ptr<sherpa_onnx::cxx::OnlineRecognizer>  m_onlineRecognizer;
 
-    bool m_isLoaded = false;
+    std::atomic<bool> m_isLoaded{ false };
+    std::atomic<bool> m_busyFlag{ false };
+    std::atomic<bool> m_stopWorker{ false };
+
     QString m_currentRepoId;
     AppConfig m_configCopy;
 
     mutable QMutex m_recognizerMutex; 
 
     // 任务队列相关
-    QQueue<PendingUtterance> m_queue;
+    QQueue<PendingTask> m_queue;
     mutable QMutex m_queueMutex;
     QWaitCondition m_queueNotEmpty;
-    bool m_busyFlag = false;   
-    bool m_stopWorker = false;
 
     QThread* m_workerThread;
 

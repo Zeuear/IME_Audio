@@ -29,7 +29,7 @@ Item {
                 readonly property real energy: (index < root.levels.length) ? root.levels[index] : 0.0
 
                 width: Math.max(1.5, (root.width - (root.barCount - 1) * root.barSpacing) / root.barCount)
-                height: Math.max(2, (energy * root.height * 1.2) * circleFactor)
+                height: Math.max(2, (energy * root.height * 1.1) * circleFactor)
 
                 radius: width / 2 + 5
                 anchors.verticalCenter: parent.verticalCenter

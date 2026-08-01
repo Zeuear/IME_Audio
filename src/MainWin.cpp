@@ -127,6 +127,8 @@ void MainWin::initialize() {
 
     // 声音控件
     m_sphereOverlay = new SphereOverlay();
+    m_sphereOverlay->showAtBottomCenter();
+    m_sphereOverlay->setListening();
 
     auto* periodicTimer = new QTimer(this);
     periodicTimer->setInterval(4 * 60 * 60 * 1000);
@@ -262,8 +264,13 @@ void MainWin::connection(){
         this, [this](const QString& repoId, bool success, const QString& msg) {
             if (success && !repoId.isEmpty()) {
                 const AppConfig& config = ConfigManager::instance().config();
-                m_sherpaManager->loadModel(config);
+                m_sherpaManager->loadModelAsync(config, false);
             }
+        });
+
+    connect(m_sherpaManager, &SherpaManager::modelLoadFinished, this, [this](bool ok) {
+        if (ok) LOG_INFO("模型加载完成");
+        else LOG_ERROR("模型加载失败");
         });
 
     connect(m_sphereOverlay, &SphereOverlay::sphereClicked, this, [this]() {
@@ -418,7 +425,7 @@ void MainWin::loadConfigToUI() {
     if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
 
     if (cfg.backend == AsrBackendKind::Sherpa) {
-		m_sherpaManager->loadModel(cfg);
+		m_sherpaManager->loadModelAsync(cfg, false);
     }
 
     // Gemini

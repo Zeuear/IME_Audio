@@ -9,9 +9,9 @@ Item {
         NumberAnimation { duration: 220; easing.type: Easing.OutQuad }
     }
     onLevelChanged: smoothedLevel = level
-    property real internalPulse: Math.pow(smoothedLevel, 1.5) 
+    property real internalPulse: Math.pow(smoothedLevel, 1.3) 
 
-    scale: 0.5 + internalPulse * 0.4
+    scale: 0.6 + internalPulse * 0.3
     Behavior on scale {
         NumberAnimation { duration: 70; easing.type: Easing.OutQuad }
     }
