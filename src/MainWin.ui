@@ -70,29 +70,106 @@
               <property name="spacing">
                <number>10</number>
               </property>
-              <item row="7" column="0">
-               <spacer name="verticalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Policy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_21">
+                <property name="maximumSize">
                  <size>
-                  <width>0</width>
-                  <height>20</height>
+                  <width>150</width>
+                  <height>16777215</height>
                  </size>
                 </property>
-               </spacer>
+                <property name="text">
+                 <string>Automatic Monitoring</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
               </item>
-              <item row="1" column="1" colspan="4">
-               <widget class="QComboBox" name="recording_equ_comb">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+              <item row="5" column="3">
+               <widget class="QLabel" name="label_5">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Longest Recording(ms)</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_4">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Shortest Recording(ms)</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_6">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Identification Backend</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="AnimatedCheckBox" name="autiomatic_monitoring_checkbox">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;continues automatically after identification&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="tristate">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1" colspan="3">
+               <widget class="QComboBox" name="identification_backend_comb"/>
+              </item>
+              <item row="2" column="4">
+               <widget class="QSpinBox" name="cpu_thread_number_spin">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Volume Threshold</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
@@ -112,8 +189,27 @@
                 </property>
                </spacer>
               </item>
+              <item row="2" column="3">
+               <widget class="QLabel" name="label_7">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>CPU Thread Number</string>
+                </property>
+               </widget>
+              </item>
               <item row="5" column="4">
                <widget class="QSpinBox" name="longest_recording_spin">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="minimum">
                  <number>3000</number>
                 </property>
@@ -125,8 +221,91 @@
                 </property>
                </widget>
               </item>
+              <item row="5" column="1">
+               <widget class="QSpinBox" name="shortest_recording_spin">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="minimum">
+                 <number>150</number>
+                </property>
+                <property name="maximum">
+                 <number>5000</number>
+                </property>
+                <property name="value">
+                 <number>1900</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Recording Equipment</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="4">
+               <widget class="QComboBox" name="recording_equ_comb">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <spacer name="verticalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>0</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="2" column="2">
+               <spacer name="horizontalSpacer_2">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>66</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
               <item row="4" column="4">
                <widget class="QSpinBox" name="mute_duration_spin">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="minimum">
                  <number>400</number>
                 </property>
@@ -138,21 +317,14 @@
                 </property>
                </widget>
               </item>
-              <item row="5" column="1">
-               <widget class="QSpinBox" name="shortest_recording_spin">
-                <property name="minimum">
-                 <number>300</number>
-                </property>
-                <property name="maximum">
-                 <number>5000</number>
-                </property>
-                <property name="value">
-                 <number>1900</number>
-                </property>
-               </widget>
-              </item>
               <item row="4" column="3">
                <widget class="QLabel" name="label_3">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>Mute Duration(ms)</string>
                 </property>
@@ -161,48 +333,14 @@
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_21">
-                <property name="text">
-                 <string>Automatic Monitoring</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label_4">
-                <property name="text">
-                 <string>Shortest Recording(ms)</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>Recording Equipment</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Volume Threshold</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
               <item row="4" column="1">
                <widget class="QSpinBox" name="volume_threshold_spin">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="minimum">
                  <number>120</number>
                 </property>
@@ -214,48 +352,21 @@
                 </property>
                </widget>
               </item>
-              <item row="5" column="3">
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>Longest Recording(ms)</string>
+              <item row="2" column="5">
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Fixed</enum>
                 </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="AnimatedCheckBox" name="autiomatic_monitoring_checkbox">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;continues automatically after identification&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>100</width>
+                  <height>20</height>
+                 </size>
                 </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="tristate">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_6">
-                <property name="text">
-                 <string>Identification Backend</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1" colspan="2">
-               <widget class="QComboBox" name="identification_backend_comb"/>
-              </item>
-              <item row="2" column="3">
-               <widget class="QLabel" name="label_7">
-                <property name="text">
-                 <string>CPU Thread Number</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="4">
-               <widget class="QSpinBox" name="cpu_thread_number_spin"/>
+               </spacer>
               </item>
              </layout>
             </item>
@@ -335,6 +446,35 @@
               <property name="bottomMargin">
                <number>10</number>
               </property>
+              <property name="horizontalSpacing">
+               <number>10</number>
+              </property>
+              <property name="verticalSpacing">
+               <number>6</number>
+              </property>
+              <item row="2" column="2">
+               <widget class="QPushButton" name="download_model_btn">
+                <property name="text">
+                 <string>Download and configure</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="language_comb">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
               <item row="3" column="0">
                <spacer name="verticalSpacer_5">
                 <property name="orientation">
@@ -351,30 +491,19 @@
                 </property>
                </spacer>
               </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_8">
-                <property name="text">
-                 <string>Local Model</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="local_model_comb"/>
               </item>
               <item row="1" column="0">
                <widget class="QLabel" name="label_9">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>Language Model</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="language_comb"/>
-              </item>
-              <item row="2" column="3">
-               <widget class="QPushButton" name="uninstall_sherpa_btn">
-                <property name="text">
-                 <string>UninstallAll</string>
                 </property>
                </widget>
               </item>
@@ -385,15 +514,51 @@
                 </property>
                </widget>
               </item>
-              <item row="2" column="2">
-               <widget class="QPushButton" name="download_model_btn">
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_8">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="text">
-                 <string>Download and configure</string>
+                 <string>Local Model</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="local_model_comb"/>
+              <item row="1" column="3">
+               <widget class="QPushButton" name="uninstall_sherpa_btn">
+                <property name="text">
+                 <string>Uninstall All</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="4">
+               <spacer name="horizontalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>100</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="2" column="3">
+               <widget class="QPushButton" name="uninstall_model_btn">
+                <property name="text">
+                 <string>Uninstall Model</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -521,52 +686,6 @@
               <property name="horizontalSpacing">
                <number>15</number>
               </property>
-              <item row="1" column="5">
-               <widget class="QComboBox" name="translate_language_comb"/>
-              </item>
-              <item row="9" column="1" colspan="4">
-               <spacer name="verticalSpacer_8">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item row="6" column="2">
-               <widget class="QLabel" name="label_16">
-                <property name="text">
-                 <string>API Url</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="1" colspan="6">
-               <widget class="QLineEdit" name="ai_vocabulary_edit"/>
-              </item>
-              <item row="6" column="3">
-               <widget class="QLineEdit" name="api_url_edit"/>
-              </item>
-              <item row="1" column="4">
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>Language</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="0">
-               <widget class="QLabel" name="label_17">
-                <property name="text">
-                 <string>Custom Commands</string>
-                </property>
-               </widget>
-              </item>
               <item row="6" column="0">
                <widget class="QLabel" name="label_13">
                 <property name="text">
@@ -574,10 +693,59 @@
                 </property>
                </widget>
               </item>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="gemini_style_comb"/>
+              </item>
+              <item row="7" column="1" colspan="6">
+               <widget class="QLineEdit" name="custom_commands_edit"/>
+              </item>
+              <item row="6" column="3">
+               <widget class="QLineEdit" name="api_url_edit"/>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_18">
+                <property name="text">
+                 <string>Style</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
               <item row="8" column="0">
                <widget class="QLabel" name="label_20">
                 <property name="text">
                  <string>AI vocabulary</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_12">
+                <property name="text">
+                 <string>AI Engine</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QLineEdit" name="api_key_edit"/>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="ai_engine_comb">
+                <property name="minimumSize">
+                 <size>
+                  <width>90</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QLabel" name="label_17">
+                <property name="text">
+                 <string>Custom Commands</string>
                 </property>
                </widget>
               </item>
@@ -597,31 +765,38 @@
                 </property>
                </spacer>
               </item>
-              <item row="7" column="1" colspan="6">
-               <widget class="QLineEdit" name="custom_commands_edit"/>
+              <item row="1" column="3">
+               <widget class="QComboBox" name="gemini_model_comb"/>
               </item>
-              <item row="6" column="1">
-               <widget class="QLineEdit" name="api_key_edit"/>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_12">
+              <item row="6" column="2">
+               <widget class="QLabel" name="label_16">
                 <property name="text">
-                 <string>AI Engine</string>
+                 <string>API Url</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="4">
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>Language</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="ai_engine_comb">
-                <property name="minimumSize">
+              <item row="9" column="1" colspan="4">
+               <spacer name="verticalSpacer_8">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
                  <size>
-                  <width>90</width>
-                  <height>0</height>
+                  <width>20</width>
+                  <height>40</height>
                  </size>
                 </property>
-               </widget>
+               </spacer>
               </item>
               <item row="1" column="2">
                <widget class="QLabel" name="label_14">
@@ -633,21 +808,11 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="3">
-               <widget class="QComboBox" name="gemini_model_comb"/>
+              <item row="1" column="5">
+               <widget class="QComboBox" name="translate_language_comb"/>
               </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_18">
-                <property name="text">
-                 <string>Style</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="gemini_style_comb"/>
+              <item row="8" column="1" colspan="6">
+               <widget class="QLineEdit" name="ai_vocabulary_edit"/>
               </item>
              </layout>
             </item>

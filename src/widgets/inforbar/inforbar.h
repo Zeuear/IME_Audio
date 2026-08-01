@@ -63,10 +63,7 @@ public:
         initAnimation();
     }
 
-    ~InforBar(){
-        delete m_opacity_animation;
-        delete m_shadow_effect;
-    }
+    ~InforBar(){}
 
     static InforBar* newInforBar(const QString& title,const QString& content,
                                  InforBarType type, InforBarPosition position,QWidget* parent = nullptr) {

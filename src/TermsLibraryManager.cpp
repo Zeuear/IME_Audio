@@ -6,10 +6,16 @@
 #include <QApplication>
 TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
     connect(this, &TermsLibraryManager::termsReloaded, this, [this]() {
-        QString path = QApplication::applicationDirPath() + "/terms.tsv";
-        saveToTsv(path);
+        saveToTsv(defaultPath());
     });
 
+    loadFromTsv(defaultPath());
+
+}
+
+QString TermsLibraryManager::defaultPath() {
+    QString path = QApplication::applicationDirPath() + "/terms.tsv";
+    return path;
 }
 
 bool TermsLibraryManager::loadFromTsv(const QString &path) {

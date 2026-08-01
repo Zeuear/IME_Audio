@@ -69,7 +69,7 @@ void SherpaManager::unloadModel()
         m_isLoaded = false;
         m_currentRepoId.clear();
     }
-    qDebug() << "Sherpa model unloaded, memory released.";
+    LOG_DEBUG("Sherpa model unloaded, memory released.");
 }
 
 void SherpaManager::reloadModel(const AppConfig& config) {
@@ -79,6 +79,10 @@ void SherpaManager::reloadModel(const AppConfig& config) {
 
     if (repoId.isEmpty()) {
         LOG_ERROR("没有找到对应的模型!");
+        return;
+    }
+    if (m_configCopy.sherpa.threads == config.sherpa.threads &&
+        m_configCopy.sherpa.useGpu == config.sherpa.useGpu) {
         return;
     }
 
@@ -154,6 +158,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 
     if (m_isLoaded) {
         m_currentRepoId = repoId;
+        m_configCopy = config;
     }
 }
 
@@ -261,7 +266,6 @@ void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
     {
         QMutexLocker locker(&m_queueMutex);
         m_queue.enqueue({ pcmData, sampleRate });
-        qDebug() << "[enqueue]" << QThread::currentThreadId() << "queue size=" << m_queue.size();
         m_queueNotEmpty.wakeOne(); // 唤醒可能正在休眠等待任务的 worker 线程
     }
     emit queueSizeChanged(pendingCount());
@@ -275,9 +279,7 @@ void SherpaManager::workerLoop()
         {
             QMutexLocker locker(&m_queueMutex);
             while (m_queue.isEmpty() && !m_stopWorker) {
-                qDebug() << "[worker] waiting..." << QThread::currentThreadId();
                 m_queueNotEmpty.wait(&m_queueMutex);
-                qDebug() << "[worker] woke up, queue size=" << m_queue.size();
             }
             if (m_stopWorker && m_queue.isEmpty()) {
                 return;
@@ -371,6 +373,19 @@ void SherpaInstaller::uninstallAll()
     }
     else {
         emit installationFinished(false, "Uninstall Error");
+    }
+}
+
+void SherpaInstaller::uninstallModel(const QString& repoId)
+{
+    QString sherpaModelRoot = ModelConfigFactory::getSherpaModel();
+    QString repoName = repoId.split("/").last();
+    QDir dir(sherpaModelRoot + "/" + repoName);
+    if (dir.exists() && dir.removeRecursively()) {
+        LOG_INFO("卸载成功");
+    }
+    else {
+        LOG_ERROR("卸载失败");
     }
 }
 

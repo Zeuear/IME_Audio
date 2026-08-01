@@ -3,7 +3,7 @@
 #include <QProcess>
 #include <QApplication>
 #include <QDebug>
-#include <QUUid>
+#include <QUuid>
 #include <QDirIterator>
 #include <QFile>
 #include <QTimer>

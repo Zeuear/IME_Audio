@@ -31,7 +31,9 @@ SphereOverlay::SphereOverlay(QWidget *parent)
     m_idleFadeTimer->setSingleShot(true);
     m_idleFadeTimer->setInterval(4000); 
     connect(m_idleFadeTimer, &QTimer::timeout, this, [this]() {
-        hideOverlay();
+        if (m_controller->state() != SphereController::Paused) {
+            hideOverlay();
+        }
     });
 }
 

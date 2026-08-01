@@ -42,7 +42,11 @@ TranscriptionService::TranscriptionService(
                     params.style = m_config.gemini.geminiStyle;
                     params.customPrompt = m_config.gemini.prompt;
                     params.aiVocab = m_config.gemini.vocab;
-                    m_geminiClient->polishText(text, params);
+                    params.targetLang = m_config.gemini.targetLang;
+
+                    QMetaObject::invokeMethod(m_geminiClient, [this, text, params]() {
+                        m_geminiClient->polishText(text, params);
+                        }, Qt::QueuedConnection);
                 }
                 else {
                     emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);

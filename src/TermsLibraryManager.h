@@ -34,6 +34,8 @@
         void removeItem(int index);
         void clear();
 
+        static QString defaultPath();
+
         bool hasDuplicateCorrect(const QString& targetCorrect, int currentRow);
         bool hasDuplicateWrong(const QString& targetWrong, int currentRow);
         static QString applyReplaceRules(const QString& text, const QString& rules);

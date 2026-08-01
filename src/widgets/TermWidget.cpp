@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QSortFilterProxyModel>
+#include "../utils/Logger.h"
 
 TermWidget::TermWidget(QWidget *parent) : QWidget(parent) {
 
@@ -21,13 +22,11 @@ void TermWidget::setupUi() {
     m_searchEdit->setPlaceholderText(tr("Enter terms..."));
 
     m_reloadBtn = new QPushButton(tr("Reload Terms"), this);
-    m_checkTermsBtn = new QPushButton(tr("Check Terms"), this);
 
     searchLayout->addWidget(m_labelSearch);
     searchLayout->addWidget(m_searchEdit);
     searchLayout->addStretch(); 
     searchLayout->addWidget(m_reloadBtn);
-    searchLayout->addWidget(m_checkTermsBtn);
 
     // Table Area
     QWidget* tableContainer = new QWidget(this);
@@ -78,7 +77,6 @@ void TermWidget::setupUi() {
 
     connect(m_searchEdit, &QLineEdit::textChanged, this, &TermWidget::handleSearch);
     connect(m_reloadBtn, &QPushButton::clicked, this, &TermWidget::handleReload);
-    connect(m_checkTermsBtn, &QPushButton::clicked, this, &TermWidget::handleCheckTerms);
     connect(m_deleteSelectedBtn, &QPushButton::clicked, this, &TermWidget::handleDeleteSelected);
     connect(m_selectAllBtn, &QPushButton::clicked, this, &TermWidget::handleSelectAll);
     connect(m_addRowBtn, &QPushButton::clicked, this, &TermWidget::handleAddRow);
@@ -134,20 +132,11 @@ QList<int> TermWidget::selectedSourceRows() const {
 
 
 void TermWidget::handleReload() {
-    if (m_termsManager->loadFromTsv("terms.tsv")) {
-        qDebug() << "Terms reloaded successfully.";
+    if (m_termsManager->loadFromTsv(m_termsManager->defaultPath())) {
+        LOG_INFO("Terms reloaded successfully.");
     }
     else {
         QMessageBox::warning(this, "Error", "Failed to load terms.tsv");
-    }
-}
-
-void TermWidget::handleCheckTerms() {
-    QString searchText = m_searchEdit->text().trimmed();
-    if (searchText.isEmpty()) {
-    }
-    else {
-        qDebug() << "Searching for:" << searchText;
     }
 }
 
@@ -229,34 +218,34 @@ void TermWidget::handleCheckAction() {
     // 调用 Manager 的冲突检查功能
     QStringList conflicts = m_termsManager->checkConflicts();
     if (conflicts.isEmpty()) {
-        QMessageBox::information(this, "Check Result", "No conflicts found! ✅");
+        QMessageBox::information(this, tr("Check Result"), tr("No conflicts found! ✅"));
     }
     else {
         QString msg = "Found conflicts:\n\n" + conflicts.join("\n");
-        QMessageBox::warning(this, "Conflict Detected", msg);
+        QMessageBox::warning(this, tr("Conflict Detected"), msg);
     }
 }
 
 void TermWidget::handleImport() {
-    QString path = QFileDialog::getOpenFileName(this, "Import TSV", "", "TSV Files (*.tsv)");
+    QString path = QFileDialog::getOpenFileName(this, tr("Import TSV"), "", "TSV Files (*.tsv)");
     if (!path.isEmpty()) {
         if (m_termsManager->importFromFile(path)) {
             qDebug() << "Import successful";
         }
         else {
-            QMessageBox::critical(this, "Error", "Import failed");
+            QMessageBox::critical(this, tr("Error"), tr("Import failed"));
         }
     }
 }
 
 void TermWidget::handleExport() {
-    QString path = QFileDialog::getSaveFileName(this, "Export TSV", "", "TSV Files (*.tsv)");
+    QString path = QFileDialog::getSaveFileName(this, tr("Export TSV"), "", "TSV Files (*.tsv)");
     if (!path.isEmpty()) {
         if (m_termsManager->exportToFile(path)) {
-            QMessageBox::information(this, "Success", "Exported successfully");
+            QMessageBox::information(this, tr("Success"), tr("Exported successfully"));
         }
         else {
-            QMessageBox::critical(this, "Error", "Export failed");
+            QMessageBox::critical(this, tr("Error"), tr("Export failed"));
         }
     }
 }
@@ -276,7 +265,6 @@ void TermWidget::retranslateUi()
 
     // 2. 重新设置底部按钮组
     m_reloadBtn->setText(tr("Reload Terms"));
-    m_checkTermsBtn->setText(tr("Check Terms"));
     m_deleteSelectedBtn->setText(tr("Delete Selected"));
     m_selectAllBtn->setText(tr("Select All"));
     m_addRowBtn->setText(tr("Add Row"));

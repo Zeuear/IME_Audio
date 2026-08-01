@@ -229,8 +229,8 @@ QString GeminiClient::buildEndpoint(const RequestParams& params, bool) const {
         ? QStringLiteral("https://generativelanguage.googleapis.com/v1beta/models/")
         : params.customUrl;
 
-    QString model = params.model.isEmpty() ? QStringLiteral("gemini-1.5-flash") : QStringLiteral("gemini-1.5-flash");
-    return QString("%1%2:generateContent").arg(base, model);
+    QString model = params.model.isEmpty() ? QStringLiteral("gemini-1.5-flash") : params.model;
+    return QString("%1%2:generateContent?key=%3").arg(base, model, params.apiKey);
 }
 
 QByteArray GeminiClient::buildAudioRequestBody(const QByteArray& audioBase64, const RequestParams& params) const {
@@ -253,11 +253,10 @@ QByteArray GeminiClient::buildTextRequestBody(const QString& text, const Request
     QString prompt = buildPolishPrompt(text, params);
 
     QJsonObject textPart{ {"text", prompt} };
-    QJsonObject content{ {"role", "user"}, {"parts", QJsonArray{textPart}} };
-    QJsonObject root{
-        {"contents", QJsonArray{content}},
-        {"generationConfig", QJsonObject{{"temperature", 0.1}}}
-    };
+    QJsonArray partsArray{ textPart };
+    QJsonObject content{ {"role", "user"},{"parts", partsArray} };
+    QJsonArray contentsArray{ content };
+    QJsonObject root{ {"contents", contentsArray}, { "generationConfig", QJsonObject{{"temperature", 0.1}} } };
     return QJsonDocument(root).toJson(QJsonDocument::Compact);
 }
 
@@ -404,10 +403,13 @@ void GeminiClient::polishText(const QString& inputText, const RequestParams& par
     QNetworkRequest req(QUrl(buildEndpoint(params, true)));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    QNetworkReply* reply = m_manager->post(req, buildTextRequestBody(inputText, params));
+    QByteArray postData = buildTextRequestBody(inputText, params);
+    QNetworkReply* reply = m_manager->post(req, postData);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        LOG_DEBUG("finished lambda entered");
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
+            LOG_WARN(reply->errorString());
             emit polishFinished(false, {}, reply->errorString());
             return;
         }
@@ -419,7 +421,6 @@ void GeminiClient::polishText(const QString& inputText, const RequestParams& par
 
 void GeminiClient::testConnection(const RequestParams& params) {
     QNetworkRequest req(QUrl(buildEndpoint(params, true)));
-    req.setRawHeader("x-goog-api-key", params.apiKey.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     if (params.apiKey.isEmpty()) {

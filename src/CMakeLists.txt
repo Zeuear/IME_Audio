@@ -279,13 +279,41 @@ if(WIN32)
         Ole32
         Shell32
     )
-else()
+elseif(APPLE)
     target_link_libraries(${TARGET_NAME} 
         ${QtModules}
-        sherpa-onnx-cxx-api    
-        sherpa-onnx-c-api 
+        # 1. 接口层（先链接）
+        sherpa-onnx-c-api
+        sherpa-onnx-cxx-api
+        # 2. 核心业务层
+        sherpa-onnx-core
+        # 3. 各种底层算法与模型解析依赖库（后链接）
+        kaldi-decoder-core
+        kaldi-native-fbank-core
+        sherpa-onnx-kaldifst-core
+        sherpa-onnx-fst
+        sherpa-onnx-fstfar
+        ssentencepiece_core
+        kissfft-float
+        # 4. 最底层的硬件/推理后端
+        onnxruntime
+        sherpa-onnx-portaudio_static
         qhotkey
         kissfft
+    )
+    
+    target_link_options(${TARGET_NAME} PRIVATE "-Wl,-all_load")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(${TARGET_NAME} PRIVATE
+        -Wl,--start-group
+        ${QtModules}
+        sherpa-onnx-c-api sherpa-onnx-cxx-api sherpa-onnx-core
+        kaldi-decoder-core kaldi-native-fbank-core sherpa-onnx-kaldifst-core
+        sherpa-onnx-fst sherpa-onnx-fstfar ssentencepiece_core kissfft-float
+        onnxruntime sherpa-onnx-portaudio_static
+        qhotkey
+        kissfft
+        -Wl,--end-group
     )
 endif()
 

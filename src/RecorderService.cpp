@@ -95,7 +95,6 @@ void SpectrumWorker::processChunk(const QByteArray chunk)
         bands[b] = qBound(0.0f, normalized, 1.0f);
     }
 
-    QVector<float> result(bands.begin(), bands.end());
     emit spectrumReady(bands);
 }
 
@@ -146,9 +145,94 @@ void VadWorker::rebuildDetector()
     vadConfig.silero_vad.max_speech_duration = static_cast<float>(m_config.audio.maxRecordMs) / 1000;
     vadConfig.sample_rate = m_config.audio.sampleRate;
 
-    m_vad = std::make_unique<sherpa_onnx::cxx::VoiceActivityDetector>(
+    auto newVad = std::make_unique<sherpa_onnx::cxx::VoiceActivityDetector>(
         sherpa_onnx::cxx::VoiceActivityDetector::Create(vadConfig, static_cast<float>(m_config.audio.maxRecordMs) / 1000.0f + 5.0f));
+
+    {
+        std::lock_guard<std::mutex> lock(m_vadMutex);
+        m_vad = std::move(newVad);
+    }
+
+    constexpr int kPrePadMs = 150;
+    constexpr int kPostPadMs = 150;
+    int neededMs = kPrePadMs + qMax(kPostPadMs, m_config.audio.silenceTimeoutMs) + 300;
+    m_historyCapacity = static_cast<int>(neededMs / 1000.0 * m_sampleRate);
+
+    m_processedHistory.clear();
+    m_historyStartSample = 0;
+    m_totalSamplesFed = 0;
+    m_agcGain = 1.0f;
+    LOG_INFO("VAD 模型更新成功");
 }
+
+
+
+void VadWorker::applyAgc(std::vector<float>& samples)
+{
+    if (samples.empty()) return;
+
+    float peak = 0.0f;
+    for (float v : samples) peak = std::max(peak, std::fabs(v));
+
+    constexpr float kTargetPeak = 0.7f;
+    constexpr float kMinGain = 0.5f;
+    constexpr float kMaxGain = 6.0f;
+    constexpr float kAttack = 0.3f;   // 声音突然变大时，快速把增益降下来，防止削波
+    constexpr float kRelease = 0.02f;  // 声音变小时，缓慢提升增益，避免"呼吸泵浦"感
+
+    if (peak > 1e-4f) {
+        float desiredGain = qBound(kMinGain, kTargetPeak / peak, kMaxGain);
+        float alpha = (desiredGain < m_agcGain) ? kAttack : kRelease;
+        m_agcGain += (desiredGain - m_agcGain) * alpha;
+    }
+
+    for (float& v : samples) {
+        v = qBound(-1.0f, v * m_agcGain, 1.0f);
+    }
+}
+
+void VadWorker::emitPaddedSegment(const sherpa_onnx::cxx::SpeechSegment& segment)
+{
+    constexpr int kPrePadMs = 150;
+    constexpr int kPostPadMs = 150;
+    const int prePadSamples = static_cast<int>(kPrePadMs / 1000.0 * m_sampleRate);
+    const int postPadSamples = static_cast<int>(kPostPadMs / 1000.0 * m_sampleRate);
+
+    int64_t segStart = segment.start;
+    int64_t segEnd = segStart + static_cast<int64_t>(segment.samples.size());
+
+    int64_t wantStart = segStart - prePadSamples;
+    int64_t wantEnd = segEnd + postPadSamples;
+
+    int64_t histStart = m_historyStartSample;
+    int64_t histEnd = m_historyStartSample + static_cast<int64_t>(m_processedHistory.size());
+
+    int64_t actualStart = qMax(wantStart, histStart);
+    int64_t actualEnd = qMin(wantEnd, histEnd);
+    actualStart = qMin(actualStart, segStart);
+    actualEnd = qMax(actualEnd, segEnd);
+
+    std::vector<int16_t> pcm16;
+    pcm16.reserve(static_cast<size_t>(actualEnd - actualStart));
+
+    for (int64_t idx = actualStart; idx < segStart; ++idx) {
+        pcm16.push_back(m_processedHistory[static_cast<size_t>(idx - histStart)]);
+    }
+    // 语音本体：直接用 VAD 内部存的样本(已经是 AGC 之后的)
+    for (float v : segment.samples) {
+        float c = qBound(-1.0f, v, 1.0f);
+        pcm16.push_back(static_cast<int16_t>(c * 32767.0f));
+    }
+    // 后置 padding：从历史缓冲取（此时静音期的样本理应已经进了缓冲）
+    for (int64_t idx = segEnd; idx < actualEnd; ++idx) {
+        pcm16.push_back(m_processedHistory[static_cast<size_t>(idx - histStart)]);
+    }
+
+    QByteArray pcm(reinterpret_cast<const char*>(pcm16.data()),
+        static_cast<int>(pcm16.size() * sizeof(int16_t)));
+    emit speechSegmentReady(pcm, m_sampleRate);
+}
+
 
 void VadWorker::processChunk(const QByteArray chunk)
 {
@@ -161,11 +245,21 @@ void VadWorker::processChunk(const QByteArray chunk)
         floatSamples[i] = samples[i] / 32768.0f;
     }
 
+    //applyAgc(floatSamples);
+    //for (float v : floatSamples) {
+    //    float c = qBound(-1.0f, v, 1.0f);
+    //    m_processedHistory.push_back(static_cast<int16_t>(c * 32767.0f));
+    //}
+    //m_totalSamplesFed += count;
+    //while (static_cast<int>(m_processedHistory.size()) > m_historyCapacity) {
+    //    m_processedHistory.pop_front();
+    //    m_historyStartSample++;
+    //}
+
     m_vad->AcceptWaveform(floatSamples.data(), count);
 
     bool isSpeaking = m_vad->IsDetected();
     if (isSpeaking && !m_wasSpeaking) {
-        qDebug() << "开始说话了";
         emit speechStarted();
     }else if (!isSpeaking && m_wasSpeaking) {
         emit speechEnded();
@@ -174,6 +268,8 @@ void VadWorker::processChunk(const QByteArray chunk)
 
     while (!m_vad->IsEmpty()) {
         auto segment = m_vad->Front();
+        //emitPaddedSegment(segment);
+        //m_vad->Pop();
 
         std::vector<int16_t> pcm16(segment.samples.size());
         for (size_t i = 0; i < segment.samples.size(); ++i) {

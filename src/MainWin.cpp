@@ -33,6 +33,7 @@
 
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
+  ui->ai_vocabulary_edit->setReadOnly(true);
 
   initSystemTray();
   initialize();
@@ -147,6 +148,22 @@ void MainWin::connection(){
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
         m_sherpaInstaller->uninstallAll();
+    });
+
+    connect(ui->uninstall_model_btn, &QPushButton::clicked, this, [this]() {
+        AppConfig uiConfig = extractConfigFromUI();
+        ConfigManager::instance().updateConfig(uiConfig);
+        ConfigManager::instance().save();
+
+        const AppConfig& config = ConfigManager::instance().config();
+        QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
+                                                        config.sherpa.localModelRepoId);
+        if (repoId.isEmpty()) {
+            LOG_ERROR("没有找到对应的模型!");
+            return;
+        }
+        LOG_DEBUG(QString("Download %1...").arg(repoId));
+        m_sherpaInstaller->uninstallModel(repoId);
     });
 
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
@@ -271,6 +288,8 @@ void MainWin::connection(){
         for (const QString& w : rules.hotwords) hotwords += w + '\n';
         appConfig.sherpa.hotwords = hotwords;
 		ConfigManager::instance().save();
+
+        ui->ai_vocabulary_edit->setText(appConfig.gemini.vocab);
     });
 
     connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);
@@ -718,6 +737,7 @@ void MainWin::onSaveConfig()
         if (uiConfig.backend == AsrBackendKind::Sherpa) {
             m_sherpaManager->reloadModel(uiConfig);
         }
+        m_recorderService->updateConfig();
     }
     else {
         LOG_ERROR("Save Configuration Failed");

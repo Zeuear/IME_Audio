@@ -37,6 +37,8 @@ public:
     bool isBusy() const;       
     int  pendingCount() const;   
 
+    std::shared_ptr<sherpa_onnx::cxx::OnlineRecognizer> onlineRecognizerSnapshot() const;
+    
 public slots:
     void transcribeAsync(const QByteArray& pcmData, int sampleRate);
     void shutdown(); 
@@ -61,6 +63,7 @@ private:
 
     bool m_isLoaded = false;
     QString m_currentRepoId;
+    AppConfig m_configCopy;
 
     mutable QMutex m_recognizerMutex; 
 
@@ -82,6 +85,7 @@ public:
     explicit SherpaInstaller(QNetworkAccessManager* nam, QObject* parent = nullptr);
     void uninstallAll();
     void installModel(const QString& repoId);
+    void uninstallModel(const QString& repoId);
 
     bool isInstalling(const QString& repoId) const;
     static bool isInstalled(const QString& repoId);

@@ -164,134 +164,134 @@
 <context>
     <name>MainWin</name>
     <message>
-        <location filename="../../src/MainWin.ui" line="869"/>
-        <location filename="../../src/MainWin.ui" line="945"/>
+        <location filename="../../src/MainWin.ui" line="1044"/>
+        <location filename="../../src/MainWin.ui" line="1120"/>
         <source>Help</source>
         <translation>Help</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="877"/>
+        <location filename="../../src/MainWin.ui" line="1052"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="881"/>
+        <location filename="../../src/MainWin.ui" line="1056"/>
         <source>Theme</source>
         <translation>Theme</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="553"/>
-        <location filename="../../src/MainWin.ui" line="889"/>
+        <location filename="../../src/MainWin.ui" line="781"/>
+        <location filename="../../src/MainWin.ui" line="1064"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="45"/>
+        <location filename="../../src/MainWin.ui" line="48"/>
         <source>Basic Settings</source>
         <translation type="unfinished">Basic Settings</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="217"/>
+        <location filename="../../src/MainWin.ui" line="98"/>
         <source>Longest Recording(ms)</source>
         <translation type="unfinished">Longest Recording(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="174"/>
+        <location filename="../../src/MainWin.ui" line="114"/>
         <source>Shortest Recording(ms)</source>
         <translation type="unfinished">Shortest Recording(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="194"/>
+        <location filename="../../src/MainWin.ui" line="169"/>
         <source>Volume Threshold</source>
         <translation type="unfinished">Volume Threshold</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="164"/>
+        <location filename="../../src/MainWin.ui" line="82"/>
         <source>Automatic Monitoring</source>
         <translation type="unfinished">Automatic Monitoring</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="227"/>
+        <location filename="../../src/MainWin.ui" line="137"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;continues automatically after identification&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;continues automatically after identification&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="184"/>
+        <location filename="../../src/MainWin.ui" line="252"/>
         <source>Recording Equipment</source>
         <translation type="unfinished">Recording Equipment</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="154"/>
+        <location filename="../../src/MainWin.ui" line="329"/>
         <source>Mute Duration(ms)</source>
         <translation type="unfinished">Mute Duration(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="313"/>
+        <location filename="../../src/MainWin.ui" line="427"/>
         <source>Local Recognition</source>
         <translation type="unfinished">Local Recognition</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="354"/>
+        <location filename="../../src/MainWin.ui" line="526"/>
         <source>Local Model</source>
         <translation type="unfinished">Local Model</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="381"/>
+        <location filename="../../src/MainWin.ui" line="513"/>
         <source>Open Path</source>
         <translation type="unfinished">Open Path</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="388"/>
+        <location filename="../../src/MainWin.ui" line="458"/>
         <source>Download and configure</source>
         <translation type="unfinished">Download and configure</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="455"/>
+        <location filename="../../src/MainWin.ui" line="623"/>
         <source>AI Enhancement</source>
         <translation type="unfinished">AI Enhancement</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="468"/>
+        <location filename="../../src/MainWin.ui" line="636"/>
         <source>Enable Gemini</source>
         <translation type="unfinished">Enable Gemini</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="475"/>
+        <location filename="../../src/MainWin.ui" line="643"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable Gemini intelligent optimization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable Gemini intelligent optimization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="498"/>
+        <location filename="../../src/MainWin.ui" line="666"/>
         <source>Check Connection</source>
         <translation type="unfinished">Check Connection</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="626"/>
+        <location filename="../../src/MainWin.ui" line="804"/>
         <source>Model</source>
         <translation type="unfinished">Model</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="563"/>
+        <location filename="../../src/MainWin.ui" line="748"/>
         <source>Custom Commands</source>
         <translation type="unfinished">Custom Commands</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="240"/>
+        <location filename="../../src/MainWin.ui" line="130"/>
         <source>Identification Backend</source>
         <translation type="unfinished">Identification Backend</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="570"/>
+        <location filename="../../src/MainWin.ui" line="692"/>
         <source>API Key</source>
         <translation type="unfinished">API Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="639"/>
+        <location filename="../../src/MainWin.ui" line="708"/>
         <source>Style</source>
         <translation type="unfinished">Style</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="577"/>
+        <location filename="../../src/MainWin.ui" line="718"/>
         <source>AI vocabulary</source>
         <translation type="unfinished">AI vocabulary</translation>
     </message>
@@ -301,140 +301,130 @@
         <translation type="unfinished">ImeAudio</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="250"/>
+        <location filename="../../src/MainWin.ui" line="201"/>
         <source>CPU Thread Number</source>
         <translation type="unfinished">CPU Thread Number</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="374"/>
-        <source>UninstallAll</source>
-        <translation type="unfinished">UninstallAll</translation>
-    </message>
-    <message>
-        <location filename="../../src/MainWin.ui" line="540"/>
+        <location filename="../../src/MainWin.ui" line="774"/>
         <source>API Url</source>
         <translation type="unfinished">API Url</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="606"/>
+        <location filename="../../src/MainWin.ui" line="725"/>
         <source>AI Engine</source>
         <translation type="unfinished">AI Engine</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="657"/>
+        <location filename="../../src/MainWin.ui" line="825"/>
         <source>Theaurus</source>
         <translation type="unfinished">Theaurus</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="364"/>
+        <location filename="../../src/MainWin.ui" line="506"/>
         <source>Language Model</source>
         <translation type="unfinished">Language Model</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="693"/>
+        <location filename="../../src/MainWin.ui" line="536"/>
+        <source>Uninstall All</source>
+        <translation type="unfinished">Uninstall All</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="559"/>
+        <source>Uninstall Model</source>
+        <translation type="unfinished">Uninstall Model</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="861"/>
         <source>Save</source>
         <translation type="unfinished">Save</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="718"/>
+        <location filename="../../src/MainWin.ui" line="886"/>
         <source>Cancel</source>
         <translation type="unfinished">Cancel</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="814"/>
-        <source>Identification Log</source>
-        <translation type="unfinished">Identification Log</translation>
-    </message>
-    <message>
-        <location filename="../../src/MainWin.ui" line="827"/>
-        <source>Config Log</source>
-        <translation type="unfinished">Config Log</translation>
-    </message>
-    <message>
-        <location filename="../../src/MainWin.ui" line="837"/>
-        <source>Download List</source>
-        <translation type="unfinished">Download List</translation>
-    </message>
-    <message>
-        <location filename="../../src/MainWin.ui" line="901"/>
+        <location filename="../../src/MainWin.ui" line="1076"/>
         <source>File</source>
         <translation>File</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="912"/>
+        <location filename="../../src/MainWin.ui" line="1087"/>
         <source>About Qt</source>
         <translation>About Qt</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="923"/>
-        <location filename="../../src/MainWin.ui" line="926"/>
+        <location filename="../../src/MainWin.ui" line="1098"/>
+        <location filename="../../src/MainWin.ui" line="1101"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="937"/>
-        <location filename="../../src/MainWin.ui" line="940"/>
+        <location filename="../../src/MainWin.ui" line="1112"/>
+        <location filename="../../src/MainWin.ui" line="1115"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="953"/>
+        <location filename="../../src/MainWin.ui" line="1128"/>
         <source>System</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="961"/>
-        <location filename="../../src/MainWin.ui" line="964"/>
+        <location filename="../../src/MainWin.ui" line="1136"/>
+        <location filename="../../src/MainWin.ui" line="1139"/>
         <source>Chinese</source>
         <translation>Chinese</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="972"/>
+        <location filename="../../src/MainWin.ui" line="1147"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="980"/>
+        <location filename="../../src/MainWin.ui" line="1155"/>
         <source>Gray</source>
         <translation>Gray</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="985"/>
+        <location filename="../../src/MainWin.ui" line="1160"/>
         <source>Exit</source>
         <translation>Exit</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="988"/>
+        <location filename="../../src/MainWin.ui" line="1163"/>
         <source>Ctrl+Q</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="993"/>
+        <location filename="../../src/MainWin.ui" line="1168"/>
         <source>yt-dlp Update</source>
         <translation>Update yt-dlp</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="998"/>
+        <location filename="../../src/MainWin.ui" line="1173"/>
         <source>Input Device</source>
         <translation type="unfinished">Input Device</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1003"/>
+        <location filename="../../src/MainWin.ui" line="1178"/>
         <source>Preferences</source>
         <translation type="unfinished">Preferences</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1008"/>
+        <location filename="../../src/MainWin.ui" line="1183"/>
         <source>Shortcut Key</source>
         <translation type="unfinished">Shortcut Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1013"/>
+        <location filename="../../src/MainWin.ui" line="1188"/>
         <source>Check Update</source>
         <translation type="unfinished">Check Update</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1018"/>
+        <location filename="../../src/MainWin.ui" line="1193"/>
         <source>About</source>
         <translation type="unfinished">About</translation>
     </message>
@@ -442,43 +432,43 @@
 <context>
     <name>ModelRegistry</name>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="972"/>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1185"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="879"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1107"/>
         <source>Model not registered in ModelRegistry: %1</source>
         <translation type="unfinished">Model not registered in ModelRegistry: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="976"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="883"/>
         <source>This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</source>
         <translation type="unfinished">This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1108"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1015"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1137"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1044"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1140"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1047"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1154"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1062"/>
         <source>CUDA initialization failed: %1. Automatically falling back to CPU.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1203"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1125"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1300"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1222"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -486,28 +476,28 @@
 <context>
     <name>ProjectGroupCard</name>
     <message>
-        <location filename="../../src/widgets/DownloadListWidget.cpp" line="90"/>
+        <location filename="../../src/widgets/DownloadListWidget.cpp" line="78"/>
         <source>等待中</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/widgets/DownloadListWidget.cpp" line="116"/>
+        <location filename="../../src/widgets/DownloadListWidget.cpp" line="104"/>
         <source>下载中</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/widgets/DownloadListWidget.cpp" line="127"/>
+        <location filename="../../src/widgets/DownloadListWidget.cpp" line="115"/>
         <source>完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../src/widgets/DownloadListWidget.cpp" line="125"/>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="137"/>
-        <location filename="../../src/widgets/DownloadListWidget.cpp" line="149"/>
         <source>失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/widgets/DownloadListWidget.cpp" line="145"/>
+        <location filename="../../src/widgets/DownloadListWidget.cpp" line="133"/>
         <source>[已完成]</source>
         <translation type="unfinished"></translation>
     </message>
@@ -515,31 +505,31 @@
 <context>
     <name>SherpaInstaller</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="312"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="350"/>
         <source>%1 is exist.</source>
         <translation type="unfinished">%1 is exist.</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="313"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="369"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="370"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="387"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="388"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="351"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="420"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="421"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="438"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="439"/>
         <source>Download Complete</source>
         <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="363"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="414"/>
         <source>Download Error</source>
         <translation type="unfinished">Download Error</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="379"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="430"/>
         <source>Decoding in progress %1 ...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="382"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="433"/>
         <source>Extract Error</source>
         <translation type="unfinished">Extract Error</translation>
     </message>
@@ -547,7 +537,7 @@
 <context>
     <name>SherpaManager</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="94"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="131"/>
         <source>Model or tokens file does not exist! 1%</source>
         <translation type="unfinished">Model or tokens file does not exist! 1%</translation>
     </message>
@@ -702,12 +692,12 @@
 <context>
     <name>WorkflowManager</name>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="73"/>
+        <location filename="../../src/WorkflowManager.cpp" line="74"/>
         <source>Utterance captured, size: %1 bytes</source>
         <translation type="unfinished">Utterance captured, size: %1 bytes</translation>
     </message>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="91"/>
+        <location filename="../../src/WorkflowManager.cpp" line="92"/>
         <source>Error</source>
         <translation type="unfinished">Error</translation>
     </message>

@@ -173,7 +173,6 @@ protected:
 private slots:
     void handleSearch();
     void handleReload();
-    void handleCheckTerms();
     void handleDeleteSelected();
     void handleSelectAll();
     void handleAddRow();

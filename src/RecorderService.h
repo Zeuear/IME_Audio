@@ -2,6 +2,8 @@
 #include <QObject>
 #include <QAudioSource>
 #include <QIODevice>
+#include <mutex>
+#include <deque>
 #include "AppConfig.h"
 
 #include "cxx-api.h"
@@ -34,11 +36,13 @@ signals:
     void levelUpdated(float rmsLevel);
 
 private:
+
     static constexpr int kFftSize = 512;
     static constexpr int kBandCount = 16;
     void* m_kissFftCfg = nullptr;
     float m_rmsLevel = 0;
     float m_peakLevel = 0;
+    float m_dynamicPeakEstimate = 3000.0f;
 
     std::vector<float> m_fftInputBuffer;
     int m_sampleRate;
@@ -61,6 +65,16 @@ signals:
     void speechEnded(); 
 
 private:
+    void applyAgc(std::vector<float>& samples);
+    void emitPaddedSegment(const sherpa_onnx::cxx::SpeechSegment& segment);
+
+    float m_agcGain = 1.0f;
+    std::deque<int16_t> m_processedHistory;
+    int64_t m_historyStartSample = 0;  
+    int64_t m_totalSamplesFed = 0;
+    int     m_historyCapacity = 0;
+
+    std::mutex m_vadMutex;
     std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_vad;
     int m_sampleRate;
     bool m_wasSpeaking = false;
