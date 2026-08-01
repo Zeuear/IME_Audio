@@ -28,12 +28,16 @@ if(WIN32)
 endif()
 
 
-if(WITH_DEBUG_OUTPUT)
-    add_executable(${TARGET_NAME} ${PROJECT_SOURCES})
-else()
+if(APPLE)
+    add_executable(${TARGET_NAME} MACOSX_BUNDLE
+                    ${PROJECT_SOURCES})
+elseif(WIN32)
     add_executable(${TARGET_NAME} WIN32 
                     ${PROJECT_SOURCES} 
                     ${APP_ICON_RESOURCE_WINDOWS})
+else()
+    add_executable(${TARGET_NAME}
+                    ${PROJECT_SOURCES})
 endif()
 
 

@@ -88,10 +88,10 @@ jobs:
       - name: Deploy & Package (macOS)
         if: matrix.platform == 'macos'
         run: |
-          APP_BUNDLE="app/Release/ImeAudio.app"
-          if [ -f "$APP_BUNDLE" ]; then
+          APP_BUNDLE=$(find app -maxdepth 2 -name "*.app" -type d | head -n 1)
+          if [ -z "$APP_BUNDLE" ]; then
             echo "❌ 未找到 .app bundle"
-            find build -maxdepth 4
+            find app -maxdepth 3
             exit 1
           fi
           echo "✅ 找到 app bundle: $APP_BUNDLE"
@@ -104,7 +104,7 @@ jobs:
       - name: Deploy & Package (Linux)
         if: matrix.platform == 'linux'
         run: |
-          IME_AUDIO_BIN="app/Release/ImeAudio"
+          IME_AUDIO_BIN="app/ImeAudio"
           if [ ! -f "$IME_AUDIO_BIN" ]; then
             echo "❌ 未找到 $IME_AUDIO_BIN"
             find . -maxdepth 3 -name "ImeAudio" -type f
