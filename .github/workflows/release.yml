@@ -125,12 +125,26 @@ jobs:
           cp resources/deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
           cp resources/title_icon.png appdir/usr/share/icons/hicolor/256x256/apps/ImeAudio.png
           
-          # 4. 运行打包，排除免检库，直接输出 AppImage
-          export VERSION=${{ github.ref_name }}
-          ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract-and-run appdir/usr/bin/ImeAudio  -appimage -unsupported-allow-new-glibc
+          # 调试输出
+          echo "Desktop Exec line:"
+          grep -i '^Exec=' appdir/usr/share/applications/ImeAudio.desktop || true
+          echo "AppDir structure:"
+          find appdir -maxdepth 4 -ls
 
-          # 5. 重命名输出文件
+          # 4. 关键改动：第一个参数传回 .desktop 文件，同时保留 --appimage-extract-and-run 规避FUSE问题
+          export VERSION=${{ github.ref_name }}
+          ./linuxdeployqt-continuous-x86_64.AppImage \
+            appdir/usr/share/applications/ImeAudio.desktop \
+            -appimage -unsupported-allow-new-glibc --verbose=1 \
+            -appimage-extract-and-run
+
+          # 5. 重命名输出
           APPIMAGE_FILE=$(find . -maxdepth 1 -name "ImeAudio*.AppImage" | head -n 1)
+          if [ -z "$APPIMAGE_FILE" ]; then
+            echo "❌ AppImage not produced"
+            find . -maxdepth 3 -type f -ls
+            exit 1
+          fi
           mv "$APPIMAGE_FILE" ImeAudio-x86_64.AppImage
 
       - name: Generate artifact attestation
