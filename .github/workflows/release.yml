@@ -127,7 +127,7 @@ jobs:
           
           # 4. 运行打包，排除免检库，直接输出 AppImage
           export VERSION=${{ github.ref_name }}
-          ./linuxdeployqt-continuous-x86_64.AppImage appdir/usr/share/applications/ImeAudio.desktop -appimage -unsupported-allow-new-glibc
+          ./linuxdeployqt-continuous-x86_64.AppImage --appimage-extract-and-run appdir/usr/bin/ImeAudio  -appimage -unsupported-allow-new-glibc
 
           # 5. 重命名输出文件
           APPIMAGE_FILE=$(find . -maxdepth 1 -name "ImeAudio*.AppImage" | head -n 1)
