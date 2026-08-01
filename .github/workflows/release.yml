@@ -123,7 +123,7 @@ jobs:
           # 3. 复制可执行文件、.desktop 文件和图标（用上面定位到的真实路径）
           cp "$IME_AUDIO_BIN" appdir/usr/bin/
           cp resources/deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
-          cp resources/title_icon.png appdir/usr/share/icons/hicolor/256x256/apps/
+          cp resources/title_icon.png appdir/usr/share/icons/hicolor/256x256/apps/ImeAudio.png
           
           # 4. 运行打包，排除免检库，直接输出 AppImage
           export VERSION=${{ github.ref_name }}
