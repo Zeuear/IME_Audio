@@ -127,8 +127,8 @@ void MainWin::initialize() {
 
     // 声音控件
     m_sphereOverlay = new SphereOverlay();
-    m_sphereOverlay->showAtBottomCenter();
-    m_sphereOverlay->setListening();
+    //m_sphereOverlay->showAtBottomCenter();
+    //m_sphereOverlay->setListening();
 
     auto* periodicTimer = new QTimer(this);
     periodicTimer->setInterval(4 * 60 * 60 * 1000);

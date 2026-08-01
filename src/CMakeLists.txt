@@ -299,6 +299,11 @@ elseif(APPLE)
         sherpa-onnx-portaudio_static
         qhotkey
         kissfft
+        "-framework CoreAudio"
+        "-framework AudioToolbox"
+        "-framework AudioUnit"
+        "-framework CoreServices"
+        "-framework CoreFoundation"
     )
     
     target_link_options(${TARGET_NAME} PRIVATE "-Wl,-all_load")
