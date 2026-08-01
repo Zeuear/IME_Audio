@@ -79,7 +79,7 @@ jobs:
       - name: Deploy & Package (Windows)
         if: matrix.platform == 'windows'
         run: |
-          windeployqt --release --compiler-runtime build/Release/ImeAudio.exe
+          windeployqt --release --compiler-runtime app/Release/ImeAudio.exe
           iscc installer.iss
           mv dist/Installer/ImeAudio_Setup.exe ./ImeAudio_Windows_x64.exe
 
@@ -88,8 +88,8 @@ jobs:
       - name: Deploy & Package (macOS)
         if: matrix.platform == 'macos'
         run: |
-          APP_BUNDLE="app/ImeAudio.app"
-          if [ -z "$APP_BUNDLE" ]; then
+          APP_BUNDLE="app/Release/ImeAudio.app"
+          if [ -f "$APP_BUNDLE" ]; then
             echo "❌ 未找到 .app bundle"
             find build -maxdepth 4
             exit 1
@@ -104,7 +104,7 @@ jobs:
       - name: Deploy & Package (Linux)
         if: matrix.platform == 'linux'
         run: |
-          IME_AUDIO_BIN="app/ImeAudio"
+          IME_AUDIO_BIN="app/Release/ImeAudio"
           if [ ! -f "$IME_AUDIO_BIN" ]; then
             echo "❌ 未找到 $IME_AUDIO_BIN"
             find . -maxdepth 3 -name "ImeAudio" -type f
@@ -122,8 +122,8 @@ jobs:
           
           # 3. 复制可执行文件、.desktop 文件和图标（用上面定位到的真实路径）
           cp "$IME_AUDIO_BIN" appdir/usr/bin/
-          cp deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
-          cp deployment/linux/ImeAudio.png appdir/usr/share/icons/hicolor/256x256/apps/
+          cp resources/deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
+          cp resources/title_icon.png appdir/usr/share/icons/hicolor/256x256/apps/
           
           # 4. 运行打包，排除免检库，直接输出 AppImage
           export VERSION=${{ github.ref_name }}
