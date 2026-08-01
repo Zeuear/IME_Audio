@@ -65,8 +65,7 @@ jobs:
           if [ "${{ matrix.platform }}" == "macos" ]; then
             cmake -S . -B build \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} \
-              -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} 
           else
             cmake -S . -B build \
               -DCMAKE_BUILD_TYPE=Release \
@@ -98,6 +97,15 @@ jobs:
       - name: Deploy & Package (Linux)
         if: matrix.platform == 'linux'
         run: |
+          # 0. 先定位真实的可执行文件路径，避免路径写死导致找不到文件
+          IME_AUDIO_BIN=$(find build -maxdepth 4 -type f -name "ImeAudio" -perm -u+x | head -n 1)
+          if [ -z "$IME_AUDIO_BIN" ]; then
+            echo "❌ 未找到编译产物 ImeAudio，构建目录结构如下："
+            find build -maxdepth 4
+            exit 1
+          fi
+          echo "✅ 找到可执行文件: $IME_AUDIO_BIN"
+
           # 1. 下载 linuxdeployqt
           wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
           chmod a+x linuxdeployqt-continuous-x86_64.AppImage
@@ -107,8 +115,8 @@ jobs:
           mkdir -p appdir/usr/share/applications
           mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
           
-          # 3. 复制可执行文件、.desktop 文件和图标 (请根据你项目实际路径修改)
-          cp build/ImeAudio appdir/usr/bin/
+          # 3. 复制可执行文件、.desktop 文件和图标（用上面定位到的真实路径）
+          cp "$IME_AUDIO_BIN" appdir/usr/bin/
           cp deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
           cp deployment/linux/ImeAudio.png appdir/usr/share/icons/hicolor/256x256/apps/
           
