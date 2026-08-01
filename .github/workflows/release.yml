@@ -88,23 +88,28 @@ jobs:
       - name: Deploy & Package (macOS)
         if: matrix.platform == 'macos'
         run: |
-          # 1. 运行 macdeployqt 并直接生成 .dmg 镜像
-          macdeployqt build/ImeAudio.app -dmg
-          # 2. 重命名输出文件
-          mv build/ImeAudio.dmg ./ImeAudio_macOS.dmg
+          APP_BUNDLE="app/ImeAudio.app"
+          if [ -z "$APP_BUNDLE" ]; then
+            echo "❌ 未找到 .app bundle"
+            find build -maxdepth 4
+            exit 1
+          fi
+          echo "✅ 找到 app bundle: $APP_BUNDLE"
+
+          macdeployqt "$APP_BUNDLE" -dmg
+          DMG_FILE=$(find "$(dirname "$APP_BUNDLE")" -maxdepth 1 -name "*.dmg" | head -n 1)
+          mv "$DMG_FILE" ./ImeAudio_macOS.dmg
 
       # ---- LINUX 打包 ----
       - name: Deploy & Package (Linux)
         if: matrix.platform == 'linux'
         run: |
-          # 0. 先定位真实的可执行文件路径，避免路径写死导致找不到文件
-          IME_AUDIO_BIN=$(find build -maxdepth 4 -type f -name "ImeAudio" -perm -u+x | head -n 1)
-          if [ -z "$IME_AUDIO_BIN" ]; then
-            echo "❌ 未找到编译产物 ImeAudio，构建目录结构如下："
-            find build -maxdepth 4
+          IME_AUDIO_BIN="app/ImeAudio"
+          if [ ! -f "$IME_AUDIO_BIN" ]; then
+            echo "❌ 未找到 $IME_AUDIO_BIN"
+            find . -maxdepth 3 -name "ImeAudio" -type f
             exit 1
           fi
-          echo "✅ 找到可执行文件: $IME_AUDIO_BIN"
 
           # 1. 下载 linuxdeployqt
           wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
