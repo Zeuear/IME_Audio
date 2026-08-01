@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ImeAudio
+GenericName=Speech to Text
+Comment=Real-time speech recognition and transcription tool
+Exec=ImeAudio
+Icon=ImeAudio
+Terminal=false
+Categories=Utility;AudioVideo;Audio;
+StartupNotify=true
