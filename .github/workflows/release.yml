@@ -14,7 +14,7 @@ permissions:
 jobs:
   release:
     name: Build & Release (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform == 'linux' && 'ubuntu-22.04' || 'ubuntu-latest' }}
 
     strategy:
       fail-fast: false
@@ -111,35 +111,54 @@ jobs:
             exit 1
           fi
 
-          # 1. 下载 linuxdeployqt
-          wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-          
-          # 2. 创建符合 AppDir 规范的目录结构
-          mkdir -p appdir/usr/bin
-          mkdir -p appdir/usr/share/applications
-          mkdir -p appdir/usr/share/icons/hicolor/256x256/apps
-          
-          # 3. 复制可执行文件、.desktop 文件和图标（用上面定位到的真实路径）
-          cp "$IME_AUDIO_BIN" appdir/usr/bin/
-          cp resources/deployment/linux/ImeAudio.desktop appdir/usr/share/applications/
-          cp resources/title_icon.png appdir/usr/share/icons/hicolor/256x256/apps/ImeAudio.png
-          
-          # 调试输出
-          echo "Desktop Exec line:"
-          grep -i '^Exec=' appdir/usr/share/applications/ImeAudio.desktop || true
-          echo "AppDir structure:"
-          find appdir -maxdepth 4 -ls
+          wget -c -nv "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -c -nv "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
-          # 4. 关键改动：第一个参数传回 .desktop 文件，同时保留 --appimage-extract-and-run 规避FUSE问题
+          # 检查 qmake 是否存在
+          export QMAKE=$(which qmake6 || which qmake || true)
+          if [ -z "$QMAKE" ]; then
+            echo "❌ 找不到 qmake / qmake6，请确认 Qt 已正确安装并加入 PATH"
+            which -a qmake qmake6 2>/dev/null || true
+            exit 1
+          fi
+          echo "Using QMAKE=$QMAKE"
+          
           export VERSION=${{ github.ref_name }}
-          ./linuxdeployqt-continuous-x86_64.AppImage \
-            appdir/usr/share/applications/ImeAudio.desktop \
-            -appimage -unsupported-allow-new-glibc -verbose=1 \
-            --appimage-extract-and-run
+          export APPIMAGE_EXTRACT_AND_RUN=1
 
-          # 5. 重命名输出
-          APPIMAGE_FILE=$(find . -maxdepth 1 -name "ImeAudio*.AppImage" | head -n 1)
+          # 检查 qml 目录是否存在，避免变量指向空目录
+          if [ -d "$(pwd)/qml" ]; then
+            export QML_SOURCES_PATHS="$(pwd)/qml"
+          elif [ -d "$(pwd)/src" ]; then
+            export QML_SOURCES_PATHS="$(pwd)/src"
+          else
+            echo "⚠️ 未找到 qml 源码目录，跳过 QML_SOURCES_PATHS 设置"
+          fi
+          echo "QML_SOURCES_PATHS=${QML_SOURCES_PATHS:-<unset>}"
+
+          rm -rf appdir
+          set +e
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir=appdir \
+            --executable="$IME_AUDIO_BIN" \
+            --desktop-file=resources/deployment/linux/ImeAudio.desktop \
+            --icon-file=resources/title_icon.png \
+            --plugin qt \
+            --output appimage \
+            --verbosity=2
+          EXIT_CODE=$?
+          set -e
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "❌ linuxdeploy 失败，退出码 $EXIT_CODE"
+            echo "appdir 结构："
+            find appdir -maxdepth 4 -ls || true
+            exit $EXIT_CODE
+          fi
+
+          # 重命名输出
+          APPIMAGE_FILE=$(find . -maxdepth 1 -name "*.AppImage" ! -name "linuxdeploy*" | head -n 1)
           if [ -z "$APPIMAGE_FILE" ]; then
             echo "❌ AppImage not produced"
             find . -maxdepth 3 -type f -ls
