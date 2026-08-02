@@ -140,13 +140,13 @@ jobs:
           rm -rf appdir
           set +e
           mkdir -p resources/deployment/linux
-          convert resources/title_icon.png -resize 256x256 resources/title_icon_256.png
+          convert resources/title_icon.png -resize 256x256 resources/ImeAudio.png
 
           ./linuxdeploy-x86_64.AppImage \
             --appdir=appdir \
             --executable="$IME_AUDIO_BIN" \
             --desktop-file=resources/deployment/linux/ImeAudio.desktop \
-            --icon-file=resources/title_icon_256.png \
+            --icon-file=resources/ImeAudio.png \
             --plugin qt \
             --output appimage \
             --verbosity=2
