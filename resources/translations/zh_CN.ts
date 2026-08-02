@@ -2,6 +2,49 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="en_US">
 <context>
+    <name>AboutDialog</name>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="19"/>
+        <source>关于 ImeAudio</source>
+        <translation type="unfinished">关于 ImeAudio</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="34"/>
+        <source>暂无更新说明。</source>
+        <translation type="unfinished">暂无更新说明。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="56"/>
+        <source>ImeAudio</source>
+        <translation type="unfinished">Ime音频</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="64"/>
+        <source>版本 %1</source>
+        <translation type="unfinished">版本 %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="81"/>
+        <source>ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</source>
+        <translation type="unfinished">ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="83"/>
+        <source>软件简介</source>
+        <translation type="unfinished">软件简介</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="88"/>
+        <source>更新说明</source>
+        <translation type="unfinished">更新说明</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="95"/>
+        <source>关闭</source>
+        <translation type="unfinished">关闭</translation>
+    </message>
+</context>
+<context>
     <name>CudaInstaller</name>
     <message>
         <location filename="../../src/cuda/CudaInstaller.cpp" line="48"/>
@@ -428,6 +471,36 @@
         <source>About</source>
         <translation type="unfinished">关于</translation>
     </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="684"/>
+        <source>Update Available</source>
+        <translation type="unfinished">更新可用</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="685"/>
+        <source>A new version (%1) is available!</source>
+        <translation type="unfinished">新版本（%1）已发布！</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="686"/>
+        <source>Would you like to download and install it now?</source>
+        <translation type="unfinished">您现在想下载并安装吗？</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="711"/>
+        <source>Restart Required</source>
+        <translation type="unfinished">需要重启</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="712"/>
+        <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
+        <translation type="unfinished">更新已成功下载。应用程序即将关闭并重新启动以应用更新。是否继续？</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.cpp" line="721"/>
+        <source>Error</source>
+        <translation type="unfinished">错误</translation>
+    </message>
 </context>
 <context>
     <name>ModelRegistry</name>
@@ -445,32 +518,32 @@
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1015"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">未找到 Qwen3-ASR 模型文件，請先安裝模型：%1</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1044"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
-        <translation></translation>
+        <translation type="unfinished">热门关键词应用于 arch=%1，score=%2</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1047"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">已配置热词，但架构不支持上下文偏好，已忽略：%1</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1062"/>
         <source>CUDA initialization failed: %1. Automatically falling back to CPU.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">CUDA 初始化失败：%1。自动回退到 CPU。</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1125"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">ModelDescriptor.files 类型与 %1 不匹配，使用默认值</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1222"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">BuildManifest：不支持或未映射的 ModelArch（适用于 %1）。</translation>
     </message>
 </context>
 <context>
@@ -478,58 +551,58 @@
     <message>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="78"/>
         <source>等待中</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">等待中</translation>
     </message>
     <message>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="104"/>
         <source>下载中</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">下载中</translation>
     </message>
     <message>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="115"/>
         <source>完成</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">完成</translation>
     </message>
     <message>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="125"/>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="137"/>
         <source>失败</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">失败</translation>
     </message>
     <message>
         <location filename="../../src/widgets/DownloadListWidget.cpp" line="133"/>
         <source>[已完成]</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">[已完成]</translation>
     </message>
 </context>
 <context>
     <name>SherpaInstaller</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="350"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="367"/>
         <source>%1 is exist.</source>
         <translation type="unfinished">%1 存在。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="351"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="420"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="421"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="368"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="437"/>
         <location filename="../../src/sherpa/SherpaManager.cpp" line="438"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="439"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="455"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="456"/>
         <source>Download Complete</source>
         <translation type="unfinished">下载完全</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="414"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="431"/>
         <source>Download Error</source>
         <translation type="unfinished">下载失败</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="430"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="447"/>
         <source>Decoding in progress %1 ...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">解码进行中 %1 ...</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="433"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="450"/>
         <source>Extract Error</source>
         <translation type="unfinished">解压失败</translation>
     </message>
@@ -537,7 +610,7 @@
 <context>
     <name>SherpaManager</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="131"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="141"/>
         <source>Model or tokens file does not exist! 1%</source>
         <translation type="unfinished">模型或令牌文件不存在！1%</translation>
     </message>
@@ -588,105 +661,170 @@
 <context>
     <name>TermWidget</name>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="19"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="20"/>
         <source>Search Terms</source>
         <translation type="unfinished">搜索词条</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="21"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="275"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="22"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="264"/>
         <source>Enter terms...</source>
         <translation type="unfinished">请输入关键词...</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="23"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="278"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="24"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="267"/>
         <source>Reload Terms</source>
         <translation type="unfinished">重新加载词库</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="24"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="279"/>
-        <source>Check Terms</source>
-        <translation type="unfinished">词库检查</translation>
-    </message>
-    <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="47"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="280"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="46"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="268"/>
         <source>Delete Selected</source>
         <translation type="unfinished">删除选中</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="48"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="281"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="47"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="269"/>
         <source>Select All</source>
         <translation type="unfinished">全选</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="49"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="282"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="48"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="270"/>
         <source>Add Row</source>
         <translation type="unfinished">添加行</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="56"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="283"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="55"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="271"/>
         <source>Reverse Select</source>
         <translation type="unfinished">反选</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="57"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="284"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="56"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="272"/>
         <source>Batch Enable</source>
         <translation type="unfinished">批量启用</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="58"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="285"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="57"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="273"/>
         <source>Batch Disable</source>
         <translation type="unfinished">批量禁用</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="65"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="64"/>
         <source>Check</source>
         <translation type="unfinished">检查</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="66"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="289"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="65"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="230"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="277"/>
         <source>Import TSV</source>
         <translation type="unfinished">导入 TSV</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="67"/>
-        <location filename="../../src/widgets/TermWidget.cpp" line="290"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="66"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="242"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="278"/>
         <source>Export TSV</source>
         <translation type="unfinished">导出 TSV</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="108"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="106"/>
         <source>Input Error</source>
         <translation type="unfinished">输入错误</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="158"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="147"/>
         <source>Confirm</source>
         <translation type="unfinished">应用</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="159"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="148"/>
         <source>Delete %1 selected rows?</source>
         <translation type="unfinished">删除%1i行?</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="274"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="221"/>
+        <source>Check Result</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="221"/>
+        <source>No conflicts found! ✅</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="225"/>
+        <source>Conflict Detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="236"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="248"/>
+        <source>Error</source>
+        <translation type="unfinished">错误</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="236"/>
+        <source>Import failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="245"/>
+        <source>Success</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="245"/>
+        <source>Exported successfully</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="248"/>
+        <source>Export failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="263"/>
         <source>Search Terms:</source>
         <translation type="unfinished">搜索字典:</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/TermWidget.cpp" line="288"/>
+        <location filename="../../src/widgets/TermWidget.cpp" line="276"/>
         <source>Check Conflicts</source>
         <translation type="unfinished">检查冲突</translation>
+    </message>
+</context>
+<context>
+    <name>UpdateManager</name>
+    <message>
+        <location filename="../../src/UpdateManager.cpp" line="109"/>
+        <source>Could not find an executable asset in the latest release.</source>
+        <translation type="unfinished">在最新版本中找不到可执行文件。</translation>
+    </message>
+    <message>
+        <location filename="../../src/UpdateManager.cpp" line="120"/>
+        <source>No download URL available. Call checkForUpdates() first.</source>
+        <translation type="unfinished">没有可用的下载链接。请先调用 checkForUpdates() 函数。</translation>
+    </message>
+    <message>
+        <location filename="../../src/UpdateManager.cpp" line="130"/>
+        <source>Could not open file for writing: %1</source>
+        <translation type="unfinished">无法打开文件进行写入：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/UpdateManager.cpp" line="156"/>
+        <source>Failed to save downloaded file: %1</source>
+        <translation type="unfinished">无法打开文件进行写入：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/UpdateManager.cpp" line="163"/>
+        <source>Download finished but file was not found on disk.</source>
+        <translation type="unfinished">下载完成，但磁盘上未找到文件。</translation>
     </message>
 </context>
 <context>

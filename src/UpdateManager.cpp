@@ -106,7 +106,7 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
     }
 
     if (downloadUrl.isEmpty()) {
-        emit updateError("Could not find an executable asset in the latest release.");
+        emit updateError(tr("Could not find an executable asset in the latest release."));
         return;
     }
 
@@ -117,7 +117,7 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
 
 void UpdateManager::downloadUpdate(const QString& savePath) {
     if (m_downloadUrl.isEmpty()) {
-        emit updateError("No download URL available. Call checkForUpdates() first.");
+        emit updateError(tr("No download URL available. Call checkForUpdates() first."));
         return;
     }
 
@@ -127,7 +127,7 @@ void UpdateManager::downloadUpdate(const QString& savePath) {
 
     auto* file = new QSaveFile(savePath, this);
     if (!file->open(QIODevice::WriteOnly)) {
-        emit updateError(QString("Could not open file for writing: %1").arg(file->errorString()));
+        emit updateError(tr("Could not open file for writing: %1").arg(file->errorString()));
         delete file;
         return;
     }
@@ -153,14 +153,14 @@ void UpdateManager::onDownloadFinished(QNetworkReply* reply, const QString& save
     }
 
     if (!file->commit()) {
-        emit updateError(QString("Failed to save downloaded file: %1").arg(file->errorString()));
+        emit updateError(tr("Failed to save downloaded file: %1").arg(file->errorString()));
         file->deleteLater();
         return;
     }
     file->deleteLater();
 
     if (!QFile::exists(savePath)) {
-        emit updateError("Download finished but file was not found on disk.");
+        emit updateError(tr("Download finished but file was not found on disk."));
         return;
     }
 
@@ -248,23 +248,26 @@ bool UpdateManager::launchUpdaterWindows(const QString& downloadedFilePath, QStr
     // 逻辑：循环等待当前进程退出 -> 移动新文件覆盖旧文件 -> 重启程序 -> 校验并删除自身
     QString batchContent = QString(
         "@echo off\n"
+        "setlocal enabledelayedexpansion\n"
+        "chcp 65001 > nul\n"
         "echo [Updater] Waiting for application to exit...\n"
         ":loop\n"
-        "tasklist | find /i \"%1\" > nul\n"
+        "tasklist /fi \"imagename eq %1\" | find /i \"%1\" > nul\n"
         "if %%errorlevel%% equ 0 (\n"
         "    timeout /t 1 > nul\n"
         "    goto loop\n"
         ")\n"
-        "echo [Updater] Application closed. Replacing files...\n"
-        "move /y \"%2\" \"%3\"\n"
-        "if not exist \"%3\" (\n"
-        "    echo [Updater] Move failed, target file missing. Aborting restart.\n"
+        "echo [Updater] Application closed. Running installer silently...\n"
+        "\"%2\" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /SP-\n"
+        "if  !errorlevel! neq 0 (\n"
+        "    echo [Updater] Installer failed with exit code !errorlevel!.\n"
         "    pause\n"
         "    exit /b 1\n"
         ")\n"
         "echo [Updater] Update successful. Restarting...\n"
         "start \"\" \"%3\"\n"
-        "del \"%%~f0\"\n"
+        "del \"%2\" > nul 2>&1\n"
+        "(goto) 2>nul & del \"%~f0\"\n"
     ).arg(currentExeName, downloadedFilePath, targetExePath);
 
     const QString batchPath = QDir::tempPath() + "/voice_ime_updater.bat";
@@ -272,12 +275,12 @@ bool UpdateManager::launchUpdaterWindows(const QString& downloadedFilePath, QStr
     if (!batchFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         if (errorMessage) *errorMessage = "Could not create updater script.";
         return false;
-    }
+    }   
     batchFile.write(batchContent.toUtf8());
     batchFile.close();
 
     qDebug() << "Launching updater script:" << batchPath;
-    bool success = QProcess::startDetached("cmd.exe", { "/c", QDir::toNativeSeparators(batchPath) });
+    bool success = QProcess::startDetached("cmd.exe", { "/c", "start", "/min", "", QDir::toNativeSeparators(batchPath) });
     if (!success) {
         if (errorMessage) *errorMessage = "Failed to launch the updater script.";
         return false;

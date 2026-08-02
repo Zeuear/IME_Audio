@@ -27,6 +27,7 @@
 #include "widgets/SphereOverlay.h"
 #include "qhotkey.h"
 
+#include "widgets/AboutDialog.h"
 #include "widgets/NavListWidget.h"
 #include "widgets/inforbar/inforbarmanager.h"
 #include "widgets/inforbar/inforposmanager.h"
@@ -143,6 +144,11 @@ void MainWin::initialize() {
 
 void MainWin::connection(){
     auto& configManager = ConfigManager::instance();
+
+	connect(ui->actionAbout, &QAction::triggered, this, [this]() {
+        AboutDialog dialog(this);
+        dialog.exec();
+	});
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
@@ -675,9 +681,9 @@ void MainWin::onNewLogEntry(const QString& entry)
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
     QMessageBox msgBox(this);
-    msgBox.setWindowTitle("Update Available");
-    msgBox.setText(QString("A new version (%1) is available!").arg(version));
-    msgBox.setInformativeText("Would you like to download and install it now?");
+    msgBox.setWindowTitle(tr("Update Available"));
+    msgBox.setText(tr("A new version (%1) is available!").arg(version));
+    msgBox.setInformativeText(tr("Would you like to download and install it now?"));
 
     msgBox.setDetailedText(notes);
     msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
@@ -702,8 +708,8 @@ void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, 
 }
 
 void MainWin::onUpdateDownloaded(const QString& filePath) {
-    auto result = QMessageBox::question(this, "Restart Required",
-        "Update downloaded successfully. The application will now close and restart to apply the update. Continue?",
+    auto result = QMessageBox::question(this, tr("Restart Required"),
+        tr("Update downloaded successfully. The application will now close and restart to apply the update. Continue?"),
         QMessageBox::Yes | QMessageBox::No);
 
     if (result == QMessageBox::Yes) {
@@ -712,7 +718,7 @@ void MainWin::onUpdateDownloaded(const QString& filePath) {
             qApp->exit();
         }
         else {
-            QMessageBox::critical(this, "Error", err);
+            QMessageBox::critical(this, tr("Error"), err);
             ui->actionUpdate->setEnabled(true);
         }
     }

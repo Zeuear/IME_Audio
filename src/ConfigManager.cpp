@@ -100,7 +100,6 @@ bool ConfigManager::load() {
     m_config.terms.path = s.value("path").toString();
     s.endGroup();
 
-
     emit configLoaded();
     return true;
 }
