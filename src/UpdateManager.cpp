@@ -14,7 +14,7 @@
 
 UpdateManager::UpdateManager(QNetworkAccessManager* networkManager, QObject* parent)
     : QObject(parent), m_networkManager(networkManager) {
-    setProjectInfo("NexusForge-af", "IME_Audio", PROJECT_VERSION);
+    setProjectInfo("Zeuear", "IME_Audio", PROJECT_VERSION);
 }
 
 void UpdateManager::setProjectInfo(const QString& owner, const QString& repo, const QString& currentVersion) {

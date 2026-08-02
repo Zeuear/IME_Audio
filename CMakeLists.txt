@@ -16,8 +16,6 @@ endif()
 if(WIN32)
     add_definitions(-DUNICODE)
     add_definitions(-D_UNICODE)
-    # add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-    # add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 
     if(MSVC)
         add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
@@ -67,13 +65,14 @@ set(QtModules
 )
 
 # 3rdparty
-# set(3RDPARTYPATH ${CMAKE_SOURCE_DIR}/3rdparty)
-# include(${3RDPARTYPATH}/3rdparty.cmake)
 add_subdirectory(third_party/kissfft)
-
 add_subdirectory(third_party/QHotkey)
 
+# Testing setup
+enable_testing()
 
 # src
 add_subdirectory(src)
 
+# tests
+add_subdirectory(tests)

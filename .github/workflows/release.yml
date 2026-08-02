@@ -136,7 +136,7 @@ jobs:
           ./linuxdeployqt-continuous-x86_64.AppImage \
             appdir/usr/share/applications/ImeAudio.desktop \
             -appimage -unsupported-allow-new-glibc -verbose=1 \
-            -appimage-extract-and-run
+            --appimage-extract-and-run
 
           # 5. 重命名输出
           APPIMAGE_FILE=$(find . -maxdepth 1 -name "ImeAudio*.AppImage" | head -n 1)
