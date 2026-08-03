@@ -276,7 +276,6 @@ public:
     struct RuntimeStatus {
         bool isListening = false;
         bool isPaused = false;
-        bool hadVoice = false;
         int currentSegmentMs = 0;
     };
 
@@ -319,12 +318,7 @@ private:
 
     RuntimeStatus m_status;
     const AppConfig& m_config;
-
     QByteArray m_segmentBuffer;   
-    qint64 m_silenceAccumMs = 0;
-
-    bool m_manualActive = false;
-    bool m_autoStopEnabled = true;
 
     SpectrumWorker* m_spectrumWorker;
     QThread* m_spectrumThread = nullptr;
@@ -332,11 +326,6 @@ private:
     VadWorker* m_vadWorker = nullptr;
     QThread* m_vadThread = nullptr;
 
-    QByteArray m_preRollBuffer;
-    static constexpr int kPreRollMs = 300;
-
-    // 整段录音原始 PCM，仅用于调试导出
-    QByteArray m_fullSessionBuffer;   
     bool writeWavFile(const QString& filePath, const QByteArray& pcmData,
         int sampleRate, int channels, int bitsPerSample) const;
 };

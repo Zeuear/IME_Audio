@@ -328,12 +328,8 @@ bool AudioRecorderService::startListening() {
     m_status = RuntimeStatus{};
     m_status.isListening = true;
     m_segmentBuffer.clear();
-    m_silenceAccumMs = 0;
-    m_fullSessionBuffer.clear();
-    m_manualActive = true;
 
-    if (!m_config.continuousMode) {
-        m_status.hadVoice = true;
+    if (!m_config.continuousMode.load()) {
         emit voiceStarted();
     }
     return true;
@@ -363,10 +359,10 @@ void AudioRecorderService::stopListening() {
 
     m_audioSource->stop();
     m_audioSource->deleteLater();
+
     m_audioSource = nullptr;
     m_audioDevice = nullptr;
     m_segmentBuffer.clear();
-    m_fullSessionBuffer.clear();
     m_status = RuntimeStatus{};
     QMetaObject::invokeMethod(m_spectrumWorker, "resetLevel", Qt::QueuedConnection);
 }
@@ -382,7 +378,6 @@ void AudioRecorderService::resume() {
     if (!m_audioSource || !m_status.isPaused) return;
     m_audioSource->resume();
     m_status.isPaused = false;
-    m_silenceAccumMs = 0;
 }
 
 void AudioRecorderService::onAudioDataReady() {
@@ -390,38 +385,32 @@ void AudioRecorderService::onAudioDataReady() {
     QByteArray chunk = m_audioDevice->readAll();
     if (chunk.isEmpty()) return;
 
-    QMetaObject::invokeMethod(m_vadWorker, "processChunk", Qt::QueuedConnection,
-        Q_ARG(QByteArray, chunk));
-
     QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
         Q_ARG(QByteArray, chunk));
 
-    if (m_manualActive) {
+    if (!m_config.continuousMode.load()) {
         m_segmentBuffer.append(chunk);
         m_status.currentSegmentMs = static_cast<int>(m_segmentBuffer.size() / bytesPerMs());
-
-        if (m_status.currentSegmentMs >= m_config.audio.maxRecordMs) {
-            finalizeSegmentIfNeeded(true);
-            m_manualActive = false;
-        }
+        finalizeSegmentIfNeeded(true);
+    }else {
+        QMetaObject::invokeMethod(m_vadWorker, "processChunk", Qt::QueuedConnection,
+            Q_ARG(QByteArray, chunk));
     }
 }
 
 void AudioRecorderService::onVadSpeechStarted()
 {
-    m_status.hadVoice = true;
     emit voiceStarted();   
 }
 
 void AudioRecorderService::onVadSpeechEnded()
 {
-    m_status.hadVoice = false;
     emit voiceStopped();   
 }
 
 void AudioRecorderService::onVadSegmentReady(const QByteArray& pcmData, int sampleRate)
 {
-    if (m_config.continuousMode) {
+    if (m_config.continuousMode.load()) {
         if (!pcmData.isEmpty()) {
             emit utteranceReady(pcmData, sampleRate);
         }
@@ -434,8 +423,6 @@ void AudioRecorderService::finalizeSegmentIfNeeded(bool forceCut)
 
     if (m_status.currentSegmentMs < m_config.audio.minRecordMs && !forceCut) {
         m_segmentBuffer.clear();
-        m_status.hadVoice = false;
-        m_silenceAccumMs = 0;
         m_status.currentSegmentMs = 0;
         emit voiceStopped();
         return;
@@ -445,8 +432,6 @@ void AudioRecorderService::finalizeSegmentIfNeeded(bool forceCut)
     emit voiceStopped();
 
     m_segmentBuffer.clear();
-    m_status.hadVoice = false;
-    m_silenceAccumMs = 0;
     m_status.currentSegmentMs = 0;
 }
 

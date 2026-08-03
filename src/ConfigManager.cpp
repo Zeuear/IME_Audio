@@ -111,8 +111,8 @@ bool ConfigManager::save() {
     s.setValue("backend", static_cast<int>(m_config.backend));
     s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("replaceRules", m_config.replaceRules);
-    s.setValue("continuousMode", m_config.continuousMode);
-    s.setValue("autoStopEnabled", m_config.autoStopEnabled);
+    s.setValue("continuousMode", m_config.continuousMode.load());
+    s.setValue("autoStopEnabled", m_config.autoStopEnabled.load());
 
     s.beginGroup("audio");
     s.setValue("deviceId", m_config.audio.deviceId);

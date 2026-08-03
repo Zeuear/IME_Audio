@@ -59,11 +59,31 @@ struct AppConfig {
     QString gladiaKey;
     QString replaceRules;
 
-    bool continuousMode = false;
-    bool autoStopEnabled = true;
+    std::atomic<bool> continuousMode { false };
+    std::atomic<bool> autoStopEnabled { true };
 
     QString hotkey;
     QString style;
     QString Language;
+
+    AppConfig() = default;
+    AppConfig(const AppConfig& other) { *this = other; }
+
+    AppConfig& operator=(const AppConfig& other) {
+        if (this == &other) return *this;
+        backend = other.backend;
+        audio = other.audio;
+        sherpa = other.sherpa;
+        gemini = other.gemini;
+        terms = other.terms;
+        gladiaKey = other.gladiaKey;
+        replaceRules = other.replaceRules;
+        continuousMode.store(other.continuousMode.load());
+        autoStopEnabled.store(other.autoStopEnabled.load());
+        hotkey = other.hotkey;
+        style = other.style;
+        Language = other.Language;
+        return *this;
+    }
 
 };
