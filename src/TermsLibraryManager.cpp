@@ -3,7 +3,7 @@
 #include <QTextStream>
 #include <QSet>
 #include <QMap>
-#include <QApplication>
+#include <QCoreApplication>
 TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
     connect(this, &TermsLibraryManager::termsReloaded, this, [this]() {
         saveToTsv(defaultPath());
@@ -14,7 +14,7 @@ TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
 }
 
 QString TermsLibraryManager::defaultPath() {
-    QString path = QApplication::applicationDirPath() + "/terms.tsv";
+    QString path = QCoreApplication::applicationDirPath() + "/terms.tsv";
     return path;
 }
 

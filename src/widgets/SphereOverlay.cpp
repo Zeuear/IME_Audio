@@ -56,8 +56,9 @@ void SphereOverlay::showAtBottomCenter()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
     if (screen) {
-        QRect geo = screen->availableGeometry();
-        move(geo.center().x() - width() / 2, geo.bottom() - height() - 100);
+        QRect geo = screen->availableGeometry();  
+        constexpr int margin = -5;  
+        move(geo.center().x() - width() / 2, geo.bottom() - height() - margin);
     }
     show();
     raise();

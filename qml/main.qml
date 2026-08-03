@@ -7,9 +7,8 @@ Item {
     LoadingDots {
         id: loadingView
         anchors.fill: parent
-        opacity: sphereController.state === 0 ? 1.0 : 0.0 // 0 = Loading
+        opacity: sphereController.state === 0 ? 1.0 : 0.0
         visible: opacity > 0.01
-
         Behavior on opacity {
             NumberAnimation { duration: 350; easing.type: Easing.InOutQuad }
         }
@@ -17,40 +16,29 @@ Item {
 
     LoadingDots {
         id: transcribingDots
-        dotColor: "#FFC107" 
-        anchors.fill: parent  
-        opacity: sphereController.state === 3 ? 1.0 : 0.0  
+        dotColor: "#FFC107"
+        anchors.fill: parent
+        opacity: sphereController.state === 3 ? 1.0 : 0.0
         visible: opacity > 0.01
-
         Behavior on opacity {
             NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
         }
     }
 
-
-    // 定义不同状态下的颜色方案
-    readonly property color colorLoadingMid: "#8cc7fa" 
+    readonly property color colorLoadingMid: "#8cc7fa"
     readonly property color colorLoadingDeep: "#1a6bd5"
-
-    readonly property color colorProcessingMid: "#FF8C00"   // 橙色
-    readonly property color colorProcessingDeep: "#FF4500"  // 橙红
-
-    readonly property color colorRecordingMid: "#8cc7fa" 
+    readonly property color colorProcessingMid: "#FF8C00"
+    readonly property color colorProcessingDeep: "#FF4500"
+    readonly property color colorRecordingMid: "#8cc7fa"
     readonly property color colorRecordingDeep: "#1a6bd5"
-
 
     FluidSphere {
         id: fluidView
         anchors.fill: parent
-
-        colorMid: colorRecordingMid 
-        colorDeep: colorRecordingDeep
-
         level: sphereController.state === 2 ? 0.0 : sphereController.level
         levels: sphereController.spectrumLevels
-        opacity:  (sphereController.state === 1 || sphereController.state === 2) ? 1.0 : 0.0
+        opacity: (sphereController.state === 1 || sphereController.state === 2) ? 1.0 : 0.0
         enableColorAnimation: sphereController.state !== 1 ? false : true
-
         visible: opacity > 0.01
         Behavior on opacity {
             NumberAnimation { duration: 450; easing.type: Easing.InOutQuad }
@@ -62,19 +50,16 @@ Item {
         anchors.centerIn: parent
     }
 
-    
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             sphereController.sphereClicked()
-
-            if (sphereController.state === 1) { 
-                statusIcon.showTemporaryIcon(2) 
-            } else if (sphereController.state === 2) { 
+            if (sphereController.state === 1) {
+                statusIcon.showTemporaryIcon(2)
+            } else if (sphereController.state === 2) {
                 statusIcon.showTemporaryIcon(1)
             }
         }
     }
-
 }

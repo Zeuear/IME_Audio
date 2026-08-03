@@ -208,14 +208,6 @@ qt_add_translations(${TARGET_NAME}
     LUPDATE_OPTIONS -locations none -no-obsolete # 传给 lupdate 的参数放这里
 )
 
-qt_add_shaders(${TARGET_NAME} "shaders"
-    PREFIX "/shaders"
-    BASE "../qml/shaders"   
-    FILES
-        "../qml/shaders/fluidsphere.frag"
-        "../qml/shaders/fluidsphere.vert"
-)
-
 set(QHOTKEY_ROOT "${CMAKE_SOURCE_DIR}/third_party/QHotkey")
 target_include_directories(${TARGET_NAME} PRIVATE ${QHOTKEY_ROOT}/QHotkey)
 

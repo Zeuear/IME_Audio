@@ -9,7 +9,7 @@ public:
         UnicodeTypeOnly
     };
 
-    static bool inject(const QString& text, Mode mode = Mode::PreferClipboard);
+    static bool inject(const QString& text, Mode mode = Mode::UnicodeTypeOnly);
 
 private:
     static bool sendCtrlV();

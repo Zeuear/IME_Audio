@@ -20,7 +20,9 @@ TranscriptionService::TranscriptionService(
       m_config(config),
       m_manager(networkManager),
       m_sherpaManager(sherpaManager),
-      m_geminiClient(geminiClient) {
+      m_geminiClient(geminiClient),
+      m_textProcessor(new TextPostProcessor(this))
+{
 
     connect(m_geminiClient, &GeminiClient::polishFinished, this, [&](bool success, const QString& text, const QString& error) {
         emit transcriptionFinished(success, text, success ? postProcess(text) : QString(), error);
@@ -160,10 +162,9 @@ void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
 }
 
 QString TranscriptionService::postProcess(const QString &rawText) {
-    QString text = rawText;
-    text = TermsLibraryManager::applyReplaceRules(text, m_config.replaceRules);
-    text = applySimpleSherpaPunctuation(text);
-    return text.trimmed();
+
+    m_textProcessor->setReplaceRules(m_config.replaceRules);
+    return m_textProcessor->postProcess(rawText);
 }
 
 QByteArray TranscriptionService::buildWavBytes(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample)
@@ -193,93 +194,3 @@ QByteArray TranscriptionService::buildWavBytes(const QByteArray& pcmData, int sa
     return wav;
 }
 
-
-QString TranscriptionService::applySimpleSherpaPunctuation(const QString& text) {
-    if (text.isEmpty()) {
-        return QString();
-    }
-    if (m_config.backend != AsrBackendKind::Sherpa) {
-        return text;
-    }
-
-    QString finalText = text.trimmed();
-    if (finalText.isEmpty() || textEndsWithSentencePunctuation(text)) {
-        return text;
-    }
-
-    QString suffix = pickAutoPunctuationSuffix(text);
-    finalText.append(suffix);
-    LOG_DEBUG(QString("Auto punctuation appended for sherpa text suffix = %1").arg(suffix));
-    return finalText;
-}
-
-bool TranscriptionService::textEndsWithSentencePunctuation(const QString& text) {
-    QString cleanText = text.trimmed();
-    if (cleanText.isEmpty()) {
-        return false;
-    }
-
-    QChar lastChar = cleanText.at(cleanText.length() - 1);
-    if (lastChar == '.' || lastChar == '!' || lastChar == '?' ||
-        lastChar == ',' || lastChar == ';' || lastChar == ':') {
-        return true;
-    }
-
-    if (cleanText.endsWith("。") ||
-        cleanText.endsWith("！") ||
-        cleanText.endsWith("？") ||
-        cleanText.endsWith("，") ||
-        cleanText.endsWith("；") ||
-        cleanText.endsWith("：")) {
-        return true;
-    }
-    return false;
-}
-
-QString TranscriptionService::pickAutoPunctuationSuffix(const QString& text) {
-    static const QStringList questionSuffixes = { "吗", "么", "嘛", "呢" };
-    static const QStringList questionKeywords = {
-        "什么", "怎么", "为什么", "为啥", "是否", "是不是", "能不能", "可不可以",
-        "要不要", "有没有", "行不行", "哪儿", "哪里", "谁", "多久", "多少", "几点", "几号"
-    };
-
-    static const QStringList exclaimSuffixes = { "啊", "呀", "哇", "啦" };
-    static const QStringList exclaimKeywords = { "太好了", "太棒了", "真棒", "好厉害", "牛啊" };
-    if (text.isEmpty()) {
-        return ".";
-    }
-
-    QString cleanText = text.trimmed();
-    if (cleanText.isEmpty()) {
-        return ".";
-    }
-
-    bool hasNonAscii = false;
-    for (const QChar& ch : cleanText) {
-        if (ch.unicode() > 127) {
-            hasNonAscii = true;
-            break;
-        }
-    }
-    for (const QString& suffix : questionSuffixes) {
-        if (cleanText.endsWith(suffix)) {
-            return hasNonAscii ? "？" : "?";
-        }
-    }
-    for (const QString& keyword : questionKeywords) {
-        if (cleanText.contains(keyword)) {
-            return hasNonAscii ? "？" : "?";
-        }
-    }
-    for (const QString& suffix : exclaimSuffixes) {
-        if (cleanText.endsWith(suffix)) {
-            return hasNonAscii ? "！" : "!";
-        }
-    }
-    for (const QString& keyword : exclaimKeywords) {
-        if (cleanText.contains(keyword)) {
-            return hasNonAscii ? "！" : "!";
-        }
-    }
-    return hasNonAscii ? "。" : ".";
-}

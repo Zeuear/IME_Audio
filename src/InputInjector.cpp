@@ -45,8 +45,8 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     if (text.isEmpty()) return false;
     std::wstring wide = text.toStdWString();
 
-    const int kBatchSize = 8;     
-    const int kBatchDelayMs = 6;
+    const int kBatchSize = 20;     
+    const int kBatchDelayMs = 0;
 
     size_t i = 0;
     while (i < wide.size()) {
@@ -73,14 +73,13 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
         UINT expected = static_cast<UINT>(inputs.size());
         UINT sent = SendInput(expected, inputs.data(), sizeof(INPUT));
         if (sent != expected) {
-            // 常见原因:目标窗口权限高于本进程(UAC/管理员),被 UIPI 拦截
             LOG_WARN(QString("pasteViaUnicodeTyping partial failure at batch [%1,%2), sent=%3/%4, GetLastError=%5")
                 .arg(i).arg(batchEnd).arg(sent).arg(expected).arg(GetLastError()));
-            return false; // 部分失败,不再继续发送,避免后续错位
+            return false;
         }
 
         i = batchEnd;
-        if (i < wide.size()) {
+        if (i < wide.size()) {  
             QThread::msleep(kBatchDelayMs);
         }
     }
@@ -172,7 +171,7 @@ bool InputInjector::inject(const QString& text, Mode mode) {
     case Mode::ClipboardOnly:
         return pasteViaClipboard(text);
     case Mode::UnicodeTypeOnly:
-        return injector_paste_utf8(text.toStdString().c_str());
+        return pasteViaUnicodeTyping(text);
     case Mode::PreferClipboard:
     default:
         if (pasteViaClipboard(text)) return true;

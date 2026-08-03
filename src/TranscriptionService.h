@@ -4,6 +4,7 @@
 #include "AppConfig.h"
 #include "GeminiClient.h"
 #include "sherpa/SherpaManager.h"
+#include "TextPostProcessor.h"
 
 // @brief  
 // 统一转录入口：根据 backend 类型分发到 Groq / Sherpa / Gladia / Gemini
@@ -31,9 +32,7 @@ private:
     static QByteArray buildWavBytes(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
     QString postProcess(const QString &rawText);
 
-    QString applySimpleSherpaPunctuation(const QString& text);
-    bool textEndsWithSentencePunctuation(const QString& text);
-    QString pickAutoPunctuationSuffix(const QString& text);
+    TextPostProcessor* m_textProcessor;
 
     const AppConfig& m_config;
     QNetworkAccessManager* m_manager;
