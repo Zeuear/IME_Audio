@@ -329,9 +329,7 @@ bool AudioRecorderService::startListening() {
     m_status.isListening = true;
     m_segmentBuffer.clear();
 
-    if (!m_config.continuousMode.load()) {
-        emit voiceStarted();
-    }
+    emit voiceStarted();
     return true;
 }
 
@@ -391,7 +389,6 @@ void AudioRecorderService::onAudioDataReady() {
     if (!m_config.continuousMode.load()) {
         m_segmentBuffer.append(chunk);
         m_status.currentSegmentMs = static_cast<int>(m_segmentBuffer.size() / bytesPerMs());
-        finalizeSegmentIfNeeded(true);
     }else {
         QMetaObject::invokeMethod(m_vadWorker, "processChunk", Qt::QueuedConnection,
             Q_ARG(QByteArray, chunk));

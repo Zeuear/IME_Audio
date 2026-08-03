@@ -615,7 +615,9 @@ void MainWin::onStateChanged(WorkflowState state)
         break;
     case WorkflowState::Transcribing:
     case WorkflowState::Processing:
+        m_sphereOverlay->hideTimerStop();
         m_sphereOverlay->setTranscribe();
+        m_sphereOverlay->showAtBottomCenter();
         break;
     case WorkflowState::Idle:
         QTimer::singleShot(200, [this]() {
