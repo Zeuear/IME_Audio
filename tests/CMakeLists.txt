@@ -23,27 +23,48 @@ if(QT_CORE_INCLUDE_DIRS)
     include_directories(${QT_CORE_INCLUDE_DIRS})
 endif()
 
-# ---- sample smoke test ----
-add_executable(sample_test "${CMAKE_CURRENT_SOURCE_DIR}/unit/sample_test.cpp")
-target_link_libraries(sample_test gtest gtest_main)
+# ---- unified test binary ----
+# All unit tests compiled into a single executable. Each test file keeps its own
+# TEST/TestCase names (no collisions today); Add new *.cpp under unit/ and append
+# it to SOURCES below. AUTOMOC is on so Q_OBJECT test helpers (e.g. task_queue_async_test)
+# are moc'd correctly; it is a no-op for plain test files.
+set(CMAKE_AUTOMOC ON)
 
-# ---- term-replace regression tests ----
-# Pure-logic tests: link against the TermsLibraryManager translation unit
-# without requiring Qt widgets or network.
-add_executable(term_replace_test "${CMAKE_CURRENT_SOURCE_DIR}/unit/term_replace_test.cpp")
-target_link_libraries(term_replace_test gtest gtest_main Qt6::Core)
-target_sources(term_replace_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/TermsLibraryManager.cpp)
-
-# ---- text post-processor tests ----
-add_executable(text_postprocessor_test "${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp")
-target_link_libraries(text_postprocessor_test gtest gtest_main Qt6::Core)
-target_sources(text_postprocessor_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPostProcessor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TermsLibraryManager.cpp
+set(TEST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/sample_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/term_replace_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/extract_progress_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
 )
 
-# Register all tests with CTest
+# Production translation units needed by the hermetic tests (logic decoupling:
+# we link only the seams under test, not the whole app).
+set(TEST_DEPS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TermsLibraryManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPostProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
+    # TextPolishService is a Q_OBJECT class; include its .cpp + header so AUTOMOC
+    # generates the moc code and links it. Logger.cpp is needed (LOG_DEBUG usage).
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.h
+    # TextPolishService delegates to the provider layer; include those TUs so the
+    # hermetic test links (parseOllamaTags is static, but factory/fetchModels need them).
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/TextPolishProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/TextPolishPrompts.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/GeminiProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/OpenAiProvider.cpp
+    # ProcessManager.h holds Q_OBJECT classes (BaseTask / TaskQueueManager /
+    # ExtractTask) and must be fed to AUTOMOC so the moc code is generated + linked.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ProcessManager.h
+)
+
+add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})
+target_link_libraries(imeaudio_tests gtest gtest_main Qt6::Core Qt6::Widgets Qt6::Network)
+
+# Register with CTest (gtest_discover_tests enumerates each TEST case as a CTest entry)
 include(GoogleTest)
-gtest_discover_tests(sample_test)
-gtest_discover_tests(term_replace_test)
-gtest_discover_tests(text_postprocessor_test)
+gtest_discover_tests(imeaudio_tests)

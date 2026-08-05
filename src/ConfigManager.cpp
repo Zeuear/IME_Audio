@@ -44,10 +44,10 @@ void ConfigManager::applyDefaults() {
     m_config.sherpa.threads = 4;
     m_config.sherpa.useGpu = false;
 
-    m_config.gemini.enableGemini = false;
-    m_config.gemini.aiEngineIndex = 0;
-    m_config.gemini.geminiStyle = "智慧预设";
-    m_config.gemini.targetLang = "不翻译";
+    m_config.polish.enableAiEnhancement = false;
+    m_config.polish.aiEngineIndex = 0;
+    m_config.polish.aiStyle = "智慧预设";
+    m_config.polish.targetLang = "不翻译";
 
     m_config.hotkey = "Ctrl+Alt+Y";
     m_config.continuousMode = false;
@@ -60,6 +60,7 @@ bool ConfigManager::load() {
     m_config.hotkey = s.value("hotkey", "").toString();
     m_config.backend = static_cast<AsrBackendKind>(s.value("backend", 1).toInt());
     m_config.gladiaKey = s.value("gladiaKey").toString();
+    m_config.groqKey = s.value("groqKey").toString();
     m_config.replaceRules = s.value("replaceRules").toString();
     m_config.continuousMode = s.value("continuousMode", false).toBool();
     m_config.autoStopEnabled = s.value("autoStopEnabled", true).toBool();
@@ -84,16 +85,16 @@ bool ConfigManager::load() {
     s.endGroup();
 
     s.beginGroup("gemini");
-    m_config.gemini.enableGemini = s.value("enableGemini").toBool();
-    m_config.gemini.apiKey = s.value("apiKey").toString();
-    m_config.gemini.apiUrl = s.value("apiUrl").toString();
-    m_config.gemini.projectId = s.value("projectId").toString();
-    m_config.gemini.model = s.value("model").toString();
-    m_config.gemini.prompt = s.value("prompt").toString();
-    m_config.gemini.vocab = s.value("vocab").toString();
-    m_config.gemini.aiEngineIndex = s.value("aiEngineIndex", 0).toInt();
-    m_config.gemini.targetLang = s.value("targetLang").toString();
-    m_config.gemini.geminiStyle = s.value("geminiStyle").toString();
+    m_config.polish.aiEngineIndex = s.value("aiEngineIndex", 0).toInt();
+    m_config.polish.enableAiEnhancement = s.value("enableAiEnhancement").toBool();
+    m_config.polish.apiKey = s.value("apiKey").toString();
+    m_config.polish.apiUrl = s.value("apiUrl").toString();
+    m_config.polish.projectId = s.value("projectId").toString();
+    m_config.polish.model = s.value("model").toString();
+    m_config.polish.prompt = s.value("prompt").toString();
+    m_config.polish.vocab = s.value("vocab").toString();
+    m_config.polish.targetLang = s.value("targetLang").toString();
+    m_config.polish.aiStyle = s.value("aiStyle").toString();
     s.endGroup();
 
     s.beginGroup("terms");
@@ -134,16 +135,16 @@ bool ConfigManager::save() {
     s.endGroup();
 
     s.beginGroup("gemini");
-    s.setValue("enableGemini", m_config.gemini.enableGemini);
-    s.setValue("apiKey", m_config.gemini.apiKey);
-    s.setValue("apiUrl", m_config.gemini.apiUrl);
-    s.setValue("projectId", m_config.gemini.projectId);
-    s.setValue("model", m_config.gemini.model);
-    s.setValue("prompt", m_config.gemini.prompt);
-    s.setValue("vocab", m_config.gemini.vocab);
-    s.setValue("aiEngineIndex", m_config.gemini.aiEngineIndex);
-    s.setValue("geminiStyle", m_config.gemini.geminiStyle);
-    s.setValue("targetLang", m_config.gemini.targetLang);
+    s.setValue("enableAiEnhancement", m_config.polish.enableAiEnhancement);
+    s.setValue("aiEngineIndex", m_config.polish.aiEngineIndex);
+    s.setValue("apiKey", m_config.polish.apiKey);
+    s.setValue("apiUrl", m_config.polish.apiUrl);
+    s.setValue("projectId", m_config.polish.projectId);
+    s.setValue("model", m_config.polish.model);
+    s.setValue("prompt", m_config.polish.prompt);
+    s.setValue("vocab", m_config.polish.vocab);
+    s.setValue("aiStyle", m_config.polish.aiStyle);
+    s.setValue("targetLang", m_config.polish.targetLang);
     s.endGroup();
 
     s.beginGroup("terms");

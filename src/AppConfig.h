@@ -32,17 +32,17 @@ struct SherpaConfig {
     float hotscores = 1.5;
 };
 
-struct GeminiConfig {
+struct PolishConfig {
+    int aiEngineIndex = 0;  // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama(本地)
+    bool enableAiEnhancement = false;
     QString apiKey;
     QString apiUrl;
     QString projectId;
     QString model;
     QString prompt;
     QString vocab;
-    QString geminiStyle;
+    QString aiStyle;
     QString targetLang;
-    int aiEngineIndex = 0;
-    bool enableGemini;
 };
 
 struct TermsConfig {
@@ -52,17 +52,24 @@ struct TermsConfig {
 struct AppConfig {
     AsrBackendKind backend = AsrBackendKind::Sherpa;
     AudioConfig audio;
+    
+    // 转录
     SherpaConfig sherpa;
-    GeminiConfig gemini;
-    TermsConfig terms;
-
     QString gladiaKey;
+    QString groqKey;
+
+    // 润色和翻译
+    PolishConfig polish;
+
+    // 词典
+    TermsConfig terms;
     QString replaceRules;
 
     std::atomic<bool> continuousMode { false };
     std::atomic<bool> autoStopEnabled { true };
 
     QString hotkey;
+
     QString style;
     QString Language;
 
@@ -74,9 +81,10 @@ struct AppConfig {
         backend = other.backend;
         audio = other.audio;
         sherpa = other.sherpa;
-        gemini = other.gemini;
+        polish = other.polish;
         terms = other.terms;
         gladiaKey = other.gladiaKey;
+        groqKey = other.groqKey;
         replaceRules = other.replaceRules;
         continuousMode.store(other.continuousMode.load());
         autoStopEnabled.store(other.autoStopEnabled.load());

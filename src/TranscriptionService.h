@@ -2,7 +2,7 @@
 #include <QObject>
 #include <QString>
 #include "AppConfig.h"
-#include "GeminiClient.h"
+#include "TextPolishService.h"
 #include "sherpa/SherpaManager.h"
 #include "TextPostProcessor.h"
 
@@ -13,7 +13,7 @@ class TranscriptionService : public QObject {
 public:
     explicit TranscriptionService(QNetworkAccessManager* networkManager, 
                                   SherpaManager* sherpaManager,
-                                  GeminiClient* geminiManager, 
+                                  TextPolishService* textPolishService,
                                   const AppConfig& config,
                                   QObject *parent = nullptr);
 
@@ -26,6 +26,8 @@ signals:
 private:
     void transcribeGroq(const QByteArray &wavBytes);
     void transcribeGladia(const QByteArray &wavBytes);
+    void submitGladiaTranscription(const QString &audioUrl);
+    void pollGladiaResult(const QString &resultUrl, int attempt);
     void transcribeSherpa(const QByteArray& pcmData, int sampleRate);
     void transcribeGemini(const QByteArray &wavBytes);
 
@@ -36,6 +38,6 @@ private:
 
     const AppConfig& m_config;
     QNetworkAccessManager* m_manager;
-    GeminiClient *m_geminiClient;
+    TextPolishService* m_textPolishService;
     SherpaManager *m_sherpaManager;
 };

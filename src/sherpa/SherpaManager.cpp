@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <QTimer>
 #include <QtConcurrent> 
 #include "../utils/Logger.h"
 #include "../utils/ExtractTool.h"
@@ -15,6 +16,16 @@ SherpaManager::SherpaManager(QObject* parent)
 {
     m_workerThread = QThread::create([this]() { workerLoop(); });
     m_workerThread->start();
+
+    // 空闲计时器：单次触发，超时则静默卸载模型释放内存。
+    // 不在构造时启动——仅在每次「结束监听」(resumeIdleTimer) 后开始计时。
+    m_idleTimer = new QTimer(this);
+    m_idleTimer->setSingleShot(true);
+    m_idleTimer->setInterval(kIdleUnloadMs);
+    connect(m_idleTimer, &QTimer::timeout, this, [this]() {
+        LOG_INFO("模型空闲超过 30 分钟，自动卸载以释放内存");
+        unloadModel();
+    });
 }
 
 SherpaManager::~SherpaManager(){
@@ -51,6 +62,7 @@ int SherpaManager::pendingCount() const
 
 void SherpaManager::unloadModel()
 {
+    if (m_idleTimer) m_idleTimer->stop();
     {
         QMutexLocker queueLocker(&m_queueMutex);
         m_queue.clear();
@@ -281,6 +293,22 @@ void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
     emit queueSizeChanged(pendingCount());
 }
 
+void SherpaManager::pauseIdleTimer()
+{
+    // 用户开始监听：暂停空闲计时；若此前已空闲卸载则立即静默重载
+    if (m_idleTimer) m_idleTimer->stop();
+    if (!m_isLoaded) {
+        LOG_INFO("模型空闲已卸载，开始监听时自动重新加载");
+        loadModelAsync(m_configCopy, false);
+    }
+}
+
+void SherpaManager::resumeIdleTimer()
+{
+    // 用户结束监听：恢复空闲计时（连续空闲 kIdleUnloadMs 后自动卸载）
+    if (m_idleTimer) m_idleTimer->start();
+}
+
 void SherpaManager::workerLoop()
 {
     forever{
@@ -323,6 +351,7 @@ void SherpaManager::workerLoop()
 
 SherpaInstaller::SherpaInstaller(QNetworkAccessManager* nam, QObject* parent) : QObject(parent)
 {
+    m_extractQueue = new TaskQueueManager(this);
     connect(this, &SherpaInstaller::installationProgress, this, [this](const QString& msg) {  LOG_DEBUG(msg); });
     connect(this, &SherpaInstaller::installationFinished, this, [this](bool ok, const QString& msg) { ok ? LOG_DEBUG(msg) : LOG_WARN(msg); });
     connect(this, &SherpaInstaller::installFileError, this, [this](const QString&, const QString&, const QString& error) { LOG_WARN(error); });
@@ -439,22 +468,36 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
         return;
     }
 
-    if (groupId == SHERPA_RUNTIME) {
-       
-    }
-
     const ModelInstallManifest& manifest = it.value();
     emit installationProgress(tr("Decoding in progress %1 ...").arg(manifest.displayName));
 
-    if (!ExtractTool::extractAll(manifest.archiveLocalPath, manifest.archiveTargetDir)) {
+    const QString archivePath = manifest.archiveLocalPath;
+    const QString targetDir = manifest.archiveTargetDir;
+    m_activeManifests.remove(groupId);
+
+    auto* task = new ExtractTask(archivePath, targetDir);
+    QObject::connect(task, &ExtractTask::extractStarted, this,
+        [this, groupId](int total) { emit extractStarted(groupId, total); });
+    QObject::connect(task, &ExtractTask::extractProgress, this,
+        [this, groupId](int cur, int tot) { emit extractProgress(groupId, cur, tot); });
+    QObject::connect(task, &ExtractTask::extractFinished, this,
+        [this, groupId](bool ok) { emit extractFinished(groupId, ok); });
+    QObject::connect(task, &BaseTask::taskFinished, this,
+        [this, groupId](TaskResult result, const QString&) {
+            onSherpaExtractFinished(groupId, result == TaskResult::Success);
+        });
+
+    m_extractQueue->addTask(task);
+}
+
+void SherpaInstaller::onSherpaExtractFinished(const QString& groupId, bool ok)
+{
+    if (!ok) {
         emit installGroupFinished(groupId, false, tr("Extract Error"));
         return;
     }
-
-    m_activeManifests.remove(groupId);
     emit installGroupFinished(groupId, true, tr("Download Complete"));
     emit loadModel(groupId, true, tr("Download Complete"));
-
 }
 
 SherpaDependencyManager::SherpaDependencyManager(QNetworkAccessManager* nam, QObject* parent)

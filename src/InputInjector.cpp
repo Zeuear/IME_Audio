@@ -9,6 +9,96 @@
 #ifdef Q_OS_WIN32
 #define NOMINMAX
 #include <windows.h>
+#include <imm.h>
+
+/*
+#include <uiautomation.h>
+#include <atlbase.h>
+#include <atlcomcli.h>
+#include <string>
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "ole32.lib")
+
+
+BOOL uia_probe_value_pattern(CComPtr<IUIAutomationValuePattern>& out_value_pattern,
+                             CComPtr<IUIAutomationElement>& focused) {
+    CComPtr<IUIAutomation> automation;
+    HRESULT hr;
+
+    hr = automation.CoCreateInstance(CLSID_CUIAutomation);
+    if (FAILED(hr) || !automation) return FALSE;
+
+    hr = automation->GetFocusedElement(&focused);
+    if (FAILED(hr) || !focused) return FALSE;
+
+    VARIANT_BOOL is_available = VARIANT_FALSE;
+    hr = focused->GetCurrentPropertyValue(UIA_IsValuePatternAvailablePropertyId, nullptr);
+
+    hr = focused->GetCurrentPatternAs(
+        UIA_ValuePatternId, IID_PPV_ARGS(&out_value_pattern));
+
+    if (FAILED(hr) || !out_value_pattern) {
+        return FALSE;
+    }
+
+    CComBSTR test_read;
+    hr = out_value_pattern->get_CurrentValue(&test_read);
+    if (FAILED(hr)) {
+        out_value_pattern.Release();
+        return FALSE;
+    }
+    return TRUE;
+}
+
+
+BOOL injector_append_text_via_uia(CComPtr<IUIAutomationValuePattern>& value_pattern,
+                                  CComPtr<IUIAutomationElement>& focused,
+                                  const wchar_t* wide_text)
+{
+    HRESULT hr;
+    CComBSTR current_bstr;
+    hr = value_pattern->get_CurrentValue(&current_bstr);
+    if (FAILED(hr)) {
+        return FALSE;
+    }
+
+    std::wstring combined;
+    if (current_bstr.Length() > 0) {
+        combined.assign(current_bstr, current_bstr.Length());
+    }
+    combined.append(wide_text);
+
+    // ---- 第二步：整体写回（旧内容 + 新内容）----
+    CComBSTR bstr_combined(combined.c_str());
+    hr = value_pattern->SetValue(bstr_combined);
+    if (FAILED(hr)) {
+        return FALSE;
+    }
+
+    // ---- 第三步：把光标/选区移动到文本末尾 ----
+    CComPtr<IUIAutomationTextPattern> text_pattern;
+    hr = focused->GetCurrentPatternAs(
+        UIA_TextPatternId, IID_PPV_ARGS(&text_pattern));
+
+    if (SUCCEEDED(hr) && text_pattern) {
+        CComPtr<IUIAutomationTextRange> doc_range;
+        hr = text_pattern->get_DocumentRange(&doc_range);
+        if (SUCCEEDED(hr) && doc_range) {
+
+            hr = doc_range->MoveEndpointByRange(
+                TextPatternRangeEndpoint_Start,
+                doc_range,
+                TextPatternRangeEndpoint_End);
+
+            if (SUCCEEDED(hr)) {
+                doc_range->Select();
+            }
+        }
+    }
+    return TRUE;
+}
+
+*/
 
 bool InputInjector::sendCtrlV() {
     HWND hwnd = GetForegroundWindow();
@@ -46,7 +136,7 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     std::wstring wide = text.toStdWString();
 
     const int kBatchSize = 20;     
-    const int kBatchDelayMs = 0;
+    const int kBatchDelayMs = 1;
 
     size_t i = 0;
     while (i < wide.size()) {
@@ -86,6 +176,42 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     return true;
 }
 
+#define INJECT_CHAR_DELAY_MS 10
+
+typedef struct {
+    HWND hwnd;
+    HIMC himc;
+    BOOL had_context;
+    BOOL prev_open_status;
+} ImeGuard;
+
+static void ime_guard_disable(ImeGuard* guard) {
+    guard->hwnd = GetForegroundWindow();
+    guard->himc = NULL;
+    guard->had_context = FALSE;
+    guard->prev_open_status = FALSE;
+
+    if (!guard->hwnd) {
+        return;
+    }
+
+    guard->himc = ImmGetContext(guard->hwnd);
+    if (guard->himc) {
+        guard->had_context = TRUE;
+        guard->prev_open_status = ImmGetOpenStatus(guard->himc);
+        if (guard->prev_open_status) {
+            ImmSetOpenStatus(guard->himc, FALSE);
+        }
+    }
+}
+
+static void ime_guard_restore(ImeGuard* guard) {
+    if (guard->had_context && guard->himc) {
+        ImmSetOpenStatus(guard->himc, guard->prev_open_status);
+        ImmReleaseContext(guard->hwnd, guard->himc);
+    }
+}
+
 static wchar_t* utf8_to_wide(const char* utf8_text) {
     int needed = 0;
     wchar_t* wide_text = NULL;
@@ -108,13 +234,14 @@ static wchar_t* utf8_to_wide(const char* utf8_text) {
         free(wide_text);
         return NULL;
     }
-
     return wide_text;
 }
 
 BOOL injector_paste_utf8(const char* utf8_text) {
     wchar_t* wide_text = NULL;
     size_t len = 0;
+    ImeGuard guard = { 0 };
+    BOOL all_ok = TRUE;
     INPUT* inputs = NULL;
     size_t i = 0;
     UINT sent = 0;
@@ -134,6 +261,13 @@ BOOL injector_paste_utf8(const char* utf8_text) {
         return FALSE;
     }
 
+    if (!GetForegroundWindow()) {
+        free(wide_text);
+        return FALSE;
+    }
+
+    // 关闭 IME，防止中文输入法把英文字符劫持成拼音候选
+    ime_guard_disable(&guard);
     inputs = (INPUT*)calloc(len * 2, sizeof(INPUT));
     if (!inputs) {
         free(wide_text);
@@ -155,29 +289,40 @@ BOOL injector_paste_utf8(const char* utf8_text) {
         inputs[i * 2 + 1].ki.wScan = wch;
         inputs[i * 2 + 1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
     }
-
     sent = SendInput((UINT)(len * 2), inputs, sizeof(INPUT));
+    ime_guard_restore(&guard);
 
-    free(inputs);
     free(wide_text);
-
-    return sent == (UINT)(len * 2);
+    return all_ok;
 }
+
 
 bool InputInjector::inject(const QString& text, Mode mode) {
     if (text.isEmpty()) return false;
+        
+    //CComPtr<IUIAutomationElement> focused;
+    //CComPtr<IUIAutomationValuePattern> value_pattern;
+    //BOOL result = uia_probe_value_pattern(value_pattern, focused);
+    //if (result) {
+    //    return injector_append_text_via_uia(value_pattern, focused, text.toStdWString().c_str());
+    //}
 
-    switch (mode) {
-    case Mode::ClipboardOnly:
-        return pasteViaClipboard(text);
-    case Mode::UnicodeTypeOnly:
-        return pasteViaUnicodeTyping(text);
-    case Mode::PreferClipboard:
-    default:
-        if (pasteViaClipboard(text)) return true;
-        LOG_WARN("Clipboard paste failed, falling back to unicode typing.");
-        return pasteViaUnicodeTyping(text);
-    }
+    LOG_DEBUG("sendText: falling back to SendInput unicode typing");
+    return injector_paste_utf8(text.toUtf8().constData());
+
+
+    //switch (mode) {
+    //case Mode::ClipboardOnly:
+    //    return pasteViaClipboard(text);
+    //case Mode::UnicodeTypeOnly:
+    //    return injector_paste_utf8(text.toUtf8().constData());
+    //    //return injector_append_text_via_uia(text.toStdWString().c_str());
+    //case Mode::PreferClipboard:
+    //default:
+    //    if (pasteViaClipboard(text)) return true;
+    //    LOG_WARN("Clipboard paste failed, falling back to unicode typing.");
+    //    return pasteViaUnicodeTyping(text);
+    //}
 }
 
 #else

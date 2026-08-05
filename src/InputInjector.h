@@ -8,7 +8,6 @@ public:
         ClipboardOnly,
         UnicodeTypeOnly
     };
-
     static bool inject(const QString& text, Mode mode = Mode::UnicodeTypeOnly);
 
 private:

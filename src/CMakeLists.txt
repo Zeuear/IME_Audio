@@ -273,6 +273,7 @@ if(WIN32)
         kissfft
         Ole32
         Shell32
+        imm32
     )
 elseif(APPLE)
     target_link_libraries(${TARGET_NAME} 

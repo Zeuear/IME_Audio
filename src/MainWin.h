@@ -22,7 +22,7 @@ class TermsLibraryManager;
 class SherpaInstaller;
 class SherpaManager;
 class SphereOverlay;
-class GeminiClient;
+class TextPolishService;
 class CudaInstaller;
 
 
@@ -93,7 +93,7 @@ private:
     QNetworkAccessManager* m_networkManager = nullptr;
     SphereOverlay* m_sphereOverlay = nullptr;
 
-    GeminiClient* m_geminiClient = nullptr;
+    TextPolishService* m_textPolishService = nullptr;
     SherpaManager* m_sherpaManager = nullptr;
     SherpaInstaller* m_sherpaInstaller = nullptr;
     CudaInstaller* m_cudaInstaller = nullptr;

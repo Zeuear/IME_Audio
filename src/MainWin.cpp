@@ -35,6 +35,10 @@
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
   ui->ai_vocabulary_edit->setReadOnly(true);
+  ui->grop_key_label->setVisible(false);
+  ui->grop_key_edit->setVisible(false);
+  ui->gladia_key_edit->setVisible(false);
+  ui->gladia_key_label->setVisible(false);
 
   initSystemTray();
   initialize();
@@ -60,19 +64,10 @@ void MainWin::initialize() {
     backend_items << "Gladia 语音直输";
     ui->identification_backend_comb->addItems(backend_items);
 
-    QStringList gemini_model_items;
-    gemini_model_items << "gemini-3.1-flash-lite";
-    gemini_model_items << "gemini-3-flash-preview";
-    gemini_model_items << "gemini-flash-lite-latest";
-    gemini_model_items << "gemini-2.5-flash";
-    gemini_model_items << "gemini-2.5-pro";
-    gemini_model_items << "gemini-1.5-flash";
-    gemini_model_items << "gemini-1.5-pro";
-    ui->gemini_model_comb->addItems(gemini_model_items);
-
     QStringList ai_engine_items;
     ai_engine_items << "Google Gemini API";
     ai_engine_items << "本地/自订 (OpenAI 兼容)";
+    ai_engine_items << "Ollama (本地)";
     ui->ai_engine_comb->addItems(ai_engine_items);
 
     QStringList gemini_style_items;
@@ -81,7 +76,7 @@ void MainWin::initialize() {
     gemini_style_items << "日常口語";
     gemini_style_items << "简洁扼要";
     gemini_style_items << "自订Prompt";
-    ui->gemini_style_comb->addItems(gemini_style_items);
+    ui->ai_style_comb->addItems(gemini_style_items);
 
     QStringList translate_language_comb;
     translate_language_comb << "不翻译";
@@ -108,13 +103,13 @@ void MainWin::initialize() {
     langActionGroup->addAction(ui->actionEnglish);
 
     const AppConfig& config = ConfigManager::instance().config();
-    m_geminiClient = new GeminiClient(m_networkManager, this);
+    m_textPolishService = new TextPolishService(m_networkManager, this);
     m_recorderService = new AudioRecorderService(config, this);
     m_sherpaManager = new SherpaManager(this);
     m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
     m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
 
-    m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_geminiClient, config, this);
+    m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService, config, this);
     m_termsManager = new TermsLibraryManager(this);
     m_updateManager = new UpdateManager(m_networkManager, this);
 
@@ -152,6 +147,32 @@ void MainWin::connection(){
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
+
+    connect(ui->identification_backend_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
+        if (index == 0) {
+            ui->grop_key_edit->hide();
+            ui->grop_key_label->hide();
+            ui->gladia_key_edit->hide();
+            ui->gladia_key_label->hide();
+        }
+        else if (index == 1) {
+            ui->grop_key_edit->hide();
+            ui->grop_key_label->hide();
+            ui->gladia_key_edit->hide();
+            ui->gladia_key_label->hide();
+        }else if (index == 2) {
+            ui->grop_key_edit->show();
+            ui->grop_key_label->show();
+            ui->gladia_key_edit->hide();
+            ui->gladia_key_label->hide();
+        }
+        else if (index == 3) {
+            ui->grop_key_edit->hide();
+            ui->grop_key_label->hide();
+            ui->gladia_key_edit->show();
+            ui->gladia_key_label->show();
+        }
+      });
 
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
@@ -216,20 +237,46 @@ void MainWin::connection(){
     // gemini
     connect(ui->check_connection_btn, &QPushButton::clicked, this, [this]() {
         const AppConfig& config = ConfigManager::instance().config();
-        GeminiClient::RequestParams params;
-        params.aiEngine = config.gemini.aiEngineIndex;
-        params.apiKey = config.gemini.apiKey;
-        params.customUrl = config.gemini.apiUrl;
-        params.model = config.gemini.model;
-        params.style = config.gemini.geminiStyle;
-        params.customPrompt = config.gemini.prompt;
-        params.aiVocab = config.gemini.vocab;
-        params.targetLang = config.gemini.targetLang;
-        m_geminiClient->testConnection(params);
+        TextPolishService::RequestParams params;
+        params.aiEngine = config.polish.aiEngineIndex;
+        params.apiKey = config.polish.apiKey;
+        params.customUrl = config.polish.apiUrl;
+        params.model = config.polish.model;
+        params.style = config.polish.aiStyle;
+        params.customPrompt = config.polish.prompt;
+        params.aiVocab = config.polish.vocab;
+        params.targetLang = config.polish.targetLang;
+        m_textPolishService->testConnection(params);
     });
 
     connect(ui->nav_list_widget, &QListWidget::currentItemChanged, this, [this]() {
         onToggleDrawer(ui->nav_list_widget->currentRow());
+    });
+
+    connect(ui->ai_engine_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        const AppConfig& config = ConfigManager::instance().config();
+        TextPolishService::RequestParams params;
+        params.aiEngine = index;
+        params.apiKey = config.polish.apiKey;
+        params.customUrl = config.polish.apiUrl;
+        m_textPolishService->fetchModels(params);
+    });
+
+    connect(m_textPolishService, &TextPolishService::modelsFetched, this, [this](bool success, const QStringList& models, const QString&) {
+        if (!success || models.isEmpty()) {
+            LOG_ERROR("获取模型列表失败");
+            ui->ai_model_comb->clear();
+            return;
+        }
+
+        LOG_INFO("获取模型列表成功");
+        ui->ai_model_comb->clear();
+        ui->ai_model_comb->addItems(models);
+
+        const AppConfig& config = ConfigManager::instance().config();
+        int index = ui->ai_model_comb->findText(config.polish.model);
+        if (index < 0) index = 0;
+        ui->ai_model_comb->setCurrentIndex(index);
     });
 
     // 更新检查
@@ -294,7 +341,7 @@ void MainWin::connection(){
         auto rules = m_termsManager->buildAllRules();
 		AppConfig& appConfig = ConfigManager::instance().config();
         appConfig.replaceRules = rules.replaceRules;
-        appConfig.gemini.vocab = rules.aiVocab;
+        appConfig.polish.vocab = rules.aiVocab;
 
 		// 热词表
         QString hotwords;
@@ -302,21 +349,11 @@ void MainWin::connection(){
         appConfig.sherpa.hotwords = hotwords;
 		ConfigManager::instance().save();
 
-        ui->ai_vocabulary_edit->setText(appConfig.gemini.vocab);
+        ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
     });
 
     connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);
     connect(ui->setting_cancel_btn, &QPushButton::clicked, this, &MainWin::onLoadConfig);
-
-    connect(m_geminiClient, &GeminiClient::connectionTested, this,
-        [this](bool success, const QString& message) {
-            if (!success) {
-                LOG_ERROR("Gemini连接失败!");
-            }
-            else {
-                LOG_INFO("Gemini连接成功!");
-            }
-        });
 }
 
 MainWin::~MainWin() {
@@ -358,7 +395,6 @@ void MainWin::showEvent(QShowEvent* event) {
 AppConfig MainWin::extractConfigFromUI() {
     AppConfig uiConfig;
     // 基础/全局设置 (Global/Misc)
-    uiConfig.gemini.aiEngineIndex = ui->ai_engine_comb->currentIndex();
     uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
     uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
     uiConfig.hotkey = ui->shortcut_edit->getShortCut();
@@ -381,15 +417,16 @@ AppConfig MainWin::extractConfigFromUI() {
     uiConfig.sherpa.languageModel = ui->language_comb->currentText();
 	uiConfig.sherpa.localModelRepoId = ui->local_model_comb->currentText();
 
-    // Gemini/AI 设置 (Gemini Group)
-    uiConfig.gemini.enableGemini = ui->enable_gemini_checkbox->isChecked();
-    uiConfig.gemini.model = ui->gemini_model_comb->currentText();
-    uiConfig.gemini.geminiStyle = ui->gemini_style_comb->currentText();
-    uiConfig.gemini.apiUrl = ui->api_url_edit->text();
-    uiConfig.gemini.apiKey = ui->api_key_edit->text();
-    uiConfig.gemini.targetLang = ui->translate_language_comb->currentText();
-    uiConfig.gemini.vocab = ui->ai_vocabulary_edit->text();
-    uiConfig.gemini.prompt = ui->custom_commands_edit->text(); 
+    // /AI 设置 (AI Group)
+    uiConfig.polish.aiEngineIndex = ui->ai_engine_comb->currentIndex();
+    uiConfig.polish.enableAiEnhancement = ui->enable_enhancement_checkbox->isChecked();
+    uiConfig.polish.model = ui->ai_model_comb->currentText();
+    uiConfig.polish.aiStyle = ui->ai_style_comb->currentText();
+    uiConfig.polish.apiUrl = ui->api_url_edit->text();
+    uiConfig.polish.apiKey = ui->api_key_edit->text();
+    uiConfig.polish.targetLang = ui->translate_language_comb->currentText();
+    uiConfig.polish.vocab = ui->ai_vocabulary_edit->text();
+    uiConfig.polish.prompt = ui->custom_commands_edit->text();
 
     // 快捷键 (Hotkey)
     uiConfig.Language = Language;
@@ -398,7 +435,7 @@ AppConfig MainWin::extractConfigFromUI() {
 	// 词典设置 (Terms Group)
     auto rules = m_termsManager->buildAllRules();
     uiConfig.replaceRules = rules.replaceRules;
-    uiConfig.gemini.vocab = rules.aiVocab;
+    uiConfig.polish.vocab = rules.aiVocab;
 
     QString hotwords;
     for (const QString& w : rules.hotwords) hotwords += w + '\n';
@@ -411,7 +448,6 @@ void MainWin::loadConfigToUI() {
     const AppConfig& cfg = ConfigManager::instance().config();
 
     // 基础/全局
-    ui->ai_engine_comb->setCurrentIndex(cfg.gemini.aiEngineIndex);
     ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
     ui->shortcut_edit->setShortCut(cfg.hotkey);
 	ui->identification_backend_comb->setCurrentIndex(static_cast<int>(cfg.backend));
@@ -434,15 +470,24 @@ void MainWin::loadConfigToUI() {
 		m_sherpaManager->loadModelAsync(cfg, false);
     }
 
-    // Gemini
-    ui->enable_gemini_checkbox->setChecked(cfg.gemini.enableGemini);
-    ui->gemini_model_comb->setCurrentText(cfg.gemini.model);
-    ui->api_url_edit->setText(cfg.gemini.apiUrl);
-    ui->api_key_edit->setText(cfg.gemini.apiKey);
-    ui->ai_vocabulary_edit->setText(cfg.gemini.vocab);
-    ui->custom_commands_edit->setText(cfg.gemini.prompt);
-    ui->translate_language_comb->setCurrentText(cfg.gemini.targetLang);
-    ui->gemini_style_comb->setCurrentText(cfg.gemini.geminiStyle);
+    // AI Enhancement
+    ui->ai_engine_comb->setCurrentIndex(cfg.polish.aiEngineIndex);
+
+    ui->enable_enhancement_checkbox->setChecked(cfg.polish.enableAiEnhancement);
+    ui->api_url_edit->setText(cfg.polish.apiUrl);
+    ui->api_key_edit->setText(cfg.polish.apiKey);
+    ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
+    ui->custom_commands_edit->setText(cfg.polish.prompt);
+    ui->translate_language_comb->setCurrentText(cfg.polish.targetLang);
+    ui->ai_style_comb->setCurrentText(cfg.polish.aiStyle);
+
+    TextPolishService::RequestParams params;
+    params.aiEngine = cfg.polish.aiEngineIndex;
+    params.apiKey = cfg.polish.apiKey;
+    params.customUrl = cfg.polish.apiUrl;
+
+    m_textPolishService->fetchModels(params);
+
 }
 
 void MainWin::readIni() {
@@ -596,9 +641,11 @@ void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
     if (m_workflow->currentState() == WorkflowState::Idle) {
         m_workflow->startRecording();
+        ui->shortcut_edit->setListening(true);   
     }
     else {
         m_workflow->stopRecording();
+        ui->shortcut_edit->setListening(false);  
     }
 }
 
@@ -614,10 +661,12 @@ void MainWin::onStateChanged(WorkflowState state)
         m_sphereOverlay->showAtBottomCenter();
         break;
     case WorkflowState::Transcribing:
-    case WorkflowState::Processing:
         m_sphereOverlay->hideTimerStop();
         m_sphereOverlay->setTranscribe();
         m_sphereOverlay->showAtBottomCenter();
+        break;
+    case WorkflowState::Processing:
+        m_sphereOverlay->hideTimerStart();
         break;
     case WorkflowState::Idle:
         QTimer::singleShot(200, [this]() {

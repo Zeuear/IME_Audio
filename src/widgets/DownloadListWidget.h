@@ -22,6 +22,11 @@ public:
     void markFileError(const QString& filename, const QString& error);
     void updateGroupFinished(bool success, const QString& msg);
 
+    // 解压阶段：复用整组总进度条
+    void beginExtract(int totalLines);
+    void updateExtractProgress(int current, int total);
+    void finishExtract(bool success);
+
 protected:
     void paintEvent(QPaintEvent* event) override;
 
@@ -63,6 +68,10 @@ private slots:
     void onInstallFileFinished(const QString& repoId, const QString& filename);
     void onInstallFileError(const QString& repoId, const QString& filename, const QString& error);
     void onInstallGroupFinished(const QString& repoId, bool success, const QString& msg);
+
+    void onExtractStarted(const QString& repoId, int totalLines);
+    void onExtractProgress(const QString& repoId, int current, int total);
+    void onExtractFinished(const QString& repoId, bool success);
 
 private:
     ProjectGroupCard* ensureCard(const QString& repoId, const QString& displayName, int totalFiles);

@@ -29,6 +29,8 @@ void WorkflowManager::startRecording() {
     if (m_currentState != WorkflowState::Idle) return;
     LOG_DEBUG("Start Recording");
     transitionTo(WorkflowState::Loading);
+    m_sherpaManager->pauseIdleTimer();
+
     if (m_config.backend == AsrBackendKind::Sherpa) {
 
         m_sherpaManager->loadModel(m_config);
@@ -59,6 +61,8 @@ void WorkflowManager::stopRecording() {
     //if (m_config.backend == AsrBackendKind::Sherpa) {
     //    m_sherpaManager->unloadModel();
     //}
+    // 结束监听：恢复空闲计时
+    m_sherpaManager->resumeIdleTimer();
 }
 
 WorkflowState WorkflowManager::currentState() const
@@ -86,15 +90,17 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
         if (!finalText.isEmpty()) {
             LOG_DEBUG(QString("Transcription success: %1").arg(finalText));
             emit transcriptionResultReady(finalText);
+            transitionTo(WorkflowState::Processing);
         }
     }
     else {
         QMessageBox::warning(nullptr, tr("Error"), errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
         LOG_WARN(errorMsg);
+        transitionTo(WorkflowState::Processing);
     }
 
-    if (m_pendingTranscriptions == 0 && m_currentState == WorkflowState::Transcribing) {
+    if (m_pendingTranscriptions == 0) {
         transitionTo(m_recorder->isListening() ? WorkflowState::Recording : WorkflowState::Idle);
     }
 }

@@ -14,6 +14,7 @@
 #include "cxx-api.h"
 
 #include "utils/DownloadManager.h"
+#include "utils/ProcessManager.h"
 #include "SherpaConfig.h"
 #include "../AppConfig.h"
 
@@ -29,6 +30,11 @@ public:
     void loadModel(const AppConfig& config, bool isReload = false);
     void reloadModel(const AppConfig& config);
     void unloadModel();
+
+    // 空闲计时控制：开始监听时暂停计时（若已空闲卸载则自动重载），
+    // 结束监听时恢复计时；连续空闲 kIdleUnloadMs 后自动卸载模型
+    void pauseIdleTimer();
+    void resumeIdleTimer();
 
     bool isModelLoaded() const;
     bool isBusy() const;       
@@ -76,6 +82,10 @@ private:
     QString m_currentRepoId;
     AppConfig m_configCopy;
 
+    // 空闲自动卸载：30 分钟无识别请求则释放模型内存，下次使用自动重载
+    static constexpr int kIdleUnloadMs = 30 * 60 * 1000;
+    QTimer* m_idleTimer = nullptr;
+
     mutable QMutex m_recognizerMutex; 
 
     // 任务队列相关
@@ -110,6 +120,11 @@ signals:
     void installFileFinished(const QString& repoId, const QString& filename);
     void installFileError(const QString& repoId, const QString& filename, const QString& error);
 
+    // 解压进度（仅真正走解压的组才发；纯文件下载组不发）
+    void extractStarted(const QString& repoId, int totalLines);
+    void extractProgress(const QString& repoId, int current, int total);
+    void extractFinished(const QString& repoId, bool success);
+
     void loadModel(const QString& repoId, bool success, const QString& msg);
 
 private slots:
@@ -118,13 +133,12 @@ private slots:
     void onGroupFileFinished(const QString& groupId, const QString& taskId, const QString& filename);
     void onGroupFileError(const QString& groupId, const QString& taskId, const QString& filename, const QString& error);
     void onGroupFinished(const QString& groupId, bool success);
+    void onSherpaExtractFinished(const QString& groupId, bool ok);
 
 private:
     DownloadManager* m_downloadManager = nullptr;
     QHash<QString, ModelInstallManifest> m_activeManifests;
-
-    QString SHERPA_RUNTIME = "Sherpa Runtime";
-
+    TaskQueueManager* m_extractQueue = nullptr;
 };
 
 

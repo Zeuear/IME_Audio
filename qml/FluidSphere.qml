@@ -11,7 +11,7 @@ Item {
     onLevelChanged: smoothedLevel = level
     property real internalPulse: Math.pow(smoothedLevel, 1.3) 
 
-    scale: 0.6 + internalPulse * 0.3
+    scale: 0.7 + internalPulse * 0.3
     Behavior on scale {
         NumberAnimation { duration: 70; easing.type: Easing.OutQuad }
     }
@@ -23,25 +23,13 @@ Item {
     }
     property bool enableColorAnimation: false
     
-    // --- 白毛玻璃圆球 ---
-    Rectangle {
-        id: glassSphere
-        anchors.centerIn: parent
-        width: Math.min(parent.width, parent.height)
-        height: width
-        color: Qt.rgba(1.0, 1.0, 1.0, 0.0)
-        radius: width / 2
-        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.0)
-        border.width: 1
-        clip: true
-    }
 
     BarSpectrum {
         id: spectrumView
         anchors.fill: parent
         level: root.level
         levels: root.levels	
-        scale: 0.8
+        scale: 1
         anchors.centerIn: parent
 
         opacity: 0.8 + (root.level * 0.2)

@@ -7,48 +7,52 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QBuffer>
-#include <QMessageBox>
+#include <QTimer>
+#include "textpolish/GeminiProvider.h"
 #include "TermsLibraryManager.h"
 #include "utils/Logger.h"
 
 TranscriptionService::TranscriptionService(
     QNetworkAccessManager* networkManager, 
     SherpaManager* sherpaManager,
-    GeminiClient* geminiClient,
+    TextPolishService* textPolishService,
     const AppConfig& config, QObject *parent)
     : QObject(parent),
       m_config(config),
       m_manager(networkManager),
       m_sherpaManager(sherpaManager),
-      m_geminiClient(geminiClient),
+      m_textPolishService(textPolishService),
       m_textProcessor(new TextPostProcessor(this))
 {
 
-    connect(m_geminiClient, &GeminiClient::polishFinished, this, [&](bool success, const QString& text, const QString& error) {
+    connect(m_textPolishService, &TextPolishService::polishFinished, this, [&](bool success, const QString& text, const QString& error) {
         emit transcriptionFinished(success, text, success ? postProcess(text) : QString(), error);
     });
 
-    connect(m_geminiClient, &GeminiClient::transcribeFinished, this,
-            [this](bool ok, const QString &text, const QString &err) {
-                emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
-            });
+    connect(m_textPolishService, &TextPolishService::connectionTested, this,
+        [this](bool success, const QString& message) {
+            if (!success) {
+                LOG_ERROR("测试连接失败!");
+            }
+            else {
+                LOG_INFO("测试连接成功!");
+            }
+        });
 
     connect(m_sherpaManager, &SherpaManager::utteranceTranscribed, this,
             [this](bool ok, const QString &text, const QString &err) {
-                if (m_config.gemini.enableGemini) {
-                    GeminiClient::RequestParams params;
-                    params.aiEngine = m_config.gemini.aiEngineIndex;
-                    params.apiKey = m_config.gemini.apiKey;
-                    params.customUrl = m_config.gemini.apiUrl;
-                    params.model = m_config.gemini.model;
-                    params.style = m_config.gemini.geminiStyle;
-                    params.customPrompt = m_config.gemini.prompt;
-                    params.aiVocab = m_config.gemini.vocab;
-                    params.targetLang = m_config.gemini.targetLang;
+                if (m_config.polish.enableAiEnhancement) {
+                    TextPolishService::RequestParams params;
+                    params.aiEngine = m_config.polish.aiEngineIndex;
+                    params.apiKey = m_config.polish.apiKey;
+                    params.customUrl = m_config.polish.apiUrl;
+                    params.model = m_config.polish.model;
+                    params.style = m_config.polish.aiStyle;
+                    params.customPrompt = m_config.polish.prompt;
+                    params.aiVocab = m_config.polish.vocab;
+                    params.targetLang = m_config.polish.targetLang;
 
-                    QMetaObject::invokeMethod(m_geminiClient, [this, text, params]() {
-                        m_geminiClient->polishText(text, params);
-                        }, Qt::QueuedConnection);
+                    m_textPolishService->polishText(text, params);
                 }
                 else {
                     emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
@@ -77,21 +81,30 @@ void TranscriptionService::transcribeSherpa(const QByteArray& pcmData, int sampl
 }
 
 void TranscriptionService::transcribeGemini(const QByteArray &wavBytes) {
-    GeminiClient::RequestParams p;
-    p.apiKey = m_config.gemini.apiKey;
-    p.model = m_config.gemini.model;
-    p.customUrl = m_config.gemini.apiUrl;
-    p.targetLang = m_config.gemini.targetLang;
-    p.style = m_config.gemini.geminiStyle;
-    p.customPrompt = m_config.gemini.prompt;
+    TextPolishService::RequestParams p;
+    p.apiKey = m_config.polish.apiKey;
+    p.model = m_config.polish.model;
+    p.customUrl = m_config.polish.apiUrl;
+    p.targetLang = m_config.polish.targetLang;
+    p.style = m_config.polish.aiStyle;
+    p.customPrompt = m_config.polish.prompt;
     p.replaceRules = m_config.replaceRules;
-    p.aiVocab = m_config.gemini.vocab;
-    p.aiEngine = m_config.gemini.aiEngineIndex;
-    m_geminiClient->transcribeAudio(wavBytes, p);
+    p.aiVocab = m_config.polish.vocab;
+    p.aiEngine = m_config.polish.aiEngineIndex;
+
+    GeminiProvider provider;
+    provider.transcribe(wavBytes, p, m_manager, [this](bool ok, QString text, QString err) {
+        emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
+    });
 }
 
 void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
     // Groq Whisper API：multipart/form-data 上传音频文件
+    if (m_config.groqKey.isEmpty()) {
+        emit transcriptionFinished(false, {}, {}, QStringLiteral("Groq API Key 未配置"));
+        return;
+    }
+
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
     auto* buffer = new QBuffer(multiPart);
@@ -112,7 +125,7 @@ void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
     multiPart->append(modelPart);
 
     QNetworkRequest req(QUrl("https://api.groq.com/openai/v1/audio/transcriptions"));
-    req.setRawHeader("Authorization", ("Bearer " + m_config.gemini.apiKey).toUtf8()); // TODO: 使用独立 groqKey 字段
+    req.setRawHeader("Authorization", ("Bearer " + m_config.groqKey).toUtf8());
 
     QNetworkReply *reply = m_manager->post(req, multiPart);
     multiPart->setParent(reply);
@@ -130,7 +143,12 @@ void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
 }
 
 void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
-    // Gladia API：预签名上传 + 转录请求，流程与 Groq 类似，此处按需扩展
+    // Gladia v2 真实流程：上传拿 audio_url → 提交转录（异步）→ 轮询 result_url
+    if (m_config.gladiaKey.isEmpty()) {
+        emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia API Key 未配置"));
+        return;
+    }
+
     auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
     auto* buffer = new QBuffer(multiPart);
@@ -143,12 +161,38 @@ void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
     filePart.setBodyDevice(buffer);
     multiPart->append(filePart);
 
+    QNetworkRequest upReq(QUrl("https://api.gladia.io/v2/upload"));
+    upReq.setRawHeader("x-gladia-key", m_config.gladiaKey.toUtf8());
+
+    QNetworkReply *upReply = m_manager->post(upReq, multiPart);
+    multiPart->setParent(upReply);
+
+    connect(upReply, &QNetworkReply::finished, this, [this, upReply]() {
+        upReply->deleteLater();
+        if (upReply->error() != QNetworkReply::NoError) {
+            emit transcriptionFinished(false, {}, {}, upReply->errorString());
+            return;
+        }
+        QJsonObject upObj = QJsonDocument::fromJson(upReply->readAll()).object();
+        QString audioUrl = upObj.value("audio_url").toString();
+        if (audioUrl.isEmpty()) {
+            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 上传失败：未返回 audio_url"));
+            return;
+        }
+        submitGladiaTranscription(audioUrl);
+    });
+}
+
+void TranscriptionService::submitGladiaTranscription(const QString &audioUrl) {
+    QJsonObject body;
+    body["audio_url"] = audioUrl;
+    QJsonDocument doc(body);
+
     QNetworkRequest req(QUrl("https://api.gladia.io/v2/transcription"));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("x-gladia-key", m_config.gladiaKey.toUtf8());
 
-    QNetworkReply *reply = m_manager->post(req, multiPart);
-    multiPart->setParent(reply);
-
+    QNetworkReply *reply = m_manager->post(req, doc.toJson());
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
@@ -156,8 +200,49 @@ void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
-        QString text = obj.value("prediction").toString();
-        emit transcriptionFinished(true, text, postProcess(text), {});
+        QString resultUrl = obj.value("result_url").toString();
+        if (resultUrl.isEmpty()) {
+            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录提交失败：未返回 result_url"));
+            return;
+        }
+        pollGladiaResult(resultUrl, 0);
+    });
+}
+
+void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attempt) {
+    static const int kMaxAttempts = 60; // ~60s @ 1s
+    if (attempt >= kMaxAttempts) {
+        emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录超时"));
+        return;
+    }
+
+    QNetworkRequest req{ QUrl(resultUrl) };
+    req.setRawHeader("x-gladia-key", m_config.gladiaKey.toUtf8());
+
+    QNetworkReply *reply = m_manager->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, resultUrl, attempt]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit transcriptionFinished(false, {}, {}, reply->errorString());
+            return;
+        }
+        QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+        QString status = obj.value("status").toString();
+        if (status == QStringLiteral("done")) {
+            QString text = obj.value("result").toObject()
+                                .value("transcription").toObject()
+                                .value("full_transcript").toString();
+            emit transcriptionFinished(true, text, postProcess(text), {});
+            return;
+        }
+        if (status == QStringLiteral("error")) {
+            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录失败"));
+            return;
+        }
+        // 仍处理中：1s 后重试
+        QTimer::singleShot(1000, this, [this, resultUrl, attempt]() {
+            pollGladiaResult(resultUrl, attempt + 1);
+        });
     });
 }
 

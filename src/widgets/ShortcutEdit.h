@@ -11,6 +11,32 @@
 #include "AnimatedCheckbox.h"
 #include "../utils/Logger.h"
 
+
+class StatusIndicator : public QWidget {
+    Q_OBJECT
+public:
+    explicit StatusIndicator(QWidget* parent = nullptr) : QWidget(parent) {
+        setFixedSize(16, 16);
+    }
+
+    void setListening(bool listening) {
+        m_color = listening ? QColor("#22c55e") : QColor("#ef4444");
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(Qt::NoPen);
+        p.setBrush(m_color);
+        p.drawEllipse(rect().adjusted(1, 1, -1, -1));
+    }
+
+private:
+    QColor m_color = QColor("#ef4444");
+};
+
 class SingleCharEdit : public QLineEdit {
     Q_OBJECT
 protected:
@@ -48,6 +74,12 @@ public:
     explicit ShortcutEdit(QWidget *parent = nullptr) : QWidget(parent) {
         QHBoxLayout *layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
+
+        // 激活状态指示灯（绿=监听中，红=空闲/未激活）
+        m_indicator = new StatusIndicator(this);
+        layout->addWidget(m_indicator);
+        layout->addSpacing(8);
+        updateIndicator(false); // 初始为未激活（红）
 
         // Ctrl 组合
         QLabel *lblCtrl = new QLabel("Ctrl", this);
@@ -126,12 +158,20 @@ public:
         registerGlobalHotkey(shortcut);
     }
 
+    void setListening(bool listening) {
+        updateIndicator(listening);
+    }
+
 signals:
     void hotkeyActivated(); 
 
 private slots:
     void updateGlobalHotkeyFromUi() {
         registerGlobalHotkey(getShortCut());
+    }
+
+    void updateIndicator(bool listening) {
+        m_indicator->setListening(listening);
     }
 
 private:
@@ -158,6 +198,7 @@ private:
     }
 
 private:
+    StatusIndicator* m_indicator = nullptr;
     AnimatedCheckBox* chkCtrl;
     AnimatedCheckBox*chkShift;
     AnimatedCheckBox* chkAlt;

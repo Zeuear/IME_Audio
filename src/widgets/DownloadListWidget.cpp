@@ -139,6 +139,54 @@ void ProjectGroupCard::updateGroupFinished(bool success, const QString& msg)
     }
 }
 
+void ProjectGroupCard::beginExtract(int totalLines)
+{
+    // 标题追加阶段标记，总 bar 从满归零，进入解压阶段
+    if (!m_titleLabel->text().endsWith(tr("· 解压中…"))) {
+        m_titleLabel->setText(m_titleLabel->text() + " " + tr("· 解压中…"));
+    }
+    m_overallBar->setValue(0);
+    if (totalLines > 0) {
+        m_overallBar->setRange(0, 100);
+        m_overallLabel->setText(QString("0/%1").arg(totalLines));
+    } else {
+        // 未知总数：不确定模式
+        m_overallBar->setRange(0, 0);
+        m_overallLabel->setText(tr("解压中…"));
+    }
+}
+
+void ProjectGroupCard::updateExtractProgress(int current, int total)
+{
+    if (total > 0) {
+        int pct = qBound(0, static_cast<int>(current * 100 / total), 100);
+        m_overallBar->setRange(0, 100);
+        m_overallBar->setValue(pct);
+        m_overallLabel->setText(QString("%1/%2").arg(current).arg(total));
+    } else {
+        // 不确定模式：保持走动状态
+        m_overallBar->setRange(0, 0);
+        m_overallLabel->setText(tr("解压中…"));
+    }
+}
+
+void ProjectGroupCard::finishExtract(bool success)
+{
+    QString base = m_titleLabel->text();
+    base.replace(tr("· 解压中…"), "");
+    if (success) {
+        m_overallBar->setRange(0, 100);
+        m_overallBar->setValue(100);
+        m_titleLabel->setText(base + " " + tr("· 解压完成"));
+        m_overallLabel->setText(tr("完成"));
+    } else {
+        m_overallBar->setRange(0, 100);
+        m_titleLabel->setText(base);
+        m_overallLabel->setText(tr("解压失败"));
+        m_overallLabel->setStyleSheet("color:#e05c5c; font-size:12px;");
+    }
+}
+
 
 void ProjectGroupCard::paintEvent(QPaintEvent* event)
 {
@@ -185,6 +233,9 @@ void DownloadListWidget::setSherpaInstaller(SherpaInstaller* installer)
     connect(m_installer, &SherpaInstaller::installFileFinished,   this, &DownloadListWidget::onInstallFileFinished);
     connect(m_installer, &SherpaInstaller::installFileError,      this, &DownloadListWidget::onInstallFileError);
     connect(m_installer, &SherpaInstaller::installGroupFinished,  this, &DownloadListWidget::onInstallGroupFinished);
+    connect(m_installer, &SherpaInstaller::extractStarted,   this, &DownloadListWidget::onExtractStarted);
+    connect(m_installer, &SherpaInstaller::extractProgress,   this, &DownloadListWidget::onExtractProgress);
+    connect(m_installer, &SherpaInstaller::extractFinished,   this, &DownloadListWidget::onExtractFinished);
 }
 
 void DownloadListWidget::setCudaInstaller(CudaInstaller* installer)
@@ -196,6 +247,9 @@ void DownloadListWidget::setCudaInstaller(CudaInstaller* installer)
     connect(m_cudaInstaller, &CudaInstaller::installFileFinished, this, &DownloadListWidget::onInstallFileFinished);
     connect(m_cudaInstaller, &CudaInstaller::installFileError, this, &DownloadListWidget::onInstallFileError);
     connect(m_cudaInstaller, &CudaInstaller::installGroupFinished, this, &DownloadListWidget::onInstallGroupFinished);
+    connect(m_cudaInstaller, &CudaInstaller::extractStarted,   this, &DownloadListWidget::onExtractStarted);
+    connect(m_cudaInstaller, &CudaInstaller::extractProgress,   this, &DownloadListWidget::onExtractProgress);
+    connect(m_cudaInstaller, &CudaInstaller::extractFinished,   this, &DownloadListWidget::onExtractFinished);
 }
 
 ProjectGroupCard* DownloadListWidget::ensureCard(const QString& repoId, const QString& displayName, int totalFiles)
@@ -243,4 +297,25 @@ void DownloadListWidget::onInstallGroupFinished(const QString& repoId, bool succ
     }
     // 可选:安装成功几秒后自动从列表移除卡片,这里先保留展示"已完成"状态,
     // 如果想自动清理,可以用 QTimer::singleShot 延迟调用 removeCard(repoId)
+}
+
+void DownloadListWidget::onExtractStarted(const QString& repoId, int totalLines)
+{
+    if (auto* card = m_cards.value(repoId, nullptr)) {
+        card->beginExtract(totalLines);
+    }
+}
+
+void DownloadListWidget::onExtractProgress(const QString& repoId, int current, int total)
+{
+    if (auto* card = m_cards.value(repoId, nullptr)) {
+        card->updateExtractProgress(current, total);
+    }
+}
+
+void DownloadListWidget::onExtractFinished(const QString& repoId, bool success)
+{
+    if (auto* card = m_cards.value(repoId, nullptr)) {
+        card->finishExtract(success);
+    }
 }

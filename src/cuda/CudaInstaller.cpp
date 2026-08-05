@@ -257,7 +257,10 @@ void CudaInstaller::startInstall()
     if (QFile::exists(m_cudnnZipPath) && !m_detail.hasCudnn) {
         QString cudnnInstallDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/CUDNN/v9.x";
         QDir().mkpath(cudnnInstallDir);
-        ExtractTask* cudnnTask = new ExtractTask(m_cudnnZipPath, cudnnInstallDir, m_taskManager);
+        ExtractTask* cudnnTask = new ExtractTask(m_cudnnZipPath, cudnnInstallDir);
+        connect(cudnnTask, &ExtractTask::extractStarted, this, [this](int total) { emit extractStarted(GROUP_ID, total); });
+        connect(cudnnTask, &ExtractTask::extractProgress, this, [this](int cur, int tot) { emit extractProgress(GROUP_ID, cur, tot); });
+        connect(cudnnTask, &ExtractTask::extractFinished, this, [this](bool ok) { emit extractFinished(GROUP_ID, ok); });
         if (!m_detail.hasCudnn) {
             m_taskManager->addTask(cudnnTask);
         }
@@ -270,7 +273,10 @@ void CudaInstaller::startInstall()
         opts.filter = [](const QFileInfo& fi) {
             return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
         };
-        ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts, m_taskManager);
+        ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts);
+        connect(sherpaTask, &ExtractExTask::extractStarted, this, [this](int total) { emit extractStarted(GROUP_ID, total); });
+        connect(sherpaTask, &ExtractExTask::extractProgress, this, [this](int cur, int tot) { emit extractProgress(GROUP_ID, cur, tot); });
+        connect(sherpaTask, &ExtractExTask::extractFinished, this, [this](bool ok) { emit extractFinished(GROUP_ID, ok); });
         m_taskManager->addTask(sherpaTask);
     }
 }

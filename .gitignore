@@ -19,7 +19,7 @@ design/
 *.dll
 *.lib
 *.dylib
-
+.scratch/*
 
 # Qt-es
 

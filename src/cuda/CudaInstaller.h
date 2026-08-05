@@ -51,6 +51,11 @@ signals:
     void installFileFinished(const QString& groupId, const QString& filename);
     void installFileError(const QString& groupId, const QString& filename, const QString& error);
 
+    // 解压进度（仅真正走解压的任务才发）
+    void extractStarted(const QString& groupId, int totalLines);
+    void extractProgress(const QString& groupId, int current, int total);
+    void extractFinished(const QString& groupId, bool success);
+
     void statusChanged(const QString& status);
     void progressUpdated(int percent);
     void installStarted();

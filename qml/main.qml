@@ -10,7 +10,7 @@ Item {
         opacity: sphereController.state === 0 ? 1.0 : 0.0
         visible: opacity > 0.01
         Behavior on opacity {
-            NumberAnimation { duration: 350; easing.type: Easing.InOutQuad }
+            NumberAnimation { duration: 150; easing.type: Easing.InOutQuad }
         }
     }
 
@@ -21,7 +21,7 @@ Item {
         opacity: sphereController.state === 3 ? 1.0 : 0.0
         visible: opacity > 0.01
         Behavior on opacity {
-            NumberAnimation { duration: 300; easing.type: Easing.InOutQuad }
+            NumberAnimation { duration: 100; easing.type: Easing.InOutQuad }
         }
     }
 
