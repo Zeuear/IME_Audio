@@ -18,7 +18,6 @@ SherpaManager::SherpaManager(QObject* parent)
     m_workerThread->start();
 
     // 空闲计时器：单次触发，超时则静默卸载模型释放内存。
-    // 不在构造时启动——仅在每次「结束监听」(resumeIdleTimer) 后开始计时。
     m_idleTimer = new QTimer(this);
     m_idleTimer->setSingleShot(true);
     m_idleTimer->setInterval(kIdleUnloadMs);

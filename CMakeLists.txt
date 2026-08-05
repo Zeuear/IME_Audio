@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(ImeAudio VERSION 1.0.2 LANGUAGES CXX)
+project(ImeAudio VERSION 1.0.3 LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app)
 
