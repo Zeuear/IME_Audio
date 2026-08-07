@@ -682,3 +682,9 @@ QListWidget::item:selected {
 #navItemIndicator[indicatorColor="green"] {
     background-color: #34c759;
 }
+
+#shortcut_edit{
+    background-color:#504d4e54;
+    border: 1px solid #4d4e54;
+    border-radius: 12px;
+}

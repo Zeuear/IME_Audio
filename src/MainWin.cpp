@@ -2,16 +2,9 @@
 #include "ui_MainWin.h"
 
 #include <QActionGroup>
-#include <QClipboard>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
-#include <QFileDialog>
-#include <QFileInfo>
-#include <QGuiApplication>
-#include <QImage>
-#include <QProcess>
-#include <QRegularExpression>
 #include <QStyleFactory>
 #include <QTextStream>
 #include <QThread>
@@ -19,14 +12,15 @@
 #include <QListWidget>
 #include <QDesktopServices>
 
+#include "AppConfig.h"
+#include "WorkflowManager.h"
 #include "ConfigManager.h"
 #include "UpdateManager.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/SherpaManager.h"
 #include "utils/Logger.h"
-#include "widgets/SphereOverlay.h"
-#include "qhotkey.h"
 
+#include "widgets/SphereOverlay.h"
 #include "widgets/AboutDialog.h"
 #include "widgets/NavListWidget.h"
 #include "widgets/inforbar/inforbarmanager.h"
@@ -35,6 +29,8 @@
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
   ui->ai_vocabulary_edit->setReadOnly(true);
+  ui->identification_log_edit->setReadOnly(true);
+  ui->config_log_edit->setReadOnly(true);
   ui->grop_key_label->setVisible(false);
   ui->grop_key_edit->setVisible(false);
   ui->gladia_key_edit->setVisible(false);
@@ -91,7 +87,6 @@ void MainWin::initialize() {
     ui->nav_list_widget->addNavItem("config", "", "日志配置");
     ui->nav_list_widget->addNavItem("download", "", "下载列表");
 
-    m_networkManager = new QNetworkAccessManager(this);
     QActionGroup* styleActionGroup = new QActionGroup(this);
     styleActionGroup->addAction(ui->action_light);
     styleActionGroup->addAction(ui->action_gray);
@@ -101,6 +96,8 @@ void MainWin::initialize() {
     langActionGroup->addAction(ui->actionSystem);
     langActionGroup->addAction(ui->actionChinese);
     langActionGroup->addAction(ui->actionEnglish);
+
+    m_networkManager = new QNetworkAccessManager(this);
 
     const AppConfig& config = ConfigManager::instance().config();
     m_textPolishService = new TextPolishService(m_networkManager, this);

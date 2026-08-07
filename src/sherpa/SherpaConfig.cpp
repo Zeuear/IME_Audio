@@ -360,27 +360,12 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildQwen3Asr(
     config.model_config.num_threads = numThreads;
     return config;
 }
-
 const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09",
             {ModelArch::Paraformer, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
-        {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en",
-            {ModelArch::ParaformerStreaming}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-ctc-zh-int8-2025-06-30",
-            {ModelArch::ZipformerCtcStreaming, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
         {"csukuangfj/sherpa-onnx-zipformer-ctc-zh-int8-2025-07-03",
             {ModelArch::ZipformerCtcOffline, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20",{
-            ModelArch::TransducerOnline,
-            TransducerFiles{
-                .modelSubfolder = "",
-                .tokensSubfolder = "",
-                .encoderFile = "encoder-epoch-99-avg-1.onnx",
-                .decoderFile = "decoder-epoch-99-avg-1.onnx",
-                .joinerFile = "joiner-epoch-99-avg-1.onnx"
-            }
-        }},
         {"zrjin/icefall-asr-zipformer-multi-zh-en-2023-11-22", {
             ModelArch::TransducerOffline,
             TransducerFiles{
@@ -418,22 +403,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
             {ModelArch::Moonshine}},
         {"csukuangfj/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000",
             {ModelArch::NemoCtc}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-en-kroko-2025-08-06",
-            {ModelArch::TransducerOnline}},
         {"csukuangfj/sherpa-onnx-paraformer-en-2024-03-09",
             {ModelArch::Paraformer, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
         {"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
             {ModelArch::FireRedAsr}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20",{
-            ModelArch::TransducerOnline,
-            TransducerFiles{
-                .modelSubfolder = "",
-                .tokensSubfolder = "",
-                .encoderFile = "encoder-epoch-99-avg-1.onnx",
-                .decoderFile = "decoder-epoch-99-avg-1.onnx",
-                .joinerFile = "joiner-epoch-99-avg-1.onnx"
-            }
-        }},
         {"zrjin/icefall-asr-zipformer-multi-zh-en-2023-11-22", {
             ModelArch::TransducerOffline,
             TransducerFiles{
@@ -444,8 +417,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
                 .joinerFile = "joiner-epoch-34-avg-19.int8.onnx"
             }
         }},
-        {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en",
-            {ModelArch::ParaformerStreaming}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
             {ModelArch::SenseVoice}},
     };
@@ -466,7 +437,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& FunasrNano31LangModels()
 const std::vector<std::pair<QString, ModelDescriptor>>& Qwen3AsrModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25",
-            {ModelArch::Qwen3Asr}}, 
+            {ModelArch::Qwen3Asr}},
     };
     return table;
 }
@@ -495,16 +466,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseEnglishMixedModel
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
             {ModelArch::FireRedAsr}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20",{
-            ModelArch::TransducerOnline,
-            TransducerFiles{
-                .modelSubfolder = "",
-                .tokensSubfolder = "",
-                .encoderFile = "encoder-epoch-99-avg-1.onnx",
-                .decoderFile = "decoder-epoch-99-avg-1.onnx",
-                .joinerFile = "joiner-epoch-99-avg-1.onnx"
-            }
-        }},
         {"zrjin/icefall-asr-zipformer-multi-zh-en-2023-11-22", {
             ModelArch::TransducerOffline,
             TransducerFiles{
@@ -525,30 +486,32 @@ const std::vector<std::pair<QString, ModelDescriptor>>& RussianModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16",
             {ModelArch::NemoCtc}},
-        //{"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-v3-russian-2025-12-16",
-        //    {ModelArch::NemoCtc}},
-        //{"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-v2-russian-2025-04-19",
-        //    {ModelArch::NemoCtc}},
-        //{"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-russian-2024-10-24",
-        //    {ModelArch::NemoCtc}},
-        //{"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-v3-russian-2025-12-16",
-        //    {ModelArch::NemoTransducer}},
-        //{"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19",
-        //    {ModelArch::NemoTransducer}},
-        //{"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-russian-2024-10-24",
-            //{ModelArch::NemoTransducer}},
-        {"csukuangfj/sherpa-onnx-nemo-transducer-punct-giga-am-v3-russian-2025-12-16",
-            {ModelArch::NemoTransducer, "Nemo Transducer (带标点)"}},
-        {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
-            {ModelArch::NemoTransducer, "Nemo Transducer (多语言)"}},
-        {"alphacep/vosk-model-ru",
-            {ModelArch::NemoTransducer, "Nemo Transducer (base)"}},
-        {"alphacep/vosk-model-small-ru",
-            {ModelArch::NemoTransducer, "Nemo Transducer (small)"}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16",
-            {ModelArch::TransducerOnline}},
-        {"csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08",
-            {ModelArch::TOneCtcStreaming}},
+            {"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-v3-russian-2025-12-16",
+                {ModelArch::NemoCtc, "Nemo CTC v3"}},
+            {"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-v2-russian-2025-04-19",
+                {ModelArch::NemoCtc, "Nemo CTC v2"}},
+            {"csukuangfj/sherpa-onnx-nemo-ctc-giga-am-russian-2024-10-24",
+                {ModelArch::NemoCtc, "Nemo CTC v1"}},
+            {"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-v3-russian-2025-12-16",
+                {ModelArch::NemoTransducer, "Nemo Transducer v3"}},
+            {"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19",
+                {ModelArch::NemoTransducer, "Nemo Transducer v2"}},
+            {"csukuangfj/sherpa-onnx-nemo-transducer-giga-am-russian-2024-10-24",
+                {ModelArch::NemoTransducer, "Nemo Transducer v1"}},
+            {"csukuangfj/sherpa-onnx-nemo-transducer-punct-giga-am-v3-russian-2025-12-16",
+                {ModelArch::NemoTransducer, "Nemo Transducer (带标点)"}},
+            {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
+                {ModelArch::NemoTransducer, "Nemo Transducer (多语言)"}},
+            {"csukuangfj/sherpa-onnx-whisper-base",
+                {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+            {"alphacep/vosk-model-ru",
+                {ModelArch::NemoTransducer, "Nemo Transducer (base)"}},
+            {"alphacep/vosk-model-small-ru",
+                {ModelArch::NemoTransducer, "Nemo Transducer (small)"}},
+            {"csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16",
+                {ModelArch::TransducerOnline}},
+            {"csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08",
+                {ModelArch::TOneCtcStreaming}},
     };
     return table;
 }
@@ -557,8 +520,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseCantoneseEnglishM
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-paraformer-trilingual-zh-cantonese-en",
             {ModelArch::Paraformer}},
-        {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en",
-            {ModelArch::ParaformerStreaming}},
     };
     return table;
 }
@@ -585,6 +546,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& CantoneseModels() {
                 .joinerFile = "joiner-epoch-12-avg-8.onnx"
             }
         }},
+        {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
+            {ModelArch::SenseVoice, "SenseVoice (中英日韩粤)"}},
     };
     return table;
 }
@@ -603,6 +566,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& JapaneseModels() {
         }},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
             {ModelArch::SenseVoice}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -619,10 +584,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& KoreanModels() {
                 .joinerFile = "joiner-epoch-99-avg-1.onnx"
             }
         }},
-        {"k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16",
-            {ModelArch::TransducerOnline}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
             {ModelArch::SenseVoice}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -639,6 +604,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ThaiModels() {
                 .joinerFile = "joiner-epoch-12-avg-5.int8.onnx"
             }
         }},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -653,7 +620,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& VietnameseModels() {
                 .decoderFile = "decoder-epoch-12-avg-8.onnx",
                 .joinerFile = "joiner-epoch-12-avg-8.int8.onnx"
             }
-        }}
+        }},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -662,6 +631,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& VietnameseModels() {
 
 const std::vector<std::pair<QString, ModelDescriptor>>& TibetanModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -670,6 +641,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArabicModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"LukeJacob2023/sherpa-onnx-stt_ar_fastconformer_hybrid_large_pc",
             {ModelArch::NemoTransducer}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -678,12 +651,12 @@ const std::vector<std::pair<QString, ModelDescriptor>>& GermanModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
             {ModelArch::NemoTransducer, "Nemo Transducer (多语言)"}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06",
-            {ModelArch::TransducerOnline}},
         {"csukuangfj/sherpa-onnx-nemo-transducer-stt_de_fastconformer_hybrid_large_pc-int8",
             {ModelArch::NemoTransducer}},
         {"csukuangfj/sherpa-onnx-nemo-stt_de_fastconformer_hybrid_large_pc-int8",
             {ModelArch::NemoCtc}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -692,6 +665,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& GeorgianModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"LukeJacob2023/sherpa-onnx-stt_ka_fastconformer_hybrid_large_pc",
             {ModelArch::NemoTransducer}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -700,14 +675,18 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArmenianModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"LukeJacob2023/sherpa-onnx-fastconformer-hybrid-arm-as",
             {ModelArch::NemoTransducer}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
 
-const std::vector<std::pair<QString, ModelDescriptor>>& TaglogModels() {
+const std::vector<std::pair<QString, ModelDescriptor>>& TagalogModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"LukeJacob2023/sherpa-onnx-stt_tl_fastconformer_hybrid_large",
             {ModelArch::NemoTransducer}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -716,8 +695,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& FrenchModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
             {ModelArch::NemoTransducer}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-fr-kroko-2025-08-06",
-            {ModelArch::TransducerOnline}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -726,8 +705,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& SpanishModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
             {ModelArch::NemoTransducer}},
-        {"csukuangfj/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06",
-            {ModelArch::TransducerOnline}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -740,6 +719,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& PortugueseBrazilianModel
             {ModelArch::NemoCtc}},
         {"csukuangfj/sherpa-onnx-nemo-transducer-stt_pt_fastconformer_hybrid_large_pc-int8",
             {ModelArch::NemoTransducer}},
+        {"csukuangfj/sherpa-onnx-whisper-base",
+            {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
     };
     return table;
 }
@@ -775,14 +756,13 @@ const QVector<ModelRegistry::LanguageTableEntry>& LanguageTables() {
         {"Thai",                        &ThaiModels},
         {"Tibetan",                     &TibetanModels},
         {"Vietnamese",                  &VietnameseModels},
-        {"Taglog",                      &TaglogModels},
+        {"Tagalog",                     &TagalogModels},
         {"31 languages",                &FunasrNano31LangModels},
         {"1600+ languages",             &MoreThan1600LangModels},
         {"25 European languages",       &TwentyFiveLanguagesModels},
     };
     return tables;
 }
-
 
 const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
 {

@@ -10,8 +10,8 @@
 #include <QSystemTrayIcon>
 #include <QTableWidgetItem>
 #include <QNetworkAccessManager>
-#include "AppConfig.h"
 #include "WorkflowManager.h"
+
 
 class UpdateManager;
 class ConfigManager;
@@ -47,7 +47,6 @@ protected:
     virtual void changeEvent(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent* event) override;
-
 
 private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -111,3 +110,4 @@ private:
 };
 
 #endif 
+

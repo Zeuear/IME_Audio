@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QKeySequence>
 #include <QKeyEvent>
+#include <QGroupBox>
 #include "qhotkey.h"
 #include "AnimatedCheckbox.h"
 #include "../utils/Logger.h"
@@ -21,6 +22,7 @@ public:
 
     void setListening(bool listening) {
         m_color = listening ? QColor("#22c55e") : QColor("#ef4444");
+        m_listening = listening;
         update();
     }
 
@@ -35,6 +37,7 @@ protected:
 
 private:
     QColor m_color = QColor("#ef4444");
+    bool m_listening = false;
 };
 
 class SingleCharEdit : public QLineEdit {
@@ -72,17 +75,36 @@ class ShortcutEdit : public QWidget {
     Q_OBJECT
 public:
     explicit ShortcutEdit(QWidget *parent = nullptr) : QWidget(parent) {
-        QHBoxLayout *layout = new QHBoxLayout(this);
-        layout->setContentsMargins(0, 0, 0, 0);
+        setObjectName("shortcut_edit");
+        QVBoxLayout* vlayout = new QVBoxLayout(this);
+        vlayout->setSpacing(20);
+        vlayout->setContentsMargins(10, 10, 10, 10);
 
         // 激活状态指示灯（绿=监听中，红=空闲/未激活）
+        QHBoxLayout* statusLayout = new QHBoxLayout();
+        statusLayout->setSpacing(5);
+
+        QLabel* indicatorIconLbl = new QLabel("🎶", this);
+        indicatorIconLbl->setFixedHeight(16);
+        indicatorLbl = new QLabel(tr("Record Status: "), this);
+        indicatorLbl->setFixedHeight(16);
+        indicatorLbl->setObjectName("indicatorLbl");
         m_indicator = new StatusIndicator(this);
-        layout->addWidget(m_indicator);
-        layout->addSpacing(8);
-        updateIndicator(false); // 初始为未激活（红）
+
+        statusLayout->addWidget(indicatorIconLbl);
+        statusLayout->addWidget(indicatorLbl);
+        statusLayout->addWidget(m_indicator);
+        statusLayout->addStretch();
+        updateIndicator(false);
+        vlayout->addLayout(statusLayout);
+
+        QHBoxLayout *layout = new QHBoxLayout();
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(3);
 
         // Ctrl 组合
         QLabel *lblCtrl = new QLabel("Ctrl", this);
+        lblCtrl->setFixedHeight(30);
         chkCtrl = new AnimatedCheckBox(this);
         layout->addWidget(lblCtrl);
         layout->addWidget(chkCtrl);
@@ -90,6 +112,7 @@ public:
 
         // Shift 组合
         QLabel *lblShift = new QLabel("Shift", this);
+        lblShift->setFixedHeight(30);
         chkShift = new AnimatedCheckBox(this);
         layout->addWidget(lblShift);
         layout->addWidget(chkShift);
@@ -97,6 +120,7 @@ public:
 
         // Alt 组合
         QLabel *lblAlt = new QLabel("Alt", this);
+        lblAlt->setFixedHeight(30);
         chkAlt = new AnimatedCheckBox(this);
         layout->addWidget(lblAlt);
         layout->addWidget(chkAlt);
@@ -104,20 +128,27 @@ public:
 
         // Win 组合
         QLabel* lblWin = new QLabel("Win", this);
+        lblWin->setFixedHeight(30);
         chkWin = new AnimatedCheckBox(this);
         layout->addWidget(lblWin);
         layout->addWidget(chkWin);
         layout->addSpacing(25);
 
         // 字母输入框
-        QLabel* lblKey = new QLabel("快捷键(A-Z/0-9/F1-F24)", this);
+        QLabel* lblKey = new QLabel("快捷键 ( A-Z/0-9/F1-F24 )", this);
+        lblKey->setFixedHeight(30);
         txtKey = new SingleCharEdit();
         txtKey->setMaxLength(1);
-        txtKey->setFixedWidth(70);
+        txtKey->setFixedWidth(50);
+        txtKey->setFixedHeight(30);
+
         layout->addWidget(lblKey);
         layout->addWidget(txtKey);
 
         layout->addStretch();
+        layout->addSpacing(75);
+        vlayout->addLayout(layout);
+
     }
 
     ~ShortcutEdit() {
@@ -162,6 +193,25 @@ public:
         updateIndicator(listening);
     }
 
+
+protected:
+    void paintEvent(QPaintEvent* event)
+    {
+        QStyleOption opt;
+        opt.initFrom(this);
+        QPainter p(this);
+        style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+        QWidget::paintEvent(event);
+    }
+
+
+    void changeEvent(QEvent* event) override {
+        if (event->type() == QEvent::LanguageChange) {
+            this->retranslateUi();
+        }
+        QWidget::changeEvent(event);
+    }
+
 signals:
     void hotkeyActivated(); 
 
@@ -197,12 +247,18 @@ private:
         }
     }
 
+    void retranslateUi()
+    {
+        indicatorLbl->setText(tr("Record Status: "));
+    }
+
 private:
     StatusIndicator* m_indicator = nullptr;
     AnimatedCheckBox* chkCtrl;
     AnimatedCheckBox*chkShift;
     AnimatedCheckBox* chkAlt;
     AnimatedCheckBox*chkWin;
+    QLabel* indicatorLbl;
     QLineEdit *txtKey;
     QHotkey *globalHotkey = nullptr;
 };

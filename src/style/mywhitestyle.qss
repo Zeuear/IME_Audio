@@ -686,3 +686,8 @@ QListWidget::item:selected {
     background-color: #34c759;
 }
 
+#shortcut_edit{
+    background-color:#e0e0e2;
+    border: 1px solid #e0e0e2;
+    border-radius: 12px;
+}
