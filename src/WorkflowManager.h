@@ -79,7 +79,6 @@ private:
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
     int m_pending = 0;          // 状态机内部待转录句计数（替代原 m_pendingTranscriptions）
-    bool m_stopping = false;    // 已请求停止，冲刷中
 };
 
 #endif

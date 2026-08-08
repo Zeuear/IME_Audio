@@ -41,7 +41,7 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
 
   initSystemTray();
   initialize();
-  connection();
+  setupUiConnections();
   onLoadConfig();
 }
     
@@ -141,7 +141,7 @@ void MainWin::initialize() {
     ui->terms_widget->setTermsManager(m_termsManager);
 }   
 
-void MainWin::connection(){
+void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
 
 	connect(ui->actionAbout, &QAction::triggered, this, [this]() {

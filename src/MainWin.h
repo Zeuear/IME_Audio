@@ -40,7 +40,7 @@ public:
     QTranslator mTranslator;
 
     void initialize();
-    void connection();
+    void setupUiConnections();
     void readIni();
 
 protected:

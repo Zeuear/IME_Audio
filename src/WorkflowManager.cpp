@@ -104,7 +104,6 @@ void WorkflowManager::stopRecording() {
     LOG_DEBUG("Stop Recording");
 
     transitionTo(WorkflowState::Stopping, WorkflowEvent::StopRequested);
-    m_stopping = true;
     m_recorder->stopListening();
     // 结束监听：恢复空闲计时
     m_sherpaManager->resumeIdleTimer();
@@ -130,21 +129,22 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
         if (!finalText.isEmpty()) {
             LOG_DEBUG(QString("Transcription success: %1").arg(finalText));
             emit transcriptionResultReady(finalText);
-            transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
         }
     }
     else {
         QMessageBox::warning(nullptr, tr("Error"), errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
         LOG_WARN(errorMsg);
-        transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }
 
     if (m_pending == 0) {
-        // 冲刷完最后一句：按是否在停止中决定落点
-        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording,
+        // 冲刷完最后一句：依当前是否 Stopping 决定落点（单一事实源 = 状态机）
+        transitionTo(m_currentState == WorkflowState::Stopping ? WorkflowState::Idle : WorkflowState::Recording,
                      WorkflowEvent::AllTranscribed);
-        if (m_stopping) m_stopping = false;
+    }
+    else if (m_currentState != WorkflowState::Stopping) {
+        // 仍有待转录句且未在停止冲刷中：进入 Processing 等待下一句
+        transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }
 }
 
@@ -181,7 +181,8 @@ bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, Workf
     case E::StartRequested:      if (from == S::Idle)        { out = S::Loading; return true; } break;
     case E::ModelLoaded:         if (from == S::Loading)     { out = S::Recording; return true; } break;
     case E::ModelLoadFailed:     if (from == S::Loading)     { out = S::Error; return true; } break;
-    case E::UtteranceCaptured:   if (from == S::Recording)   { out = S::Transcribing; return true; } break;
+    case E::UtteranceCaptured:   if (from == S::Recording)   { out = S::Transcribing; return true; }
+                                  if (from == S::Processing)  { out = S::Transcribing; return true; } break;
     case E::UtteranceTranscribed:if (from == S::Transcribing){ out = S::Processing; return true; }
                                   if (from == S::Processing)  { out = S::Processing; return true; } break;
     case E::AllTranscribed:      if (from == S::Stopping)    { out = S::Idle; return true; }
