@@ -28,11 +28,10 @@ public:
     ~SherpaManager();
 
     void loadModel(const AppConfig& config, bool isReload = false);
-    void reloadModel(const AppConfig& config);
+    bool reloadModel(const AppConfig& config);
     void unloadModel();
 
-    // 空闲计时控制：开始监听时暂停计时（若已空闲卸载则自动重载），
-    // 结束监听时恢复计时；连续空闲 kIdleUnloadMs 后自动卸载模型
+    // 空闲卸载模型计时控制
     void pauseIdleTimer();
     void resumeIdleTimer();
 
@@ -82,7 +81,7 @@ private:
     QString m_currentRepoId;
     AppConfig m_configCopy;
 
-    // 空闲自动卸载：30 分钟无识别请求则释放模型内存，下次使用自动重载
+    // 空闲自动卸载
     static constexpr int kIdleUnloadMs = 30 * 60 * 1000;
     QTimer* m_idleTimer = nullptr;
 

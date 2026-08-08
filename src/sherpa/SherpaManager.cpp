@@ -17,7 +17,6 @@ SherpaManager::SherpaManager(QObject* parent)
     m_workerThread = QThread::create([this]() { workerLoop(); });
     m_workerThread->start();
 
-    // 空闲计时器：单次触发，超时则静默卸载模型释放内存。
     m_idleTimer = new QTimer(this);
     m_idleTimer->setSingleShot(true);
     m_idleTimer->setInterval(kIdleUnloadMs);
@@ -83,24 +82,28 @@ void SherpaManager::unloadModel()
     LOG_INFO("卸载成功");
 }
 
-void SherpaManager::reloadModel(const AppConfig& config) {
+bool SherpaManager::reloadModel(const AppConfig& config) {
     QString repoId = ModelRegistry::FindByDisplayName(
         config.sherpa.languageModel,
         config.sherpa.localModelRepoId);
 
     if (repoId.isEmpty()) {
         LOG_ERROR("没有找到对应的模型!");
-        return;
-    }
-    if (m_configCopy.sherpa.threads == config.sherpa.threads &&
-        m_configCopy.sherpa.useGpu == config.sherpa.useGpu) {
-        return;
+        return false;
     }
 
-    // 如果模型加载了则重新加载
-    if (m_isLoaded) {
-        loadModelAsync(config, true);
+    bool sameConfig = m_configCopy.sherpa.threads == config.sherpa.threads
+        && m_configCopy.sherpa.useGpu == config.sherpa.useGpu
+        && m_configCopy.sherpa.languageModel == config.sherpa.languageModel
+        && m_configCopy.sherpa.localModelRepoId == config.sherpa.localModelRepoId;
+
+    if (m_isLoaded && sameConfig) {
+        LOG_INFO("模型已经加载了");
+        return false;
     }
+
+    loadModelAsync(config, true);
+    return true;
 }
 
 void SherpaManager::loadModelAsync(const AppConfig& config, bool isReload)
@@ -296,10 +299,6 @@ void SherpaManager::pauseIdleTimer()
 {
     // 用户开始监听：暂停空闲计时；若此前已空闲卸载则立即静默重载
     if (m_idleTimer) m_idleTimer->stop();
-    if (!m_isLoaded) {
-        LOG_INFO("模型空闲已卸载，开始监听时自动重新加载");
-        loadModelAsync(m_configCopy, false);
-    }
 }
 
 void SherpaManager::resumeIdleTimer()
@@ -358,11 +357,7 @@ SherpaInstaller::SherpaInstaller(QNetworkAccessManager* nam, QObject* parent) : 
         if (success) {
             LOG_DEBUG(msg);
             LOG_INFO("下载并配置完成");
-        }
-        else {
-            QString repoName = repoId.split("/").last();
-            QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
-            QDir(modelPath).removeRecursively();
+        }else {
             LOG_ERROR(msg);
         }
     });
@@ -456,6 +451,7 @@ void SherpaInstaller::onGroupFileError(const QString& groupId, const QString&, c
 void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
 {
     if (!success) {
+        uninstallModel(groupId);
         emit installGroupFinished(groupId, false, tr("Download Error"));
         return;
     }

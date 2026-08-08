@@ -4,6 +4,7 @@
 #include <QAudioSink>
 #include <QAudioFormat>
 #include <QBuffer>
+#include <QPointer>
 #include <QFile>
 #include <QDateTime>
 #include <QDataStream>
@@ -12,7 +13,6 @@
 #include <QThread>
 #include "utils/Logger.h"
 
-// AudioConfig 哨兵常量定义（声明见 AppConfig.h）
 const QString AudioConfig::kDefaultDeviceName = QStringLiteral("系统默认录音设备");
 
 
@@ -298,32 +298,26 @@ QStringList AudioRecorderService::availableSpeakers() {
     return names;
 }
 
-void AudioRecorderService::setOutputDevice(const QString& outputDeviceName) {
-    m_outputDeviceName = outputDeviceName;
-    if (outputDeviceName.isEmpty() || outputDeviceName == AudioConfig::kDefaultDeviceName) {
-        m_outputDevice = QMediaDevices::defaultAudioOutput();
-    } else {
-        m_outputDevice = QMediaDevices::defaultAudioOutput(); // 先给个默认，下面匹配
+
+void AudioRecorderService::playTestTone() {
+    QString outputDeviceName = m_config.audio.outputDeviceName;
+    QAudioDevice m_outputDevice = QMediaDevices::defaultAudioOutput();
+    if (!outputDeviceName.isEmpty() && outputDeviceName != AudioConfig::kDefaultDeviceName) {
         for (const auto& d : QMediaDevices::audioOutputs()) {
             if (d.description() == outputDeviceName) { m_outputDevice = d; break; }
         }
     }
-}
 
-void AudioRecorderService::playTestTone() {
     QAudioFormat fmt;
     fmt.setSampleRate(44100);
     fmt.setChannelCount(1);
     fmt.setSampleFormat(QAudioFormat::Int16);
 
-    QAudioDevice dev = (m_outputDeviceName.isEmpty() || m_outputDeviceName == AudioConfig::kDefaultDeviceName)
-        ? QMediaDevices::defaultAudioOutput() : m_outputDevice;
-    if (!dev.isFormatSupported(fmt)) {
-        fmt = dev.preferredFormat();
-    }
-
+    // 清理上一次的 sink 与 buffer
     if (m_audioSink) { m_audioSink->stop(); delete m_audioSink; m_audioSink = nullptr; }
-    m_audioSink = new QAudioSink(dev, fmt, this);
+    if (m_audioBuffer) { delete m_audioBuffer; m_audioBuffer = nullptr; }
+
+    m_audioSink = new QAudioSink(m_outputDevice, fmt, this);
 
     // 生成 0.3s 1kHz 正弦波
     const int sampleRate = fmt.sampleRate();
@@ -335,13 +329,21 @@ void AudioRecorderService::playTestTone() {
         double t = double(i) / sampleRate;
         p[i] = static_cast<int16_t>(0.3 * 32767 * std::sin(2.0 * M_PI * 1000.0 * t));
     }
-    QBuffer* buf = new QBuffer(this);
-    buf->setData(data);   // 拷贝数据进 buffer 内部，局部 data 出作用域后不再被引用
-    buf->open(QIODevice::ReadOnly);
-    m_audioSink->start(buf);
-    QObject::connect(m_audioSink, &QAudioSink::stateChanged, this, [buf](QAudio::State s) {
-        if (s == QAudio::IdleState || s == QAudio::StoppedState) buf->deleteLater();
+    m_audioBuffer = new QBuffer(this);
+    m_audioBuffer->setData(data);
+    m_audioBuffer->open(QIODevice::ReadOnly);
+
+    QPointer<QBuffer> bufPtr(m_audioBuffer);
+    QObject::connect(m_audioSink, &QAudioSink::stateChanged, this,
+    [this, bufPtr](QAudio::State s) mutable {
+        if ((s == QAudio::IdleState || s == QAudio::StoppedState) && bufPtr) {
+            bufPtr->deleteLater();
+            m_audioBuffer = nullptr;
+            if (m_audioSink) m_audioSink->deleteLater();
+            m_audioSink = nullptr;
+        }
     });
+    m_audioSink->start(m_audioBuffer);
 }
 
 void AudioRecorderService::updateConfig() {
@@ -368,6 +370,21 @@ bool AudioRecorderService::startListening() {
         }
     }
 
+    QString outputDeviceName = m_config.audio.outputDeviceName;
+    QAudioDevice m_outputDevice = QMediaDevices::defaultAudioOutput();
+    if (!outputDeviceName.isEmpty() && outputDeviceName != AudioConfig::kDefaultDeviceName) {
+        for (const auto& d : QMediaDevices::audioOutputs()) {
+            if (d.description() == outputDeviceName) { m_outputDevice = d; break; }
+        }
+    }
+
+    if (!m_config.audio.outputDeviceName.isEmpty() && m_config.audio.outputDeviceName != AudioConfig::kDefaultDeviceName) {
+        m_endpointController.setDefaultOutput(m_outputDevice.id().toStdString());
+    }
+    if (!m_config.audio.deviceName.isEmpty() && m_config.audio.deviceName != AudioConfig::kDefaultDeviceName) {
+        m_endpointController.setDefaultInput(device.id().toStdString());
+    }
+
     if (!device.isFormatSupported(format)) {
         LOG_DEBUG("Default format not supported, trying to use the nearest.");
         format = device.preferredFormat();
@@ -386,17 +403,6 @@ bool AudioRecorderService::startListening() {
     LOG_DEBUG(QString("Sample Format: %1").arg(static_cast<int>(_format.sampleFormat())));
 
     connect(m_audioDevice, &QIODevice::readyRead, this, &AudioRecorderService::onAudioDataReady);
-
-    // 开始监听：若指定了输出/输入设备，把【系统默认播放/输入设备】切到所选设备
-    // （使系统所有声音/拾音都从该卡流出，再被录进来实现 loopback）；停止监听时恢复。
-    // 平台切换由 SystemAudioEndpointController 内部处理，非 Windows 为空操作。
-    if (!m_outputDeviceName.isEmpty() && m_outputDeviceName != AudioConfig::kDefaultDeviceName) {
-        m_endpointController.setDefaultOutput(m_outputDevice.id().toStdString());
-    }
-    if (!m_config.audio.deviceName.isEmpty() && m_config.audio.deviceName != AudioConfig::kDefaultDeviceName) {
-        m_endpointController.setDefaultInput(device.id().toStdString());
-    }
-
     m_status = RuntimeStatus{};
     m_status.isListening = true;
     m_segmentBuffer.clear();

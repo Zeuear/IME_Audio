@@ -2,8 +2,6 @@
 
 #ifndef _WIN32
 // 非 Windows 平台：不切换系统音频端点，全部空实现，保证跨平台编译与调用安全。
-// 用编译器内建宏 _WIN32（Qt-free 文件不应依赖 Q_OS_WIN）。
-// 切换类方法返回 true（no-op 成功，符合 06d 验收）；id 获取返回空串。
 bool SystemAudioEndpointController::setDefaultOutput(const std::string&) { return true; }
 bool SystemAudioEndpointController::setDefaultInput(const std::string&) { return true; }
 std::string SystemAudioEndpointController::getDefaultOutputId() const { return {}; }
@@ -18,90 +16,117 @@ void SystemAudioEndpointController::restore() {}
 #include <comdef.h>
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
-
-// 未文档化但长期稳定的策略配置接口，用于切换系统默认音频端点。
-struct IPolicyConfig : public IUnknown {
-    virtual HRESULT STDMETHODCALLTYPE GetMixFormat(REFIID, void**) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetDeviceFormat(REFIID, UINT32, void**) = 0;
-    virtual HRESULT STDMETHODCALLTYPE ResetDeviceFormat(REFIID) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetDeviceFormat(REFIID, void*, void*) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetProcessingPeriod(REFIID, UINT32, PINT64, PINT64) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetProcessingPeriod(REFIID, PINT64) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetShareMode(REFIID, UINT32*) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetShareMode(REFIID, UINT32) = 0;
-    virtual HRESULT STDMETHODCALLTYPE GetPropertyValue(REFIID, DWORD, PROPVARIANT*) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetPropertyValue(REFIID, DWORD, PROPVARIANT*) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetDefaultEndpoint(LPCWSTR wszDeviceId, ERole eRole) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetEndpointVisibility(LPCWSTR, BOOL) = 0;
-};
-static const GUID IID_IPolicyConfig = {0xf8679f50, 0x850a, 0x41cf, 0x9c, 0x72, 0x43, 0x0f, 0x29, 0x02, 0x90, 0xc8};
-static const GUID CLSID_PolicyConfigClient = {0x870af99c, 0x171d, 0x4f1e, 0x80, 0x47, 0x1e, 0x7c, 0xac, 0x8e, 0x4a, 0x27};
-static const GUID IID_IMMDeviceEnumerator = {0xa95664d2, 0x9614, 0x4f35, 0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6};
-static const GUID CLSID_MMDeviceEnumerator = {0xbcde0395, 0xe52f, 0x467c, 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e};
+#include "PolicyConfig.h"  
 
 namespace {
-// wchar_t 端点 id -> std::string (UTF-8)
-std::string widenToString(LPCWSTR id) {
-    if (!id) return {};
-    int n = WideCharToMultiByte(CP_UTF8, 0, id, -1, nullptr, 0, nullptr, nullptr);
-    if (n <= 0) return {};
-    std::string out(n - 1, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, id, -1, &out[0], n, nullptr, nullptr);
-    return out;
-}
-std::wstring toWide(const std::string& s) {
-    int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, nullptr, 0);
-    if (n <= 0) return {};
-    std::wstring out(n - 1, L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &out[0], n);
-    return out;
-}
+    // wchar_t 端点 id -> std::string (UTF-8)
+    std::string widenToString(LPCWSTR id) {
+        if (!id) return {};
+        int n = WideCharToMultiByte(CP_UTF8, 0, id, -1, nullptr, 0, nullptr, nullptr);
+        if (n <= 0) return {};
+        std::string out(n - 1, '\0');
+        WideCharToMultiByte(CP_UTF8, 0, id, -1, &out[0], n, nullptr, nullptr);
+        return out;
+    }
+    std::wstring toWide(const std::string& s) {
+        int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, nullptr, 0);
+        if (n <= 0) return {};
+        std::wstring out(n - 1, L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &out[0], n);
+        return out;
+    }
 
-// 取当前系统默认端点的 id（eRender=播放, eCapture=输入）。失败返回空串。
-std::string currentDefaultId(EDataFlow flow) {
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    bool needUninit = SUCCEEDED(hr);
-    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) return {};
-    std::string result;
-    IMMDeviceEnumerator* pEnum = nullptr;
-    if (SUCCEEDED(CoCreateInstance(CLSID_MMDeviceEnumerator, nullptr, CLSCTX_ALL,
-                                   IID_IMMDeviceEnumerator, (void**)&pEnum)) && pEnum) {
-        IMMDevice* pDev = nullptr;
-        if (SUCCEEDED(pEnum->GetDefaultAudioEndpoint(flow, eConsole, &pDev)) && pDev) {
-            LPWSTR id = nullptr;
-            if (SUCCEEDED(pDev->GetId(&id)) && id) {
-                result = widenToString(id);
-                CoTaskMemFree(id);
+    // 取当前系统默认端点的 id（eRender=播放, eCapture=输入）。失败返回空串。
+    std::string currentDefaultId(EDataFlow flow) {
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        bool needUninit = SUCCEEDED(hr);
+        if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) return {};
+        std::string result;
+        IMMDeviceEnumerator* pEnum = nullptr;
+        if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
+            __uuidof(IMMDeviceEnumerator), (void**)&pEnum)) && pEnum) {
+            IMMDevice* pDev = nullptr;
+            if (SUCCEEDED(pEnum->GetDefaultAudioEndpoint(flow, eConsole, &pDev)) && pDev) {
+                LPWSTR id = nullptr;
+                if (SUCCEEDED(pDev->GetId(&id)) && id) {
+                    result = widenToString(id);
+                    CoTaskMemFree(id);
+                }
+                pDev->Release();
             }
-            pDev->Release();
+            pEnum->Release();
         }
-        pEnum->Release();
+        if (needUninit) CoUninitialize();
+        return result;
     }
-    if (needUninit) CoUninitialize();
-    return result;
-}
 
-// 切换系统默认端点到 endpointId（三角色全切）。返回是否全部 SetDefaultEndpoint 成功。
-bool applyDefaultEndpoint(const std::string& endpointId, EDataFlow /*flow*/) {
-    if (endpointId.empty()) return false;
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    bool needUninit = SUCCEEDED(hr);
-    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) return false;
-    bool ok = false;
-    IPolicyConfig* pPolicy = nullptr;
-    if (SUCCEEDED(CoCreateInstance(CLSID_PolicyConfigClient, nullptr, CLSCTX_ALL,
-                                   IID_IPolicyConfig, (void**)&pPolicy)) && pPolicy) {
+    // 切换系统默认端点到 endpointId（三角色全切）。
+    // 使用未文档化但社区广泛验证可用的 IPolicyConfig::SetDefaultEndpoint。
+    // flow 参数在这个接口下其实用不到（端点类型由 endpointId 自身决定），
+    // 保留是为了兼容原有调用方式和 log 输出。
+    bool applyDefaultEndpoint(const std::string& endpointId, EDataFlow /*flow*/) {
+        if (endpointId.empty()) return false;
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        bool needUninit = SUCCEEDED(hr);
+        if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
+            OutputDebugStringA("[DIAG-SAEC] CoInitializeEx failed\n");
+            return false;
+        }
+
+        bool ok = false;
         std::wstring wid = toWide(endpointId);
-        // 三角色都切，确保系统所有声音走该设备（输出/输入统一处理）
-        HRESULT h1 = pPolicy->SetDefaultEndpoint(wid.c_str(), eConsole);
-        HRESULT h2 = pPolicy->SetDefaultEndpoint(wid.c_str(), eMultimedia);
-        HRESULT h3 = pPolicy->SetDefaultEndpoint(wid.c_str(), eCommunications);
-        pPolicy->Release();
-        ok = SUCCEEDED(h1) && SUCCEEDED(h2) && SUCCEEDED(h3);
+
+        // 优先尝试 IPolicyConfig（Win7+ 通用）
+        IPolicyConfig* pPolicyConfig = nullptr;
+        HRESULT hrCreate = CoCreateInstance(__uuidof(CPolicyConfigClient), nullptr, CLSCTX_ALL,
+            __uuidof(IPolicyConfig), (void**)&pPolicyConfig);
+        {
+            char buf[256];
+            snprintf(buf, sizeof(buf), "[DIAG-SAEC] CoCreateInstance IPolicyConfig hr=0x%08X p=%p id='%s'\n",
+                (unsigned)hrCreate, (void*)pPolicyConfig, endpointId.c_str());
+            OutputDebugStringA(buf);
+        }
+        if (SUCCEEDED(hrCreate) && pPolicyConfig) {
+            HRESULT h1 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eConsole);
+            HRESULT h2 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eMultimedia);
+            HRESULT h3 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eCommunications);
+            pPolicyConfig->Release();
+            {
+                char buf[256];
+                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfig::SetDefaultEndpoint h1=0x%08X h2=0x%08X h3=0x%08X\n",
+                    (unsigned)h1, (unsigned)h2, (unsigned)h3);
+                OutputDebugStringA(buf);
+            }
+            // 至少一个角色成功就算切换生效（有些设备/驱动不完整支持三种角色）
+            ok = SUCCEEDED(h1) || SUCCEEDED(h2) || SUCCEEDED(h3);
+        }
+        else {
+            OutputDebugStringA("[DIAG-SAEC] IPolicyConfig unavailable, falling back to IPolicyConfigVista\n");
+            // 回退：极少数系统 IPolicyConfig 不可用时，尝试 Vista 版接口
+            IPolicyConfigVista* pPolicyConfigVista = nullptr;
+            HRESULT hrCreateVista = CoCreateInstance(__uuidof(CPolicyConfigVistaClient), nullptr, CLSCTX_ALL,
+                __uuidof(IPolicyConfigVista), (void**)&pPolicyConfigVista);
+            if (SUCCEEDED(hrCreateVista) && pPolicyConfigVista) {
+                HRESULT h1 = pPolicyConfigVista->SetDefaultEndpoint(wid.c_str(), eConsole);
+                HRESULT h2 = pPolicyConfigVista->SetDefaultEndpoint(wid.c_str(), eMultimedia);
+                HRESULT h3 = pPolicyConfigVista->SetDefaultEndpoint(wid.c_str(), eCommunications);
+                pPolicyConfigVista->Release();
+                ok = SUCCEEDED(h1) || SUCCEEDED(h2) || SUCCEEDED(h3);
+                char buf[256];
+                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfigVista::SetDefaultEndpoint h1=0x%08X h2=0x%08X h3=0x%08X\n",
+                    (unsigned)h1, (unsigned)h2, (unsigned)h3);
+                OutputDebugStringA(buf);
+            }
+            else {
+                char buf[256];
+                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfigVista also unavailable hr=0x%08X\n", (unsigned)hrCreateVista);
+                OutputDebugStringA(buf);
+            }
+        }
+
+        if (needUninit) CoUninitialize();
+        return ok;
     }
-    if (needUninit) CoUninitialize();
-    return ok;
-}
 } // namespace
 
 bool SystemAudioEndpointController::setDefaultOutput(const std::string& endpointId) {

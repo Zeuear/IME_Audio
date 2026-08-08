@@ -11,7 +11,6 @@
 #include <windows.h>
 #include <imm.h>
 
-/*
 #include <uiautomation.h>
 #include <atlbase.h>
 #include <atlcomcli.h>
@@ -19,86 +18,286 @@
 #pragma comment(lib, "oleaut32.lib")
 #pragma comment(lib, "ole32.lib")
 
-
-BOOL uia_probe_value_pattern(CComPtr<IUIAutomationValuePattern>& out_value_pattern,
-                             CComPtr<IUIAutomationElement>& focused) {
-    CComPtr<IUIAutomation> automation;
-    HRESULT hr;
-
-    hr = automation.CoCreateInstance(CLSID_CUIAutomation);
-    if (FAILED(hr) || !automation) return FALSE;
-
-    hr = automation->GetFocusedElement(&focused);
-    if (FAILED(hr) || !focused) return FALSE;
-
-    VARIANT_BOOL is_available = VARIANT_FALSE;
-    hr = focused->GetCurrentPropertyValue(UIA_IsValuePatternAvailablePropertyId, nullptr);
-
-    hr = focused->GetCurrentPatternAs(
-        UIA_ValuePatternId, IID_PPV_ARGS(&out_value_pattern));
-
-    if (FAILED(hr) || !out_value_pattern) {
-        return FALSE;
+class NotepadUiaInjector {
+public:
+    static NotepadUiaInjector& instance() {
+        thread_local NotepadUiaInjector inst;
+        return inst;
     }
 
-    CComBSTR test_read;
-    hr = out_value_pattern->get_CurrentValue(&test_read);
-    if (FAILED(hr)) {
-        out_value_pattern.Release();
-        return FALSE;
-    }
-    return TRUE;
-}
+    bool tryInject(const wchar_t* wideText) {
+        if (!isForegroundNotepad()) {
+            return false;
+        }
 
+        CComPtr<IUIAutomationElement> focused;
+        CComPtr<IUIAutomationValuePattern> valuePattern;
+        if (!probeValuePattern(valuePattern, focused)) {
+            return false;
+        }
 
-BOOL injector_append_text_via_uia(CComPtr<IUIAutomationValuePattern>& value_pattern,
-                                  CComPtr<IUIAutomationElement>& focused,
-                                  const wchar_t* wide_text)
-{
-    HRESULT hr;
-    CComBSTR current_bstr;
-    hr = value_pattern->get_CurrentValue(&current_bstr);
-    if (FAILED(hr)) {
-        return FALSE;
+        return appendText(valuePattern, focused, wideText);
     }
 
-    std::wstring combined;
-    if (current_bstr.Length() > 0) {
-        combined.assign(current_bstr, current_bstr.Length());
+private:
+    NotepadUiaInjector() = default;
+    NotepadUiaInjector(const NotepadUiaInjector&) = delete;
+    NotepadUiaInjector& operator=(const NotepadUiaInjector&) = delete;
+
+    bool isForegroundNotepad() {
+        HWND hwnd = GetForegroundWindow();
+        if (!hwnd) {
+            return false;
+        }
+
+        if (hwnd == m_cachedHwnd) {
+            return m_cachedIsNotepad;
+        }
+
+        m_cachedHwnd = hwnd;
+        m_cachedIsNotepad = queryIsNotepad(hwnd);
+
+        m_cachedFocused.Release();
+        m_cachedValuePattern.Release();
+        return m_cachedIsNotepad;
     }
-    combined.append(wide_text);
 
-    // ---- 第二步：整体写回（旧内容 + 新内容）----
-    CComBSTR bstr_combined(combined.c_str());
-    hr = value_pattern->SetValue(bstr_combined);
-    if (FAILED(hr)) {
-        return FALSE;
+    static bool queryIsNotepad(HWND hwnd) {
+        DWORD pid = 0;
+        GetWindowThreadProcessId(hwnd, &pid);
+        if (pid == 0) {
+            return false;
+        }
+
+        HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+        if (!process) {
+            return false;
+        }
+
+        wchar_t path[MAX_PATH] = { 0 };
+        DWORD size = MAX_PATH;
+        BOOL ok = QueryFullProcessImageNameW(process, 0, path, &size);
+        CloseHandle(process);
+        if (!ok) {
+            return false;
+        }
+
+        std::wstring fullPath(path);
+        size_t pos = fullPath.find_last_of(L"\\/");
+        std::wstring filename = (pos == std::wstring::npos) ? fullPath : fullPath.substr(pos + 1);
+        std::transform(filename.begin(), filename.end(), filename.begin(), ::towlower);
+        return filename == L"notepad.exe";
     }
 
-    // ---- 第三步：把光标/选区移动到文本末尾 ----
-    CComPtr<IUIAutomationTextPattern> text_pattern;
-    hr = focused->GetCurrentPatternAs(
-        UIA_TextPatternId, IID_PPV_ARGS(&text_pattern));
+    bool ensureAutomation() {
+        if (m_automation) {
+            return true;
+        }
+        HRESULT hr = m_automation.CoCreateInstance(CLSID_CUIAutomation);
+        return SUCCEEDED(hr) && m_automation;
+    }
 
-    if (SUCCEEDED(hr) && text_pattern) {
-        CComPtr<IUIAutomationTextRange> doc_range;
-        hr = text_pattern->get_DocumentRange(&doc_range);
-        if (SUCCEEDED(hr) && doc_range) {
+    bool probeValuePattern(CComPtr<IUIAutomationValuePattern>& outValuePattern,
+        CComPtr<IUIAutomationElement>& outFocused) {
+        if (!ensureAutomation()) {
+            return false;
+        }
 
-            hr = doc_range->MoveEndpointByRange(
-                TextPatternRangeEndpoint_Start,
-                doc_range,
-                TextPatternRangeEndpoint_End);
+        CComPtr<IUIAutomationElement> focused;
+        HRESULT hr = m_automation->GetFocusedElement(&focused);
+        if (FAILED(hr) || !focused) {
+            return false;
+        }
 
-            if (SUCCEEDED(hr)) {
-                doc_range->Select();
+        CComPtr<IUIAutomationValuePattern> valuePattern;
+        hr = focused->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&valuePattern));
+        if (FAILED(hr) || !valuePattern) {
+            return false;
+        }
+
+        CComBSTR testRead;
+        hr = valuePattern->get_CurrentValue(&testRead);
+        if (FAILED(hr)) {
+            return false;
+        }
+        outFocused = focused;
+        outValuePattern = valuePattern;
+        return true;
+    }
+
+    static bool appendText(CComPtr<IUIAutomationValuePattern>& valuePattern,
+        CComPtr<IUIAutomationElement>& focused,
+        const wchar_t* wideText) {
+        CComBSTR currentBstr;
+        HRESULT hr = valuePattern->get_CurrentValue(&currentBstr);
+        if (FAILED(hr)) {
+            return false;
+        }
+
+        std::wstring combined;
+        if (currentBstr.Length() > 0) {
+            combined.assign(currentBstr, currentBstr.Length());
+        }
+        combined.append(wideText);
+
+        CComBSTR bstrCombined(combined.c_str());
+        hr = valuePattern->SetValue(bstrCombined);
+        if (FAILED(hr)) {
+            return false;
+        }
+
+        // 把光标/选区移到末尾
+        CComPtr<IUIAutomationTextPattern> textPattern;
+        hr = focused->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&textPattern));
+        if (SUCCEEDED(hr) && textPattern) {
+            CComPtr<IUIAutomationTextRange> docRange;
+            hr = textPattern->get_DocumentRange(&docRange);
+            if (SUCCEEDED(hr) && docRange) {
+                hr = docRange->MoveEndpointByRange(
+                    TextPatternRangeEndpoint_Start,
+                    docRange,
+                    TextPatternRangeEndpoint_End);
+                if (SUCCEEDED(hr)) {
+                    docRange->Select();
+                }
+            }
+        }
+        return true;
+    }
+
+private:
+    CComPtr<IUIAutomation> m_automation;
+
+    HWND m_cachedHwnd = nullptr;
+    bool m_cachedIsNotepad = false;
+
+    CComPtr<IUIAutomationElement> m_cachedFocused;
+    CComPtr<IUIAutomationValuePattern> m_cachedValuePattern;
+};
+
+
+
+
+class ImeGuard {
+public:
+    explicit ImeGuard(HWND hwnd) : m_hwnd(hwnd) {
+        if (!m_hwnd) {
+            return;
+        }
+        m_himc = ImmGetContext(m_hwnd);
+        if (m_himc) {
+            m_hadContext = TRUE;
+            m_prevOpenStatus = ImmGetOpenStatus(m_himc);
+            if (m_prevOpenStatus) {
+                ImmSetOpenStatus(m_himc, FALSE);
             }
         }
     }
-    return TRUE;
-}
 
-*/
+    ~ImeGuard() {
+        if (m_hadContext && m_himc) {
+            ImmSetOpenStatus(m_himc, m_prevOpenStatus);
+            ImmReleaseContext(m_hwnd, m_himc);
+        }
+    }
+
+    ImeGuard(const ImeGuard&) = delete;
+    ImeGuard& operator=(const ImeGuard&) = delete;
+
+private:
+    HWND m_hwnd = nullptr;
+    HIMC m_himc = nullptr;
+    BOOL m_hadContext = FALSE;
+    BOOL m_prevOpenStatus = FALSE;
+};
+
+
+class UnicodeTextInjector {
+public:
+    struct Options {
+        int batchSize = 20;     // 每批发送的字符数，避免单次 SendInput 数组过大丢字符
+        int batchDelayMs = 1;   // 批次之间的间隔，给目标应用消息队列喘息时间
+        bool guardIme = true;   // 是否在注入期间临时关闭输入法，防止英文字符被劫持成拼音候选
+    };
+
+    explicit UnicodeTextInjector(Options options = {}) : m_options(options) {}
+
+    bool inject(const QString& text) const {
+        if (text.isEmpty()) {
+            return false;
+        }
+
+        HWND hwnd = GetForegroundWindow();
+        if (!hwnd) {
+            LOG_ERROR("UnicodeTextInjector: no foreground window");
+            return false;
+        }
+
+        std::wstring wide = text.toStdWString();
+        if (wide.empty()) {
+            return false;
+        }
+
+        std::unique_ptr<ImeGuard> imeGuard;
+        if (m_options.guardIme) {
+            imeGuard = std::make_unique<ImeGuard>(hwnd);
+        }
+        return sendInBatches(wide);
+    }
+
+private:
+    bool sendInBatches(const std::wstring& wide) const {
+        const size_t batchSize = static_cast<size_t>(std::max(1, m_options.batchSize));
+        size_t i = 0;
+
+        while (i < wide.size()) {
+            size_t batchEnd = std::min(wide.size(), i + batchSize);
+            if (!sendBatch(wide, i, batchEnd)) {
+                return false;
+            }
+            i = batchEnd;
+            if (i < wide.size() && m_options.batchDelayMs > 0) {
+                QThread::msleep(static_cast<unsigned long>(m_options.batchDelayMs));
+            }
+        }
+        return true;
+    }
+
+    static bool sendBatch(const std::wstring& wide, size_t begin, size_t end) {
+        std::vector<INPUT> inputs((end - begin) * 2);
+
+        for (size_t j = begin; j < end; ++j) {
+            wchar_t wch = wide[j];
+            size_t idx = (j - begin) * 2;
+
+            INPUT& down = inputs[idx];
+            down = {};
+            down.type = INPUT_KEYBOARD;
+            down.ki.wScan = wch;
+            down.ki.dwFlags = KEYEVENTF_UNICODE;
+
+            INPUT& up = inputs[idx + 1];
+            up = {};
+            up.type = INPUT_KEYBOARD;
+            up.ki.wScan = wch;
+            up.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+        }
+
+        UINT expected = static_cast<UINT>(inputs.size());
+        UINT sent = SendInput(expected, inputs.data(), sizeof(INPUT));
+
+        if (sent != expected) {
+            LOG_WARN(QString("UnicodeTextInjector: partial send at [%1,%2), sent=%3/%4, GetLastError=%5")
+                .arg(begin).arg(end).arg(sent).arg(expected).arg(GetLastError()));
+            return false;
+        }
+        return true;
+    }
+
+private:
+    Options m_options;
+};
+
 
 bool InputInjector::sendCtrlV() {
     HWND hwnd = GetForegroundWindow();
@@ -176,153 +375,17 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     return true;
 }
 
-#define INJECT_CHAR_DELAY_MS 10
-
-typedef struct {
-    HWND hwnd;
-    HIMC himc;
-    BOOL had_context;
-    BOOL prev_open_status;
-} ImeGuard;
-
-static void ime_guard_disable(ImeGuard* guard) {
-    guard->hwnd = GetForegroundWindow();
-    guard->himc = NULL;
-    guard->had_context = FALSE;
-    guard->prev_open_status = FALSE;
-
-    if (!guard->hwnd) {
-        return;
-    }
-
-    guard->himc = ImmGetContext(guard->hwnd);
-    if (guard->himc) {
-        guard->had_context = TRUE;
-        guard->prev_open_status = ImmGetOpenStatus(guard->himc);
-        if (guard->prev_open_status) {
-            ImmSetOpenStatus(guard->himc, FALSE);
-        }
-    }
-}
-
-static void ime_guard_restore(ImeGuard* guard) {
-    if (guard->had_context && guard->himc) {
-        ImmSetOpenStatus(guard->himc, guard->prev_open_status);
-        ImmReleaseContext(guard->hwnd, guard->himc);
-    }
-}
-
-static wchar_t* utf8_to_wide(const char* utf8_text) {
-    int needed = 0;
-    wchar_t* wide_text = NULL;
-
-    if (!utf8_text) {
-        return NULL;
-    }
-
-    needed = MultiByteToWideChar(CP_UTF8, 0, utf8_text, -1, NULL, 0);
-    if (needed <= 0) {
-        return NULL;
-    }
-
-    wide_text = (wchar_t*)malloc((size_t)needed * sizeof(wchar_t));
-    if (!wide_text) {
-        return NULL;
-    }
-
-    if (MultiByteToWideChar(CP_UTF8, 0, utf8_text, -1, wide_text, needed) <= 0) {
-        free(wide_text);
-        return NULL;
-    }
-    return wide_text;
-}
-
-BOOL injector_paste_utf8(const char* utf8_text) {
-    wchar_t* wide_text = NULL;
-    size_t len = 0;
-    ImeGuard guard = { 0 };
-    BOOL all_ok = TRUE;
-    INPUT* inputs = NULL;
-    size_t i = 0;
-    UINT sent = 0;
-
-    if (!utf8_text || utf8_text[0] == '\0') {
-        return FALSE;
-    }
-
-    wide_text = utf8_to_wide(utf8_text);
-    if (!wide_text) {
-        return FALSE;
-    }
-
-    len = wcslen(wide_text);
-    if (len == 0) {
-        free(wide_text);
-        return FALSE;
-    }
-
-    if (!GetForegroundWindow()) {
-        free(wide_text);
-        return FALSE;
-    }
-
-    // 关闭 IME，防止中文输入法把英文字符劫持成拼音候选
-    ime_guard_disable(&guard);
-    inputs = (INPUT*)calloc(len * 2, sizeof(INPUT));
-    if (!inputs) {
-        free(wide_text);
-        return FALSE;
-    }
-
-    for (i = 0; i < len; ++i) {
-        wchar_t wch = wide_text[i];
-
-        // Key down
-        inputs[i * 2].type = INPUT_KEYBOARD;
-        inputs[i * 2].ki.wVk = 0;
-        inputs[i * 2].ki.wScan = wch;
-        inputs[i * 2].ki.dwFlags = KEYEVENTF_UNICODE;
-
-        // Key up
-        inputs[i * 2 + 1].type = INPUT_KEYBOARD;
-        inputs[i * 2 + 1].ki.wVk = 0;
-        inputs[i * 2 + 1].ki.wScan = wch;
-        inputs[i * 2 + 1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-    }
-    sent = SendInput((UINT)(len * 2), inputs, sizeof(INPUT));
-    ime_guard_restore(&guard);
-
-    free(wide_text);
-    return all_ok;
-}
-
-
 bool InputInjector::inject(const QString& text, Mode mode) {
     if (text.isEmpty()) return false;
-        
-    //CComPtr<IUIAutomationElement> focused;
-    //CComPtr<IUIAutomationValuePattern> value_pattern;
-    //BOOL result = uia_probe_value_pattern(value_pattern, focused);
-    //if (result) {
-    //    return injector_append_text_via_uia(value_pattern, focused, text.toStdWString().c_str());
-    //}
+
+    std::wstring wide = text.toStdWString();
+    if (NotepadUiaInjector::instance().tryInject(wide.c_str())) {
+        return true;
+    }
 
     LOG_DEBUG("sendText: falling back to SendInput unicode typing");
-    return injector_paste_utf8(text.toUtf8().constData());
-
-
-    //switch (mode) {
-    //case Mode::ClipboardOnly:
-    //    return pasteViaClipboard(text);
-    //case Mode::UnicodeTypeOnly:
-    //    return injector_paste_utf8(text.toUtf8().constData());
-    //    //return injector_append_text_via_uia(text.toStdWString().c_str());
-    //case Mode::PreferClipboard:
-    //default:
-    //    if (pasteViaClipboard(text)) return true;
-    //    LOG_WARN("Clipboard paste failed, falling back to unicode typing.");
-    //    return pasteViaUnicodeTyping(text);
-    //}
+    static const UnicodeTextInjector injector;
+    return injector.inject(text);
 }
 
 #else

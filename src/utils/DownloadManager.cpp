@@ -80,6 +80,13 @@ void DownloadManager::onDownloaderFinished(const QString& savePath)
 
     startNext(); 
     emit queueChanged();
+
+    // 全部执行完毕之后进行。此处 task 已在上方被使用完，无悬垂引用。
+    if (task) {
+        m_tasks.removeAll(task);
+        delete task;
+        task = nullptr;
+    }
 }
 
 void DownloadManager::onDownloaderError(const QString& error)
@@ -107,6 +114,13 @@ void DownloadManager::onDownloaderError(const QString& error)
 
     startNext();
     emit queueChanged();
+
+    // 出错任务同样从任务列表清理并释放，避免误判仍在下载中
+    if (task) {
+        m_tasks.removeAll(task);
+        delete task;
+        task = nullptr;
+    }
 }
 
 void DownloadManager::onDownloaderProgress(const QString& fileName, qint64 received, qint64 total, double speed)
@@ -173,7 +187,9 @@ void DownloadManager::cancelAll()
         if (task->status == TaskStatus::Downloading) {
             task->status = TaskStatus::Cancelled;
         }
+        delete task;
     }
+    m_tasks.clear();
     m_activeMap.clear();
     m_runningCount = 0;
     emit queueChanged();

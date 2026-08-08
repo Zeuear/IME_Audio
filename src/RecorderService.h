@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QAudioSource>
 #include <QAudioSink>
+#include <QBuffer>
 #include <QIODevice>
 #include <mutex>
 #include <deque>
@@ -297,11 +298,7 @@ public:
     static QStringList availableSpeakers();
     void updateConfig();
 
-    // 输出设备（虚拟声卡 loopback）：
-    // 选“系统默认”时不动系统设置；选具体设备时，在开始监听时把【系统默认播放设备】
-    // 切到该设备（使系统所有声音——视频/音乐等——都从该声卡流出，再被输入设备录进来实现 loopback），
-    // 停止监听时恢复系统原来的默认设备。系统级切换由 SystemAudioEndpointController 完成。
-    void setOutputDevice(const QString& outputDeviceName);
+public slots:
     void playTestTone();
 
 signals:
@@ -327,8 +324,7 @@ private:
     QIODevice *m_audioDevice = nullptr;
 
     QAudioSink *m_audioSink = nullptr;
-    QAudioDevice m_outputDevice;
-    QString m_outputDeviceName;
+    QBuffer *m_audioBuffer = nullptr;
 
     // 系统级音频端点控制器（平台解耦：Win 走 Core Audio COM，非 Win 空实现）
     SystemAudioEndpointController m_endpointController;

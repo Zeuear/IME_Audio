@@ -130,11 +130,13 @@ void ProjectGroupCard::markFileError(const QString& filename, const QString& err
 void ProjectGroupCard::updateGroupFinished(bool success, const QString& msg)
 {
     if (success) {
-        m_titleLabel->setText(m_titleLabel->text() + " " + tr("[已完成]"));
+        if (!m_titleLabel->text().contains("✅")) {
+            m_titleLabel->setText("✅" + m_titleLabel->text());
+        }
         m_overallBar->setValue(100);
     } else {
         m_titleLabel->setStyleSheet("color:#e05c5c; font-size:13px; font-weight:600;");
-        m_overallLabel->setText(msg.isEmpty() ? tr("失败") : msg);
+        m_overallLabel->setText(msg.isEmpty() ? "❌" : msg);
         m_overallLabel->setStyleSheet("color:#e05c5c; font-size:12px;");
     }
 }
@@ -295,8 +297,6 @@ void DownloadListWidget::onInstallGroupFinished(const QString& repoId, bool succ
     if (auto* card = m_cards.value(repoId, nullptr)) {
         card->updateGroupFinished(success, msg);
     }
-    // 可选:安装成功几秒后自动从列表移除卡片,这里先保留展示"已完成"状态,
-    // 如果想自动清理,可以用 QTimer::singleShot 延迟调用 removeCard(repoId)
 }
 
 void DownloadListWidget::onExtractStarted(const QString& repoId, int totalLines)

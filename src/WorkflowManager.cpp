@@ -33,7 +33,20 @@ void WorkflowManager::startRecording() {
 
     if (m_config.backend == AsrBackendKind::Sherpa) {
 
-        m_sherpaManager->loadModel(m_config);
+        bool initiated = m_sherpaManager->reloadModel(m_config);
+        if (initiated) {
+            QEventLoop loop;
+            bool ok = false;
+            QMetaObject::Connection conn = connect(m_sherpaManager, &SherpaManager::modelLoadFinished,
+                [&ok, &loop](bool success) { ok = success; loop.quit(); });
+            loop.exec();
+            disconnect(conn);
+            if (!ok) {
+                transitionTo(WorkflowState::Error);
+                LOG_ERROR("Model failed to load");
+                return;
+            }
+        }
         if (!m_sherpaManager->isModelLoaded()) {
             transitionTo(WorkflowState::Error);
             LOG_ERROR("Model failed to load");

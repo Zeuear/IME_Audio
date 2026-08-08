@@ -32,6 +32,7 @@ enum class ModelArch {
     Moonshine,
     FunasrNano,
     Qwen3Asr,
+    Canary,
     Unsupported
 };
 
@@ -39,9 +40,9 @@ enum class ModelArch {
 struct TransducerFiles {
     QString modelSubfolder;
     QString tokensSubfolder;
-    QString encoderFile = "encoder.onnx";
-    QString decoderFile = "decoder.onnx";
-    QString joinerFile = "joiner.onnx";
+    QString encoderFile = "encoder.int8.onnx";
+    QString decoderFile = "decoder.int8.onnx";
+    QString joinerFile = "joiner.int8.onnx";
 };
 
 // paraformer / nemo_ctc / dolphin / zipformer_ctc / telespeech / wenet_ctc / omnilingual
@@ -98,10 +99,18 @@ struct Qwen3AsrFiles {
     QString hotwords;
 };
 
+struct CanaryFiles {
+    QString encoderFile = "encoder.int8.onnx";
+    QString decoderFile = "decoder.int8.onnx";
+    QString tokensFile = "tokens.txt";
+    QString srcLang = "en";  
+    QString tgtLang = "en";   
+    bool usePnc = true;      
+};
 
 using ModelFiles = std::variant<SingleFileModelFiles, TransducerFiles, SenseVoiceFiles,
     ParaformerStreamingFiles, WhisperFiles, MoonshineFiles, FireRedAsrFiles,
-    FunasrFiles, Qwen3AsrFiles>;
+    FunasrFiles, Qwen3AsrFiles, CanaryFiles>;
 
 
 
@@ -168,6 +177,9 @@ struct ModelDescriptor {
         case ModelArch::FunasrNano:
             return FunasrFiles{};
 
+        case ModelArch::Canary:               
+            return CanaryFiles{};
+
         case ModelArch::Qwen3Asr:
             return Qwen3AsrFiles{
                 .archiveUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
@@ -194,7 +206,7 @@ struct ModelDescriptor {
             case ModelArch::NemoCtc:             return "Nemo CTC";
             case ModelArch::NemoTransducer:      return "Nemo Transducer";
             case ModelArch::TeleSpeechCtc:       return "TeleSpeech CTC";
-            case ModelArch::SenseVoice:          return "SenseVoice (多语言/标点)";
+            case ModelArch::SenseVoice:          return "SenseVoice (多语言)";
             case ModelArch::DolphinCtc:          return "Dolphin CTC";
             case ModelArch::FireRedAsr:          return "FireRed ASR";
             case ModelArch::WenetCtcOffline:     return "Wenet CTC";
@@ -204,6 +216,7 @@ struct ModelDescriptor {
             case ModelArch::Moonshine:           return "Moonshine";
             case ModelArch::FunasrNano:          return "FunASR Nano (2025)";
             case ModelArch::Qwen3Asr:            return "Qwen3-ASR (大语言声学模型)";
+            case ModelArch::Canary:              return "Canary";
             default:                             return "Unknown";
             }
     }
@@ -223,10 +236,8 @@ public:
     static QUrl getHfUrl(const QString& repoId, const QString& subfolder, const QString& filename);
     static QString buildLocalPath(const QString& repoId, const QString& subfolder, const QString& filename);
 
-
     static QString getTokensPath(const QString& repoId);
     static QString getModelPath(const QString& repoId, const QString& subfolder, const QString& filename);
-
 
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildOfflineTransducer(
         const QString& repoId,
@@ -260,7 +271,7 @@ public:
         bool useItn,
         int numThreads);
 
-	static sherpa_onnx::cxx::OfflineRecognizerConfig buildNemoCtc(const QString& repoId, int numThreads);
+	static sherpa_onnx::cxx::OfflineRecognizerConfig buildNemoCtc(const QString& repoId, const QString& modelFile, int numThreads);
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildWhisper(const QString& repoId, const QString& name, int numThreads);
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildMoonshine(const QString& repoId, int numThreads);
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildFireRedAsr(const QString& repoId, const FireRedAsrFiles& files, int numThreads);
@@ -291,6 +302,11 @@ public:
         const Qwen3AsrFiles& files,
         int numThreads);
 
+    static sherpa_onnx::cxx::OfflineRecognizerConfig buildCanary(
+        const QString& repoId,
+        const CanaryFiles& files,
+        int numThreads);
+
 };
 
 
@@ -312,8 +328,6 @@ struct ModelInstallManifest {
     QString archiveExtractedDirName;
     QString archiveTargetDir;
 };
-
-
 
 enum class RecognizerKind { None, Offline, Online };
 

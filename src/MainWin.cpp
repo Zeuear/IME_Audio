@@ -188,9 +188,8 @@ void MainWin::connection(){
     // 输出设备测试播放（验证虚拟声卡 loopback）
     connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
         QString name = ui->source_equipment_comb->currentText();
-        m_recorderService->setOutputDevice(name);
         m_recorderService->playTestTone();
-        });
+    });
 
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
@@ -504,7 +503,7 @@ void MainWin::loadConfigToUI() {
     if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
 
     if (cfg.backend == AsrBackendKind::Sherpa) {
-		m_sherpaManager->loadModelAsync(cfg, false);
+        m_sherpaManager->reloadModel(cfg);
     }
 
     // AI Enhancement
@@ -682,6 +681,7 @@ void MainWin::onHotkeyPressed() {
                                                       config.sherpa.localModelRepoId);
     if (m_sherpaInstaller->isInstalling(repoId)){
         LOG_ERROR("当前模型正在安装中");
+        m_sphereOverlay->hideOverlay();
         return;
     }
 
@@ -842,19 +842,11 @@ void MainWin::onSaveConfig()
     if (ConfigManager::instance().save()) {
         LOG_INFO("配置保存成功");
 		LOG_DEBUG("Save Configuration Success");
-
-        // 重新加载模型;
-        if (uiConfig.backend == AsrBackendKind::Sherpa) {
-            m_sherpaManager->reloadModel(uiConfig);
-        }
         m_recorderService->updateConfig();
-        // 应用输出设备（虚拟声卡 loopback 场景）
-        m_recorderService->setOutputDevice(uiConfig.audio.outputDeviceName);
     }
     else {
         LOG_ERROR("Save Configuration Failed");
     }
-    
 }
 
 void MainWin::initSystemTray()
