@@ -38,6 +38,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/system_audio_endpoint_controller_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -60,6 +61,8 @@ set(TEST_DEPS
     # ProcessManager.h holds Q_OBJECT classes (BaseTask / TaskQueueManager /
     # ExtractTask) and must be fed to AUTOMOC so the moc code is generated + linked.
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ProcessManager.h
+    # 平台解耦的系统音频端点控制器（纯 C++，Win 下用 Core Audio COM）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/SystemAudioEndpointController.cpp
 )
 
 add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})

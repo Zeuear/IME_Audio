@@ -11,8 +11,12 @@ enum class AsrBackendKind {
 };
 
 struct AudioConfig {
-    int deviceId = -1;
-    QString deviceName;
+    static constexpr int kInvalidDeviceId = -1;
+    static const QString kDefaultDeviceName;
+
+    int deviceId = kInvalidDeviceId;
+    QString deviceName = kDefaultDeviceName;
+    QString outputDeviceName;
     int sampleRate = 16000;
     int channels = 1;
     int bitsPerSample = 16;

@@ -31,10 +31,13 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->ai_vocabulary_edit->setReadOnly(true);
   ui->identification_log_edit->setReadOnly(true);
   ui->config_log_edit->setReadOnly(true);
+
   ui->grop_key_label->setVisible(false);
   ui->grop_key_edit->setVisible(false);
   ui->gladia_key_edit->setVisible(false);
   ui->gladia_key_label->setVisible(false);
+  ui->gemini_key_edit->setVisible(false);
+  ui->gemini_key_label->setVisible(false);
 
   initSystemTray();
   initialize();
@@ -46,6 +49,10 @@ void MainWin::initialize() {
     ui->recording_equ_comb->clear();
     auto items = AudioRecorderService::availableMicrophones();
     ui->recording_equ_comb->addItems(items);
+
+    ui->source_equipment_comb->clear();
+    auto speakers = AudioRecorderService::availableSpeakers();
+    ui->source_equipment_comb->addItems(speakers);
 
     auto languages = ModelRegistry::GetLanguages();
     ui->language_comb->addItems(languages);
@@ -146,30 +153,44 @@ void MainWin::connection(){
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
 
     connect(ui->identification_backend_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
+        bool gropVisible = false;
+        bool geminiVisible = false;
+        bool gladiaVisible = false;
+        
         if (index == 0) {
-            ui->grop_key_edit->hide();
-            ui->grop_key_label->hide();
-            ui->gladia_key_edit->hide();
-            ui->gladia_key_label->hide();
+            gropVisible = false;
+            geminiVisible = false;
+            gladiaVisible = false;
         }
         else if (index == 1) {
-            ui->grop_key_edit->hide();
-            ui->grop_key_label->hide();
-            ui->gladia_key_edit->hide();
-            ui->gladia_key_label->hide();
+            gropVisible = false;
+            geminiVisible = true;
+            gladiaVisible = false;
         }else if (index == 2) {
-            ui->grop_key_edit->show();
-            ui->grop_key_label->show();
-            ui->gladia_key_edit->hide();
-            ui->gladia_key_label->hide();
+            gropVisible = true;
+            geminiVisible = false;
+            gladiaVisible = false;
         }
         else if (index == 3) {
-            ui->grop_key_edit->hide();
-            ui->grop_key_label->hide();
-            ui->gladia_key_edit->show();
-            ui->gladia_key_label->show();
+            gropVisible = false;
+            geminiVisible = false;
+            gladiaVisible = true;
         }
+
+        ui->grop_key_label->setVisible(gropVisible);
+        ui->grop_key_edit->setVisible(gropVisible);
+        ui->gladia_key_edit->setVisible(gladiaVisible);
+        ui->gladia_key_label->setVisible(gladiaVisible);
+        ui->gemini_key_edit->setVisible(geminiVisible);
+        ui->gemini_key_label->setVisible(geminiVisible);
       });
+
+    // 输出设备测试播放（验证虚拟声卡 loopback）
+    connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
+        QString name = ui->source_equipment_comb->currentText();
+        m_recorderService->setOutputDevice(name);
+        m_recorderService->playTestTone();
+        });
 
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
@@ -214,6 +235,15 @@ void MainWin::connection(){
 
         LOG_DEBUG(QString("Download %1...").arg(repoId));
         m_sherpaInstaller->installModel(repoId);
+    });
+
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, this, [=]() {
+        ui->download_model_btn->setEnabled(false);
+        ui->download_model_btn->setText(tr("Download..."));
+    });
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=]() {
+        ui->download_model_btn->setEnabled(true);
+        ui->download_model_btn->setText(tr("Download and configure"));
     });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {
@@ -400,6 +430,7 @@ AppConfig MainWin::extractConfigFromUI() {
     // 音频设置 (Audio Group)
     uiConfig.audio.deviceId = ui->recording_equ_comb->currentIndex();
     uiConfig.audio.deviceName = ui->recording_equ_comb->currentText();
+    uiConfig.audio.outputDeviceName = ui->source_equipment_comb->currentText();
     uiConfig.audio.voiceThreshold = ui->volume_threshold_spin->value();
     uiConfig.audio.silenceTimeoutMs = ui->mute_duration_spin->value();
     uiConfig.audio.minRecordMs = ui->shortest_recording_spin->value();
@@ -451,6 +482,15 @@ void MainWin::loadConfigToUI() {
     ui->cpu_thread_number_spin->setValue(cfg.sherpa.threads);
     
     ui->recording_equ_comb->setCurrentIndex(cfg.audio.deviceId);
+    {
+        int idx = ui->recording_equ_comb->findText(cfg.audio.deviceName);
+        if (idx != -1) ui->recording_equ_comb->setCurrentIndex(idx);
+    }
+    ui->source_equipment_comb->setCurrentIndex(0);
+    {
+        int oidx = ui->source_equipment_comb->findText(cfg.audio.outputDeviceName);
+        if (oidx != -1) ui->source_equipment_comb->setCurrentIndex(oidx);
+    }
     ui->volume_threshold_spin->setValue(cfg.audio.voiceThreshold);
     ui->mute_duration_spin->setValue(cfg.audio.silenceTimeoutMs);
     ui->shortest_recording_spin->setValue(cfg.audio.minRecordMs);
@@ -636,6 +676,15 @@ void MainWin::on_actionExit_triggered() { qApp->exit(0); }
 
 void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
+    const auto& config = ConfigManager::instance().config();
+
+    QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
+                                                      config.sherpa.localModelRepoId);
+    if (m_sherpaInstaller->isInstalling(repoId)){
+        LOG_ERROR("当前模型正在安装中");
+        return;
+    }
+
     if (m_workflow->currentState() == WorkflowState::Idle) {
         m_workflow->startRecording();
         ui->shortcut_edit->setListening(true);   
@@ -799,6 +848,8 @@ void MainWin::onSaveConfig()
             m_sherpaManager->reloadModel(uiConfig);
         }
         m_recorderService->updateConfig();
+        // 应用输出设备（虚拟声卡 loopback 场景）
+        m_recorderService->setOutputDevice(uiConfig.audio.outputDeviceName);
     }
     else {
         LOG_ERROR("Save Configuration Failed");

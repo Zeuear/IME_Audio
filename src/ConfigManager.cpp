@@ -31,8 +31,9 @@ void ConfigManager::applyDefaults() {
     QWriteLocker locker(&m_lock);
     m_config = AppConfig();
 
-    m_config.audio.deviceId = 0;
-    m_config.audio.deviceName = "系统默认录音设备";
+    m_config.audio.deviceId = AudioConfig::kInvalidDeviceId;
+    m_config.audio.deviceName = AudioConfig::kDefaultDeviceName;
+    m_config.audio.outputDeviceName.clear();
     m_config.audio.sampleRate = 16000;
     m_config.audio.channels = 1;
     m_config.audio.bitsPerSample = 16;
@@ -68,6 +69,7 @@ bool ConfigManager::load() {
     s.beginGroup("audio");
     m_config.audio.deviceId = s.value("deviceId", -1).toInt();
     m_config.audio.deviceName = s.value("deviceName").toString();
+    m_config.audio.outputDeviceName = s.value("outputDeviceName").toString();
     m_config.audio.sampleRate = s.value("sampleRate", 16000).toInt();
     m_config.audio.channels = s.value("channels", 1).toInt();
     m_config.audio.bitsPerSample = s.value("bitsPerSample", 16).toInt();
@@ -118,6 +120,7 @@ bool ConfigManager::save() {
     s.beginGroup("audio");
     s.setValue("deviceId", m_config.audio.deviceId);
     s.setValue("deviceName", m_config.audio.deviceName);
+    s.setValue("outputDeviceName", m_config.audio.outputDeviceName);
     s.setValue("sampleRate", m_config.audio.sampleRate);
     s.setValue("channels", m_config.audio.channels);
     s.setValue("bitsPerSample", m_config.audio.bitsPerSample);

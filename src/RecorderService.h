@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QAudioSource>
+#include <QAudioSink>
 #include <QIODevice>
 #include <mutex>
 #include <deque>
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include "cxx-api.h"
 #include "AppConfig.h"
+#include "utils/SystemAudioEndpointController.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -292,7 +294,15 @@ public:
     RuntimeStatus runtimeStatus() const;
 
     static QStringList availableMicrophones();
+    static QStringList availableSpeakers();
     void updateConfig();
+
+    // 输出设备（虚拟声卡 loopback）：
+    // 选“系统默认”时不动系统设置；选具体设备时，在开始监听时把【系统默认播放设备】
+    // 切到该设备（使系统所有声音——视频/音乐等——都从该声卡流出，再被输入设备录进来实现 loopback），
+    // 停止监听时恢复系统原来的默认设备。系统级切换由 SystemAudioEndpointController 完成。
+    void setOutputDevice(const QString& outputDeviceName);
+    void playTestTone();
 
 signals:
     void utteranceReady(const QByteArray& pcmData, int sampleRate);
@@ -316,7 +326,15 @@ private:
     QAudioSource *m_audioSource = nullptr;
     QIODevice *m_audioDevice = nullptr;
 
+    QAudioSink *m_audioSink = nullptr;
+    QAudioDevice m_outputDevice;
+    QString m_outputDeviceName;
+
+    // 系统级音频端点控制器（平台解耦：Win 走 Core Audio COM，非 Win 空实现）
+    SystemAudioEndpointController m_endpointController;
+
     RuntimeStatus m_status;
+    int m_actualChannels = 1;  // 实际打开设备后的声道数（立体声虚拟声卡时为 2）
     const AppConfig& m_config;
     QByteArray m_segmentBuffer;   
 
