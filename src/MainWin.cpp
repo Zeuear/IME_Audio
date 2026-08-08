@@ -188,7 +188,7 @@ void MainWin::connection(){
     // 输出设备测试播放（验证虚拟声卡 loopback）
     connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
         QString name = ui->source_equipment_comb->currentText();
-        m_recorderService->playTestTone();
+        m_workflow->playTestTone();
     });
 
     // Local Recognition
@@ -322,45 +322,29 @@ void MainWin::connection(){
     });
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
 
-    // 录音服务
+    // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
     connect(m_recorderService, &AudioRecorderService::levelUpdated, m_sphereOverlay, &SphereOverlay::setLevel);
     connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_sphereOverlay, &SphereOverlay::setSpectrumLevels);
+    connect(m_recorderService, &AudioRecorderService::voiceStopped, m_sphereOverlay, &SphereOverlay::onVoiceStopped);
+    connect(m_recorderService, &AudioRecorderService::voiceStarted, m_sphereOverlay, &SphereOverlay::onVoiceStarted);
 
-    connect(m_recorderService, &AudioRecorderService::voiceStarted, this, [this]() {
-        m_sphereOverlay->hideTimerStop();        
-        if (m_workflow->currentState() == WorkflowState::Recording) {
-            m_sphereOverlay->setListening();
-            m_sphereOverlay->showAtBottomCenter();
-        }
-    });
-
-    connect(m_recorderService, &AudioRecorderService::voiceStopped, this, [this]() {
-        m_sphereOverlay->hideTimerStart();   
-    });
-
-	// Sherpa 模型安装器
+    // Sherpa 模型安装器：安装成功后经门面预热模型（不再直戳 m_sherpaManager）
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
         this, [this](const QString& repoId, bool success, const QString& msg) {
             if (success && !repoId.isEmpty()) {
                 const AppConfig& config = ConfigManager::instance().config();
-                m_sherpaManager->loadModelAsync(config, false);
+                m_workflow->preloadModel(config);
             }
         });
 
-    connect(m_sherpaManager, &SherpaManager::modelLoadFinished, this, [this](bool ok) {
-        if (ok) LOG_INFO("模型加载完成");
-        else LOG_ERROR("模型加载失败");
-        });
-
     connect(m_sphereOverlay, &SphereOverlay::sphereClicked, this, [this]() {
+        m_workflow->togglePause();
         if (m_recorderService->isPaused()) {
-            m_recorderService->resume();
-            m_sphereOverlay->setListening();
-        }else {
-            m_recorderService->pause();
             m_sphereOverlay->setPaused();
+        } else {
+            m_sphereOverlay->setListening();
         }
-     });
+    });
 
     // 词典功能
     connect(m_termsManager, &TermsLibraryManager::termsReloaded, this, [=]() {
@@ -503,7 +487,7 @@ void MainWin::loadConfigToUI() {
     if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
 
     if (cfg.backend == AsrBackendKind::Sherpa) {
-        m_sherpaManager->reloadModel(cfg);
+        m_workflow->preloadModel(cfg);
     }
 
     // AI Enhancement
@@ -685,12 +669,12 @@ void MainWin::onHotkeyPressed() {
         return;
     }
 
-    if (m_workflow->currentState() == WorkflowState::Idle) {
-        m_workflow->startRecording();
-        ui->shortcut_edit->setListening(true);   
+    if (m_workflow->state() == WorkflowState::Idle) {
+        m_workflow->start();
+        ui->shortcut_edit->setListening(true);  
     }
     else {
-        m_workflow->stopRecording();
+        m_workflow->stop();
         ui->shortcut_edit->setListening(false);  
     }
 }
@@ -830,7 +814,7 @@ void MainWin::onLoadConfig()
     loadConfigToUI();
     readIni();
 
-    m_recorderService->updateConfig();
+    m_workflow->applyRecorderConfig();
 }
 
 void MainWin::onSaveConfig()
@@ -842,7 +826,7 @@ void MainWin::onSaveConfig()
     if (ConfigManager::instance().save()) {
         LOG_INFO("配置保存成功");
 		LOG_DEBUG("Save Configuration Success");
-        m_recorderService->updateConfig();
+        m_workflow->applyRecorderConfig();
     }
     else {
         LOG_ERROR("Save Configuration Failed");

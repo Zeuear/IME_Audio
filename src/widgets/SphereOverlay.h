@@ -21,6 +21,8 @@ public slots:
     void hideOverlay();
     void hideTimerStart();
     void hideTimerStop();
+    void onVoiceStarted();    // 人声活动可视化：停 fade 计时并显示监听中
+    void onVoiceStopped();    // 人声停止：启动 fade 计时
 
 signals:
     void sphereClicked(); 

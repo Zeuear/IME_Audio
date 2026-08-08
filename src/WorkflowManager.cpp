@@ -7,122 +7,145 @@ WorkflowManager::WorkflowManager(const AppConfig &config, QObject *parent) : QOb
 
 void WorkflowManager::initialize(AudioRecorderService *recorder,
                                 TranscriptionService *transcription,
-                                SherpaManager* sherpManager) 
+                                SherpaManager* sherpManager)
 {
     m_recorder = recorder;
     m_transcription = transcription;
     m_sherpaManager = sherpManager;
 
-    // 语音检测:仅用于日志/UI提示,不驱动状态机
-    connect(m_recorder, &AudioRecorderService::voiceStarted, this, &WorkflowManager::onVoiceStarted);
-
-    // 一句话缓冲完成,直接交给识别服务,不经过文件
+    // 一句话缓冲完成，交给识别服务
     connect(m_recorder, &AudioRecorderService::utteranceReady, this, &WorkflowManager::onUtteranceReady);
-
     // 识别结果回调
     connect(m_transcription, &TranscriptionService::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
+    // 模型加载完成
+    connect(m_sherpaManager, &SherpaManager::modelLoadFinished, this, &WorkflowManager::onModelLoadFinished);
 
     connect(this, &WorkflowManager::transcriptionResultReady, this, &WorkflowManager::onInjectText);
 }
 
-void WorkflowManager::startRecording() {
-    if (m_currentState != WorkflowState::Idle) return;
-    LOG_DEBUG("Start Recording");
-    transitionTo(WorkflowState::Loading);
-    m_sherpaManager->pauseIdleTimer();
+// ---- 门面命令 ----
+void WorkflowManager::start() { startRecording(); }
+void WorkflowManager::stop() { stopRecording(); }
 
-    if (m_config.backend == AsrBackendKind::Sherpa) {
-
-        bool initiated = m_sherpaManager->reloadModel(m_config);
-        if (initiated) {
-            QEventLoop loop;
-            bool ok = false;
-            QMetaObject::Connection conn = connect(m_sherpaManager, &SherpaManager::modelLoadFinished,
-                [&ok, &loop](bool success) { ok = success; loop.quit(); });
-            loop.exec();
-            disconnect(conn);
-            if (!ok) {
-                transitionTo(WorkflowState::Error);
-                LOG_ERROR("Model failed to load");
-                return;
-            }
-        }
-        if (!m_sherpaManager->isModelLoaded()) {
-            transitionTo(WorkflowState::Error);
-            LOG_ERROR("Model failed to load");
-            return;
-        }
-    }
-
-    transitionTo(WorkflowState::Recording);
-    if (!m_recorder->startListening()) {
-        //if (m_config.backend == AsrBackendKind::Sherpa) {
-        //    m_sherpaManager->unloadModel(); 
-        //}
-        transitionTo(WorkflowState::Error);
-        return;
-    }
+void WorkflowManager::playTestTone()
+{
+    if (m_recorder) m_recorder->playTestTone();
 }
 
-void WorkflowManager::stopRecording() {
-    if (m_currentState != WorkflowState::Recording) return;
-    LOG_DEBUG("Stop Recording");
-
-    m_recorder->stopListening();
-    m_pendingTranscriptions = 0;
-    transitionTo(WorkflowState::Idle);
-    //if (m_config.backend == AsrBackendKind::Sherpa) {
-    //    m_sherpaManager->unloadModel();
-    //}
-    // 结束监听：恢复空闲计时
-    m_sherpaManager->resumeIdleTimer();
+void WorkflowManager::applyRecorderConfig()
+{
+    if (m_recorder) m_recorder->updateConfig();
 }
 
-WorkflowState WorkflowManager::currentState() const
+void WorkflowManager::preloadModel(const AppConfig& cfg)
+{
+    if (m_sherpaManager) m_sherpaManager->loadModelAsync(cfg, false);
+}
+
+void WorkflowManager::togglePause()
+{
+    if (!m_recorder) return;
+    if (m_recorder->isPaused()) m_recorder->resume();
+    else m_recorder->pause();
+}
+
+WorkflowState WorkflowManager::state() const
 {
     return m_currentState;
 }
 
-void WorkflowManager::onVoiceStarted() {
-    LOG_DEBUG("Voice detected...");
+// ---- 录音控制 ----
+void WorkflowManager::startRecording() {
+    if (m_currentState != WorkflowState::Idle) return;
+    LOG_DEBUG("Start Recording");
+    transitionTo(WorkflowState::Loading, WorkflowEvent::StartRequested);
+    m_sherpaManager->pauseIdleTimer();
+
+    if (m_config.backend == AsrBackendKind::Sherpa) {
+        // 异步加载：loadModelAsync 入队，worker 完成后经 modelLoadFinished 驱动后续
+        bool initiated = m_sherpaManager->reloadModel(m_config);
+        if (!initiated) {
+            // 已加载且配置相同，不会发 modelLoadFinished —— 直接继续
+            proceedToRecording();
+        }
+        // initiated==true 时，onModelLoadFinished 会调用 proceedToRecording
+    } else {
+        proceedToRecording();
+    }
 }
 
+void WorkflowManager::proceedToRecording() {
+    if (m_currentState != WorkflowState::Loading) return;  // 防御：非 Loading 态不继续
+    if (m_config.backend == AsrBackendKind::Sherpa && !m_sherpaManager->isModelLoaded()) {
+        transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
+        LOG_ERROR("Model failed to load");
+        return;
+    }
+    transitionTo(WorkflowState::Recording, WorkflowEvent::ModelLoaded);
+    if (!m_recorder->startListening()) {
+        transitionTo(WorkflowState::Error, WorkflowEvent::ErrorOccurred);
+    }
+}
+
+void WorkflowManager::onModelLoadFinished(bool ok) {
+    if (ok) LOG_INFO("模型加载完成");
+    else LOG_ERROR("模型加载失败");
+    // 只在 Loading 态响应（避免重复/延迟回调干扰）
+    if (m_currentState != WorkflowState::Loading) return;
+    if (ok) proceedToRecording();
+    else transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
+}
+
+void WorkflowManager::stopRecording() {
+    if (m_currentState != WorkflowState::Recording &&
+        m_currentState != WorkflowState::Transcribing &&
+        m_currentState != WorkflowState::Processing &&
+        m_currentState != WorkflowState::Loading) return;
+    LOG_DEBUG("Stop Recording");
+
+    transitionTo(WorkflowState::Stopping, WorkflowEvent::StopRequested);
+    m_stopping = true;
+    m_recorder->stopListening();
+    // 结束监听：恢复空闲计时
+    m_sherpaManager->resumeIdleTimer();
+
+    // 冲刷：若没有待转录句，立即进入 Idle；否则等最后一句转录完由 AllTranscribed 落 Idle
+    if (m_pending == 0) {
+        transitionTo(WorkflowState::Idle, WorkflowEvent::AllTranscribed);
+    }
+}
+
+// ---- 转写流水线 ----
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
     LOG_DEBUG(tr("Utterance captured, size: %1 bytes").arg(pcmData.size()));
-    m_pendingTranscriptions++;
-    transitionTo(WorkflowState::Transcribing);
+    m_pending++;
+    transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
 }
 
 void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawText, const QString& finalText, const QString& errorMsg) {
-    if (m_pendingTranscriptions > 0) {
-        m_pendingTranscriptions--;
-    }
+    if (m_pending > 0) m_pending--;
 
     if (success) {
         if (!finalText.isEmpty()) {
             LOG_DEBUG(QString("Transcription success: %1").arg(finalText));
             emit transcriptionResultReady(finalText);
-            transitionTo(WorkflowState::Processing);
+            transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
         }
     }
     else {
         QMessageBox::warning(nullptr, tr("Error"), errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
         LOG_WARN(errorMsg);
-        transitionTo(WorkflowState::Processing);
+        transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }
 
-    if (m_pendingTranscriptions == 0) {
-        transitionTo(m_recorder->isListening() ? WorkflowState::Recording : WorkflowState::Idle);
+    if (m_pending == 0) {
+        // 冲刷完最后一句：按是否在停止中决定落点
+        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording,
+                     WorkflowEvent::AllTranscribed);
+        if (m_stopping) m_stopping = false;
     }
-}
-
-void WorkflowManager::transitionTo(WorkflowState newState) {
-    if (m_currentState == newState) return;
-    m_currentState = newState;
-    emit stateChanged(m_currentState);
-    //qDebug() << "Workflow State:" << static_cast<int>(m_currentState);
 }
 
 void WorkflowManager::onInjectText(const QString& text) {
@@ -147,4 +170,38 @@ void WorkflowManager::processInjectQueue() {
     if (!m_injectQueue.isEmpty()) {
         QMetaObject::invokeMethod(this, &WorkflowManager::processInjectQueue, Qt::QueuedConnection);
     }
+}
+
+// ---- 集中式状态机 ----
+bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, WorkflowState &out) const {
+    using S = WorkflowState; using E = WorkflowEvent;
+    // 非法/默认
+    out = from;
+    switch (evt) {
+    case E::StartRequested:      if (from == S::Idle)        { out = S::Loading; return true; } break;
+    case E::ModelLoaded:         if (from == S::Loading)     { out = S::Recording; return true; } break;
+    case E::ModelLoadFailed:     if (from == S::Loading)     { out = S::Error; return true; } break;
+    case E::UtteranceCaptured:   if (from == S::Recording)   { out = S::Transcribing; return true; } break;
+    case E::UtteranceTranscribed:if (from == S::Transcribing){ out = S::Processing; return true; }
+                                  if (from == S::Processing)  { out = S::Processing; return true; } break;
+    case E::AllTranscribed:      if (from == S::Stopping)    { out = S::Idle; return true; }
+                                  if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Recording; return true; } break;
+    case E::StopRequested:       if (from == S::Recording || from == S::Transcribing || from == S::Processing || from == S::Loading) { out = S::Stopping; return true; } break;
+    case E::ErrorOccurred:       { out = S::Error; return true; } break;
+    }
+    return false;
+}
+
+void WorkflowManager::transitionTo(WorkflowState newState, WorkflowEvent evt) {
+    WorkflowState target = newState;
+    if (!canTransition(m_currentState, evt, target)) {
+        LOG_WARN(QString("Illegal transition ignored: %1 --%2--> %3")
+                     .arg(static_cast<int>(m_currentState))
+                     .arg(static_cast<int>(evt))
+                     .arg(static_cast<int>(newState)));
+        return;
+    }
+    if (m_currentState == target) return;
+    m_currentState = target;
+    emit stateChanged(m_currentState);
 }
