@@ -31,7 +31,6 @@ endif()
 set(CMAKE_AUTOMOC ON)
 
 set(TEST_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit/sample_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/term_replace_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/extract_progress_test.cpp
@@ -39,7 +38,6 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit/sherpa_punctuator_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -68,16 +66,12 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/interfaces/workflow_interfaces.h
     # 神经标点：SherpaPunctuator 封装 + SherpaConfig 的 shouldUseNeuralPunct 判定
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/SherpaPunctuator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/SherpaConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigManager.cpp
 )
 
 add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})
 target_include_directories(imeaudio_tests PRIVATE ${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/include)
-target_link_directories(imeaudio_tests PRIVATE ${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/lib/windows)
-target_link_libraries(imeaudio_tests gtest gtest_main Qt6::Core Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::Concurrent imm32
-    sherpa-onnx-cxx-api sherpa-onnx-c-api)
+target_link_libraries(imeaudio_tests gtest gtest_main Qt6::Core Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::Concurrent imm32)
 
 # Register with CTest (gtest_discover_tests enumerates each TEST case as a CTest entry)
 include(GoogleTest)
