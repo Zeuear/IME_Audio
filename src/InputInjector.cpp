@@ -128,17 +128,82 @@ private:
     static bool appendText(CComPtr<IUIAutomationValuePattern>& valuePattern,
         CComPtr<IUIAutomationElement>& focused,
         const wchar_t* wideText) {
+
         CComBSTR currentBstr;
         HRESULT hr = valuePattern->get_CurrentValue(&currentBstr);
         if (FAILED(hr)) {
             return false;
         }
-
-        std::wstring combined;
+        std::wstring fullText;
         if (currentBstr.Length() > 0) {
-            combined.assign(currentBstr, currentBstr.Length());
+            fullText.assign(currentBstr, currentBstr.Length());
         }
+
+        CComPtr<IUIAutomationTextPattern> textPattern;
+        hr = focused->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&textPattern));
+
+        // 拿不到 TextPattern 就退回旧的"追加到末尾"逻辑，保证兼容性
+        if (FAILED(hr) || !textPattern) {
+            std::wstring combined = fullText + wideText;
+            CComBSTR bstrCombined(combined.c_str());
+            return SUCCEEDED(valuePattern->SetValue(bstrCombined));
+        }
+
+        CComPtr<IUIAutomationTextRange> docRange;
+        hr = textPattern->get_DocumentRange(&docRange);
+        if (FAILED(hr) || !docRange) {
+            std::wstring combined = fullText + wideText;
+            CComBSTR bstrCombined(combined.c_str());
+            return SUCCEEDED(valuePattern->SetValue(bstrCombined));
+        }
+
+        // 默认插入到文末（找不到光标位置时的兜底）
+        int selStart = static_cast<int>(fullText.size());
+        int selEnd = selStart;
+
+        CComPtr<IUIAutomationTextRangeArray> selection;
+        hr = textPattern->GetSelection(&selection);
+        if (SUCCEEDED(hr) && selection) {
+            int count = 0;
+            selection->get_Length(&count);
+            if (count > 0) {
+                CComPtr<IUIAutomationTextRange> selRange;
+                selection->GetElement(0, &selRange);
+                if (selRange) {
+                    // 通过"文档起点 -> 选区起点"这段文字的长度，反推选区起点的字符偏移
+                    CComPtr<IUIAutomationTextRange> preStart;
+                    docRange->Clone(&preStart);
+                    preStart->MoveEndpointByRange(
+                        TextPatternRangeEndpoint_End,
+                        selRange, TextPatternRangeEndpoint_Start);
+                    CComBSTR preStartText;
+                    preStart->GetText(-1, &preStartText);
+                    selStart = preStartText.Length();
+
+                    // 同理反推选区终点的偏移（如果只是光标，selEnd == selStart）
+                    CComPtr<IUIAutomationTextRange> preEnd;
+                    docRange->Clone(&preEnd);
+                    preEnd->MoveEndpointByRange(
+                        TextPatternRangeEndpoint_End,
+                        selRange, TextPatternRangeEndpoint_End);
+                    CComBSTR preEndText;
+                    preEnd->GetText(-1, &preEndText);
+                    selEnd = preEndText.Length();
+                }
+            }
+        }
+
+        // 边界保护，避免偏移超出实际文本长度
+        const int textLen = static_cast<int>(fullText.size());
+        selStart = std::clamp(selStart, 0, textLen);
+        selEnd = std::clamp(selEnd, selStart, textLen);
+
+        // 拼接：光标前 + 新插入文本 + （如有选区则跳过被选中的部分）光标后
+        std::wstring combined;
+        combined.reserve(fullText.size() + wcslen(wideText));
+        combined.append(fullText, 0, selStart);
         combined.append(wideText);
+        combined.append(fullText, selEnd, std::wstring::npos);
 
         CComBSTR bstrCombined(combined.c_str());
         hr = valuePattern->SetValue(bstrCombined);
@@ -146,25 +211,30 @@ private:
             return false;
         }
 
-        // 把光标/选区移到末尾
-        CComPtr<IUIAutomationTextPattern> textPattern;
-        hr = focused->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&textPattern));
-        if (SUCCEEDED(hr) && textPattern) {
-            CComPtr<IUIAutomationTextRange> docRange;
-            hr = textPattern->get_DocumentRange(&docRange);
-            if (SUCCEEDED(hr) && docRange) {
-                hr = docRange->MoveEndpointByRange(
-                    TextPatternRangeEndpoint_Start,
-                    docRange,
-                    TextPatternRangeEndpoint_End);
-                if (SUCCEEDED(hr)) {
-                    docRange->Select();
-                }
-            }
+        const int caretPos = selStart + static_cast<int>(wcslen(wideText));
+        CComPtr<IUIAutomationTextRange> newDocRange;
+        hr = textPattern->get_DocumentRange(&newDocRange);
+        if (SUCCEEDED(hr) && newDocRange) {
+            CComPtr<IUIAutomationTextRange> caretRange;
+            newDocRange->Clone(&caretRange);
+
+            caretRange->MoveEndpointByRange(
+                TextPatternRangeEndpoint_End,
+                caretRange, TextPatternRangeEndpoint_Start);
+
+            int moved = 0;
+            caretRange->MoveEndpointByUnit(
+                TextPatternRangeEndpoint_Start, TextUnit_Character, caretPos, &moved);
+
+            caretRange->MoveEndpointByRange(
+                TextPatternRangeEndpoint_End,
+                caretRange, TextPatternRangeEndpoint_Start);
+
+            caretRange->Select();
         }
+
         return true;
     }
-
 private:
     CComPtr<IUIAutomation> m_automation;
 

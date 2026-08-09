@@ -669,6 +669,12 @@ void MainWin::onHotkeyPressed() {
 
     QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
                                                       config.sherpa.localModelRepoId);
+    if (!m_sherpaInstaller->isInstalled(repoId)) {
+        LOG_ERROR("当前模型没有安装，请先安装");
+        m_sphereOverlay->hideOverlay();
+        return;
+    }
+    
     if (m_sherpaInstaller->isInstalling(repoId)){
         LOG_ERROR("当前模型正在安装中");
         m_sphereOverlay->hideOverlay();
@@ -710,6 +716,9 @@ void MainWin::onStateChanged(WorkflowState state)
         });
         break;
     case WorkflowState::Error:
+        QTimer::singleShot(200, [this]() {
+            m_sphereOverlay->hideOverlay();
+            });
         break;
     default:
         break;
@@ -833,6 +842,7 @@ void MainWin::onSaveConfig()
         LOG_INFO("配置保存成功");
 		LOG_DEBUG("Save Configuration Success");
         m_workflow->applyRecorderConfig();
+        ui->shortcut_edit->setShortCut(uiConfig.hotkey);
     }
     else {
         LOG_ERROR("Save Configuration Failed");

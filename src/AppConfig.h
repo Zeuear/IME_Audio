@@ -12,7 +12,7 @@ enum class AsrBackendKind {
 
 struct AudioConfig {
     static constexpr int kInvalidDeviceId = -1;
-    static const QString kDefaultDeviceName;
+    inline static const QString kDefaultDeviceName = QStringLiteral("系统默认录音设备");
 
     int deviceId = kInvalidDeviceId;
     QString deviceName = kDefaultDeviceName;
@@ -61,6 +61,7 @@ struct AppConfig {
     SherpaConfig sherpa;
     QString gladiaKey;
     QString groqKey;
+    QString geminiKey;
 
     // 润色和翻译
     PolishConfig polish;

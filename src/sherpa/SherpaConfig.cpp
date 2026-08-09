@@ -787,8 +787,9 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
             const auto& sub = entry.getter();
             for (const auto& pair : sub) {
                 ModelDescriptor d = pair.second;
-                d.language = entry.languageName;   // 注入语言，供 punc 判定
-                // 自带标点的模型（SenseVoice/Canary）→ 不绑定神经 punc
+
+                // 排除标点符号
+                d.language = entry.languageName;   
                 if (d.arch == ModelArch::SenseVoice || d.arch == ModelArch::Canary) {
                     d.hasBuiltinPunctuation = true;
                 }
@@ -799,13 +800,6 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
         }();
     return merged;
 }
-
-// ---- 全局共享神经标点模型 ----
-const QString ModelRegistry::NeuralPunctModel::repoId =
-    "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12";
-const QString ModelRegistry::NeuralPunctModel::archiveUrl =
-    "https://github.com/k2-fsa/sherpa-onnx/releases/download/punct-models/"
-    "sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12.tar.bz2";
 
 QString ModelRegistry::NeuralPunctModel::sharedDir()
 {

@@ -37,6 +37,9 @@ void Downloader::start(const QUrl& url, const QString& savePath)
 
     QNetworkRequest req(url);
     req.setAttribute(QNetworkRequest::CacheSaveControlAttribute, false);
+    // 强制 HTTP/1.1：部分模型服务器（HuggingFace 等）与 Qt 的 HTTP/2 实现握手失败，
+    // 会报 "HTTP/2 protocol error" / QNetworkReply::ProtocolError。关闭后可正常下载。
+    req.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
 
     m_reply = m_nam->get(req);
 

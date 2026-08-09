@@ -3,6 +3,15 @@
 #include "InputInjector.h"
 #include <QMetaObject>
 
+/*
+* 运行流程
+1. 加载模型   --> 显示加载页面，如果加载失败，则关闭页面
+2. 开始录音   --> 显示出录音声谱界面，如果没有声音一段时间关闭窗口，如果有声音则显示窗口, 如果有错误则关闭窗口，提示错误
+3. 转录音频   --> 显示出转录页面，转录结束后，如果关闭continue模式，则证明是按下停止之后转录的，这时关闭转录窗口，如果是开启
+                  continue模式，则会触发Process模型，如果没有声音则会自动停止，同时也会触发Recording。因为接下来还会继续录音
+4. 打印转录   --> 这个不会受影响。
+*/
+
 WorkflowManager::WorkflowManager(const AppConfig &config, QObject *parent) : QObject(parent), m_config(config) {}
 
 void WorkflowManager::initialize(IRecorder *recorder,
@@ -75,7 +84,7 @@ void WorkflowManager::proceedToRecording() {
     if (m_currentState != WorkflowState::Loading) return;  // 防御：非 Loading 态不继续
     if (m_config.backend == AsrBackendKind::Sherpa && !m_sherpaManager->isModelLoaded()) {
         transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
-        LOG_ERROR("Model failed to load");
+        LOG_ERROR("模型加载失败");
         return;
     }
     transitionTo(WorkflowState::Recording, WorkflowEvent::ModelLoaded);
@@ -136,9 +145,8 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
     }
 
     if (m_pending == 0) {
-        // 冲刷完最后一句：依是否仍在停止冲刷决定落点（m_stopping 为持久意图，跨 Stopping→Transcribing 不丢）
-        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording,
-                     WorkflowEvent::AllTranscribed);
+        transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
+        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording, WorkflowEvent::AllTranscribed);
     }else if (m_currentState != WorkflowState::Stopping) {
         // 仍有待转录句且未在停止冲刷中：进入 Processing 等待下一句
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);

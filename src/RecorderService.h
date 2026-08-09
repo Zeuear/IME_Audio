@@ -302,14 +302,7 @@ public:
 public slots:
     void playTestTone();
 
-signals:
-    void utteranceReady(const QByteArray& pcmData, int sampleRate);
 
-    // 波形动画/UI 状态展示用
-    void levelUpdated(float rmsNormalized);
-    void voiceStarted();
-    void voiceStopped();
-    void spectrumUpdated(const QVector<float>& bands); 
 
 private slots:
     void onAudioDataReady();

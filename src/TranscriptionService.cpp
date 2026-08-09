@@ -17,7 +17,7 @@ TranscriptionService::TranscriptionService(
     SherpaManager* sherpaManager,
     TextPolishService* textPolishService,
     const AppConfig& config, QObject *parent)
-    : QObject(parent),
+    : ITranscription(parent),
       m_config(config),
       m_manager(networkManager),
       m_sherpaManager(sherpaManager),

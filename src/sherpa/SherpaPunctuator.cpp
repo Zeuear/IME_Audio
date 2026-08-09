@@ -7,8 +7,7 @@
 
 SherpaPunctuator::SherpaPunctuator(QObject* parent)
     : QObject(parent)
-{
-}
+{}
 
 SherpaPunctuator::~SherpaPunctuator()
 {
@@ -17,7 +16,7 @@ SherpaPunctuator::~SherpaPunctuator()
 
 bool SherpaPunctuator::load(const QString& modelDir)
 {
-    unload(); // 先清理旧模型
+    unload();
 
     const QString modelFile = QDir(modelDir).filePath("model.onnx");
     if (!QFileInfo::exists(modelFile)) {
@@ -43,9 +42,8 @@ bool SherpaPunctuator::isLoaded() const
 QString SherpaPunctuator::punctuate(const QString& text)
 {
     if (!isLoaded() || text.isEmpty()) {
-        return text; // 未加载：原样返回，交给上层启发式兜底
+        return text;
     }
-    // sherpa 标点模型按 UTF-8 文本处理
     const std::string in = text.toUtf8().toStdString();
     const std::string out = m_punct->AddPunctuation(in);
     return QString::fromUtf8(out.c_str(), static_cast<int>(out.size()));

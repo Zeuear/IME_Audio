@@ -20,10 +20,6 @@ public:
 
     void transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
 
-signals:
-    void transcriptionFinished(bool success, const QString &rawText,
-                                const QString &finalText, const QString &error);
-
 private:
     void transcribeGroq(const QByteArray &wavBytes);
     void transcribeGladia(const QByteArray &wavBytes);

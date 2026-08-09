@@ -188,9 +188,10 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         const ModelDescriptor* desc = ModelRegistry::Find(repoId);
         m_punctuatorBound = desc && ModelRegistry::shouldUseNeuralPunct(*desc)
                             && ModelRegistry::NeuralPunctModel::isInstalled();
+
         if (m_punctuatorBound) {
             if (!m_punctuator->load(ModelRegistry::NeuralPunctModel::sharedDir())) {
-                LOG_WARN("神经标点模型加载失败，回退启发式标点");
+                LOG_WARN("Neural punctuation model failed to load; reverting to heuristic punctuation.");
                 m_punctuatorBound = false;
             }
         } else {
@@ -346,7 +347,7 @@ void SherpaManager::workerLoop()
         case TaskType::Transcribe: {
             QString text, error;
             bool success = transcribeSync(task.pcmData, task.sampleRate, &text, &error);
-            // 神经标点：在转录线程内对源语言文本加标点（先于替换规则/翻译）
+
             if (success && m_punctuatorBound && m_punctuator->isLoaded()) {
                 text = m_punctuator->punctuate(text);
             }
@@ -423,19 +424,19 @@ void SherpaInstaller::installModel(const QString& repoId)
     }
     emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
 
-    // 神经标点：该模型需要且共享 punc 尚未安装 → 作为独立共享组入队下载一次
+    // 神经标点
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);
-    if (desc && ModelRegistry::shouldUseNeuralPunct(*desc)
-        && !ModelRegistry::NeuralPunctModel::isInstalled()) {
+    if (ModelRegistry::shouldUseNeuralPunct(*desc) && !ModelRegistry::NeuralPunctModel::isInstalled()) {
         const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;
-        if (!m_downloadManager->tasksInGroup(puncGroup).isEmpty()) {
-            // 已入队，避免重复
-        } else {
+        const QString groupName = "神经标点模型(zh-en)";
+
+        if (m_downloadManager->tasksInGroup(puncGroup).isEmpty()) {
             m_downloadManager->addGroupTask(puncGroup,
-                "神经标点模型(zh-en)",
+                groupName,
                 QUrl(ModelRegistry::NeuralPunctModel::archiveUrl),
-                ModelConfigFactory::getSherpaRoot() + "/punct-zh-en.tar.bz2");
-            emit installGroupStarted(puncGroup, "神经标点模型(zh-en)", 1);
+                ModelRegistry::NeuralPunctModel::localPath);
+
+            emit installGroupStarted(puncGroup, groupName, 1);
         }
     }
 }
@@ -483,19 +484,18 @@ void SherpaInstaller::onGroupFileError(const QString& groupId, const QString&, c
 
 void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
 {
-    // 共享神经标点组：解压到 sharedDir，不触发 ASR 加载
     const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;
     if (groupId == puncGroup) {
         if (!success) {
-            emit installGroupFinished(puncGroup, false, tr("神经标点模型下载失败"));
+            emit installGroupFinished(puncGroup, false, tr("Neural punctuation model download failed"));
             return;
         }
-        const QString archivePath = ModelConfigFactory::getSherpaRoot() + "/punct-zh-en.tar.bz2";
+        const QString archivePath = ModelRegistry::NeuralPunctModel::localPath;
         const QString targetDir = ModelRegistry::NeuralPunctModel::sharedDir();
         auto* task = new ExtractTask(archivePath, targetDir);
         QObject::connect(task, &ExtractTask::extractFinished, this,
             [this, puncGroup](bool ok) {
-                emit installGroupFinished(puncGroup, ok, ok ? tr("神经标点模型就绪") : tr("神经标点解压失败"));
+                emit installGroupFinished(puncGroup, ok, ok ? tr("Neural punctuation model ready") : tr("Neural punctuation decompression failed"));
             });
         m_extractQueue->addTask(task);
         return;

@@ -100,7 +100,7 @@ struct Qwen3AsrFiles {
     QString extractedDirName;                   // 解压后归档内的目录名,用于识别、之后移动内容到目标目录
     QString encoderFile = "encoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
     QString decoderFile = "decoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
-    QString convFile = "conv_frontend.onnx";  // 用于判断"是否已安装"的探测文件
+    QString convFile = "conv_frontend.onnx";    // 用于判断"是否已安装"的探测文件
     QString tokenizer = "tokenizer";
     QString hotwords;
 };
@@ -370,20 +370,18 @@ public:
     };
 
     /**
-     * @brief 全局共享神经标点模型（中英混排，仅下载一次，所有需要标点的模型复用）。
-     * 目标目录：<sherpaRoot>/punct-zh-en/
+     * @brief 全局共享神经标点模型。
      */
     struct NeuralPunctModel {
-        static const QString repoId;        // "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12"
-        static const QString archiveUrl;    // GitHub release 下载地址
-        static QString sharedDir();         // 本地解压目录
-        static bool isInstalled();          // 共享目录是否已就绪（含 model.onnx）
+        inline static const QString repoId =
+            "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12";
+        inline static const QString archiveUrl =
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12.tar.bz2";
+        inline static const QString localPath = ModelConfigFactory::getSherpaRoot() + "/punct-zh-en.tar.bz2";
+        static QString sharedDir();         
+        static bool isInstalled();        
     };
 
-    /**
-     * @brief 该 ASR 模型是否应绑定并使用神经标点。
-     * 判定：punctMode==Auto && !hasBuiltinPunctuation && language∈{Chinese,English}
-     */
     static bool shouldUseNeuralPunct(const ModelDescriptor& desc);
 
     static const ModelDescriptor* Find(const QString& repoId);

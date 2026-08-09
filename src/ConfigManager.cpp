@@ -65,6 +65,9 @@ bool ConfigManager::load() {
     m_config.replaceRules = s.value("replaceRules").toString();
     m_config.continuousMode = s.value("continuousMode", false).toBool();
     m_config.autoStopEnabled = s.value("autoStopEnabled", true).toBool();
+    m_config.geminiKey = s.value("geminiKey").toString();
+    m_config.gladiaKey = s.value("gladiaKey").toString();
+    m_config.groqKey = s.value("groqKey").toString();
 
     s.beginGroup("audio");
     m_config.audio.deviceId = s.value("deviceId", -1).toInt();
@@ -116,6 +119,9 @@ bool ConfigManager::save() {
     s.setValue("replaceRules", m_config.replaceRules);
     s.setValue("continuousMode", m_config.continuousMode.load());
     s.setValue("autoStopEnabled", m_config.autoStopEnabled.load());
+    s.setValue("geminiKey", m_config.geminiKey);
+    s.setValue("gladiaKey", m_config.gladiaKey);
+    s.setValue("groqKey", m_config.groqKey);
 
     s.beginGroup("audio");
     s.setValue("deviceId", m_config.audio.deviceId);
