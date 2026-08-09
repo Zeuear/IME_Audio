@@ -36,6 +36,12 @@ enum class ModelArch {
     Unsupported
 };
 
+/** @brief 神经标点（sherpa-onnx punc）绑定模式。 */
+enum class PunctMode {
+    Auto,   // 默认：需要则绑定全局默认 punc 模型（仅 zh/en 且模型不自带头标点时）
+    Off     // 不绑定神经标点，回退到 TextPostProcessor 启发式
+};
+
 
 struct TransducerFiles {
     QString modelSubfolder;
@@ -123,6 +129,10 @@ struct ModelDescriptor {
     float hotscores;
     int maxActivePaths = 4;
     int numThreads = 2;
+
+    QString language;                       // 由语言表注入（zh/en/...），用于判断是否可绑 punc
+    PunctMode punctMode = PunctMode::Auto; // 神经标点绑定模式
+    bool hasBuiltinPunctuation = false;    // 模型自带标点（SenseVoice/Canary 等）→ 不绑 punc
 
     ModelDescriptor(ModelArch a)
         : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {
@@ -358,6 +368,23 @@ public:
         QString languageName;
         const std::vector<std::pair<QString, ModelDescriptor>>& (*getter)();
     };
+
+    /**
+     * @brief 全局共享神经标点模型（中英混排，仅下载一次，所有需要标点的模型复用）。
+     * 目标目录：<sherpaRoot>/punct-zh-en/
+     */
+    struct NeuralPunctModel {
+        static const QString repoId;        // "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12"
+        static const QString archiveUrl;    // GitHub release 下载地址
+        static QString sharedDir();         // 本地解压目录
+        static bool isInstalled();          // 共享目录是否已就绪（含 model.onnx）
+    };
+
+    /**
+     * @brief 该 ASR 模型是否应绑定并使用神经标点。
+     * 判定：punctMode==Auto && !hasBuiltinPunctuation && language∈{Chinese,English}
+     */
+    static bool shouldUseNeuralPunct(const ModelDescriptor& desc);
 
     static const ModelDescriptor* Find(const QString& repoId);
     static Result GetConfig(const QString& repoId, int numThreads, bool useGpu);

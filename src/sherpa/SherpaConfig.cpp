@@ -786,12 +786,42 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
         for (const auto& entry : LanguageTables()) {
             const auto& sub = entry.getter();
             for (const auto& pair : sub) {
-                t.insert(pair.first, pair.second);
+                ModelDescriptor d = pair.second;
+                d.language = entry.languageName;   // 注入语言，供 punc 判定
+                // 自带标点的模型（SenseVoice/Canary）→ 不绑定神经 punc
+                if (d.arch == ModelArch::SenseVoice || d.arch == ModelArch::Canary) {
+                    d.hasBuiltinPunctuation = true;
+                }
+                t.insert(pair.first, d);
             }
         }
         return t;
         }();
     return merged;
+}
+
+// ---- 全局共享神经标点模型 ----
+const QString ModelRegistry::NeuralPunctModel::repoId =
+    "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12";
+const QString ModelRegistry::NeuralPunctModel::archiveUrl =
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/punct-models/"
+    "sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12.tar.bz2";
+
+QString ModelRegistry::NeuralPunctModel::sharedDir()
+{
+    return ModelConfigFactory::getSherpaRoot() + "/punct-zh-en";
+}
+
+bool ModelRegistry::NeuralPunctModel::isInstalled()
+{
+    return QFileInfo::exists(sharedDir() + "/model.onnx");
+}
+
+bool ModelRegistry::shouldUseNeuralPunct(const ModelDescriptor& desc)
+{
+    if (desc.punctMode == PunctMode::Off) return false;
+    if (desc.hasBuiltinPunctuation) return false;
+    return desc.language == "Chinese" || desc.language == "English";
 }
 
 const std::vector<std::pair<QString, QStringList>>& ModelRegistry::LanguageToModels()

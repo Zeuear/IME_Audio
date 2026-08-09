@@ -18,6 +18,7 @@
 #include "SherpaConfig.h"
 #include "../AppConfig.h"
 #include "interfaces/workflow_interfaces.h"
+#include "SherpaPunctuator.h"
 
 
 
@@ -51,7 +52,6 @@ public slots:
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount); 
-	void modelLoadFinished(bool success);
 
 private:
     bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
@@ -74,6 +74,10 @@ private:
     RecognizerKind m_kind = RecognizerKind::None;
     std::unique_ptr<sherpa_onnx::cxx::OfflineRecognizer> m_offlineRecognizer;
     std::unique_ptr<sherpa_onnx::cxx::OnlineRecognizer>  m_onlineRecognizer;
+
+    // 神经标点：随 ASR 模型一并加载/卸载，由 workerLoop 调用
+    SherpaPunctuator* m_punctuator = nullptr;
+    bool m_punctuatorBound = false;   // 当前 ASR 是否应绑定 punc（shouldUseNeuralPunct）
 
     std::atomic<bool> m_isLoaded{ false };
     std::atomic<bool> m_busyFlag{ false };
