@@ -790,7 +790,10 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
 
                 // 排除标点符号
                 d.language = entry.languageName;   
-                if (d.arch == ModelArch::SenseVoice || d.arch == ModelArch::Canary) {
+                if (d.arch == ModelArch::SenseVoice || 
+                    d.arch == ModelArch::Canary || 
+                    d.arch == ModelArch::Qwen3Asr ||
+                    d.arch == ModelArch::Whisper) {
                     d.hasBuiltinPunctuation = true;
                 }
                 t.insert(pair.first, d);
