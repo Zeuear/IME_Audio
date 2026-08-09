@@ -5,10 +5,11 @@
 #include "TextPolishService.h"
 #include "sherpa/SherpaManager.h"
 #include "TextPostProcessor.h"
+#include "interfaces/workflow_interfaces.h"
 
 // @brief  
 // 统一转录入口：根据 backend 类型分发到 Groq / Sherpa / Gladia / Gemini
-class TranscriptionService : public QObject {
+class TranscriptionService : public ITranscription {
     Q_OBJECT
 public:
     explicit TranscriptionService(QNetworkAccessManager* networkManager, 

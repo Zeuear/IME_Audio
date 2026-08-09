@@ -14,6 +14,9 @@
 
 #include "AppConfig.h"
 #include "WorkflowManager.h"
+#include "RecorderService.h"
+#include "TranscriptionService.h"
+#include "TextPolishService.h"
 #include "ConfigManager.h"
 #include "UpdateManager.h"
 #include "TermsLibraryManager.h"
@@ -321,6 +324,9 @@ void MainWin::setupUiConnections(){
         ui->identification_log_edit->append(result);
     });
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
+    connect(m_workflow, &WorkflowManager::errorOccurred, this, [](const QString& msg) {
+        QMessageBox::warning(nullptr, tr("Error"), msg);
+    });
 
     // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
     connect(m_recorderService, &AudioRecorderService::levelUpdated, m_sphereOverlay, &SphereOverlay::setLevel);

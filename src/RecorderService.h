@@ -12,6 +12,7 @@
 #include "cxx-api.h"
 #include "AppConfig.h"
 #include "utils/SystemAudioEndpointController.h"
+#include "interfaces/workflow_interfaces.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -273,7 +274,7 @@ private:
     const AppConfig& m_config;
 };
 
-class AudioRecorderService: public QObject {
+class AudioRecorderService: public IRecorder {
     Q_OBJECT
 public:
     struct RuntimeStatus {

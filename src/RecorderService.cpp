@@ -13,8 +13,6 @@
 #include <QThread>
 #include "utils/Logger.h"
 
-const QString AudioConfig::kDefaultDeviceName = QStringLiteral("系统默认录音设备");
-
 
 SpectrumWorker::SpectrumWorker(int sampleRate):QObject(nullptr), m_sampleRate(sampleRate){
     m_kissFftCfg = kiss_fftr_alloc(kFftSize, 0, nullptr, nullptr);
@@ -206,7 +204,7 @@ void VadWorker::rebuildDetector()
     m_historyStartSample = 0;
     m_totalSamplesFed = 0;
     m_agcGain = 1.0f;
-    LOG_DEBUG("VAD 模型更新成功");
+    LOG_DEBUG("VAD Model update successful");
 }
 
 
@@ -254,7 +252,7 @@ void VadWorker::reset()
 
 
 
-AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *parent) : QObject(parent), m_config(config) {
+AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *parent) : IRecorder(parent), m_config(config) {
     m_spectrumThread = new QThread(this); 
     m_spectrumWorker = new SpectrumWorker(m_config.audio.sampleRate); 
     m_spectrumWorker->moveToThread(m_spectrumThread); 

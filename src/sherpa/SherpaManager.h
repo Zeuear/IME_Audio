@@ -17,10 +17,11 @@
 #include "utils/ProcessManager.h"
 #include "SherpaConfig.h"
 #include "../AppConfig.h"
+#include "interfaces/workflow_interfaces.h"
 
 
 
-class SherpaManager : public QObject
+class SherpaManager : public ISherpaModel
 {
     Q_OBJECT
 public:

@@ -1,29 +1,28 @@
 #include "WorkflowManager.h"
 #include "utils/Logger.h"
 #include "InputInjector.h"
-#include <QMessageBox>
+#include <QMetaObject>
 
 WorkflowManager::WorkflowManager(const AppConfig &config, QObject *parent) : QObject(parent), m_config(config) {}
 
-void WorkflowManager::initialize(AudioRecorderService *recorder,
-                                TranscriptionService *transcription,
-                                SherpaManager* sherpManager)
+void WorkflowManager::initialize(IRecorder *recorder,
+                                ITranscription *transcription,
+                                ISherpaModel* sherpManager)
 {
     m_recorder = recorder;
     m_transcription = transcription;
     m_sherpaManager = sherpManager;
 
-    // 一句话缓冲完成，交给识别服务
-    connect(m_recorder, &AudioRecorderService::utteranceReady, this, &WorkflowManager::onUtteranceReady);
-    // 识别结果回调
-    connect(m_transcription, &TranscriptionService::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
     // 模型加载完成
-    connect(m_sherpaManager, &SherpaManager::modelLoadFinished, this, &WorkflowManager::onModelLoadFinished);
-
+    connect(m_sherpaManager, &ISherpaModel::modelLoadFinished, this, &WorkflowManager::onModelLoadFinished);
+    // 一句话缓冲完成，交给识别服务
+    connect(m_recorder, &IRecorder::utteranceReady, this, &WorkflowManager::onUtteranceReady);
+    // 识别结果回调
+    connect(m_transcription, &ITranscription::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
+    // 识别结果打印
     connect(this, &WorkflowManager::transcriptionResultReady, this, &WorkflowManager::onInjectText);
 }
 
-// ---- 门面命令 ----
 void WorkflowManager::start() { startRecording(); }
 void WorkflowManager::stop() { stopRecording(); }
 
@@ -54,7 +53,6 @@ WorkflowState WorkflowManager::state() const
     return m_currentState;
 }
 
-// ---- 录音控制 ----
 void WorkflowManager::startRecording() {
     if (m_currentState != WorkflowState::Idle) return;
     LOG_DEBUG("Start Recording");
@@ -65,10 +63,9 @@ void WorkflowManager::startRecording() {
         // 异步加载：loadModelAsync 入队，worker 完成后经 modelLoadFinished 驱动后续
         bool initiated = m_sherpaManager->reloadModel(m_config);
         if (!initiated) {
-            // 已加载且配置相同，不会发 modelLoadFinished —— 直接继续
+            // 已加载且配置相同
             proceedToRecording();
         }
-        // initiated==true 时，onModelLoadFinished 会调用 proceedToRecording
     } else {
         proceedToRecording();
     }
@@ -103,6 +100,8 @@ void WorkflowManager::stopRecording() {
         m_currentState != WorkflowState::Loading) return;
     LOG_DEBUG("Stop Recording");
 
+    // 先置持久“停止/冲刷”意图，再进入 Stopping 态（同步 stateChanged 槽也能看到意图）
+    m_stopping = true;
     transitionTo(WorkflowState::Stopping, WorkflowEvent::StopRequested);
     m_recorder->stopListening();
     // 结束监听：恢复空闲计时
@@ -114,7 +113,6 @@ void WorkflowManager::stopRecording() {
     }
 }
 
-// ---- 转写流水线 ----
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
     LOG_DEBUG(tr("Utterance captured, size: %1 bytes").arg(pcmData.size()));
     m_pending++;
@@ -132,17 +130,16 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
         }
     }
     else {
-        QMessageBox::warning(nullptr, tr("Error"), errorMsg);
+        // 错误上报交由 UI 层展示（WorkflowManager 不直接弹窗，保持可测/平台无关）
+        emit errorOccurred(errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
-        LOG_WARN(errorMsg);
     }
 
     if (m_pending == 0) {
-        // 冲刷完最后一句：依当前是否 Stopping 决定落点（单一事实源 = 状态机）
-        transitionTo(m_currentState == WorkflowState::Stopping ? WorkflowState::Idle : WorkflowState::Recording,
+        // 冲刷完最后一句：依是否仍在停止冲刷决定落点（m_stopping 为持久意图，跨 Stopping→Transcribing 不丢）
+        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording,
                      WorkflowEvent::AllTranscribed);
-    }
-    else if (m_currentState != WorkflowState::Stopping) {
+    }else if (m_currentState != WorkflowState::Stopping) {
         // 仍有待转录句且未在停止冲刷中：进入 Processing 等待下一句
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }
@@ -172,21 +169,21 @@ void WorkflowManager::processInjectQueue() {
     }
 }
 
-// ---- 集中式状态机 ----
 bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, WorkflowState &out) const {
     using S = WorkflowState; using E = WorkflowEvent;
-    // 非法/默认
     out = from;
     switch (evt) {
     case E::StartRequested:      if (from == S::Idle)        { out = S::Loading; return true; } break;
     case E::ModelLoaded:         if (from == S::Loading)     { out = S::Recording; return true; } break;
     case E::ModelLoadFailed:     if (from == S::Loading)     { out = S::Error; return true; } break;
     case E::UtteranceCaptured:   if (from == S::Recording)   { out = S::Transcribing; return true; }
-                                  if (from == S::Processing)  { out = S::Transcribing; return true; } break;
+                                 if (from == S::Processing)  { out = S::Transcribing; return true; }
+                                 if (from == S::Stopping)   { out = S::Transcribing; return true; } break;
     case E::UtteranceTranscribed:if (from == S::Transcribing){ out = S::Processing; return true; }
-                                  if (from == S::Processing)  { out = S::Processing; return true; } break;
-    case E::AllTranscribed:      if (from == S::Stopping)    { out = S::Idle; return true; }
-                                  if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Recording; return true; } break;
+                                 if (from == S::Processing)  { out = S::Processing; return true; } break;
+    case E::AllTranscribed:      // 冲刷落点由持久意图 m_stopping 决定，跨 Stopping→Transcribing 跳转不丢
+                                 if (m_stopping && (from == S::Stopping || from == S::Transcribing || from == S::Processing)) { out = S::Idle; return true; }
+                                 if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Recording; return true; } break;
     case E::StopRequested:       if (from == S::Recording || from == S::Transcribing || from == S::Processing || from == S::Loading) { out = S::Stopping; return true; } break;
     case E::ErrorOccurred:       { out = S::Error; return true; } break;
     }
@@ -204,5 +201,7 @@ void WorkflowManager::transitionTo(WorkflowState newState, WorkflowEvent evt) {
     }
     if (m_currentState == target) return;
     m_currentState = target;
+    // 进入终止态时清除停止意图，避免与 m_stopping 标志失同步
+    if (target == WorkflowState::Idle || target == WorkflowState::Error) m_stopping = false;
     emit stateChanged(m_currentState);
 }

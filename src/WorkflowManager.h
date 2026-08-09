@@ -2,9 +2,10 @@
 #define WORKFLOWMANAGER_H
 
 #include <QObject>
-#include "RecorderService.h"
-#include "TranscriptionService.h"
+#include <QString>
+#include <QQueue>
 #include "AppConfig.h"
+#include "interfaces/workflow_interfaces.h"
 
 enum class WorkflowState {
     Idle,           // 空闲，等待用户指令
@@ -33,23 +34,23 @@ class WorkflowManager : public QObject {
 public:
     explicit WorkflowManager(const AppConfig &config, QObject *parent = nullptr);
 
-    void initialize(AudioRecorderService *recorder,
-                    TranscriptionService *transcription,
-                    SherpaManager* sherpManager);
+    void initialize(IRecorder *recorder,
+                    ITranscription *transcription,
+                    ISherpaModel* sherpManager);
 
-    // 用户意图级门面命令（替代 UI 直戳底层对象）
-    void start();                              // → startRecording()
-    void stop();                               // → stopRecording()
-    void playTestTone();                       // → m_recorder->playTestTone()
-    void applyRecorderConfig();                // → m_recorder->updateConfig()
-    void preloadModel(const AppConfig& cfg);   // → m_sherpa->loadModelAsync(cfg, false)
-    void togglePause();                        // → m_recorder->pause()/resume()
-
-    WorkflowState state() const;               // 仅供 UI 显示，不用于分支逻辑
+    void start();                            
+    void stop();                             
+    void playTestTone();                      
+    void applyRecorderConfig();               
+    void preloadModel(const AppConfig& cfg);  
+    void togglePause();                      
+    WorkflowState state() const;
+    int pendingCount() const { return m_pending; }   // 测试用：当前待转录句计数              
 
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
+    void errorOccurred(const QString &errorMsg);
 
 private slots:
     void onUtteranceReady(const QByteArray& pcmData, int sampleRate);
@@ -72,13 +73,14 @@ private:
     bool m_injecting = false;
     void processInjectQueue();
 
-    AudioRecorderService *m_recorder = nullptr;
-    SherpaManager* m_sherpaManager = nullptr;
-    TranscriptionService *m_transcription = nullptr;
+    IRecorder *m_recorder = nullptr;
+    ISherpaModel* m_sherpaManager = nullptr;
+    ITranscription *m_transcription = nullptr;
 
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
     int m_pending = 0;          // 状态机内部待转录句计数（替代原 m_pendingTranscriptions）
+    bool m_stopping = false;    // 持久“正在停止/冲刷”意图：跨 Stopping→Transcribing 跳转不丢失；进 Idle/Error 时清除
 };
 
 #endif

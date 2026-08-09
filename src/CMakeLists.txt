@@ -212,6 +212,7 @@ set(QHOTKEY_ROOT "${CMAKE_SOURCE_DIR}/third_party/QHotkey")
 target_include_directories(${TARGET_NAME} PRIVATE ${QHOTKEY_ROOT}/QHotkey)
 
 target_compile_definitions(${TARGET_NAME}
+  PRIVATE NOMINMAX
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 
 
