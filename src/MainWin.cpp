@@ -430,7 +430,7 @@ AppConfig MainWin::extractConfigFromUI() {
 
     // Sherpa 设置 (Sherpa Group)
     uiConfig.sherpa.useGpu = ui->gpu_backend_widget->currentComputeMode() == GpuBackendWidget::ComputeMode::CUDA;
-    uiConfig.sherpa.threads = 4; 
+    uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();;
     uiConfig.sherpa.languageModel = ui->language_comb->currentText();
 	uiConfig.sherpa.localModelRepoId = ui->local_model_comb->currentText();
 
@@ -701,6 +701,13 @@ void MainWin::onStateChanged(WorkflowState state)
     case WorkflowState::Recording:
         m_sphereOverlay->setListening();
         m_sphereOverlay->showAtBottomCenter();
+        if (ConfigManager::instance().config().continuousMode.load()
+            && !m_recorderService->isVoiceActive()) {
+            m_sphereOverlay->hideTimerStart();
+        }
+        else {
+            m_sphereOverlay->hideTimerStop();   
+        }
         break;
     case WorkflowState::Transcribing:
         m_sphereOverlay->hideTimerStop();

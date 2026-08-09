@@ -290,6 +290,7 @@ public:
     void stopListening();
     bool isListening() const;
     bool isPaused() const;
+    bool isVoiceActive() const;
 
     void pause();
     void resume();
@@ -301,8 +302,6 @@ public:
 
 public slots:
     void playTestTone();
-
-
 
 private slots:
     void onAudioDataReady();
@@ -320,11 +319,11 @@ private:
     QAudioSink *m_audioSink = nullptr;
     QBuffer *m_audioBuffer = nullptr;
 
-    // 系统级音频端点控制器（平台解耦：Win 走 Core Audio COM，非 Win 空实现）
+    // 系统级音频端点控制器
     SystemAudioEndpointController m_endpointController;
 
     RuntimeStatus m_status;
-    int m_actualChannels = 1;  // 实际打开设备后的声道数（立体声虚拟声卡时为 2）
+    int m_actualChannels = 1;
     const AppConfig& m_config;
     QByteArray m_segmentBuffer;   
 
@@ -333,6 +332,8 @@ private:
 
     VadWorker* m_vadWorker = nullptr;
     QThread* m_vadThread = nullptr;
+
+    std::atomic<bool> m_voiceActive{ false };
 
     bool writeWavFile(const QString& filePath, const QByteArray& pcmData,
         int sampleRate, int channels, int bitsPerSample) const;

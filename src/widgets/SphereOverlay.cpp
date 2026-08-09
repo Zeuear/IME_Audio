@@ -70,7 +70,6 @@ void SphereOverlay::hideTimerStop() { m_idleFadeTimer->stop(); }
 
 void SphereOverlay::onVoiceStarted()
 {
-    // 人声开始：停 fade 计时并显示监听中（替代原 MainWin lambda 的跨层分支）
     m_idleFadeTimer->stop();
     m_controller->setState(SphereController::Listening);
     showAtBottomCenter();
@@ -78,6 +77,5 @@ void SphereOverlay::onVoiceStarted()
 
 void SphereOverlay::onVoiceStopped()
 {
-    // 人声停止：启动 fade 计时（屏保式淡出）
     m_idleFadeTimer->start();
 }

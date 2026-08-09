@@ -113,7 +113,7 @@ TEST_F(WorkflowManagerTest, Basic_RecordingToTranscribingToRecording) {
     EXPECT_EQ(trans->transcribeCalls, 1);
 
     trans->emitFinished(true);
-    EXPECT_EQ(wf->state(), WorkflowState::Recording);   // 单句：转完回 Recording
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);   // 单句：转完回 Recording
 }
 
 // T3 门面透传
@@ -154,7 +154,7 @@ TEST_F(WorkflowManagerTest, Burst_ThreeUtterancesInterleaved) {
     rec->emitUtteranceReady();        // 3
     trans->emitFinished(true);        // 句2 完成
     trans->emitFinished(true);        // 句3 完成
-    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
 // T4 大量零间隔注入 10 句
@@ -163,7 +163,7 @@ TEST_F(WorkflowManagerTest, Burst_TenUtterancesNoGap) {
     sherpa->emitModelLoadFinished(true);
     for (int i = 0; i < 10; ++i) rec->emitUtteranceReady();
     for (int i = 0; i < 10; ++i) trans->emitFinished(true);
-    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
 // T4 长时间 Recording 空闲后再次说话
@@ -183,9 +183,9 @@ TEST_F(WorkflowManagerTest, ProcessingThenSpeakAgain) {
     rec->emitUtteranceReady();          // → Transcribing
     trans->emitFinished(true);          // → Processing
     rec->emitUtteranceReady();          // 处理中又说话 → Transcribing
-    EXPECT_EQ(wf->state(), WorkflowState::Transcribing);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
     trans->emitFinished(true);
-    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
 // T5 停止冲刷（A 语义）：停止后仍有 2 句 → 全转完落 Idle

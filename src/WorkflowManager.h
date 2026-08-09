@@ -11,7 +11,6 @@ enum class WorkflowState {
     Idle,           // 空闲，等待用户指令
     Loading,        // 正在加载模型或初始化
     Recording,      // 正在录音
-    SavingAudio,    // 正在停止录音并保存文件
     Transcribing,   // 正在调用后端进行转录
     Processing,     // 正在进行文本后处理
     Stopping,       // 已请求停止，冲刷剩余待转录句
@@ -45,7 +44,7 @@ public:
     void preloadModel(const AppConfig& cfg);  
     void togglePause();                      
     WorkflowState state() const;
-    int pendingCount() const { return m_pending; }   // 测试用：当前待转录句计数              
+    int pendingCount() const { return m_pending; }              
 
 signals:
     void stateChanged(WorkflowState newState);
@@ -59,15 +58,12 @@ private slots:
     void onModelLoadFinished(bool ok);
 
 private:
-    // 内部实现（门面命令的具体执行）
     void startRecording();
     void stopRecording();
 
-    // 集中式状态转移：校验合法性，非法转移打日志忽略
     void transitionTo(WorkflowState newState, WorkflowEvent evt);
     bool canTransition(WorkflowState from, WorkflowEvent evt, WorkflowState &out) const;
-
-    void proceedToRecording();   // Loading 成功后真正开始监听
+    void proceedToRecording(); 
 
     QQueue<QString> m_injectQueue;
     bool m_injecting = false;
@@ -80,8 +76,6 @@ private:
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
     int m_pending = 0;         
-    std::atomic<bool> m_stopping{ false };
-    bool m_forceStop = false;    // 连续模式用户显式停止：冲刷后强制进 Idle 关窗（区别于常驻流转）
 };
 
 #endif

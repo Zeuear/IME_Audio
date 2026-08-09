@@ -404,6 +404,7 @@ bool AudioRecorderService::startListening() {
     m_status = RuntimeStatus{};
     m_status.isListening = true;
     m_segmentBuffer.clear();
+    m_voiceActive = false;
 
     emit voiceStarted();
     return true;
@@ -411,6 +412,7 @@ bool AudioRecorderService::startListening() {
 
 void AudioRecorderService::stopListening() {
     if (!m_audioSource) return;
+    m_voiceActive = false;
 
     // 恢复系统原来的默认播放/输入设备（若本会话切换过）。控制器内部判断是否需恢复。
     m_endpointController.restore();
@@ -476,11 +478,13 @@ void AudioRecorderService::onAudioDataReady() {
 
 void AudioRecorderService::onVadSpeechStarted()
 {
+    m_voiceActive = true;
     emit voiceStarted();   
 }
 
 void AudioRecorderService::onVadSpeechEnded()
 {
+    m_voiceActive = false;
     emit voiceStopped();   
 }
 
@@ -514,6 +518,7 @@ void AudioRecorderService::finalizeSegmentIfNeeded(bool forceCut)
 bool AudioRecorderService::isListening() const { return m_status.isListening; }
 bool AudioRecorderService::isPaused() const { return m_status.isPaused; }
 AudioRecorderService::RuntimeStatus AudioRecorderService::runtimeStatus() const { return m_status; }
+bool AudioRecorderService::isVoiceActive() const { return m_voiceActive.load(); }
 
 bool AudioRecorderService::writeWavFile(const QString& filePath, const QByteArray& pcmData,
     int sampleRate, int channels, int bitsPerSample) const

@@ -65,7 +65,6 @@ set(TEST_DEPS
     # 平台解耦的系统音频端点控制器（纯 C++，Win 下用 Core Audio COM）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkflowManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputInjector.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/AppConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/interfaces/workflow_interfaces.h
     # 神经标点：SherpaPunctuator 封装 + SherpaConfig 的 shouldUseNeuralPunct 判定
