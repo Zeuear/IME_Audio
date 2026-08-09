@@ -11,15 +11,13 @@
 #include <memory>
 #include <functional>
 #include <variant>
-#include "cxx-api.h"
 
+#include "../AppConfig.h"
 #include "utils/DownloadManager.h"
 #include "utils/ProcessManager.h"
-#include "SherpaConfig.h"
-#include "../AppConfig.h"
 #include "interfaces/workflow_interfaces.h"
 #include "SherpaPunctuator.h"
-
+#include "SherpaConfig.h"
 
 
 class SherpaManager : public ISherpaModel

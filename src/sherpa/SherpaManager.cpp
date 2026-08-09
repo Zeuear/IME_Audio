@@ -11,6 +11,7 @@
 #include "../ConfigManager.h"
 
 
+
 SherpaManager::SherpaManager(QObject* parent)
     : ISherpaModel(parent), m_isLoaded(false)
 {

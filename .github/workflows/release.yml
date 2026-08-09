@@ -23,9 +23,9 @@ jobs:
           - os: windows-latest  
             platform: windows
             asset_name: ImeAudio_Windows_x64.exe 
-          - os: ubuntu-22.04
-            platform: linux
-            asset_name: ImeAudio-x86_64.AppImage
+          # - os: ubuntu-22.04
+          #   platform: linux
+          #   asset_name: ImeAudio-x86_64.AppImage
           - os: macos-latest
             platform: macos
             asset_name: ImeAudio_macOS.dmg

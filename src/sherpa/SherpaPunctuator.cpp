@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMutexLocker>
+#include "cxx-api.h"
 
 SherpaPunctuator::SherpaPunctuator(QObject* parent)
     : QObject(parent)

@@ -6,7 +6,6 @@
 #include <QDir>
 #include <memory>
 
-#include "cxx-api.h"
 
 namespace sherpa_onnx::cxx {
     class OfflinePunctuation;
