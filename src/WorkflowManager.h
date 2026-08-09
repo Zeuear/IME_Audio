@@ -79,8 +79,9 @@ private:
 
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
-    int m_pending = 0;          // 状态机内部待转录句计数（替代原 m_pendingTranscriptions）
-    bool m_stopping = false;    // 持久“正在停止/冲刷”意图：跨 Stopping→Transcribing 跳转不丢失；进 Idle/Error 时清除
+    int m_pending = 0;         
+    std::atomic<bool> m_stopping{ false };
+    bool m_forceStop = false;    // 连续模式用户显式停止：冲刷后强制进 Idle 关窗（区别于常驻流转）
 };
 
 #endif

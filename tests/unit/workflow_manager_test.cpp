@@ -291,6 +291,60 @@ TEST_F(WorkflowManagerTest, ContinuousModeOff_StopThenMultipleUtterances) {
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
+// ---- 连续模式：m_stopping 不得触发关窗（回归 T6 续）----
+
+class WorkflowManagerContinuousTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        config.continuousMode.store(true);   // 关键：开启连续监听
+        rec = new FakeRecorder;
+        trans = new FakeTranscription;
+        sherpa = new FakeSherpaModel;
+        wf = new WorkflowManager(config);
+        wf->initialize(rec, trans, sherpa);
+        rec->setParent(wf); trans->setParent(wf); sherpa->setParent(wf);
+    }
+    void TearDown() override { delete wf; }
+
+    AppConfig config;
+    FakeRecorder* rec = nullptr;
+    FakeTranscription* trans = nullptr;
+    FakeSherpaModel* sherpa = nullptr;
+    WorkflowManager* wf = nullptr;
+};
+
+// 连续模式：一句转录完成后应回到 Recording 常驻，绝不因冲刷关窗
+TEST_F(WorkflowManagerContinuousTest, StaysRecordingAfterTranscription) {
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    rec->emitUtteranceReady();
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);   // 非 Idle/关窗
+}
+
+// 连续模式：正常多句流转不关窗（模拟一会儿变 true 的历史残留场景）
+TEST_F(WorkflowManagerContinuousTest, MultipleUtterancesStayRecording) {
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    for (int i = 0; i < 3; ++i) {
+        rec->emitUtteranceReady();
+        trans->emitFinished(true);
+    }
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+}
+
+// 连续模式：用户显式 stop 仍应真正关窗（forceStop 路径）
+TEST_F(WorkflowManagerContinuousTest, ExplicitStopClosesWindow) {
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    rec->emitUtteranceReady();
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+
+    wf->stop();                       // 连续模式下显式停止
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+}
+
 #include "workflow_manager_test.moc"
 
 

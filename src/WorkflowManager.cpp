@@ -69,7 +69,6 @@ void WorkflowManager::startRecording() {
     m_sherpaManager->pauseIdleTimer();
 
     if (m_config.backend == AsrBackendKind::Sherpa) {
-        // 异步加载：loadModelAsync 入队，worker 完成后经 modelLoadFinished 驱动后续
         bool initiated = m_sherpaManager->reloadModel(m_config);
         if (!initiated) {
             // 已加载且配置相同
@@ -81,7 +80,7 @@ void WorkflowManager::startRecording() {
 }
 
 void WorkflowManager::proceedToRecording() {
-    if (m_currentState != WorkflowState::Loading) return;  // 防御：非 Loading 态不继续
+    if (m_currentState != WorkflowState::Loading) return; 
     if (m_config.backend == AsrBackendKind::Sherpa && !m_sherpaManager->isModelLoaded()) {
         transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
         LOG_ERROR("模型加载失败");
@@ -96,7 +95,6 @@ void WorkflowManager::proceedToRecording() {
 void WorkflowManager::onModelLoadFinished(bool ok) {
     if (ok) LOG_INFO("模型加载完成");
     else LOG_ERROR("模型加载失败");
-    // 只在 Loading 态响应（避免重复/延迟回调干扰）
     if (m_currentState != WorkflowState::Loading) return;
     if (ok) proceedToRecording();
     else transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
@@ -109,14 +107,11 @@ void WorkflowManager::stopRecording() {
         m_currentState != WorkflowState::Loading) return;
     LOG_DEBUG("Stop Recording");
 
-    // 先置持久“停止/冲刷”意图，再进入 Stopping 态（同步 stateChanged 槽也能看到意图）
-    m_stopping = true;
+    m_stopping.store(true);
     transitionTo(WorkflowState::Stopping, WorkflowEvent::StopRequested);
     m_recorder->stopListening();
-    // 结束监听：恢复空闲计时
     m_sherpaManager->resumeIdleTimer();
 
-    // 冲刷：若没有待转录句，立即进入 Idle；否则等最后一句转录完由 AllTranscribed 落 Idle
     if (m_pending == 0) {
         transitionTo(WorkflowState::Idle, WorkflowEvent::AllTranscribed);
     }
@@ -139,16 +134,14 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
         }
     }
     else {
-        // 错误上报交由 UI 层展示（WorkflowManager 不直接弹窗，保持可测/平台无关）
         emit errorOccurred(errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
     }
 
     if (m_pending == 0) {
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
-        transitionTo(m_stopping ? WorkflowState::Idle : WorkflowState::Recording, WorkflowEvent::AllTranscribed);
+        transitionTo(WorkflowState::Recording, WorkflowEvent::AllTranscribed);
     }else if (m_currentState != WorkflowState::Stopping) {
-        // 仍有待转录句且未在停止冲刷中：进入 Processing 等待下一句
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }
 }
@@ -189,7 +182,8 @@ bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, Workf
                                  if (from == S::Stopping)   { out = S::Transcribing; return true; } break;
     case E::UtteranceTranscribed:if (from == S::Transcribing){ out = S::Processing; return true; }
                                  if (from == S::Processing)  { out = S::Processing; return true; } break;
-    case E::AllTranscribed:      // 冲刷落点由持久意图 m_stopping 决定，跨 Stopping→Transcribing 跳转不丢
+    case E::AllTranscribed:      if (m_forceStop) { out = S::Idle; return true; }   // 连续模式用户显式停止
+                                 if (m_config.continuousMode) { out = S::Recording; return true; } // 连续模式常驻监听，不因转录完成关窗
                                  if (m_stopping && (from == S::Stopping || from == S::Transcribing || from == S::Processing)) { out = S::Idle; return true; }
                                  if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Recording; return true; } break;
     case E::StopRequested:       if (from == S::Recording || from == S::Transcribing || from == S::Processing || from == S::Loading) { out = S::Stopping; return true; } break;
@@ -209,7 +203,9 @@ void WorkflowManager::transitionTo(WorkflowState newState, WorkflowEvent evt) {
     }
     if (m_currentState == target) return;
     m_currentState = target;
-    // 进入终止态时清除停止意图，避免与 m_stopping 标志失同步
-    if (target == WorkflowState::Idle || target == WorkflowState::Error) m_stopping = false;
+    if (target == WorkflowState::Idle || target == WorkflowState::Error) {
+        m_stopping = false;
+        m_forceStop = false;
+    }
     emit stateChanged(m_currentState);
 }
