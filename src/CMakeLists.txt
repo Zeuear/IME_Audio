@@ -198,10 +198,6 @@ set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
 target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
 target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_compile_definitions(${TARGET_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
-endif()
-
 # ============================================================
 # QT工具
 # ============================================================
