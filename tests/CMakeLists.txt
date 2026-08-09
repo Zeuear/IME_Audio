@@ -70,8 +70,30 @@ set(TEST_DEPS
 )
 
 add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})
-target_include_directories(imeaudio_tests PRIVATE ${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx/include)
-target_link_libraries(imeaudio_tests gtest gtest_main Qt6::Core Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::Concurrent imm32)
+
+
+if(WIN32)
+    target_link_libraries(imeaudio_tests 
+        gtest 
+        gtest_main 
+        Qt6::Core 
+        Qt6::Widgets 
+        Qt6::Network 
+        Qt6::Multimedia 
+        Qt6::Concurrent
+        imm32
+    )
+else()
+    target_link_libraries(imeaudio_tests 
+        gtest 
+        gtest_main 
+        Qt6::Core 
+        Qt6::Widgets 
+        Qt6::Network 
+        Qt6::Multimedia 
+        Qt6::Concurrent
+    )
+endif()
 
 # Register with CTest (gtest_discover_tests enumerates each TEST case as a CTest entry)
 include(GoogleTest)
