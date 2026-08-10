@@ -123,7 +123,7 @@ void WorkflowManager::stopRecording() {
 }
 
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
-    LOG_DEBUG(tr("Utterance captured, size: %1 bytes").arg(pcmData.size()));
+    LOG_DEBUG(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
     m_pending++;
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);

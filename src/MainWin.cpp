@@ -143,13 +143,6 @@ void MainWin::initialize() {
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
-    // 术语库错误/信息统一收口到 notify（成功→Success，冲突→Warning，其余→Error）
-    connect(ui->terms_widget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
-        NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
-                            : title.contains(tr("冲突")) ? NotifyLevel::Warning
-                            : NotifyLevel::Error;
-        notify(level, title, cause);
-    });
 }  
 
 void MainWin::setupUiConnections(){
@@ -351,6 +344,7 @@ void MainWin::setupUiConnections(){
             if (success && !repoId.isEmpty()) {
                 const AppConfig& config = ConfigManager::instance().config();
                 m_workflow->preloadModel(config);
+                notify(NotifyLevel::Info, tr("模型加载成功"));
             }
         });
 
@@ -377,6 +371,13 @@ void MainWin::setupUiConnections(){
 		ConfigManager::instance().save();
 
         ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
+    });
+
+    connect(ui->terms_widget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
+        NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
+                            : title.contains(tr("冲突")) ? NotifyLevel::Warning
+                            : NotifyLevel::Error;
+        notify(level, title, cause);
     });
 
     connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);

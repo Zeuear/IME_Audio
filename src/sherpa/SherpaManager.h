@@ -50,7 +50,7 @@ public slots:
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
-    // CUDA 初始化失败回退 CPU（非错误，仅提示）
+    // CUDA 初始化失败回退 CPU
     void gpuFallbackToCpu();
 
 private:
