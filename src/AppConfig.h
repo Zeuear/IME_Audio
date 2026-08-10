@@ -54,7 +54,7 @@ struct TermsConfig {
 };
 
 struct AppConfig {
-    AsrBackendKind backend;
+    AsrBackendKind backend = AsrBackendKind::Sherpa;
     AudioConfig audio;
     
     // 转录
