@@ -23,7 +23,7 @@ SherpaManager::SherpaManager(QObject* parent)
     m_idleTimer->setSingleShot(true);
     m_idleTimer->setInterval(kIdleUnloadMs);
     connect(m_idleTimer, &QTimer::timeout, this, [this]() {
-        LOG_INFO("模型空闲超过 30 分钟，自动卸载以释放内存");
+        LOG_INFO("Model idle over 30 minutes, auto-unloaded to free memory");
         unloadModel();
     });
 }
@@ -84,7 +84,7 @@ void SherpaManager::unloadModel()
 
     m_punctuator->unload();
     LOG_DEBUG("Sherpa model unloaded, memory released.");
-    LOG_INFO("卸载成功");
+    LOG_INFO("Unload succeeded");
 }
 
 bool SherpaManager::reloadModel(const AppConfig& config) {
@@ -380,7 +380,7 @@ SherpaInstaller::SherpaInstaller(QNetworkAccessManager* nam, QObject* parent) : 
     connect(this, &SherpaInstaller::installGroupFinished, this, [this](const QString&repoId, bool success, const QString& msg) { 
         if (success) {
             LOG_DEBUG(msg);
-            LOG_INFO("下载并配置完成");
+            LOG_INFO("Download and configure completed");
         }else {
             LOG_ERROR(msg);
         }
@@ -421,7 +421,7 @@ void SherpaInstaller::installModel(const QString& repoId)
                     QUrl(ModelRegistry::NeuralPunctModel::archiveUrl),
                     ModelRegistry::NeuralPunctModel::localPath);
 
-                LOG_INFO("开始下载标点添加模型.....");
+                LOG_INFO("Start downloading punctuation model...");
                 emit installGroupStarted(puncGroup, groupName, 1);
             }
         }
@@ -468,10 +468,10 @@ void SherpaInstaller::uninstallModel(const QString& repoId)
     QString repoName = repoId.split("/").last();
     QDir dir(sherpaModelRoot + "/" + repoName);
     if (dir.exists() && dir.removeRecursively()) {
-        LOG_INFO("卸载成功");
+        LOG_INFO("Unload succeeded");
     }
     else {
-        LOG_ERROR("卸载失败");
+        LOG_ERROR("Unload failed");
     }
 }
 

@@ -84,7 +84,7 @@ void WorkflowManager::proceedToRecording() {
     if (m_currentState != WorkflowState::Loading) return; 
     if (m_config.backend == AsrBackendKind::Sherpa && !m_sherpaManager->isModelLoaded()) {
         transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
-        LOG_ERROR("模型加载失败");
+        LOG_ERROR("Model load failed");
         return;
     }
     transitionTo(WorkflowState::Recording, WorkflowEvent::ModelLoaded);
@@ -94,8 +94,8 @@ void WorkflowManager::proceedToRecording() {
 }
 
 void WorkflowManager::onModelLoadFinished(bool ok) {
-    if (ok) LOG_INFO("模型加载完成");
-    else LOG_ERROR("模型加载失败");
+    if (ok) LOG_INFO("Model load completed");
+    else LOG_ERROR("Model load failed");
     if (m_currentState != WorkflowState::Loading) return;
     if (ok) proceedToRecording();
     else transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);

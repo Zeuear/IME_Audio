@@ -229,18 +229,17 @@ void MainWin::setupUiConnections(){
 		QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
 			config.sherpa.localModelRepoId);
 		if (repoId.isEmpty()) {
-			LOG_ERROR("没有找到对应的模型!");
+			LOG_ERROR("Model not found");
 			return;
 		}
         if (m_sherpaInstaller->isInstalling(repoId)) {
-            LOG_INFO(QString("模型正在安装: %1").arg(repoId));
+            LOG_INFO(QString("Model installing: %1").arg(repoId));
             notify(NotifyLevel::Info, tr("该模型正在安装...."));
             return;
         }
 
 		if (m_sherpaInstaller->isInstalled(repoId)) {
-			LOG_INFO(QString("模型已安装，跳过下载: %1").arg(repoId));
-			notify(NotifyLevel::Info, tr("该模型已安装，无需下载"));
+			LOG_INFO(QString("Model already installed, skip download: %1").arg(repoId));
 			return;
 		}
 
@@ -249,7 +248,7 @@ void MainWin::setupUiConnections(){
 	});
 
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, this, [=]() {
-        notify(NotifyLevel::Info, tr("开始下载模型"));
+        notify(NotifyLevel::Info, tr("开始下载模型..."));
     });
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
@@ -266,7 +265,7 @@ void MainWin::setupUiConnections(){
         QUrl url = QUrl::fromLocalFile(nativePath);
         bool success = QDesktopServices::openUrl(url);
         if (!success) {
-            LOG_ERROR(QString("无法打开路径！原始路径: %1 转换后URL: %2").arg(modelPath).arg(url.toString()));
+            LOG_ERROR(QString("Failed to open path! Original: %1, converted URL: %2").arg(modelPath).arg(url.toString()));
         }
     });
 
@@ -305,12 +304,12 @@ void MainWin::setupUiConnections(){
 
     connect(m_textPolishService, &TextPolishService::modelsFetched, this, [this](bool success, const QStringList& models, const QString&) {
         if (!success || models.isEmpty()) {
-            LOG_ERROR("获取模型列表失败");
+            LOG_ERROR("Failed to fetch model list");
             ui->ai_model_comb->clear();
             return;
         }
 
-        LOG_INFO("获取模型列表成功");
+        LOG_INFO("Fetched model list successfully");
         ui->ai_model_comb->clear();
         ui->ai_model_comb->addItems(models);
 
@@ -688,13 +687,13 @@ void MainWin::onHotkeyPressed() {
     QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
                                                       config.sherpa.localModelRepoId);
     if (!m_sherpaInstaller->isInstalled(repoId)) {
-        LOG_ERROR("当前模型没有安装，请先安装");
+        LOG_ERROR("Current model is not installed, please install it first");
         m_sphereOverlay->hideOverlay();
         return;
     }
     
     if (m_sherpaInstaller->isInstalling(repoId)){
-        LOG_ERROR("当前模型正在安装中");
+        LOG_ERROR("Current model is being installed");
         m_sphereOverlay->hideOverlay();
         return;
     }
@@ -882,7 +881,7 @@ void MainWin::onSaveConfig()
     ConfigManager::instance().updateConfig(uiConfig);
 
     if (ConfigManager::instance().save()) {
-        LOG_INFO("配置保存成功");
+        LOG_INFO("Config saved successfully");
 		LOG_DEBUG("Save Configuration Success");
         m_workflow->applyRecorderConfig();
         ui->shortcut_edit->setShortCut(uiConfig.hotkey);

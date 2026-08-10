@@ -1079,7 +1079,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             if (useGpu) {
                 try {
                     config.model_config.provider = "cuda";
-                    LOG_INFO("Sherpa使用[CUDA]初始化");
+                    LOG_INFO("Sherpa initialized with [CUDA]");
                     LOG_DEBUG("Attempting to initialize Sherpa with [CUDA] acceleration...");
                     if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
                         return std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
@@ -1098,7 +1098,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             }
 
             config.model_config.provider = "cpu";
-            LOG_INFO("Sherpa使用[CPU]初始化");
+            LOG_INFO("Sherpa initialized with [CPU]");
             LOG_DEBUG("Sherpa initialized successfully with [CPU].");
             try {
                 if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {

@@ -32,10 +32,10 @@ TranscriptionService::TranscriptionService(
     connect(m_textPolishService, &TextPolishService::connectionTested, this,
         [this](bool success, const QString& message) {
             if (!success) {
-                LOG_ERROR("测试连接失败!");
+                LOG_ERROR("Connection test failed!");
             }
             else {
-                LOG_INFO("测试连接成功!");
+                LOG_INFO("Connection test succeeded!");
             }
         });
 

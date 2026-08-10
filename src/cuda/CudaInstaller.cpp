@@ -227,7 +227,7 @@ void CudaInstaller::startInstall()
 {
     emit statusChanged(tr("Starting installation sequence..."));
     connect(m_taskManager, &TaskQueueManager::allTasksFinished, this, [this](bool success, const QString& msg) {
-        LOG_INFO("任务全部执行完成");
+        LOG_INFO("All tasks completed");
         LOG_DEBUG("Task All Complete");
         if (QFile::exists(m_cudaInstallerPath)) {
             QFile::remove(m_cudaInstallerPath);

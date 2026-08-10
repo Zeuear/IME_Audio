@@ -75,13 +75,13 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
     if (latestNum.isNull() || currentNum.isNull()) {
         LOG_DEBUG(QString("Could not parse version numbers, falling back to string compare.").arg(latestVersion).arg(m_currentVersion));
         if (latestVersion <= m_currentVersion) {
-            LOG_INFO("当前版本为最新");
+            LOG_INFO("Already on the latest version");
             LOG_DEBUG(QString("Current version is up to date:").arg(m_currentVersion));
             return;
         }
     }
     else if (latestNum <= currentNum) {
-        LOG_INFO("当前版本为最新");
+        LOG_INFO("Already on the latest version");
         LOG_DEBUG(QString("Current version is up to date:").arg(m_currentVersion));
         return;
     }
