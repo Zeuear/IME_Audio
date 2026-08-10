@@ -28,6 +28,7 @@
 #include "widgets/NavListWidget.h"
 #include "widgets/inforbar/inforbarmanager.h"
 #include "widgets/inforbar/inforposmanager.h"
+#include "widgets/inforbar/inforbar.h"
 
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
@@ -199,53 +200,48 @@ void MainWin::setupUiConnections(){
         m_sherpaInstaller->uninstallAll();
     });
 
-    connect(ui->uninstall_model_btn, &QPushButton::clicked, this, [this]() {
-        AppConfig uiConfig = extractConfigFromUI();
-        ConfigManager::instance().updateConfig(uiConfig);
-        ConfigManager::instance().save();
-
-        const AppConfig& config = ConfigManager::instance().config();
-        QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
-                                                        config.sherpa.localModelRepoId);
-        if (repoId.isEmpty()) {
-            LOG_ERROR("没有找到对应的模型!");
-            return;
-        }
-        LOG_DEBUG(QString("Download %1...").arg(repoId));
-        m_sherpaInstaller->uninstallModel(repoId);
-    });
-
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		QString language = ui->language_comb->itemText(index);
+		// 阻断级联信号：重填本地模型列表时不触发下载（下载只由用户 activated 触发）
+		QSignalBlocker blocker(ui->local_model_comb);
+		Q_UNUSED(blocker);
 		auto models = ModelRegistry::GetModelsByLanguage(language);
 		ui->local_model_comb->clear();
 		ui->local_model_comb->addItems(models);
+		// 默认选中该语言第一项（程序化设置不触发 activated → 不下载）
+		ui->local_model_comb->setCurrentIndex(0);
 	});
 
-    connect(ui->download_model_btn, &QPushButton::clicked, this, [this]() {
-        AppConfig uiConfig = extractConfigFromUI();
-        ConfigManager::instance().updateConfig(uiConfig);
-        ConfigManager::instance().save();
+	// 下载触发：仅用户点击/键盘激活本地模型时下载（程序化 setCurrentIndex 不触发）
+	connect(ui->local_model_comb, &QComboBox::activated, this, [this](int index) {
+		AppConfig uiConfig = extractConfigFromUI();
+		ConfigManager::instance().updateConfig(uiConfig);
+		ConfigManager::instance().save();
 
-        const AppConfig& config = ConfigManager::instance().config();
-        QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel, 
-                                                          config.sherpa.localModelRepoId);
-        if (repoId.isEmpty()) {
-            LOG_ERROR("没有找到对应的模型!");
-            return;
-        }
+		const AppConfig& config = ConfigManager::instance().config();
+		QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
+			config.sherpa.localModelRepoId);
+		if (repoId.isEmpty()) {
+			LOG_ERROR("没有找到对应的模型!");
+			return;
+		}
 
-        LOG_DEBUG(QString("Download %1...").arg(repoId));
-        m_sherpaInstaller->installModel(repoId);
-    });
+		if (m_sherpaInstaller->isInstalled(repoId)) {
+			LOG_INFO(QString("模型已安装，跳过下载: %1").arg(repoId));
+			notify(NotifyLevel::Info, tr("该模型已安装，无需下载"));
+			return;
+		}
+
+		LOG_DEBUG(QString("Download %1...").arg(repoId));
+		m_sherpaInstaller->installModel(repoId);
+	});
 
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, this, [=]() {
-        ui->download_model_btn->setEnabled(false);
-        ui->download_model_btn->setText(tr("Download..."));
+        notify(NotifyLevel::Info, tr("开始下载模型"));
     });
-    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=]() {
-        ui->download_model_btn->setEnabled(true);
-        ui->download_model_btn->setText(tr("Download and configure"));
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
+        if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
+        else notify(NotifyLevel::Error, tr("模型下载失败：请检查网络后重试"));
     });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {
@@ -324,8 +320,10 @@ void MainWin::setupUiConnections(){
         ui->identification_log_edit->append(result);
     });
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
-    connect(m_workflow, &WorkflowManager::errorOccurred, this, [](const QString& msg) {
-        QMessageBox::warning(nullptr, tr("Error"), msg);
+    connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& msg) {
+        // 弹窗只显示中文人话；原始英文技术串(msg)已通过 LOG_ERROR 进入日志面板
+        notify(NotifyLevel::Error, tr("操作出错，请查看日志了解详情"));
+        Q_UNUSED(msg);
     });
 
     // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
@@ -491,6 +489,12 @@ void MainWin::loadConfigToUI() {
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     int localIndex = ui->local_model_comb->findText(cfg.sherpa.localModelRepoId);
     if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
+
+    // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
+    if (cfg.sherpa.languageModel.isEmpty() && !ui->language_comb->currentText().isEmpty())
+        ConfigManager::instance().config().sherpa.languageModel = ui->language_comb->currentText();
+    if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->local_model_comb->currentText().isEmpty())
+        ConfigManager::instance().config().sherpa.localModelRepoId = ui->local_model_comb->currentText();
 
     if (cfg.backend == AsrBackendKind::Sherpa) {
         m_workflow->preloadModel(cfg);
@@ -755,13 +759,12 @@ void MainWin::onNewLogEntry(const QString& entry)
 
         QTextCharFormat format;
         if (entry.contains("ERROR", Qt::CaseInsensitive) || entry.contains("[E]", Qt::CaseInsensitive)) {
-            format.setForeground(QColor("#FF3333")); 
-            format.setFontWeight(QFont::Bold);  
-            InforBar::error("", entry, InforBarPosition::I_BOTTOM_RIGHT, this);
+            format.setForeground(QColor("#FF3333"));
+            format.setFontWeight(QFont::Bold);
         }
         else if (entry.contains("WARN", Qt::CaseInsensitive) || entry.contains("[W]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#FFA500"));
-            format.setFontWeight(QFont::Bold);      
+            format.setFontWeight(QFont::Bold);
         }
         else if (entry.contains("DEBUG", Qt::CaseInsensitive) || entry.contains("[D]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#007799"));
@@ -770,7 +773,6 @@ void MainWin::onNewLogEntry(const QString& entry)
         else if (entry.contains("INFO", Qt::CaseInsensitive) || entry.contains("[I]", Qt::CaseInsensitive)) {
             format.setForeground(QColor("#00A854"));
             format.setFontWeight(QFont::Normal);
-            InforBar::success("", entry, InforBarPosition::I_BOTTOM_RIGHT, this);
         }
         else {
             format.setForeground(QColor("#333333"));
@@ -779,7 +781,26 @@ void MainWin::onNewLogEntry(const QString& entry)
 
         cursor.setCharFormat(format);
         cursor.insertText(entry + "\n");
-    }   
+    }
+}
+
+// 统一用户通知：弹窗只显示中文人话；原始英文技术串不进弹窗（只留日志面板）
+void MainWin::notify(NotifyLevel level, const QString& messageCN)
+{
+    switch (level) {
+    case NotifyLevel::Info:
+        InforBar::info("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        break;
+    case NotifyLevel::Success:
+        InforBar::success("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        break;
+    case NotifyLevel::Warning:
+        InforBar::warning("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        break;
+    case NotifyLevel::Error:
+        InforBar::error("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        break;
+    }
 }
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
