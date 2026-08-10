@@ -65,7 +65,7 @@ public:
     int loadAsyncCalls = 0;
     int pauseIdleCalls = 0;
     int resumeIdleCalls = 0;
-
+};
 
 // ---- 测试夹具 ----
 
@@ -345,4 +345,5 @@ TEST_F(WorkflowManagerContinuousTest, ExplicitStopClosesWindow) {
     wf->stop();                       // 连续模式下显式停止
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
+
 #include "workflow_manager_test.moc"
