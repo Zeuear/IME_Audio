@@ -1089,9 +1089,11 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 } 
                 catch (const std::exception& e) {
                     LOG_WARN(tr("CUDA initialization failed: %1. Automatically falling back to CPU.").arg(e.what()));
+                    result.cudaFellBack = true;
                 } 
                 catch (...) {
                     LOG_WARN("CUDA initialization failed due to an unknown hardware/driver error. Falling back to CPU.");
+                    result.cudaFellBack = true;
                 }
             }
 

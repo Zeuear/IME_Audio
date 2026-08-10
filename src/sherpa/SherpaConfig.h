@@ -360,9 +360,10 @@ public:
     struct Result {
 		QString repoId;
 		bool isLoaded = false;
+		bool cudaFellBack = false;   // CUDA 初始化失败，已回退 CPU
 		RecognizerKind kind = RecognizerKind::None;
         RecognizerPtrVar recognizer = std::monostate{};
-    };
+	};
 
     struct LanguageTableEntry {
         QString languageName;

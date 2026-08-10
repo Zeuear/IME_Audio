@@ -175,7 +175,8 @@ VadWorker::VadWorker(const AppConfig& config, int sampleRate, QObject* parent)
 void VadWorker::rebuildDetector()
 {
     if (!QFile::exists(m_config.sherpa.vadPath)) {
-        LOG_ERROR("没有找到vad模型??");
+        LOG_ERROR("VAD model not found");
+        emit errorOccurred(tr("录音启动失败"), tr("VAD 模型缺失，请先下载模型"));
         return;
     }
         
@@ -268,6 +269,7 @@ AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject *par
     connect(m_vadWorker, &VadWorker::speechStarted, this, &AudioRecorderService::onVadSpeechStarted);
     connect(m_vadWorker, &VadWorker::speechEnded, this, &AudioRecorderService::onVadSpeechEnded);
     connect(m_vadWorker, &VadWorker::speechSegmentReady, this, &AudioRecorderService::onVadSegmentReady);
+    connect(m_vadWorker, &VadWorker::errorOccurred, this, &AudioRecorderService::errorOccurred);
 
     m_vadThread->start();
 }

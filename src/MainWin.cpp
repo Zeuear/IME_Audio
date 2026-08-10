@@ -143,7 +143,14 @@ void MainWin::initialize() {
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
-}   
+    // 术语库错误/信息统一收口到 notify（成功→Success，冲突→Warning，其余→Error）
+    connect(ui->terms_widget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
+        NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
+                            : title.contains(tr("冲突")) ? NotifyLevel::Warning
+                            : NotifyLevel::Error;
+        notify(level, title, cause);
+    });
+}  
 
 void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
@@ -189,7 +196,7 @@ void MainWin::setupUiConnections(){
         ui->gemini_key_label->setVisible(geminiVisible);
       });
 
-    // 输出设备测试播放（验证虚拟声卡 loopback）
+    // 输出设备测试播放
     connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
         QString name = ui->source_equipment_comb->currentText();
         m_workflow->playTestTone();
@@ -202,17 +209,17 @@ void MainWin::setupUiConnections(){
 
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		QString language = ui->language_comb->itemText(index);
-		// 阻断级联信号：重填本地模型列表时不触发下载（下载只由用户 activated 触发）
+		// 阻断级联信号：重填本地模型列表时不触发下载
 		QSignalBlocker blocker(ui->local_model_comb);
 		Q_UNUSED(blocker);
+
 		auto models = ModelRegistry::GetModelsByLanguage(language);
 		ui->local_model_comb->clear();
 		ui->local_model_comb->addItems(models);
-		// 默认选中该语言第一项（程序化设置不触发 activated → 不下载）
 		ui->local_model_comb->setCurrentIndex(0);
 	});
 
-	// 下载触发：仅用户点击/键盘激活本地模型时下载（程序化 setCurrentIndex 不触发）
+	// 下载触发：仅用户点击/键盘激活本地模型时下载
 	connect(ui->local_model_comb, &QComboBox::activated, this, [this](int index) {
 		AppConfig uiConfig = extractConfigFromUI();
 		ConfigManager::instance().updateConfig(uiConfig);
@@ -225,6 +232,11 @@ void MainWin::setupUiConnections(){
 			LOG_ERROR("没有找到对应的模型!");
 			return;
 		}
+        if (m_sherpaInstaller->isInstalling(repoId)) {
+            LOG_INFO(QString("模型正在安装: %1").arg(repoId));
+            notify(NotifyLevel::Info, tr("该模型正在安装...."));
+            return;
+        }
 
 		if (m_sherpaInstaller->isInstalled(repoId)) {
 			LOG_INFO(QString("模型已安装，跳过下载: %1").arg(repoId));
@@ -241,7 +253,11 @@ void MainWin::setupUiConnections(){
     });
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
-        else notify(NotifyLevel::Error, tr("模型下载失败：请检查网络后重试"));
+        else notify(NotifyLevel::Error, tr("模型下载失败"), tr("请检查网络后重试"));
+    });
+    // CUDA 初始化失败回退 CPU（非错误，仅提示）
+    connect(m_sherpaManager, &SherpaManager::gpuFallbackToCpu, this, [this]() {
+        notify(NotifyLevel::Warning, tr("已切换至 CPU 模式"), tr("显卡不可用，识别速度可能下降"));
     });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {
@@ -320,10 +336,8 @@ void MainWin::setupUiConnections(){
         ui->identification_log_edit->append(result);
     });
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
-    connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& msg) {
-        // 弹窗只显示中文人话；原始英文技术串(msg)已通过 LOG_ERROR 进入日志面板
-        notify(NotifyLevel::Error, tr("操作出错，请查看日志了解详情"));
-        Q_UNUSED(msg);
+    connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
+        notify(NotifyLevel::Error, title, cause);
     });
 
     // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
@@ -784,21 +798,22 @@ void MainWin::onNewLogEntry(const QString& entry)
     }
 }
 
-// 统一用户通知：弹窗只显示中文人话；原始英文技术串不进弹窗（只留日志面板）
-void MainWin::notify(NotifyLevel level, const QString& messageCN)
+void MainWin::notify(NotifyLevel level, const QString& titleCN, const QString& causeCN)
 {
+    QString text = titleCN;
+    if (!causeCN.isEmpty()) text += QString("\n%1").arg(causeCN);
     switch (level) {
     case NotifyLevel::Info:
-        InforBar::info("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        InforBar::info("", text, InforBarPosition::I_BOTTOM_RIGHT, this);
         break;
     case NotifyLevel::Success:
-        InforBar::success("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        InforBar::success("", text, InforBarPosition::I_BOTTOM_RIGHT, this);
         break;
     case NotifyLevel::Warning:
-        InforBar::warning("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        InforBar::warning("", text, InforBarPosition::I_BOTTOM_RIGHT, this);
         break;
     case NotifyLevel::Error:
-        InforBar::error("", messageCN, InforBarPosition::I_BOTTOM_RIGHT, this);
+        InforBar::error("", text, InforBarPosition::I_BOTTOM_RIGHT, this);
         break;
     }
 }
@@ -842,7 +857,7 @@ void MainWin::onUpdateDownloaded(const QString& filePath) {
             qApp->exit();
         }
         else {
-            QMessageBox::critical(this, tr("Error"), err);
+            notify(NotifyLevel::Error, tr("更新失败"), err);
             ui->actionUpdate->setEnabled(true);
         }
     }

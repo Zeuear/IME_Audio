@@ -77,9 +77,8 @@ private slots:
     void onStateChanged(WorkflowState newState);
 
 private:
-    // 统一用户通知接口：弹窗显示中文人话；原始英文技术串留日志面板
     enum class NotifyLevel { Info, Success, Warning, Error };
-    void notify(NotifyLevel level, const QString& messageCN);
+    void notify(NotifyLevel level, const QString& titleCN, const QString& causeCN = {});
 
     AppConfig extractConfigFromUI();
     void loadConfigToUI();

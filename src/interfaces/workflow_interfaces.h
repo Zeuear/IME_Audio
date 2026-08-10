@@ -28,6 +28,8 @@ signals:
     void spectrumUpdated(const QVector<float> &bands);
     void voiceStarted();
     void voiceStopped();
+    // 录音层错误（如 VAD 模型缺失）：title/cause 为中文，由上层 notify 弹窗
+    void errorOccurred(const QString& title, const QString& cause = {});
 };
 
 // 转写层依赖接口：WorkflowManager 只通过此接口发起转写、接收结果上行。

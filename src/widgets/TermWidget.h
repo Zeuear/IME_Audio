@@ -160,6 +160,9 @@ private:
 class TermWidget : public QWidget {
     Q_OBJECT
 
+signals:
+    void errorOccurred(const QString& title, const QString& cause = {});
+
 public:
     explicit TermWidget(QWidget *parent = nullptr);
     ~TermWidget() override = default;
@@ -182,7 +185,6 @@ private slots:
     void handleCheckAction(); 
     void handleImport();
     void handleExport();
-    void handleModelError(const QString& message);
 
 private:
     void setupUi();

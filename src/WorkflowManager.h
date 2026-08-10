@@ -49,13 +49,14 @@ public:
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
-    void errorOccurred(const QString &errorMsg);
+    void errorOccurred(const QString &title, const QString &cause = {});
 
 private slots:
     void onUtteranceReady(const QByteArray& pcmData, int sampleRate);
     void onUtteranceTranscribed(bool success, const QString& rawText, const QString& finalText, const QString& errorMsg);
     void onInjectText(const QString& text);
     void onModelLoadFinished(bool ok);
+    void onRecorderError(const QString& title, const QString& cause);
 
 private:
     void startRecording();

@@ -129,12 +129,12 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         config.sherpa.localModelRepoId);
 
     if (repoId.isEmpty()) {
-        LOG_WARN("没有找到对应的模型!");
+        LOG_WARN("Model not found");
         return;
     }
 
     if (!SherpaInstaller::isInstalled(repoId)) {
-        LOG_WARN("没有安装模型!");
+        LOG_WARN("Model not installed");
         return;
     }
 
@@ -169,11 +169,14 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 
 	auto result = ModelRegistry::GetConfig(repoId, numThreads, useGpu);
 	m_isLoaded = result.isLoaded;
-    if (!result.isLoaded) {
-        LOG_ERROR("加载失败，模型文件缺失或者是不存在");
-        LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(repoId));
-        return;
-    }
+	if (result.cudaFellBack) {
+	    emit gpuFallbackToCpu();
+	}
+	if (!result.isLoaded) {
+	    LOG_ERROR("Load failed: model file missing or does not exist");
+	    LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(repoId));
+	    return;
+	}
 
     switch (result.kind)
     {
@@ -411,10 +414,7 @@ void SherpaInstaller::installModel(const QString& repoId)
     const QString groupName = "神经标点模型(zh-en)";
 
     if (ModelRegistry::shouldUseNeuralPunct(*desc)) {
-        if (ModelRegistry::NeuralPunctModel::isInstalled()) {
-            emit installGroupFinished(groupName, true, tr("%1 is exist.").arg(groupName));
-        }
-        else {
+        if (!ModelRegistry::NeuralPunctModel::isInstalled()) {
             if (m_downloadManager->tasksInGroup(puncGroup).isEmpty()) {
                 m_downloadManager->addGroupTask(puncGroup,
                     groupName,

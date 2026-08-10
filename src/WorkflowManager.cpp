@@ -24,9 +24,10 @@ void WorkflowManager::initialize(IRecorder *recorder,
 
     // 模型加载完成
     connect(m_sherpaManager, &ISherpaModel::modelLoadFinished, this, &WorkflowManager::onModelLoadFinished);
+    // 录音层错误（VAD 缺失等）透传
+    connect(m_recorder, &IRecorder::errorOccurred, this, &WorkflowManager::onRecorderError);
     // 一句话缓冲完成，交给识别服务
     connect(m_recorder, &IRecorder::utteranceReady, this, &WorkflowManager::onUtteranceReady);
-    // 识别结果回调
     connect(m_transcription, &ITranscription::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
     // 识别结果打印
     connect(this, &WorkflowManager::transcriptionResultReady, this, &WorkflowManager::onInjectText);
@@ -100,6 +101,11 @@ void WorkflowManager::onModelLoadFinished(bool ok) {
     else transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
 }
 
+void WorkflowManager::onRecorderError(const QString& title, const QString& cause) {
+    LOG_ERROR(QString("Recorder error: %1 %2").arg(title, cause));
+    emit errorOccurred(title, cause);
+}
+
 void WorkflowManager::stopRecording() {
     if (m_currentState != WorkflowState::Recording &&
         m_currentState != WorkflowState::Transcribing &&
@@ -134,7 +140,7 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
         }
     }
     else {
-        emit errorOccurred(errorMsg);
+        emit errorOccurred(tr("语音识别失败"), errorMsg);
         LOG_WARN(QString("Transcription failed: %1").arg(errorMsg));
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
     }

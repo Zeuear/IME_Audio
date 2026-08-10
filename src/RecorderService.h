@@ -258,7 +258,8 @@ public slots:
 signals:
     void speechStarted();
     void speechSegmentReady(const QByteArray& pcmData, int sampleRate); 
-    void speechEnded(); 
+    void speechEnded();
+    void errorOccurred(const QString& title, const QString& cause = {});
 
 private:
     float m_agcGain = 1.0f;

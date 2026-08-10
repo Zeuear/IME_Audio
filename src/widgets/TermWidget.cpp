@@ -91,7 +91,9 @@ void TermWidget::setupUi() {
 void TermWidget::setTermsManager(TermsLibraryManager* termsManager) {
     m_termsManager = termsManager;
     m_termsModel = new TermTableModel(m_termsManager, this);
-    connect(m_termsModel, &TermTableModel::errorOccurred, this, &TermWidget::handleModelError);
+    connect(m_termsModel, &TermTableModel::errorOccurred, this, [this](const QString& message) {
+        emit errorOccurred(tr("输入有误"), message);
+    });
 
     m_proxyModel = new QSortFilterProxyModel(this);
     m_proxyModel->setSourceModel(m_termsModel);
@@ -100,10 +102,6 @@ void TermWidget::setTermsManager(TermsLibraryManager* termsManager) {
     m_termsTableView->setModel(m_proxyModel);
     retranslateUi();
 
-}
-
-void TermWidget::handleModelError(const QString& message) {
-    QMessageBox::warning(this, tr("Input Error"), message);
 }
 
 void TermWidget::handleSearch() {
@@ -136,7 +134,7 @@ void TermWidget::handleReload() {
         LOG_INFO("Terms reloaded successfully.");
     }
     else {
-        QMessageBox::warning(this, "Error", "Failed to load terms.tsv");
+        emit errorOccurred(tr("术语库加载失败"), tr("未找到 terms.tsv"));
     }
 }
 
@@ -218,11 +216,11 @@ void TermWidget::handleCheckAction() {
     // 调用 Manager 的冲突检查功能
     QStringList conflicts = m_termsManager->checkConflicts();
     if (conflicts.isEmpty()) {
-        QMessageBox::information(this, tr("Check Result"), tr("No conflicts found! ✅"));
+        emit errorOccurred(tr("术语冲突检查"), tr("未发现冲突"));
     }
     else {
-        QString msg = "Found conflicts:\n\n" + conflicts.join("\n");
-        QMessageBox::warning(this, tr("Conflict Detected"), msg);
+        QString msg = conflicts.join("\n");
+        emit errorOccurred(tr("检测到术语冲突"), msg);
     }
 }
 
@@ -230,10 +228,10 @@ void TermWidget::handleImport() {
     QString path = QFileDialog::getOpenFileName(this, tr("Import TSV"), "", "TSV Files (*.tsv)");
     if (!path.isEmpty()) {
         if (m_termsManager->importFromFile(path)) {
-            qDebug() << "Import successful";
+            emit errorOccurred(tr("术语库导入成功"));
         }
         else {
-            QMessageBox::critical(this, tr("Error"), tr("Import failed"));
+            emit errorOccurred(tr("术语库导入失败"), tr("文件读写失败，请检查路径与权限"));
         }
     }
 }
@@ -242,10 +240,10 @@ void TermWidget::handleExport() {
     QString path = QFileDialog::getSaveFileName(this, tr("Export TSV"), "", "TSV Files (*.tsv)");
     if (!path.isEmpty()) {
         if (m_termsManager->exportToFile(path)) {
-            QMessageBox::information(this, tr("Success"), tr("Exported successfully"));
+            emit errorOccurred(tr("术语库导出成功"));
         }
         else {
-            QMessageBox::critical(this, tr("Error"), tr("Export failed"));
+            emit errorOccurred(tr("术语库导出失败"), tr("文件读写失败，请检查路径与权限"));
         }
     }
 }

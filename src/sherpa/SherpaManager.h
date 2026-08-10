@@ -49,7 +49,9 @@ public slots:
 
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
-    void queueSizeChanged(int pendingCount); 
+    void queueSizeChanged(int pendingCount);
+    // CUDA 初始化失败回退 CPU（非错误，仅提示）
+    void gpuFallbackToCpu();
 
 private:
     bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
