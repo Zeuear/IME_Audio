@@ -30,7 +30,8 @@ void ConfigManager::updateConfig(const AppConfig& newConfig) {
 void ConfigManager::applyDefaults() {
     QWriteLocker locker(&m_lock);
     m_config = AppConfig();
-
+    
+    m_config.backend = AsrBackendKind::Sherpa;
     m_config.audio.deviceId = AudioConfig::kInvalidDeviceId;
     m_config.audio.deviceName = AudioConfig::kDefaultDeviceName;
     m_config.audio.outputDeviceName.clear();
@@ -59,8 +60,7 @@ bool ConfigManager::load() {
     QSettings s(m_configPath, QSettings::IniFormat);
 
     m_config.hotkey = s.value("hotkey", "").toString();
-    m_config.backend = static_cast<AsrBackendKind>(s.value("backend", 1).toInt());
-    m_config.gladiaKey = s.value("gladiaKey").toString();
+    m_config.backend = static_cast<AsrBackendKind>(s.value("backend").toInt());
     m_config.groqKey = s.value("groqKey").toString();
     m_config.replaceRules = s.value("replaceRules").toString();
     m_config.continuousMode = s.value("continuousMode", false).toBool();
@@ -115,7 +115,6 @@ bool ConfigManager::save() {
 
     s.setValue("hotkey", m_config.hotkey);
     s.setValue("backend", static_cast<int>(m_config.backend));
-    s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("replaceRules", m_config.replaceRules);
     s.setValue("continuousMode", m_config.continuousMode.load());
     s.setValue("autoStopEnabled", m_config.autoStopEnabled.load());

@@ -143,6 +143,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     if (punctuatorBound) {
         QString punctDirName = ModelRegistry::NeuralPunctModel::sharedDir();
         if (!ModelRegistry::NeuralPunctModel::isInstalled()) {
+
             LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(punctDirName));
         }else {
             if (!m_punctuator->load(punctDirName)) {
@@ -406,26 +407,27 @@ bool SherpaInstaller::isInstalled(const QString& repoId)
 	return QFile::exists(modelPath);
 }
 
+void SherpaInstaller::ensurePunctModel(const QString& repoId)
+{
+    const ModelDescriptor* desc = ModelRegistry::Find(repoId);
+    if (!desc) return;
+    if (!ModelRegistry::shouldUseNeuralPunct(*desc)) return;
+    if (ModelRegistry::NeuralPunctModel::isInstalled()) return;
+    if (m_downloadManager->tasksInGroup(ModelRegistry::NeuralPunctModel::repoId).isEmpty()) {
+        const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;
+        const QString groupName = "神经标点模型(zh-en)";
+        m_downloadManager->addGroupTask(puncGroup,
+            groupName,
+            QUrl(ModelRegistry::NeuralPunctModel::archiveUrl),
+            ModelRegistry::NeuralPunctModel::localPath);
+        LOG_INFO("Start downloading punctuation model...");
+        emit installGroupStarted(puncGroup, groupName, 1);
+    }
+}
+
 void SherpaInstaller::installModel(const QString& repoId)
 {
-    // 标点添加
-    const ModelDescriptor* desc = ModelRegistry::Find(repoId);
-    const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;
-    const QString groupName = "神经标点模型(zh-en)";
-
-    if (ModelRegistry::shouldUseNeuralPunct(*desc)) {
-        if (!ModelRegistry::NeuralPunctModel::isInstalled()) {
-            if (m_downloadManager->tasksInGroup(puncGroup).isEmpty()) {
-                m_downloadManager->addGroupTask(puncGroup,
-                    groupName,
-                    QUrl(ModelRegistry::NeuralPunctModel::archiveUrl),
-                    ModelRegistry::NeuralPunctModel::localPath);
-
-                LOG_INFO("Start downloading punctuation model...");
-                emit installGroupStarted(puncGroup, groupName, 1);
-            }
-        }
-    }
+    ensurePunctModel(repoId);
 
     QString repoName = repoId.split("/").last();
     QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;

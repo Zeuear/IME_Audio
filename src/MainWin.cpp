@@ -231,11 +231,6 @@ void MainWin::setupUiConnections(){
             return;
         }
 
-		if (m_sherpaInstaller->isInstalled(repoId)) {
-			LOG_INFO(QString("Model already installed, skip download: %1").arg(repoId));
-			return;
-		}
-
 		LOG_DEBUG(QString("Download %1...").arg(repoId));
 		m_sherpaInstaller->installModel(repoId);
 	});
@@ -509,9 +504,15 @@ void MainWin::loadConfigToUI() {
         ConfigManager::instance().config().sherpa.languageModel = ui->language_comb->currentText();
     if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->local_model_comb->currentText().isEmpty())
         ConfigManager::instance().config().sherpa.localModelRepoId = ui->local_model_comb->currentText();
-
+    
     if (cfg.backend == AsrBackendKind::Sherpa) {
-        m_workflow->preloadModel(cfg);
+
+        QString repoId = ModelRegistry::FindByDisplayName(cfg.sherpa.languageModel,
+                                                          cfg.sherpa.localModelRepoId);
+        if (!repoId.isEmpty()) {
+            m_sherpaInstaller->installModel(repoId);
+            m_workflow->preloadModel(cfg);
+        }
     }
 
     // AI Enhancement

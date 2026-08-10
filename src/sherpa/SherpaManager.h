@@ -39,8 +39,6 @@ public:
     bool isBusy() const;       
     int  pendingCount() const;   
 
-    std::shared_ptr<sherpa_onnx::cxx::OnlineRecognizer> onlineRecognizerSnapshot() const;
-    
 public slots:
     void loadModelAsync(const AppConfig& config, bool isReload);
     void transcribeAsync(const QByteArray& pcmData, int sampleRate);
@@ -50,7 +48,6 @@ public slots:
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
-    // CUDA 初始化失败回退 CPU
     void gpuFallbackToCpu();
 
 private:
@@ -106,6 +103,7 @@ public:
     void uninstallAll();
     void installModel(const QString& repoId);
     void uninstallModel(const QString& repoId);
+    void ensurePunctModel(const QString& repoId);
 
     bool isInstalling(const QString& repoId) const;
     static bool isInstalled(const QString& repoId);
