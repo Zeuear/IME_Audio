@@ -306,10 +306,8 @@ bool SherpaManager::transcribeOnline(const std::vector<float>& samples, int samp
 void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
 {
     if (pcmData.isEmpty()) return;
-    if (!m_isLoaded) {
-        return;
-    }
-
+    // 不再因模型未加载而丢弃：utterance 入队后排在 Load 任务之后，
+    // worker 串行执行，加载完成后再转录，避免 Loading 态说话被抛弃。
     {
         QMutexLocker locker(&m_queueMutex);
         m_queue.enqueue({ TaskType::Transcribe, pcmData, sampleRate });

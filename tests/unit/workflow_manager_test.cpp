@@ -5,7 +5,6 @@
 #include "interfaces/workflow_interfaces.h"
 
 class FakeRecorder : public IRecorder {
-    Q_OBJECT
 public:
     explicit FakeRecorder(QObject* parent = nullptr) : IRecorder(parent) {}
 
@@ -35,7 +34,6 @@ public:
 };
 
 class FakeTranscription : public ITranscription {
-    Q_OBJECT
 public:
     explicit FakeTranscription(QObject* parent = nullptr) : ITranscription(parent) {}
     void transcribe(const QByteArray&, int, int, int) override { ++transcribeCalls; }
@@ -46,7 +44,6 @@ public:
 };
 
 class FakeSherpaModel : public ISherpaModel {
-    Q_OBJECT
 public:
     explicit FakeSherpaModel(QObject* parent = nullptr) : ISherpaModel(parent) {}
 
@@ -346,4 +343,37 @@ TEST_F(WorkflowManagerContinuousTest, ExplicitStopClosesWindow) {
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
-#include "workflow_manager_test.moc"
+// 模型加载期间(Loading 态)用户说话：utterance 应进入转录队列，不丢弃/不缓冲
+TEST_F(WorkflowManagerTest, LoadingState_UtteranceStillTranscribed) {
+    sherpa->reloadReturns = true;   // 触发异步加载 → 进入 Loading 态
+    wf->start();
+    EXPECT_EQ(wf->state(), WorkflowState::Loading);
+
+    // 加载尚未完成时就说话
+    rec->emitUtteranceReady(QByteArray("hello"), 16000);
+
+    // 关键契约：Loading 态的 utterance 仍走转录（不进私有缓冲、不丢）
+    EXPECT_EQ(trans->transcribeCalls, 1);
+    EXPECT_EQ(wf->pendingCount(), 1);
+    // 状态机不允许 Loading 直接转 Transcribing，utterance 已入队、state 保持 Loading 等待模型加载
+    EXPECT_EQ(wf->state(), WorkflowState::Loading);
+
+    // 加载完成后，排队的转录随后被处理（这里 Fake 直接完成）
+    sherpa->emitModelLoadFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    trans->emitFinished(true);
+    // 非连续模式下单句转录完成 → 回到 Idle（Loading 期间说的那句已被正常转录，未丢失）
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+}
+
+// 回归：模型已加载(sameConfig 快速路径)时，startRecording 直接进 Recording，utterance 正常转录
+TEST_F(WorkflowManagerTest, AlreadyLoaded_StartGoesStraightToRecording) {
+    sherpa->reloadReturns = false;  // 已加载 → 不走异步加载
+    wf->start();
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    EXPECT_EQ(sherpa->loadAsyncCalls, 0);  // 不应再次入队 Load
+
+    rec->emitUtteranceReady(QByteArray("hi"), 16000);
+    EXPECT_EQ(trans->transcribeCalls, 1);
+}
+
