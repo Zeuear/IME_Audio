@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include <QThread>
 #include <QTimer>
+#include <QCheckBox>
 #include <QListWidget>
 #include <QDesktopServices>
 
@@ -19,6 +20,7 @@
 #include "TextPolishService.h"
 #include "ConfigManager.h"
 #include "UpdateManager.h"
+#include "update_policy.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/SherpaManager.h"
 #include "utils/Logger.h"
@@ -134,10 +136,8 @@ void MainWin::initialize() {
     //m_sphereOverlay->showAtBottomCenter();
     //m_sphereOverlay->setListening();
 
-    auto* periodicTimer = new QTimer(this);
-    periodicTimer->setInterval(4 * 60 * 60 * 1000);
-    connect(periodicTimer, &QTimer::timeout, this, [this]() { m_updateManager->checkForUpdates(); });
-    periodicTimer->start();
+    // 启动时检查一次更新（单次，不周期弹窗打扰用户）
+    QTimer::singleShot(2000, this, [this]() { m_updateManager->checkForUpdates(); });
 
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
@@ -820,6 +820,12 @@ void MainWin::notify(NotifyLevel level, const QString& titleCN, const QString& c
 }
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
+    // 用户已选择"不再提醒" → 直接跳过，不打扰
+    if (!shouldPromptUpdate(ConfigManager::instance().config().skipUpdateReminder)) {
+        LOG_INFO("Update available but skipped per user preference");
+        return;
+    }
+
     QMessageBox msgBox(this);
     msgBox.setWindowTitle(tr("Update Available"));
     msgBox.setText(tr("A new version (%1) is available!").arg(version));
@@ -830,7 +836,17 @@ void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, 
     msgBox.setDefaultButton(QMessageBox::Ok);
     msgBox.setIcon(QMessageBox::Information);
 
+    // "不再提醒"复选项：勾选后持久化，后续启动不再弹更新提示
+    QCheckBox* neverAgain = new QCheckBox(tr("Do not remind me again"));
+    msgBox.setCheckBox(neverAgain);
+
     int ret = msgBox.exec();
+
+    if (neverAgain->isChecked()) {
+        ConfigManager::instance().config().skipUpdateReminder = true;
+        ConfigManager::instance().save();
+        LOG_INFO("User opted out of update reminders");
+    }
 
     if (ret == QMessageBox::Ok) {
         QString ext;

@@ -77,6 +77,7 @@ struct AppConfig {
 
     QString style;
     QString Language;
+    bool skipUpdateReminder = false;  // 用户勾选"不再提醒"后为真，停止更新弹窗
 
     AppConfig() = default;
     AppConfig(const AppConfig& other) { *this = other; }
@@ -96,6 +97,7 @@ struct AppConfig {
         hotkey = other.hotkey;
         style = other.style;
         Language = other.Language;
+        skipUpdateReminder = other.skipUpdateReminder;
         return *this;
     }
 

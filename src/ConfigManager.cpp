@@ -68,6 +68,7 @@ bool ConfigManager::load() {
     m_config.geminiKey = s.value("geminiKey").toString();
     m_config.gladiaKey = s.value("gladiaKey").toString();
     m_config.groqKey = s.value("groqKey").toString();
+    m_config.skipUpdateReminder = s.value("skipUpdateReminder", false).toBool();
 
     s.beginGroup("audio");
     m_config.audio.deviceId = s.value("deviceId", -1).toInt();
@@ -121,6 +122,7 @@ bool ConfigManager::save() {
     s.setValue("geminiKey", m_config.geminiKey);
     s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("groqKey", m_config.groqKey);
+    s.setValue("skipUpdateReminder", m_config.skipUpdateReminder);
 
     s.beginGroup("audio");
     s.setValue("deviceId", m_config.audio.deviceId);
