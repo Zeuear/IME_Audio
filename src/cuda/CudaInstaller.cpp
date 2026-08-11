@@ -114,7 +114,25 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         }
     }
 
+    // 第四层:ONNX Runtime CUDA Execution Provider 检测
+    {
+        QString ortCudaLib;
+#ifdef Q_OS_WIN
+        ortCudaLib = "onnxruntime_providers_cuda";
+#elif defined(Q_OS_LINUX)
+        ortCudaLib = "libonnxruntime_providers_cuda.so";
+#endif
+        QLibrary ortLib(ortCudaLib);
+        result.hasOrtCudaProvider = ortLib.load();
+        if (result.hasOrtCudaProvider) {
+            ortLib.unload();
+        } else {
+            result.failReason = tr("Detected CUDA Runtime, but ONNX Runtime CUDA provider (onnxruntime_providers_cuda) not found. GPU acceleration requires the sherpa-onnx CUDA build.");
+        }
+    }
+
     result.isFullyReady = result.hasNvidiaGpu && result.hasCudaRuntime
+        && result.hasOrtCudaProvider
         && (!requireCudnn || result.hasCudnn);
     return result;
 }
@@ -178,11 +196,7 @@ void CudaInstaller::startDownload(const GpuDetectionResult& result)
         count++;
     }
 
-    QString targetDir = QApplication::applicationDirPath();
-    if (QFile::exists(QDir(targetDir).filePath("onnxruntime_providers_cuda.dll"))) {
-        LOG_DEBUG("Dependencies already satisfied.");
-    }
-    else {
+    if (!result.hasOrtCudaProvider) {
         m_cudaDownloader->addGroupTask(GROUP_ID, "Sherpa Runtime", sherpaUrl, m_sherpaZipPath);
         count++;
     }
