@@ -7,14 +7,13 @@ void PaintTool::paintShadow(
     int height,
     QColor shadowColor,
     QPainterPath clipPath,
-    int blurRadius,        // 模糊半径
-    int offsetX,           // 水平偏移
-    int offsetY,           // 垂直偏移
-    int layers,            // 阴影层数
-    qreal opacityFactor    // 整体透明度因子
+    int blurRadius,       
+    int offsetX,         
+    int offsetY,          
+    int layers,           
+    qreal opacityFactor    
 )
 {
-    // 绘制阴影
     //int expand = 8;
     //int edge = 10;
     //int maxLayers = 10;
@@ -25,11 +24,10 @@ void PaintTool::paintShadow(
         //shadowColor.setAlpha(startAlpha - int(std::sqrt(i) * 20));
         //painter.setPen(shadowColor);
 
-        //// 使用线性衰减：alpha 从 startAlpha 线性减少到 0
-        //qreal factor = 1.0 - qreal(i) / (maxLayers - 1); // 0 到 1 的线性插值
+        //qreal factor = 1.0 - qreal(i) / (maxLayers - 1); 
         //shadowColor.setAlpha(int(startAlpha * factor));
 
-        //painter.setPen(Qt::NoPen); // 不使用笔，填充整个矩形
+        //painter.setPen(Qt::NoPen);
         //painter.setBrush(QBrush(shadowColor));
 
     //    int distance = i + 1;
@@ -40,46 +38,39 @@ void PaintTool::paintShadow(
 
     //    painter.drawRoundedRect(shadowRect, 15, 15);
     //}
-    // 保存画家状态，以便后续恢复
     painter.save();
 
 
-    painter.setRenderHint(QPainter::Antialiasing); // 确保抗锯齿
-    // 如果提供了裁剪路径，设置裁剪
+    painter.setRenderHint(QPainter::Antialiasing); 
     if (!clipPath.isEmpty()) {
         painter.setClipPath(clipPath);
     }
 
-    int startAlpha = shadowColor.alpha() * opacityFactor; // 应用整体透明度因子
-    qreal sigma = blurRadius / 3.0; // 将模糊半径转换为标准差，3 是一个经验值
+    int startAlpha = shadowColor.alpha() * opacityFactor;
+    qreal sigma = blurRadius / 3.0;
 
 
     for (int i = 0; i < layers; i++) {
-        // 计算当前层的距离（从中心到边缘）
-        qreal distance = qreal(i) - (layers - 1) / 2.0; // 中心化
+        qreal distance = qreal(i) - (layers - 1) / 2.0;
 
-        // 高斯函数：e^(-distance^2 / (2 * sigma^2))
         qreal gaussian = qExp(-distance * distance / (2 * sigma * sigma));
 
-        // 设置当前层的 alpha 值
         shadowColor.setAlpha(int(startAlpha * gaussian));
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(QBrush(shadowColor));
 
-        // 计算阴影矩形，考虑偏移和扩展
-        int expand = blurRadius / 2; // 扩展量基于模糊半径
-        int edge = expand + qMax(qAbs(offsetX), qAbs(offsetY)); // 确保覆盖偏移
+        int expand = blurRadius / 2;
+        int edge = expand + qMax(qAbs(offsetX), qAbs(offsetY)); 
 
         QRect shadowRect = QRect(
-            edge + offsetX - i,  // 左上角 X，包含偏移
-            edge + offsetY - i,  // 左上角 Y，包含偏移
-            width - (edge - i) * 2,  // 宽度
-            height - (edge - i) * 2  // 高度
+            edge + offsetX - i, 
+            edge + offsetY - i,  
+            width - (edge - i) * 2, 
+            height - (edge - i) * 2 
         );
 
-        // 绘制圆角矩形
-        painter.drawRoundedRect(shadowRect, 15, 15); // 圆角半径保持为 15，可作为参数进一步灵活化
+        painter.drawRoundedRect(shadowRect, 15, 15); 
 
     }
 
@@ -91,34 +82,30 @@ void PaintTool::paintGradientShadow(
     QPainter& painter,
     int width,
     int height,
-    int shadowRadius,  // 新增：陰影擴散半徑
-    QColor shadowColor // 新增：陰影顏色
+    int shadowRadius, 
+    QColor shadowColor 
 )
 {
-    // 啟用抗鋸齒以獲得更平滑的邊緣
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // 绘制阴影
-    int offsetX = 0;       // 新增：陰影X偏移
-    int offsetY = 15;       // 新增：陰影Y偏移
-    // 定義繪製區域（考慮偏移）
-    int edge = 0; // 邊距
+    int offsetX = 0;   
+    int offsetY = 15;       
+    int edge = 0; 
     QRect shadowRect(edge, edge, width - 2 * edge, height - 2 * edge);
 
 
     QColor edgeColor = shadowColor.lighter(100);
     edgeColor.setAlpha(0);
 
-    // 使用 QRadialGradient 創建放射狀漸變陰影
     QRadialGradient gradient(shadowRect.center() + QPoint(offsetX, offsetY), shadowRect.width() / 2 + shadowRadius);
-    gradient.setColorAt(0.3, shadowColor); // 中心顏色（較濃）
-    gradient.setColorAt(0.9, edgeColor); // 邊緣透明
+    gradient.setColorAt(0.3, shadowColor); 
+    gradient.setColorAt(0.9, edgeColor); 
 
-    // 設置畫筆和填充
-    painter.setPen(Qt::NoPen); // 無邊框
+
+    painter.setPen(Qt::NoPen); 
     painter.setBrush(gradient);
 
-    // 繪製圓角矩形陰影
+
     painter.drawRoundedRect(shadowRect, 15, 15);
 }
 

@@ -68,8 +68,8 @@ void WorkflowManager::startRecording() {
     LOG_DEBUG("Start Recording");
     transitionTo(WorkflowState::Loading, WorkflowEvent::StartRequested);
     m_sherpaManager->pauseIdleTimer();
-    // 加载期间即开麦：用户开口即录。utterance 经 SherpaManager 队列排在 Load 任务之后，
-    // worker 串行执行，加载完成后再转录，不丢开头语音，无需私有缓冲。
+
+    // 开始录音
     if (!m_recorder->startListening()) {
         transitionTo(WorkflowState::Error, WorkflowEvent::ErrorOccurred);
         return;
@@ -93,7 +93,6 @@ void WorkflowManager::proceedToRecording() {
         LOG_ERROR("Model load failed");
         return;
     }
-    // 麦克风已在 startRecording 中开启，此处不再重复 startListening
     transitionTo(WorkflowState::Recording, WorkflowEvent::ModelLoaded);
 }
 
@@ -128,8 +127,8 @@ void WorkflowManager::stopRecording() {
 
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
     LOG_DEBUG(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
-    // 所有态（含 Loading）统一入队转录：SherpaManager 队列串行，
-    // Loading 态的 utterance 排在 Load 任务之后，加载完成后自动转录，不丢。
+
+    // 所有态统一入队转录
     m_pending++;
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);

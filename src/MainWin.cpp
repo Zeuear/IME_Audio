@@ -20,7 +20,6 @@
 #include "TextPolishService.h"
 #include "ConfigManager.h"
 #include "UpdateManager.h"
-#include "update_policy.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/SherpaManager.h"
 #include "utils/Logger.h"
@@ -136,8 +135,14 @@ void MainWin::initialize() {
     //m_sphereOverlay->showAtBottomCenter();
     //m_sphereOverlay->setListening();
 
-    // 启动时检查一次更新（单次，不周期弹窗打扰用户）
-    QTimer::singleShot(2000, this, [this]() { m_updateManager->checkForUpdates(); });
+    // 启动时检查一次更新
+    QTimer::singleShot(2000, this, [this]() { 
+        if (ConfigManager::instance().config().skipUpdateReminder) {
+            LOG_INFO("Update available but skipped per user preference");
+            return;
+        }
+        m_updateManager->checkForUpdates(); 
+    });
 
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
@@ -820,12 +825,6 @@ void MainWin::notify(NotifyLevel level, const QString& titleCN, const QString& c
 }
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
-    // 用户已选择"不再提醒" → 直接跳过，不打扰
-    if (!shouldPromptUpdate(ConfigManager::instance().config().skipUpdateReminder)) {
-        LOG_INFO("Update available but skipped per user preference");
-        return;
-    }
-
     QMessageBox msgBox(this);
     msgBox.setWindowTitle(tr("Update Available"));
     msgBox.setText(tr("A new version (%1) is available!").arg(version));

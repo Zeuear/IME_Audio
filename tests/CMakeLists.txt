@@ -38,7 +38,6 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit/update_policy_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:

@@ -15,19 +15,19 @@ public:
         int height,
         QColor shadowColor,
         QPainterPath clipPath = QPainterPath(),
-        int blurRadius = 15,        // 模糊半径（影响扩散程度）
-        int offsetX = 0,           // 水平偏移
-        int offsetY = 2,           // 垂直偏移
-        int layers = 10,           // 阴影层数
-        qreal opacityFactor = 0.5 // 整体透明度因子
+        int blurRadius = 15,       
+        int offsetX = 0,          
+        int offsetY = 2,          
+        int layers = 10,         
+        qreal opacityFactor = 0.5
     );
 
     static void paintGradientShadow(
         QPainter& painter,
         int width,
         int height,
-        int shadowRadius,  // 新增：陰影擴散半徑
-        QColor shadowColor // 新增：陰影顏色
+        int shadowRadius, 
+        QColor shadowColor
     );
 
     static QPixmap drawShadowEffect(
