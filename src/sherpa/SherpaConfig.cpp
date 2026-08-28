@@ -307,7 +307,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFunasrNano(
     int numThreads)
 {
     sherpa_onnx::cxx::OfflineRecognizerConfig config;
-    config.model_config.tokens = getModelPath(repoId, "", files.tokensFile).toStdString();
 	config.model_config.funasr_nano.hotwords = files.hotwords.toStdString();
     config.model_config.funasr_nano.embedding = getModelPath(repoId, "", files.embeddingFile).toStdString();
     config.model_config.funasr_nano.encoder_adaptor = getModelPath(repoId, "", files.encoderAdaptorFile).toStdString();
@@ -382,8 +381,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
                 .joinerFile = "joiner-epoch-34-avg-19.int8.onnx"
             }
         }},
-        {"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
-            {ModelArch::FireRedAsr}},
+        //{"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
+        //    {ModelArch::FireRedAsr}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
             {ModelArch::SenseVoice}},
         {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25",
@@ -409,8 +408,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
             {ModelArch::Moonshine}},
         {"csukuangfj/sherpa-onnx-paraformer-en-2024-03-09",
             {ModelArch::Paraformer, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
-        {"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
-            {ModelArch::FireRedAsr}},
+        //{"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
+        //    {ModelArch::FireRedAsr}},
         {"zrjin/icefall-asr-zipformer-multi-zh-en-2023-11-22", {
             ModelArch::TransducerOffline,
             TransducerFiles{
@@ -1239,7 +1238,6 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
         addFile("", files.embeddingFile);
         addFile("", files.encoderAdaptorFile);
         addFile("", files.llmFile);
-        addFile("", files.tokensFile);
         addFile(files.tokenizerSubfolder, files.tokenizerJsonFile);
         addFile(files.tokenizerSubfolder, files.mergesFile);
         addFile(files.tokenizerSubfolder, files.vocabFile);

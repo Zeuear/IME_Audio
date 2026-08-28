@@ -85,7 +85,6 @@ struct FunasrFiles {
     QString embeddingFile = "embedding.int8.onnx";
     QString encoderAdaptorFile = "encoder_adaptor.int8.onnx";
     QString llmFile = "llm.int8.onnx";
-    QString tokensFile = "tokens.txt";
 
     QString tokenizerSubfolder = "Qwen3-0.6B";
     QString mergesFile = "merges.txt";
@@ -368,6 +367,14 @@ public:
     struct LanguageTableEntry {
         QString languageName;
         const std::vector<std::pair<QString, ModelDescriptor>>& (*getter)();
+    };
+
+    struct VadModel {
+        inline static const QString repoId = QStringLiteral("silero-vad");
+        inline static const QString archiveUrl =
+            "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx";
+        inline static const QString localPath = ModelConfigFactory::getSherpaRoot() + "/vad/silero_vad.onnx";
+
     };
 
     /**

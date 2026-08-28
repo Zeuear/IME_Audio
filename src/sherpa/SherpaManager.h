@@ -105,6 +105,9 @@ public:
     void uninstallModel(const QString& repoId);
     void ensurePunctModel(const QString& repoId);
 
+    // VAD 模型。
+    void ensureVadModel();
+
     bool isInstalling(const QString& repoId) const;
     static bool isInstalled(const QString& repoId);
 
@@ -125,6 +128,8 @@ signals:
     void extractFinished(const QString& repoId, bool success);
 
     void loadModel(const QString& repoId, bool success, const QString& msg);
+
+    void vadModelReady(bool success, const QString& msg);
 
 private slots:
     void onGroupFileProgress(const QString& groupId, const QString& taskId, const QString& filename,

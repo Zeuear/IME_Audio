@@ -176,7 +176,7 @@ void VadWorker::rebuildDetector()
 {
     if (!QFile::exists(m_config.sherpa.vadPath)) {
         LOG_ERROR("VAD model not found");
-        emit errorOccurred(tr("录音启动失败"), tr("VAD 模型缺失，请先下载模型"));
+        emit errorOccurred(tr("录音启动失败"), tr("VAD 模型缺失，正在自动下载，请稍候重试"));
         return;
     }
         

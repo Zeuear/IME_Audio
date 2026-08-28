@@ -255,6 +255,11 @@ bool SherpaManager::transcribeOffline(const std::vector<float>& samples, int sam
         m_offlineRecognizer->Decode(&stream);
         auto result = m_offlineRecognizer->GetResult(&stream);
 
+        if (result.text.empty()) {
+            LOG_WARN(QString("Offline recognizer returned empty text (repo=%1, samples=%2)")
+                .arg(m_currentRepoId).arg(samples.size()));
+        }
+
         if (outText) *outText = QString::fromStdString(result.text).trimmed();
         return true;
     }
@@ -491,8 +496,39 @@ void SherpaInstaller::onGroupFileError(const QString& groupId, const QString&, c
     emit installFileError(groupId, filename, error);
 }
 
+
+void SherpaInstaller::ensureVadModel()
+{
+    const QString vadGroup = ModelRegistry::VadModel::repoId;
+    const QString path = ModelRegistry::VadModel::localPath;
+    if (QFile::exists(path)) {
+        emit vadModelReady(true, tr("VAD model ready"));
+        return;
+    }
+
+    if (isInstalling(vadGroup)) return;
+
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    LOG_INFO("VAD model (silero_vad.onnx) missing, auto-downloading...");
+
+    const QString displayName = tr("VAD Voice Activity Model");
+    m_downloadManager->addGroupTask(vadGroup, displayName, QUrl(ModelRegistry::VadModel::archiveUrl), path);
+    emit installGroupStarted(vadGroup, displayName, 1);
+}
+
 void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
 {
+    const QString vadGroup = ModelRegistry::VadModel::repoId;
+    if (groupId == vadGroup) {
+        const QString msg = success ? tr("VAD model ready") : tr("VAD model download failed");
+        if (!success) {
+            QFile::remove(ModelRegistry::VadModel::localPath);
+        }
+        emit installGroupFinished(groupId, success, msg);
+        emit vadModelReady(success, msg);
+        return;
+    }
+
     const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;
     if (groupId == puncGroup) {
         if (!success) {

@@ -39,6 +39,28 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
+       <widget class="QScrollArea" name="settingsScrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <widget class="QWidget" name="settingsScrollAreaContents">
+         <layout class="QVBoxLayout" name="settingsScrollAreaLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
          <number>1</number>
@@ -933,6 +955,10 @@
            <widget class="TermWidget" name="terms_widget" native="true">
             <layout class="QVBoxLayout" name="verticalLayout_3"/>
            </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
           </item>
          </layout>
         </widget>

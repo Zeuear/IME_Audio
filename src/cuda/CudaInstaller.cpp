@@ -18,7 +18,7 @@ CudaInstaller::CudaInstaller(QNetworkAccessManager* nam, SherpaInstaller* sherpa
     connect(m_cudaDownloader, &DownloadManager::groupFinished, this, &CudaInstaller::onGroupFinished);
 }
 
-CudaInstaller::~CudaInstaller(){}
+CudaInstaller::~CudaInstaller() {}
 
 
 
@@ -118,17 +118,20 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
     {
         QString ortCudaLib;
 #ifdef Q_OS_WIN
-        ortCudaLib = "onnxruntime_providers_cuda";
+        ortCudaLib = "onnxruntime_providers_cuda.dll";
 #elif defined(Q_OS_LINUX)
         ortCudaLib = "libonnxruntime_providers_cuda.so";
 #endif
-        QLibrary ortLib(ortCudaLib);
-        result.hasOrtCudaProvider = ortLib.load();
-        if (result.hasOrtCudaProvider) {
-            ortLib.unload();
-        } else {
-            result.failReason = tr("Detected CUDA Runtime, but ONNX Runtime CUDA provider (onnxruntime_providers_cuda) not found. GPU acceleration requires the sherpa-onnx CUDA build.");
-        }
+        QString dllPath = QApplication::applicationDirPath()+ QDir::separator() + ortCudaLib;
+        result.hasOrtCudaProvider = QFile::exists(dllPath);
+
+        //QLibrary ortLib(ortCudaLib);
+        //if (result.hasOrtCudaProvider) {
+        //    ortLib.unload();
+        //}
+        //else {
+        //    result.failReason = tr("Detected CUDA Runtime, but ONNX Runtime CUDA provider (onnxruntime_providers_cuda) not found. GPU acceleration requires the sherpa-onnx CUDA build.");
+        //}
     }
 
     result.isFullyReady = result.hasNvidiaGpu && result.hasCudaRuntime
@@ -175,10 +178,10 @@ void CudaInstaller::startDownload(const GpuDetectionResult& result)
     if (downloadDir.isEmpty()) {
         downloadDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     }
-    
+
     m_cudaInstallerPath = QDir(downloadDir).filePath("cuda_12.6.0_560.76_windows.exe");
     QUrl cudaUrl("https://developer.download.nvidia.com/compute/cuda/12.6.0/local_installers/cuda_12.6.0_560.76_windows.exe");
-  
+
     m_cudnnZipPath = QDir(downloadDir).filePath("cudnn-windows-x86_64-9.6.0.29_cuda12-archive.zip");
     QUrl cudnnUrl("https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.6.0.74_cuda12-archive.zip");
 
@@ -262,7 +265,7 @@ void CudaInstaller::startInstall()
         QStringList cudaArgs = { "/s", "-n", "nvcc_12.6", "cusparse_12.6", "cublas_12.6", "cudart_12.6" };
         ElevatedProcessTask* cudaTask = new ElevatedProcessTask(m_cudaInstallerPath, cudaArgs, m_taskManager);
         connect(cudaTask, &ElevatedProcessTask::installProgress, this, [this](const QString& msg) { LOG_INFO(msg); });
-        
+
         if (!m_detail.hasCudaRuntime) {
             m_taskManager->addTask(cudaTask);
         }
@@ -286,7 +289,7 @@ void CudaInstaller::startInstall()
         opts.destinationDir = QApplication::applicationDirPath();
         opts.filter = [](const QFileInfo& fi) {
             return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
-        };
+            };
         ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts);
         connect(sherpaTask, &ExtractExTask::extractStarted, this, [this](int total) { emit extractStarted(GROUP_ID, total); });
         connect(sherpaTask, &ExtractExTask::extractProgress, this, [this](int cur, int tot) { emit extractProgress(GROUP_ID, cur, tot); });

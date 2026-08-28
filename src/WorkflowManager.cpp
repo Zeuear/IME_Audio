@@ -143,6 +143,9 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
             emit transcriptionResultReady(finalText);
             transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);
         }
+        else {
+            LOG_WARN(QString("Transcription returned empty text (rawText=\"%1\")").arg(rawText));
+        }
     }
     else {
         emit errorOccurred(tr("语音识别失败"), errorMsg);

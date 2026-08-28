@@ -12,6 +12,7 @@
 #include <QCheckBox>
 #include <QListWidget>
 #include <QDesktopServices>
+#include <QScreen>
 
 #include "AppConfig.h"
 #include "WorkflowManager.h"
@@ -33,6 +34,18 @@
 
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
+
+  // 部分屏幕分辨率较小(如笔记本 1366x768)，避免窗口初始高度超出可用桌面区域，
+  // 导致底部按钮/导航栏被挤出屏幕且无法通过拖拽缩小窗口来找回。
+  if (QScreen* screen = this->screen()) {
+      const QRect avail = screen->availableGeometry();
+      const int targetW = qMin(width(), avail.width() - 20);
+      const int targetH = qMin(height(), avail.height() - 20);
+      if (targetW > 0 && targetH > 0 && (targetW < width() || targetH < height())) {
+          resize(targetW, targetH);
+      }
+  }
+
   ui->ai_vocabulary_edit->setReadOnly(true);
   ui->identification_log_edit->setReadOnly(true);
   ui->config_log_edit->setReadOnly(true);
@@ -146,6 +159,9 @@ void MainWin::initialize() {
 
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
+    // VAD 模型随安装包分发；若缺失(旧安装包/被误删)则自动补下载，避免用户卡在
+    // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
+    m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
 }  
@@ -246,6 +262,14 @@ void MainWin::setupUiConnections(){
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
         else notify(NotifyLevel::Error, tr("模型下载失败"), tr("请检查网络后重试"));
+    });
+    connect(m_sherpaInstaller, &SherpaInstaller::vadModelReady, this, [this](bool success, const QString&) {
+        if (success) {
+            LOG_INFO("VAD model ready, rebuilding VAD detector");
+            m_workflow->applyRecorderConfig();
+        } else {
+            notify(NotifyLevel::Error, tr("VAD 模型下载失败"), tr("请检查网络后重试，或前往 \"下载列表\" 查看进度"));
+        }
     });
     // CUDA 初始化失败回退 CPU（非错误，仅提示）
     connect(m_sherpaManager, &SherpaManager::gpuFallbackToCpu, this, [this]() {
