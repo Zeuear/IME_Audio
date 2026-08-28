@@ -1,7 +1,7 @@
 #pragma once
 
 // 自动生成的版本号宏
-#define PROJECT_VERSION       "1.0.5"
+#define PROJECT_VERSION       "1.0.6"
 #define VERSION_MAJOR         1
 #define VERSION_MINOR         0
-#define VERSION_PATCH         5
+#define VERSION_PATCH         6
