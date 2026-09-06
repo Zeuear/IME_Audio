@@ -64,15 +64,9 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
-          if [ "${{ matrix.platform }}" == "macos" ]; then
-            cmake -S . -B build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} 
-          else
-            cmake -S . -B build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }}
-          fi
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }}
 
       - name: Build Project
         run: cmake --build build --config Release
