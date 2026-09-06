@@ -84,7 +84,8 @@ elseif(APPLE)
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
         set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-arm64-static-no-tts-lib.tar.bz2")
     else()
-        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-x86_64-static-no-tts-lib.tar.bz2")
+        # 上游 Intel 资产名用的是 x64，不是 x86_64
+        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-x64-static-no-tts-lib.tar.bz2")
     endif()
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -280,11 +281,19 @@ else()
     message(STATUS "silero_vad.onnx already exists, skip downloading.")
 endif()
 
+# 落点必须与 AppPaths::vadModelFile() 的解析结果一致：macOS 上是 bundle 的
+# Contents/Resources，其它平台是可执行文件同级目录。
+if(APPLE)
+    set(_vad_dest_dir "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}>/Resources/sherpa/vad")
+else()
+    set(_vad_dest_dir "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad")
+endif()
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${_vad_dest_dir}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${VAD_MODEL_PATH}"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad/silero_vad.onnx"
+        "${_vad_dest_dir}/silero_vad.onnx"
     COMMENT "Copying silero_vad.onnx to output directory"
 )
 
