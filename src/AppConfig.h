@@ -2,6 +2,15 @@
 #include <QString>
 #include <QKeySequence>
 #include <QApplication>
+#include "utils/AppPaths.h"
+
+// macOS 上 Qt 把 Ctrl 映射为 ⌘、Meta 映射为 ⌃，所以 Windows 的 Ctrl+Alt+Y 会变成
+// ⌘⌥Y 并与应用级快捷键频繁冲突；⌃⌥Y 则不占用任何 macOS 系统绑定。
+#ifdef Q_OS_MACOS
+inline const QString kDefaultHotkey = QStringLiteral("Alt+Meta+Y");
+#else
+inline const QString kDefaultHotkey = QStringLiteral("Ctrl+Alt+Y");
+#endif
 
 enum class AsrBackendKind {
     Sherpa = 0,
@@ -27,7 +36,7 @@ struct AudioConfig {
 };
 
 struct SherpaConfig {
-    QString vadPath = QApplication::applicationDirPath() + "/sherpa/vad/silero_vad.onnx";
+    QString vadPath = AppPaths::vadModelFile();
     bool useGpu = false;
     int threads = 4;
     QString languageModel;

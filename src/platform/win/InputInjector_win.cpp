@@ -1,12 +1,11 @@
-#include "InputInjector.h"
-#include "utils/Logger.h"
+#include "../../InputInjector.h"
+#include "../../utils/Logger.h"
 #include <QVector>
 #include <QClipboard>
 #include <QApplication>
 #include <QThread>
 #include <QMimeData>
 
-#ifdef Q_OS_WIN32
 #define NOMINMAX
 #include <windows.h>
 #include <imm.h>
@@ -457,15 +456,3 @@ bool InputInjector::inject(const QString& text, Mode mode) {
     static const UnicodeTextInjector injector;
     return injector.inject(text);
 }
-
-#else
-
-bool InputInjector::sendCtrlV() { return false; }
-bool InputInjector::pasteViaClipboard(const QString&) { return false; }
-bool InputInjector::pasteViaUnicodeTyping(const QString&) { return false; }
-bool InputInjector::inject(const QString&, Mode) {
-    // 非 Windows 平台可接入 xdotool / AppleScript 等实现
-    return false;
-}
-
-#endif

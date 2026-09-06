@@ -1,14 +1,5 @@
-#include "SystemAudioEndpointController.h"
+#include "../../utils/SystemAudioEndpointController.h"
 
-#ifndef _WIN32
-// 非 Windows 平台：不切换系统音频端点，全部空实现，保证跨平台编译与调用安全。
-bool SystemAudioEndpointController::setDefaultOutput(const std::string&) { return true; }
-bool SystemAudioEndpointController::setDefaultInput(const std::string&) { return true; }
-std::string SystemAudioEndpointController::getDefaultOutputId() const { return {}; }
-std::string SystemAudioEndpointController::getDefaultInputId() const { return {}; }
-void SystemAudioEndpointController::restore() {}
-
-#else
 // Windows：通过 Core Audio COM API 切换系统默认音频端点。
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -161,4 +152,3 @@ void SystemAudioEndpointController::restore() {
     if (!m_savedInputId.empty()) applyDefaultEndpoint(m_savedInputId, eCapture);
     m_hasSaved = false;
 }
-#endif

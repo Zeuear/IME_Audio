@@ -1,8 +1,6 @@
 #include "CudaInstaller.h"
+#include "CudaPlatformSpec.h"
 #include <QLibrary>
-#ifdef Q_OS_WIN32
-#include <Windows.h>
-#endif
 
 
 
@@ -23,7 +21,9 @@ CudaInstaller::~CudaInstaller() {}
 
 
 void CudaInstaller::setEnvironment() {
-#ifdef Q_OS_WIN32
+    if (!cudaPlatformSpec().installable) {
+        return;
+    }
     QString cudnnBinDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/CUDNN/v9.x/bin";
     if (!QFile::exists(cudnnBinDir)) {
         return;
@@ -35,12 +35,17 @@ void CudaInstaller::setEnvironment() {
         // 动态修改当前进程及其子进程的环境变量
         qputenv("PATH", (nativeCudnnPath + ";" + path).toLocal8Bit());
     }
-#endif
 }
 
 GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
 {
     GpuDetectionResult result;
+    const CudaPlatformSpec& spec = cudaPlatformSpec();
+    if (!spec.detectable) {
+        result.failReason = tr("CUDA is not available on this platform");
+        return result;
+    }
+
     // 第一层:硬件检测
     QString gpuName;
     if (!detectNvidiaGpuPresent(&gpuName)) {
@@ -52,23 +57,8 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
     result.gpuName = gpuName;
 
     // 第二层:CUDA Runtime 动态库检测
-    struct CudaLibCandidate { QString libName; QString version; };
-
-    QVector<CudaLibCandidate> candidates;
-#ifdef Q_OS_WIN
-    candidates = {
-        {"cudart64_12", "12.x"},
-        {"cudart64_13", "13.x"},
-    };
-#elif defined(Q_OS_LINUX)
-    candidates = {
-        {"cudart", "system-linked"},
-        {"libcudart.so.12", "12.x"},
-    };
-#endif
-
     bool cudartLoaded = false;
-    for (const auto& cand : candidates) {
+    for (const auto& cand : spec.cudartCandidates) {
         QLibrary lib(cand.libName);
         if (lib.load()) {
             if (lib.resolve("cudaGetDeviceCount") != nullptr) {
@@ -90,14 +80,8 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
 
     // 第三层(按需):cuDNN 检测,如果 sherpa-onnx 的 GPU 推理依赖 cudnn
     if (requireCudnn) {
-        QVector<QString> cudnnCandidates;
-#ifdef Q_OS_WIN
-        cudnnCandidates = { "cudnn64_9" };
-#elif defined(Q_OS_LINUX)
-        cudnnCandidates = { "cudnn", "libcudnn.so.8", "libcudnn.so.9" };
-#endif
         bool cudnnLoaded = false;
-        for (const auto& name : cudnnCandidates) {
+        for (const auto& name : spec.cudnnCandidates) {
             QLibrary lib(name);
             if (lib.load()) {
                 if (lib.resolve("cudnnGetVersion") != nullptr) {
@@ -116,13 +100,7 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
 
     // 第四层:ONNX Runtime CUDA Execution Provider 检测
     {
-        QString ortCudaLib;
-#ifdef Q_OS_WIN
-        ortCudaLib = "onnxruntime_providers_cuda.dll";
-#elif defined(Q_OS_LINUX)
-        ortCudaLib = "libonnxruntime_providers_cuda.so";
-#endif
-        QString dllPath = QApplication::applicationDirPath()+ QDir::separator() + ortCudaLib;
+        QString dllPath = QApplication::applicationDirPath() + QDir::separator() + spec.ortCudaProviderLib;
         result.hasOrtCudaProvider = QFile::exists(dllPath);
 
         //QLibrary ortLib(ortCudaLib);
@@ -142,12 +120,13 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
 
 bool CudaInstaller::detectNvidiaGpuPresent(QString* gpuNameOut)
 {
+    const CudaPlatformSpec& spec = cudaPlatformSpec();
+    if (!spec.detectable) {
+        return false;
+    }
+
     QProcess process;
-#ifdef Q_OS_WIN
-    process.start("nvidia-smi.exe", { "--query-gpu=name", "--format=csv,noheader" });
-#else
-    process.start("nvidia-smi", { "--query-gpu=name", "--format=csv,noheader" });
-#endif
+    process.start(spec.nvidiaSmiExecutable, { "--query-gpu=name", "--format=csv,noheader" });
 
     if (!process.waitForStarted(1500)) {
         return false;
@@ -172,6 +151,12 @@ bool CudaInstaller::detectNvidiaGpuPresent(QString* gpuNameOut)
 
 void CudaInstaller::startDownload(const GpuDetectionResult& result)
 {
+    const CudaPlatformSpec& spec = cudaPlatformSpec();
+    if (!spec.installable) {
+        emit installGroupFinished(GROUP_ID, false, tr("CUDA installation is not supported on this platform"));
+        return;
+    }
+
     m_detail = result;
     emit statusChanged(QString(tr("Preparation for CUDA 12.6 offline installation package...")));
     QString downloadDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
@@ -179,14 +164,14 @@ void CudaInstaller::startDownload(const GpuDetectionResult& result)
         downloadDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     }
 
-    m_cudaInstallerPath = QDir(downloadDir).filePath("cuda_12.6.0_560.76_windows.exe");
-    QUrl cudaUrl("https://developer.download.nvidia.com/compute/cuda/12.6.0/local_installers/cuda_12.6.0_560.76_windows.exe");
+    m_cudaInstallerPath = QDir(downloadDir).filePath(spec.cudaInstallerFileName);
+    QUrl cudaUrl(spec.cudaInstallerUrl);
 
-    m_cudnnZipPath = QDir(downloadDir).filePath("cudnn-windows-x86_64-9.6.0.29_cuda12-archive.zip");
-    QUrl cudnnUrl("https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.6.0.74_cuda12-archive.zip");
+    m_cudnnZipPath = QDir(downloadDir).filePath(spec.cudnnArchiveFileName);
+    QUrl cudnnUrl(spec.cudnnArchiveUrl);
 
-    m_sherpaZipPath = QDir(downloadDir).filePath("sherpa-onnx-v1.13.4.tar.bz2");
-    QUrl sherpaUrl("https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.4/sherpa-onnx-v1.13.4-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2");
+    m_sherpaZipPath = QDir(downloadDir).filePath(spec.sherpaArchiveFileName);
+    QUrl sherpaUrl(spec.sherpaArchiveUrl);
 
     int count = 0;
     if (!result.hasCudaRuntime) {
@@ -262,8 +247,8 @@ void CudaInstaller::startInstall()
         });
 
     if (QFile::exists(m_cudaInstallerPath) && !m_detail.hasCudaRuntime) {
-        QStringList cudaArgs = { "/s", "-n", "nvcc_12.6", "cusparse_12.6", "cublas_12.6", "cudart_12.6" };
-        ElevatedProcessTask* cudaTask = new ElevatedProcessTask(m_cudaInstallerPath, cudaArgs, m_taskManager);
+        ElevatedProcessTask* cudaTask = new ElevatedProcessTask(
+            m_cudaInstallerPath, cudaPlatformSpec().cudaInstallerArgs, m_taskManager);
         connect(cudaTask, &ElevatedProcessTask::installProgress, this, [this](const QString& msg) { LOG_INFO(msg); });
 
         if (!m_detail.hasCudaRuntime) {

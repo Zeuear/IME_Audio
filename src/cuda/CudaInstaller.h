@@ -11,12 +11,6 @@
 #include "../utils/ExtractTool.h"
 #include "../sherpa/SherpaManager.h"
 
-#ifdef Q_OS_WIN32
-#include <Windows.h>
-#include <shellapi.h>
-#endif
-
-
 struct GpuDetectionResult {
     bool hasNvidiaGpu = false;
     QString gpuName;

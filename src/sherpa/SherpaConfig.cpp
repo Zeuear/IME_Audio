@@ -5,26 +5,20 @@
 #include <QDir>
 #include <QDebug>
 #include <QtConcurrent> 
+#include "../cuda/CudaPlatformSpec.h"
+#include "../utils/AppPaths.h"
 #include "../utils/Logger.h"
 #include "../ConfigManager.h"
 
 
 QString ModelConfigFactory::getSherpaRoot()
 {
-    QString appDir = QCoreApplication::applicationDirPath();
-    QDir dir(appDir);
-    return dir.absoluteFilePath("sherpa");
+    return AppPaths::sherpaRoot();
 }
 
 QString ModelConfigFactory::getSherpaModel()
 {
-    QString appDir = QCoreApplication::applicationDirPath();
-    QDir dir(appDir);
-    QString dirPath = dir.absoluteFilePath("sherpa/models");
-    if (!QFile::exists(dirPath)) {
-        QDir().mkpath(dirPath);
-    }
-    return dirPath;
+    return AppPaths::sherpaModelsDir();
 }
 
 
@@ -1075,7 +1069,9 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 LOG_WARN(tr("Hotwords configured but architecture does not support contextual biasing, ignored: %1").arg(repoId));
             }
 
-            if (useGpu) {
+            // CUDA 不存在的平台上不要进入这个 try/catch：它会吞掉异常并把任何模型加载
+            // 失败都记成"回退到 CPU"，掩盖真实错误。
+            if (useGpu && cudaPlatformSpec().detectable) {
                 try {
                     config.model_config.provider = "cuda";
                     LOG_INFO("Sherpa initialized with [CUDA]");

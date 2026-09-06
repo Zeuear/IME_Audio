@@ -10,6 +10,7 @@
 #include <QGroupBox>
 #include "qhotkey.h"
 #include "AnimatedCheckbox.h"
+#include "ShortcutFormat.h"
 #include "../utils/Logger.h"
 
 
@@ -62,7 +63,12 @@ protected:
             setText(QKeySequence(key).toString());
             emit editingFinished();
         }
-        // 4. 支持退格键和删除键清空内容
+        // 4. 支持空格键（默认热键使用）
+        else if (key == Qt::Key_Space) {
+            setText("Space");
+            emit editingFinished();
+        }
+        // 5. 支持退格键和删除键清空内容
         else if (key == Qt::Key_Backspace || key == Qt::Key_Delete) {
             clear();
             emit editingFinished();
@@ -102,8 +108,22 @@ public:
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(3);
 
+        // 修饰键名称：Qt 在 macOS 上把 Ctrl 映射为 ⌘、Meta 映射为 ⌃，
+        // 因此标签必须按平台显示，内部存储格式保持 Qt 语义不变。
+#ifdef Q_OS_MACOS
+        const QString ctrlName = QStringLiteral("⌘ Cmd");
+        const QString shiftName = QStringLiteral("⇧ Shift");
+        const QString altName = QStringLiteral("⌥ Option");
+        const QString metaName = QStringLiteral("⌃ Control");
+#else
+        const QString ctrlName = QStringLiteral("Ctrl");
+        const QString shiftName = QStringLiteral("Shift");
+        const QString altName = QStringLiteral("Alt");
+        const QString metaName = QStringLiteral("Win");
+#endif
+
         // Ctrl 组合
-        QLabel *lblCtrl = new QLabel("Ctrl", this);
+        QLabel *lblCtrl = new QLabel(ctrlName, this);
         lblCtrl->setFixedHeight(30);
         chkCtrl = new AnimatedCheckBox(this);
         layout->addWidget(lblCtrl);
@@ -111,7 +131,7 @@ public:
         layout->addSpacing(25);
 
         // Shift 组合
-        QLabel *lblShift = new QLabel("Shift", this);
+        QLabel *lblShift = new QLabel(shiftName, this);
         lblShift->setFixedHeight(30);
         chkShift = new AnimatedCheckBox(this);
         layout->addWidget(lblShift);
@@ -119,27 +139,26 @@ public:
         layout->addSpacing(25);
 
         // Alt 组合
-        QLabel *lblAlt = new QLabel("Alt", this);
+        QLabel *lblAlt = new QLabel(altName, this);
         lblAlt->setFixedHeight(30);
         chkAlt = new AnimatedCheckBox(this);
         layout->addWidget(lblAlt);
         layout->addWidget(chkAlt);
         layout->addSpacing(25);
 
-        // Win 组合
-        QLabel* lblWin = new QLabel("Win", this);
-        lblWin->setFixedHeight(30);
-        chkWin = new AnimatedCheckBox(this);
-        layout->addWidget(lblWin);
-        layout->addWidget(chkWin);
+        // Meta 组合（Windows 上是 Win 键，macOS 上是 ⌃ Control）
+        QLabel* lblMeta = new QLabel(metaName, this);
+        lblMeta->setFixedHeight(30);
+        chkMeta = new AnimatedCheckBox(this);
+        layout->addWidget(lblMeta);
+        layout->addWidget(chkMeta);
         layout->addSpacing(25);
 
         // 字母输入框
-        QLabel* lblKey = new QLabel("快捷键 ( A-Z/0-9/F1-F24 )", this);
+        QLabel* lblKey = new QLabel("快捷键 ( A-Z/0-9/F1-F24/Space )", this);
         lblKey->setFixedHeight(30);
         txtKey = new SingleCharEdit();
-        txtKey->setMaxLength(1);
-        txtKey->setFixedWidth(50);
+        txtKey->setFixedWidth(70);
         txtKey->setFixedHeight(30);
 
         layout->addWidget(lblKey);
@@ -156,37 +175,27 @@ public:
     }
 
     QString getShortCut() const {
-        QStringList list;
-        if (chkCtrl->isChecked()) list << "Ctrl";
-        if (chkShift->isChecked()) list << "Shift";
-        if (chkAlt->isChecked()) list << "Alt";
-		if (chkWin->isChecked()) list << "Win";
-        
-        QString keyText = txtKey->text().trimmed().toUpper();
-        if (!keyText.isEmpty()) {
-            list << keyText;
-        }
-        return list.join("+");
+        ShortcutParts parts;
+        parts.ctrl = chkCtrl->isChecked();
+        parts.shift = chkShift->isChecked();
+        parts.alt = chkAlt->isChecked();
+        parts.meta = chkMeta->isChecked();
+        parts.key = normaliseKeyName(txtKey->text().trimmed());
+        return formatShortcut(parts);
     }
 
     void setShortCut(const QString &shortcut) {
-        unregisterHotkey(); 
-        chkCtrl->setChecked(false);
-        chkShift->setChecked(false);
-        chkAlt->setChecked(false);
-		chkWin->setChecked(false);
-        txtKey->clear();
+        unregisterHotkey();
 
-        QStringList parts = shortcut.split("+");
-        for (const QString &part : parts) {
-            QString p = part.trimmed();
-            if (p.compare("Ctrl", Qt::CaseInsensitive) == 0) chkCtrl->setChecked(true);
-            else if (p.compare("Shift", Qt::CaseInsensitive) == 0) chkShift->setChecked(true);
-            else if (p.compare("Alt", Qt::CaseInsensitive) == 0) chkAlt->setChecked(true);
-			else if (p.compare("Win", Qt::CaseInsensitive) == 0) chkWin->setChecked(true);
-            else if (p.length() == 1) txtKey->setText(p.toUpper());
-        }
-        registerGlobalHotkey(shortcut);
+        const ShortcutParts parts = parseShortcut(shortcut);
+        chkCtrl->setChecked(parts.ctrl);
+        chkShift->setChecked(parts.shift);
+        chkAlt->setChecked(parts.alt);
+        chkMeta->setChecked(parts.meta);
+        txtKey->setText(parts.key);
+
+        // 用规范化后的字符串注册，历史配置里的 "Win" 别名才能被 QKeySequence 认出
+        registerGlobalHotkey(formatShortcut(parts));
     }
 
     void setListening(bool listening) {
@@ -257,7 +266,7 @@ private:
     AnimatedCheckBox* chkCtrl;
     AnimatedCheckBox*chkShift;
     AnimatedCheckBox* chkAlt;
-    AnimatedCheckBox*chkWin;
+    AnimatedCheckBox* chkMeta;
     QLabel* indicatorLbl;
     QLineEdit *txtKey;
     QHotkey *globalHotkey = nullptr;

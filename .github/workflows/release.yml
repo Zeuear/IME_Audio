@@ -26,9 +26,11 @@ jobs:
           # - os: ubuntu-22.04
           #   platform: linux
           #   asset_name: ImeAudio-x86_64.AppImage
-          # - os: macos-latest
-          #   platform: macos
-          #   asset_name: ImeAudio_macOS.dmg
+          # macOS 目前只发 arm64。Intel (macos-13/x86_64) 待 arm64 构建稳定后再加入，
+          # 避免同时调试两套 sherpa 静态链接问题。
+          - os: macos-14
+            platform: macos
+            asset_name: ImeAudio_macOS_arm64.dmg
 
     steps:
       - name: Checkout code
@@ -96,9 +98,9 @@ jobs:
           fi
           echo "✅ 找到 app bundle: $APP_BUNDLE"
 
-          macdeployqt "$APP_BUNDLE" -dmg
+          macdeployqt "$APP_BUNDLE" -qmldir=qml -dmg
           DMG_FILE=$(find "$(dirname "$APP_BUNDLE")" -maxdepth 1 -name "*.dmg" | head -n 1)
-          mv "$DMG_FILE" ./ImeAudio_macOS.dmg
+          mv "$DMG_FILE" ./ImeAudio_macOS_arm64.dmg
 
       # ---- LINUX 打包 ----
       - name: Deploy & Package (Linux)

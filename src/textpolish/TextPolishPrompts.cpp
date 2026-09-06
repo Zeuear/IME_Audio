@@ -7,18 +7,19 @@
 #include <QJsonObject>
 #include <QUrl>
 
+#include "../utils/AppPaths.h"
+
 namespace TextPolishPrompts {
 
 namespace {
 void ensurePromptsDirInited() {
-    QString dir = QCoreApplication::applicationDirPath() + "/prompts";
-    QDir().mkpath(dir);
+    QDir().mkpath(AppPaths::promptsDir());
 }
 } // namespace
 
 QString loadSystemPrompt(const QString& filename, const QString& defaultPrompt) {
     ensurePromptsDirInited();
-    QString path = QCoreApplication::applicationDirPath() + "/prompts/" + filename;
+    QString path = QDir(AppPaths::promptsDir()).absoluteFilePath(filename);
 
     QFile file(path);
     if (!file.exists()) {

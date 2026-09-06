@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.14)
 
 project(ImeAudio_Tests LANGUAGES CXX)
 
+# 测试二进制同样会链接 macOS 平台层的 .mm 实现
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -38,6 +43,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -46,6 +52,7 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TermsLibraryManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPostProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/AppPaths.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     # TextPolishService is a Q_OBJECT class; include its .cpp + header so AUTOMOC
     # generates the moc code and links it. Logger.cpp is needed (LOG_DEBUG usage).
@@ -62,12 +69,31 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ProcessManager.h
     # 平台解耦的系统音频端点控制器（纯 C++，Win 下用 Core Audio COM）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkflowManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputInjector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/interfaces/workflow_interfaces.h
     # 神经标点：SherpaPunctuator 封装 + SherpaConfig 的 shouldUseNeuralPunct 判定
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigManager.cpp
 )
+
+# 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
+# runElevatedBlocking，InputInjector 的桩/实现同理，缺一个都会链接失败）。
+set(_test_platform_root ${CMAKE_CURRENT_SOURCE_DIR}/../src/platform)
+# 必须与 src/CMakeLists.txt 选取同一组文件：RecorderService 按值持有
+# SystemAudioEndpointController，漏掉 AudioEndpoint_* 会在链接期报缺符号。
+if(WIN32)
+    set(_test_platform_dir "win")
+    set(_test_platform_ext "cpp")
+elseif(APPLE)
+    set(_test_platform_dir "mac")
+    set(_test_platform_ext "mm")
+else()
+    set(_test_platform_dir "linux")
+    set(_test_platform_ext "cpp")
+endif()
+foreach(_mod InputInjector AudioEndpoint Elevation)
+    list(APPEND TEST_DEPS
+        "${_test_platform_root}/${_test_platform_dir}/${_mod}_${_test_platform_dir}.${_test_platform_ext}")
+endforeach()
 
 add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})
 

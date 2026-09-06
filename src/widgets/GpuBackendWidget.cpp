@@ -17,6 +17,7 @@
 #include <QStyleOption>
 #include <QPainter>
 #include "../utils/Logger.h"
+#include "../cuda/CudaPlatformSpec.h"
 
 GpuBackendWidget::GpuBackendWidget(QWidget *parent)
     : QWidget(parent)
@@ -69,7 +70,7 @@ void GpuBackendWidget::setupUi()
     m_rootLayout->addWidget(m_cpuCard);
 
     // CUDA 后端标题区域
-    m_cudaSectionTitle = new QLabel(tr("CUDA backend"), this);
+    m_cudaSectionTitle = new QLabel(tr("Inference backend"), this);
     m_cudaSectionTitle->setObjectName("cudaSectionTitle");
     m_cudaSectionDesc = new QLabel(tr("Enable NVIDIA GPU acceleration through downloadable CUDA backend."), this);
     m_cudaSectionDesc->setObjectName("cudaSectionDesc");
@@ -156,10 +157,12 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
 
     case GpuStatus::NoGpu:
         m_cpuIconLabel->setText("\u25A3");
-        m_cpuTitleLabel->setText("Only CPU");
-        m_cpuSubLabel->setText("Can't Detect GPU Acceleration");
-        m_downloadRow->setVisible(false); 
-        m_cudaSectionDesc->setText(QString(tr("No supported NVIDIA GPU detected. Current implementation uses CPU for inference.")));
+        m_cpuTitleLabel->setText(tr("CPU only"));
+        m_cpuSubLabel->setText(cudaPlatformSpec().detectable
+            ? tr("Can't detect GPU acceleration")
+            : tr("GPU acceleration unavailable on this platform"));
+        m_downloadRow->setVisible(false);
+        m_cudaSectionDesc->setText(backendUnavailableText());
         break;
 
     case GpuStatus::GpuAvailable:
@@ -226,6 +229,11 @@ void GpuBackendWidget::onModeSwitchClicked()
 
 void GpuBackendWidget::setComputeMode(ComputeMode mode)
 {
+    // 平台没有 CUDA 时锁死 CPU：旧配置里可能存着 useGpu=true，不能依赖检测流程的
+    // 时序把它改回来。
+    if (!cudaPlatformSpec().detectable) {
+        mode = ComputeMode::CPU;
+    }
     m_computeMode = mode;
     updateModeSwitchUi();
 
@@ -246,6 +254,12 @@ void GpuBackendWidget::redetect()
 
 void GpuBackendWidget::detectGpuAsync()
 {
+    if (!cudaPlatformSpec().detectable) {
+        applyStatus(GpuStatus::NoGpu);
+        emit detectFinished(false);
+        return;
+    }
+
     m_cudaInstaller->setEnvironment();
     applyStatus(GpuStatus::Detecting);
     if (m_detectWatcher) {
@@ -334,10 +348,20 @@ void GpuBackendWidget::changeEvent(QEvent* event)
 }
 
 
+QString GpuBackendWidget::backendUnavailableText() const
+{
+    if (!cudaPlatformSpec().detectable) {
+        return tr("This platform runs inference on the CPU. GPU acceleration is not available here.");
+    }
+    return tr("No supported NVIDIA GPU detected. Current implementation uses CPU for inference.");
+}
+
 void GpuBackendWidget::retranslateUi()
 {
-    m_cudaSectionTitle->setText(tr("CUDA backend"));
-    m_cudaSectionDesc->setText(tr("Enable NVIDIA GPU acceleration through downloadable CUDA backend."));
+    m_cudaSectionTitle->setText(tr("Inference backend"));
+    m_cudaSectionDesc->setText(cudaPlatformSpec().detectable
+        ? tr("Enable NVIDIA GPU acceleration through downloadable CUDA backend.")
+        : backendUnavailableText());
     updateModeSwitchUi();
     applyStatus(m_status);
 }

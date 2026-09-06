@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.14)
 
 project(ImeAudio VERSION 1.0.6 LANGUAGES CXX)
 
+# macOS 平台层用 Objective-C++（.mm）实现；不启用 OBJCXX 时 CMake 不认识 .mm 扩展名，
+# 会静默跳过这些源文件并在链接期报缺符号。
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)

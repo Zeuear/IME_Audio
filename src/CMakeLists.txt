@@ -8,6 +8,28 @@ configure_file(
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp" "utils/*.cpp" "sherpa/*.cpp" "widget/*.cpp" "cuda/*.cpp")
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "*.h" "*.hpp" "utils/*.h" "sherpa/*.h" "widget/*.h" "cuda/*.h")
+
+# platform/ 下每个平台各有一份实现，必须由构建系统挑选，不能被递归 glob 全部吞掉
+list(FILTER SOURCES EXCLUDE REGEX "/platform/")
+list(FILTER HEADERS EXCLUDE REGEX "/platform/")
+
+if(WIN32)
+    set(_platform_dir "win")
+    set(_platform_ext "cpp")
+elseif(APPLE)
+    set(_platform_dir "mac")
+    set(_platform_ext "mm")
+else()
+    set(_platform_dir "linux")
+    set(_platform_ext "cpp")
+endif()
+
+set(PLATFORM_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/InputInjector_${_platform_dir}.${_platform_ext}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/AudioEndpoint_${_platform_dir}.${_platform_ext}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/Elevation_${_platform_dir}.${_platform_ext}"
+)
+list(APPEND SOURCES ${PLATFORM_SOURCES})
 file(GLOB_RECURSE UIFILES CONFIGURE_DEPENDS "*.ui")
 file(GLOB_RECURSE QRCFILES CONFIGURE_DEPENDS "*.qrc")
 set(PROJECT_SOURCES
@@ -280,7 +302,7 @@ if(WIN32)
         imm32
     )
 elseif(APPLE)
-    target_link_libraries(${TARGET_NAME} 
+    target_link_libraries(${TARGET_NAME} PRIVATE
         ${QtModules}
         # 1. 接口层（先链接）
         sherpa-onnx-c-api
@@ -324,7 +346,16 @@ endif()
 
 
 set_target_properties(${TARGET_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.imeaudio.app
+    MACOSX_BUNDLE_BUNDLE_NAME ${TARGET_NAME}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 )
+
+if(APPLE)
+    # 缺少 NSMicrophoneUsageDescription 时，macOS 会在请求麦克风的瞬间直接 SIGKILL
+    # 进程（不是返回拒绝），因此这条是能否跑起来的硬性前提。
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../resources/deployment/macos/Info.plist.in"
+    )
+endif()

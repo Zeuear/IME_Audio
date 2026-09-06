@@ -64,7 +64,9 @@ private:
     void setupUi();
     void applyStatus(GpuStatus status);
     void detectGpuAsync();
-    void updateModeSwitchUi();   
+    void updateModeSwitchUi();
+    // CUDA 不可用时的说明文案：区分"平台没有 CUDA"与"有 CUDA 但没检测到 GPU"
+    QString backendUnavailableText() const;
 
 private:
     QFutureWatcher<GpuDetectionResult>* m_detectWatcher = nullptr;

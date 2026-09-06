@@ -4,6 +4,7 @@
 #include <QSet>
 #include <QMap>
 #include <QCoreApplication>
+#include "utils/AppPaths.h"
 TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
     connect(this, &TermsLibraryManager::termsReloaded, this, [this]() {
         saveToTsv(defaultPath());
@@ -14,8 +15,7 @@ TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
 }
 
 QString TermsLibraryManager::defaultPath() {
-    QString path = QCoreApplication::applicationDirPath() + "/terms.tsv";
-    return path;
+    return AppPaths::termsFile();
 }
 
 bool TermsLibraryManager::loadFromTsv(const QString &path) {

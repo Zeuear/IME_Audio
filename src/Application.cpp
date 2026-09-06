@@ -5,6 +5,7 @@
 #include "Windows.h"
 #endif
 
+#include "utils/AppPaths.h"
 #include "utils/Logger.h"
 #include "ConfigManager.h"
 #include "widgets/inforbar/inforbarmanager.h"
@@ -21,12 +22,14 @@ void Application::Initialize() {
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
 #endif
 
-	QString logPath = QApplication::applicationDirPath() + QDir::separator() + "voice_ime.log";
-	//QString logPath =QDir::temp().dirName() + QDir::separator() + "app.log";
-	Logger::instance().setLogPath(logPath);	
+	Logger::instance().setLogPath(AppPaths::logFile());
 
-	QString configPath = QApplication::applicationDirPath() + QDir::separator() + "voice_ime.ini";
-	ConfigManager::setConfigFilePath(configPath);
+	// 各平台的数据目录语义不同（macOS 走 Application Support），排查线上问题时
+	// 必须能从日志里看到实际生效的路径
+	LOG_INFO(QString("Data dir: %1").arg(AppPaths::dataDir()));
+	LOG_INFO(QString("Resource dir: %1").arg(AppPaths::resourceDir()));
+
+	ConfigManager::setConfigFilePath(AppPaths::configFile());
 
 	auto& configManager = ConfigManager::instance();
 	if (!QFile::exists(configManager.configFilePath())) {

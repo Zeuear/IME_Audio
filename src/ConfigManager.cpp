@@ -51,7 +51,7 @@ void ConfigManager::applyDefaults() {
     m_config.polish.aiStyle = "智慧预设";
     m_config.polish.targetLang = "不翻译";
 
-    m_config.hotkey = "Ctrl+Alt+Y";
+    m_config.hotkey = kDefaultHotkey;
     m_config.continuousMode = false;
 
 }
