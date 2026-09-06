@@ -14,9 +14,6 @@ SingleInstanceGuard::~SingleInstanceGuard() = default;
 
 QString SingleInstanceGuard::serverNameForDataDir(const QString& dataDir)
 {
-    // 截断到 16 位，Unix 域套接字的路径长度上限约 104 字节。
-    // 必须用确定性哈希：qHash 在 Qt 6 里每进程重新播种，两个进程会算出不同的
-    // 名字，通知通道将永远接不上。
     const QByteArray digest =
         QCryptographicHash::hash(dataDir.toUtf8(), QCryptographicHash::Md5).toHex().left(16);
     return "ImeAudio-" + QString::fromLatin1(digest);
@@ -27,7 +24,7 @@ bool SingleInstanceGuard::acquireOrNotifyExisting()
     if (m_lock) return true;
 
     auto lock = std::make_unique<QLockFile>(QDir(m_dataDir).absoluteFilePath("ImeAudio.lock"));
-    lock->setStaleLockTime(0);   // 只按 PID 存活判定陈旧，不按时间
+    lock->setStaleLockTime(0);  
 
     if (!lock->tryLock(100)) {
         LOG_DEBUG("SingleInstance: another instance holds the lock");

@@ -717,8 +717,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& SpanishModels() {
             {ModelArch::NemoTransducer}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
-        {"csukuangfj/sherpa-onnx-nemo-fast-conformer-ctc-es-1424",
+        {"csukuangfj/sherpa-onnx-nemo-fast-conformer-ctc-es-1424-int8",
             {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Nemo CTC"}},
+
     };
     return table;
 }
