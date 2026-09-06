@@ -44,6 +44,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -53,6 +54,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPostProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/AppPaths.cpp
+    # SingleInstanceGuard 是 Q_OBJECT，.h 也要交给 AUTOMOC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/SingleInstanceGuard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/SingleInstanceGuard.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     # TextPolishService is a Q_OBJECT class; include its .cpp + header so AUTOMOC
     # generates the moc code and links it. Logger.cpp is needed (LOG_DEBUG usage).

@@ -4,9 +4,8 @@
 #include <QStringList>
 #include <QVector>
 
-// CUDA 相关的平台差异集中在这里，其余代码不再出现平台条件编译。
-// 关键点：macOS 不存在 CUDA，spec 显式声明 detectable=false，而不是留下空的候选
-// 列表让检测逻辑静默地什么都找不到。
+// CUDA 相关的平台差异集中在这里。无 CUDA 的平台用显式的 detectable=false 表达，
+// 而不是留下空候选列表让检测逻辑静默地什么都找不到。
 struct CudaLibCandidate {
     QString libName;
     QString version;

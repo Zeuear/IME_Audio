@@ -11,8 +11,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest] # ubuntu-24.04, 
+        os: [windows-latest, macos-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
+    # Linux 目前编译不过（引入标点模型后），先让真实报错在 CI 中暴露出来，
+    # 但不因此把 main 标红。修好之后删掉这一行。
+    continue-on-error: ${{ matrix.os == 'ubuntu-24.04' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,6 +32,16 @@ jobs:
       - name: Setup MSVC
         if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxcb-xinerama0-dev \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-shape0 libxcb-util1 libxcb-xkb1 \
+            libxkbcommon-x11-0 \
+            libx11-dev libxext-dev libxtst-dev
 
       - name: Build
         run: |

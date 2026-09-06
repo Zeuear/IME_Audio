@@ -1,5 +1,7 @@
 ﻿#include "MainWin.h"
 #include "Application.h"
+#include "utils/AppPaths.h"
+#include "utils/SingleInstanceGuard.h"
 
 #include <cstdio>
 #include <iostream>
@@ -50,7 +52,15 @@ int main(int argc, char *argv[])
     //test();
     Application a(argc, argv);
 
+    // 跑第二份会重复注册全局热键并与第一份争抢配置文件
+    SingleInstanceGuard guard(AppPaths::dataDir());
+    if (!guard.acquireOrNotifyExisting()) {
+        return 0;
+    }
+
     MainWin w;
+    QObject::connect(&guard, &SingleInstanceGuard::anotherInstanceStarted,
+                     &w, &MainWin::onShowWindow);
     w.show();
 
     return a.exec();

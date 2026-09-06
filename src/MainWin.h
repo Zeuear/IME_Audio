@@ -48,9 +48,12 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent* event) override;
 
+public slots:
+    // 也用于响应"用户又启动了一份程序"：把已在运行的窗口调到前台
+    void onShowWindow();
+
 private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
-    void onShowWindow();
     void onHideWindow();
     void onQuitApplication();
 

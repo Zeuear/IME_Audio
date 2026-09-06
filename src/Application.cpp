@@ -24,10 +24,18 @@ void Application::Initialize() {
 
 	Logger::instance().setLogPath(AppPaths::logFile());
 
-	// 各平台的数据目录语义不同（macOS 走 Application Support），排查线上问题时
-	// 必须能从日志里看到实际生效的路径
-	LOG_INFO(QString("Data dir: %1").arg(AppPaths::dataDir()));
-	LOG_INFO(QString("Resource dir: %1").arg(AppPaths::resourceDir()));
+	// 各平台的路径语义不同（macOS 的可写数据在 Application Support、只读资源在
+	// bundle 内），且放错分类只会表现为运行时读不到或写不进。逐条打印实际落点，
+	// 使得首次在新平台启动时可直接核对。
+	// 用 DEBUG 而非 INFO：本项目的 INFO 只发给界面显示，不落文件
+	LOG_DEBUG(QString("Path | data dir : %1").arg(AppPaths::dataDir()));
+	LOG_DEBUG(QString("Path | resources: %1").arg(AppPaths::resourceDir()));
+	LOG_DEBUG(QString("Path | config   : %1").arg(AppPaths::configFile()));
+	LOG_DEBUG(QString("Path | terms    : %1").arg(AppPaths::termsFile()));
+	LOG_DEBUG(QString("Path | prompts  : %1").arg(AppPaths::promptsDir()));
+	// 只打根目录：sherpaModelsDir() 会顺带建目录，不适合在日志里调用
+	LOG_DEBUG(QString("Path | sherpa   : %1").arg(AppPaths::sherpaRoot()));
+	LOG_DEBUG(QString("Path | vad model: %1").arg(AppPaths::vadModelFile()));
 
 	ConfigManager::setConfigFilePath(AppPaths::configFile());
 
