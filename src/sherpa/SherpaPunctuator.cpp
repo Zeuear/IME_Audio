@@ -1,9 +1,11 @@
 #include "SherpaPunctuator.h"
 
+#include <cstring>
+
 #include <QDir>
 #include <QFileInfo>
 #include <QMutexLocker>
-#include "cxx-api.h"
+#include "c-api.h"
 
 SherpaPunctuator::SherpaPunctuator(QObject* parent)
     : QObject(parent)
@@ -30,20 +32,25 @@ bool SherpaPunctuator::load(const QString& modelDir, bool forceReload)
         return false;
     }
 
-    sherpa_onnx::cxx::OfflinePunctuationConfig config;
-    config.model.ct_transformer = modelFile.toStdString();
+    const QByteArray modelFileUtf8 = modelFile.toUtf8();
+
+    SherpaOnnxOfflinePunctuationConfig config;
+    memset(&config, 0, sizeof(config));
+    config.model.ct_transformer = modelFileUtf8.constData();
     config.model.num_threads = 1;
     config.model.provider = "cpu";
 
-    auto newPunct = std::make_unique<sherpa_onnx::cxx::OfflinePunctuation>(
-        sherpa_onnx::cxx::OfflinePunctuation::Create(config));
+    const SherpaOnnxOfflinePunctuation* newPunct = SherpaOnnxCreateOfflinePunctuation(&config);
     if (!newPunct) {
         return false;
     }
 
     {
         QMutexLocker locker(&m_mutex);
-        m_punct = std::move(newPunct);   
+        if (m_punct) {
+            SherpaOnnxDestroyOfflinePunctuation(m_punct);
+        }
+        m_punct = newPunct;
         m_loadedModelDir = normalizedDir;
     }
     return true;
@@ -71,14 +78,22 @@ QString SherpaPunctuator::punctuate(const QString& text)
     if (!m_punct) {
         return text;
     }
-    const std::string in = text.toUtf8().toStdString();
-    const std::string out = m_punct->AddPunctuation(in);
-    return QString::fromUtf8(out.c_str(), static_cast<int>(out.size()));
+    const QByteArray in = text.toUtf8();
+    const char* result = SherpaOfflinePunctuationAddPunct(m_punct, in.constData());
+    if (!result) {
+        return text;
+    }
+    const QString out = QString::fromUtf8(result);
+    SherpaOfflinePunctuationFreeText(result);
+    return out;
 }
 
 void SherpaPunctuator::unload()
 {
     QMutexLocker locker(&m_mutex);
-    m_punct.reset();
+    if (m_punct) {
+        SherpaOnnxDestroyOfflinePunctuation(m_punct);
+        m_punct = nullptr;
+    }
     m_loadedModelDir.clear();
 }

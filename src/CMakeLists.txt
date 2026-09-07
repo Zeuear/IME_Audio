@@ -222,15 +222,12 @@ set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
 target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
 target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
-# 官方预编译的 sherpa-onnx Linux 静态库是用 libstdc++ 旧 ABI（pre-C++11，std::string
-# 走 Ss 缩写）编译的，而 Ubuntu 的系统 GCC 默认新 ABI（std::__cxx11::basic_string）。
-# 大多数调用走 C 接口（char*）不受影响，但 cxx-api 的 AddPunctuation(const std::string&)
-# 直接把 std::string 摆上函数签名，两种 ABI 的符号名不同，导致链接期 undefined reference。
-# QString<->std::string 的转换（toStdString/fromStdString）在 Qt 头文件里是纯 inline
-# 实现、不经过任何已编译的 Qt 符号，因此把本 target 整体切到旧 ABI 不会破坏 Qt 互操作。
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_compile_definitions(${TARGET_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
-endif()
+# 官方预编译的 sherpa-onnx Linux 静态库是用 libstdc++ 旧 ABI 编译的，cxx-api 里凡是把
+# std::string 直接摆上函数签名的调用（如 OfflinePunctuation::AddPunctuation）都会因为
+# 符号名不匹配导致链接期 undefined reference。这里不整体切换本 target 的 ABI（风险大、
+# 且可能牵连 Qt 互操作），而是让 SherpaPunctuator 改走纯 char* 的 C 接口
+# （SherpaOnnxCreateOfflinePunctuation / SherpaOfflinePunctuationAddPunct 等），
+# 从根源上避开这个 ABI 敏感的调用。
 
 # ============================================================
 # QT工具

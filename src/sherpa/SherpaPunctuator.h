@@ -4,12 +4,9 @@
 #include <QString>
 #include <QMutex>
 #include <QDir>
-#include <memory>
 
 
-namespace sherpa_onnx::cxx {
-    class OfflinePunctuation;
-}
+struct SherpaOnnxOfflinePunctuation;
 
 class SherpaPunctuator : public QObject {
     Q_OBJECT
@@ -29,6 +26,6 @@ public:
 
 private:
     mutable QMutex m_mutex;
-    std::unique_ptr<sherpa_onnx::cxx::OfflinePunctuation> m_punct;
-    QString m_loadedModelDir;  
+    const SherpaOnnxOfflinePunctuation* m_punct = nullptr;
+    QString m_loadedModelDir;
 };
