@@ -1,6 +1,7 @@
 #include "WorkflowManager.h"
 #include "utils/Logger.h"
 #include "InputInjector.h"
+#include "utils/PlatformPermissions.h"
 #include <QMetaObject>
 
 /*
@@ -177,6 +178,10 @@ void WorkflowManager::processInjectQueue() {
     bool ok = InputInjector::inject(text);
     if (!ok) {
         LOG_WARN(QString("InputInjector failed for text: %1").arg(text));
+        if (PlatformPermissions::accessibilityStatus() == PlatformPermissions::Status::Denied) {
+            emit errorOccurred(tr("文本注入失败"),
+                               tr("请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用，然后重启应用"));
+        }
     }
 
     m_injecting = false;

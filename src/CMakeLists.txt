@@ -28,6 +28,7 @@ set(PLATFORM_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/InputInjector_${_platform_dir}.${_platform_ext}"
     "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/AudioEndpoint_${_platform_dir}.${_platform_ext}"
     "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/Elevation_${_platform_dir}.${_platform_ext}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/Permissions_${_platform_dir}.${_platform_ext}"
 )
 list(APPEND SOURCES ${PLATFORM_SOURCES})
 file(GLOB_RECURSE UIFILES CONFIGURE_DEPENDS "*.ui")
@@ -336,6 +337,9 @@ elseif(APPLE)
         "-framework AudioUnit"
         "-framework CoreServices"
         "-framework CoreFoundation"
+        "-framework ApplicationServices"
+        "-framework AVFoundation"
+        "-framework AppKit"
     )
     
     # target_link_options(${TARGET_NAME} PRIVATE "-Wl,-all_load")

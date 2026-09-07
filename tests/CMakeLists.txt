@@ -94,7 +94,7 @@ else()
     set(_test_platform_dir "linux")
     set(_test_platform_ext "cpp")
 endif()
-foreach(_mod InputInjector AudioEndpoint Elevation)
+foreach(_mod InputInjector AudioEndpoint Elevation Permissions)
     list(APPEND TEST_DEPS
         "${_test_platform_root}/${_test_platform_dir}/${_mod}_${_test_platform_dir}.${_test_platform_ext}")
 endforeach()
@@ -112,6 +112,22 @@ if(WIN32)
         Qt6::Multimedia 
         Qt6::Concurrent
         imm32
+    )
+elseif(APPLE)
+    # 平台层的 .mm 实现所需框架，必须与 src/CMakeLists.txt 保持一致。
+    target_link_libraries(imeaudio_tests 
+        gtest 
+        gtest_main 
+        Qt6::Core 
+        Qt6::Widgets 
+        Qt6::Network 
+        Qt6::Multimedia 
+        Qt6::Concurrent
+        "-framework ApplicationServices"
+        "-framework AVFoundation"
+        "-framework AppKit"
+        "-framework CoreAudio"
+        "-framework CoreFoundation"
     )
 else()
     target_link_libraries(imeaudio_tests 

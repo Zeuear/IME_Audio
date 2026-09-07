@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QThread>
 #include "utils/Logger.h"
+#include "utils/PlatformPermissions.h"
 
 
 SpectrumWorker::SpectrumWorker(int sampleRate):QObject(nullptr), m_sampleRate(sampleRate){
@@ -355,8 +356,37 @@ int AudioRecorderService::bytesPerMs() const
     return (m_config.audio.sampleRate * m_actualChannels * (m_config.audio.bitsPerSample / 8)) / 1000;
 }
 
+bool AudioRecorderService::ensureMicrophonePermission()
+{
+    using Status = PlatformPermissions::Status;
+
+    const Status status = PlatformPermissions::microphoneStatus();
+    if (status == Status::Granted || status == Status::NotRequired) {
+        return true;
+    }
+
+    if (status == Status::NotDetermined) {
+        // 系统授权框是异步的，本次启动只能先失败：用户点「允许」之后再触发一次热键即可。
+        PlatformPermissions::requestMicrophoneAccess([](bool granted) {
+            LOG_INFO(QString("Microphone permission request finished: %1")
+                         .arg(granted ? "granted" : "denied"));
+        });
+        emit errorOccurred(tr("录音启动失败"),
+                           tr("请在系统弹出的授权框中允许使用麦克风，然后重新开始录音"));
+        return false;
+    }
+
+    // 已被拒绝：系统不会再弹框，唯一的出路是用户自己去隐私面板打开，直接带他过去。
+    LOG_ERROR("Microphone permission denied");
+    PlatformPermissions::openMicrophoneSettings();
+    emit errorOccurred(tr("录音启动失败"),
+                       tr("麦克风权限已被拒绝，请在「系统设置 → 隐私与安全性 → 麦克风」中允许本应用后重试"));
+    return false;
+}
+
 bool AudioRecorderService::startListening() {
     if (m_audioSource) return true;
+    if (!ensureMicrophonePermission()) return false;
 
     QAudioFormat format;
     format.setSampleRate(m_config.audio.sampleRate);

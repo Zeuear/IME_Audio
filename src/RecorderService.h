@@ -311,6 +311,10 @@ private slots:
     void onVadSegmentReady(const QByteArray& pcmData, int sampleRate);
 
 private:
+    // 开录之前确认麦克风授权。macOS 未授权时 QAudioSource 会正常打开却只吐全零静音，
+    // 用户看到的是"录了但一个字都识别不出"，必须在这里拦下并给出可操作的提示。
+    bool ensureMicrophonePermission();
+
     void finalizeSegmentIfNeeded(bool forceCut);
     int bytesPerMs() const;
 

@@ -37,6 +37,21 @@
     </message>
 </context>
 <context>
+    <name>AudioRecorderService</name>
+    <message>
+        <source>录音启动失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请在系统弹出的授权框中允许使用麦克风，然后重新开始录音</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>麦克风权限已被拒绝，请在「系统设置 → 隐私与安全性 → 麦克风」中允许本应用后重试</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CudaInstaller</name>
     <message>
         <source>NVIDIA GPU or driver not detected</source>
@@ -819,6 +834,14 @@
     <name>WorkflowManager</name>
     <message>
         <source>语音识别失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>文本注入失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用，然后重启应用</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
