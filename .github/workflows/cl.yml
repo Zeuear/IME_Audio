@@ -13,8 +13,10 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
-    # Linux 目前编译不过（引入标点模型后），先让真实报错在 CI 中暴露出来，
-    # 但不因此把 main 标红。修好之后删掉这一行。
+    # Linux 之前编译不过：官方预编译的 sherpa-onnx 静态库用的是 libstdc++ 旧 ABI，
+    # 与 Ubuntu 系统 GCC 的新 ABI 在 std::string 参数上符号名不一致（undefined reference
+    # to AddPunctuation），已在 src/CMakeLists.txt 里给 Linux 补上 _GLIBCXX_USE_CXX11_ABI=0。
+    # 尚未在真实 CI 上验证这个修复，先保留 continue-on-error 一次，确认这次跑绿了再删掉。
     continue-on-error: ${{ matrix.os == 'ubuntu-24.04' }}
     steps:
       - name: Checkout code
