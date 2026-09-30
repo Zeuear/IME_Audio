@@ -328,6 +328,10 @@
         <translation type="unfinished">词库</translation>
     </message>
     <message>
+        <source>File Transcription</source>
+        <translation>文件转录</translation>
+    </message>
+    <message>
         <source>Language Model</source>
         <translation type="unfinished">语言模型</translation>
     </message>
@@ -683,6 +687,132 @@
     <message>
         <source>Notes</source>
         <translation type="unfinished">备注</translation>
+    </message>
+</context>
+<context>
+    <name>FileTranscribeWidget</name>
+    <message>
+        <source>Add Files</source>
+        <translation>添加文件</translation>
+    </message>
+    <message>
+        <source>Transcribe</source>
+        <translation>转录</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>清空</translation>
+    </message>
+    <message>
+        <source>Export</source>
+        <translation>导出</translation>
+    </message>
+    <message>
+        <source>Drop audio files here, or click "Add Files"</source>
+        <translation>将音频文件拖到此处，或点击“添加文件”</translation>
+    </message>
+    <message>
+        <source>Transcription</source>
+        <translation>转录文本</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Select a file to view its transcription</source>
+        <translation>选择一个文件查看转录文本</translation>
+    </message>
+    <message>
+        <source>Open Folder</source>
+        <translation>打开文件夹</translation>
+    </message>
+    <message>
+        <source>Choose Audio Files</source>
+        <translation>选择音频文件</translation>
+    </message>
+    <message>
+        <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
+        <translation>音频文件 (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;所有文件 (*)</translation>
+    </message>
+    <message>
+        <source>No new files added</source>
+        <translation>没有新增文件</translation>
+    </message>
+    <message>
+        <source>Added %1 files</source>
+        <translation>已添加 %1 个文件</translation>
+    </message>
+    <message>
+        <source>Re-transcribe</source>
+        <translation>重新转录</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>移除</translation>
+    </message>
+    <message>
+        <source>Processing file %1/%2</source>
+        <translation>正在处理文件 %1/%2</translation>
+    </message>
+    <message>
+        <source>No audio data decoded</source>
+        <translation>没有解码出音频数据</translation>
+    </message>
+    <message>
+        <source>Cancelling...</source>
+        <translation>正在取消…</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>已取消</translation>
+    </message>
+    <message>
+        <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
+        <translation>完成：成功 %1 个，失败 %2 个，无语音 %3 个</translation>
+    </message>
+    <message>
+        <source>Copied to clipboard</source>
+        <translation>已复制到剪贴板</translation>
+    </message>
+    <message>
+        <source>Choose Export Folder</source>
+        <translation>选择导出文件夹</translation>
+    </message>
+    <message>
+        <source>Exported %1 files to %2</source>
+        <translation>已导出 %1 个文件到 %2</translation>
+    </message>
+</context>
+<context>
+    <name>FileTaskModel</name>
+    <message>
+        <source>Pending · %1</source>
+        <translation>待转录 · %1</translation>
+    </message>
+    <message>
+        <source>Decoding...</source>
+        <translation>正在解码…</translation>
+    </message>
+    <message>
+        <source>Transcribing %1/%2</source>
+        <translation>正在转录 %1/%2</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完成</translation>
+    </message>
+    <message>
+        <source>Failed: %1</source>
+        <translation>失败：%1</translation>
+    </message>
+    <message>
+        <source>No speech detected</source>
+        <translation>未检测到语音</translation>
     </message>
 </context>
 <context>

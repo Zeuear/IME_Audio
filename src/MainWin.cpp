@@ -27,6 +27,7 @@
 
 #include "widgets/SphereOverlay.h"
 #include "widgets/AboutDialog.h"
+#include "widgets/FileTranscribeWidget.h"
 #include "widgets/NavListWidget.h"
 #include "widgets/inforbar/inforbarmanager.h"
 #include "widgets/inforbar/inforposmanager.h"
@@ -164,6 +165,7 @@ void MainWin::initialize() {
     m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
+    ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
 }  
 
 void MainWin::setupUiConnections(){
@@ -403,6 +405,9 @@ void MainWin::setupUiConnections(){
                             : NotifyLevel::Error;
         notify(level, title, cause);
     });
+
+    connect(ui->file_transcribe_widget, &FileTranscribeWidget::errorOccurred, this,
+            [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
 
     connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);
     connect(ui->setting_cancel_btn, &QPushButton::clicked, this, &MainWin::onLoadConfig);
@@ -713,6 +718,11 @@ void MainWin::on_actionExit_triggered() { qApp->exit(0); }
 
 void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
+    if (ui->file_transcribe_widget->isBusy()) {
+        LOG_WARN("File transcription in progress, dictation hotkey ignored");
+        m_sphereOverlay->hideOverlay();
+        return;
+    }
     const auto& config = ConfigManager::instance().config();
 
     QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,

@@ -328,6 +328,10 @@
         <translation type="unfinished">Theaurus</translation>
     </message>
     <message>
+        <source>File Transcription</source>
+        <translation>File Transcription</translation>
+    </message>
+    <message>
         <source>Language Model</source>
         <translation type="unfinished">Language Model</translation>
     </message>
@@ -683,6 +687,132 @@
     <message>
         <source>Notes</source>
         <translation type="unfinished">Notes</translation>
+    </message>
+</context>
+<context>
+    <name>FileTranscribeWidget</name>
+    <message>
+        <source>Add Files</source>
+        <translation>Add Files</translation>
+    </message>
+    <message>
+        <source>Transcribe</source>
+        <translation>Transcribe</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Clear</translation>
+    </message>
+    <message>
+        <source>Export</source>
+        <translation>Export</translation>
+    </message>
+    <message>
+        <source>Drop audio files here, or click "Add Files"</source>
+        <translation>Drop audio files here, or click "Add Files"</translation>
+    </message>
+    <message>
+        <source>Transcription</source>
+        <translation>Transcription</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copy</translation>
+    </message>
+    <message>
+        <source>Select a file to view its transcription</source>
+        <translation>Select a file to view its transcription</translation>
+    </message>
+    <message>
+        <source>Open Folder</source>
+        <translation>Open Folder</translation>
+    </message>
+    <message>
+        <source>Choose Audio Files</source>
+        <translation>Choose Audio Files</translation>
+    </message>
+    <message>
+        <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
+        <translation>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</translation>
+    </message>
+    <message>
+        <source>No new files added</source>
+        <translation>No new files added</translation>
+    </message>
+    <message>
+        <source>Added %1 files</source>
+        <translation>Added %1 files</translation>
+    </message>
+    <message>
+        <source>Re-transcribe</source>
+        <translation>Re-transcribe</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Remove</translation>
+    </message>
+    <message>
+        <source>Processing file %1/%2</source>
+        <translation>Processing file %1/%2</translation>
+    </message>
+    <message>
+        <source>No audio data decoded</source>
+        <translation>No audio data decoded</translation>
+    </message>
+    <message>
+        <source>Cancelling...</source>
+        <translation>Cancelling...</translation>
+    </message>
+    <message>
+        <source>Cancelled</source>
+        <translation>Cancelled</translation>
+    </message>
+    <message>
+        <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
+        <translation>Finished: %1 succeeded, %2 failed, %3 no speech</translation>
+    </message>
+    <message>
+        <source>Copied to clipboard</source>
+        <translation>Copied to clipboard</translation>
+    </message>
+    <message>
+        <source>Choose Export Folder</source>
+        <translation>Choose Export Folder</translation>
+    </message>
+    <message>
+        <source>Exported %1 files to %2</source>
+        <translation>Exported %1 files to %2</translation>
+    </message>
+</context>
+<context>
+    <name>FileTaskModel</name>
+    <message>
+        <source>Pending · %1</source>
+        <translation>Pending · %1</translation>
+    </message>
+    <message>
+        <source>Decoding...</source>
+        <translation>Decoding...</translation>
+    </message>
+    <message>
+        <source>Transcribing %1/%2</source>
+        <translation>Transcribing %1/%2</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Done</translation>
+    </message>
+    <message>
+        <source>Failed: %1</source>
+        <translation>Failed: %1</translation>
+    </message>
+    <message>
+        <source>No speech detected</source>
+        <translation>No speech detected</translation>
     </message>
 </context>
 <context>

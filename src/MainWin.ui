@@ -958,6 +958,16 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="file_transcribe">
+         <attribute name="title">
+          <string>File Transcription</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_ft">
+          <item>
+           <widget class="FileTranscribeWidget" name="file_transcribe_widget" native="true"/>
+          </item>
+         </layout>
+        </widget>
        </widget>
           </item>
          </layout>
@@ -1359,6 +1369,12 @@
    <class>NavListWidget</class>
    <extends>QListWidget</extends>
    <header>widgets/NavListWidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FileTranscribeWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets/FileTranscribeWidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

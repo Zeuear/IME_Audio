@@ -26,7 +26,7 @@ TranscriptionService::TranscriptionService(
 {
 
     connect(m_textPolishService, &TextPolishService::polishFinished, this, [&](bool success, const QString& text, const QString& error) {
-        emit transcriptionFinished(success, text, success ? postProcess(text) : QString(), error);
+        emitResult(success, text, success ? postProcess(text) : QString(), error);
     });
 
     connect(m_textPolishService, &TextPolishService::connectionTested, this,
@@ -55,7 +55,7 @@ TranscriptionService::TranscriptionService(
                     m_textPolishService->polishText(text, params);
                 }
                 else {
-                    emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
+                    emitResult(ok, text, ok ? postProcess(text) : QString(), err);
                 }
             });
 }
@@ -94,14 +94,14 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes) {
 
     GeminiProvider provider;
     provider.transcribe(wavBytes, p, m_manager, [this](bool ok, QString text, QString err) {
-        emit transcriptionFinished(ok, text, ok ? postProcess(text) : QString(), err);
+        emitResult(ok, text, ok ? postProcess(text) : QString(), err);
     });
 }
 
 void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
     // Groq Whisper API：multipart/form-data 上传音频文件
     if (m_config.groqKey.isEmpty()) {
-        emit transcriptionFinished(false, {}, {}, QStringLiteral("Groq API Key 未配置"));
+        emitResult(false, {}, {}, QStringLiteral("Groq API Key 未配置"));
         return;
     }
 
@@ -133,19 +133,19 @@ void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit transcriptionFinished(false, {}, {}, reply->errorString());
+            emitResult(false, {}, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         QString text = obj.value("text").toString();
-        emit transcriptionFinished(true, text, postProcess(text), {});
+        emitResult(true, text, postProcess(text), {});
     });
 }
 
 void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
     // Gladia v2 真实流程：上传拿 audio_url → 提交转录（异步）→ 轮询 result_url
     if (m_config.gladiaKey.isEmpty()) {
-        emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia API Key 未配置"));
+        emitResult(false, {}, {}, QStringLiteral("Gladia API Key 未配置"));
         return;
     }
 
@@ -170,13 +170,13 @@ void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
     connect(upReply, &QNetworkReply::finished, this, [this, upReply]() {
         upReply->deleteLater();
         if (upReply->error() != QNetworkReply::NoError) {
-            emit transcriptionFinished(false, {}, {}, upReply->errorString());
+            emitResult(false, {}, {}, upReply->errorString());
             return;
         }
         QJsonObject upObj = QJsonDocument::fromJson(upReply->readAll()).object();
         QString audioUrl = upObj.value("audio_url").toString();
         if (audioUrl.isEmpty()) {
-            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 上传失败：未返回 audio_url"));
+            emitResult(false, {}, {}, QStringLiteral("Gladia 上传失败：未返回 audio_url"));
             return;
         }
         submitGladiaTranscription(audioUrl);
@@ -196,13 +196,13 @@ void TranscriptionService::submitGladiaTranscription(const QString &audioUrl) {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit transcriptionFinished(false, {}, {}, reply->errorString());
+            emitResult(false, {}, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         QString resultUrl = obj.value("result_url").toString();
         if (resultUrl.isEmpty()) {
-            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录提交失败：未返回 result_url"));
+            emitResult(false, {}, {}, QStringLiteral("Gladia 转录提交失败：未返回 result_url"));
             return;
         }
         pollGladiaResult(resultUrl, 0);
@@ -212,7 +212,7 @@ void TranscriptionService::submitGladiaTranscription(const QString &audioUrl) {
 void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attempt) {
     static const int kMaxAttempts = 60; // ~60s @ 1s
     if (attempt >= kMaxAttempts) {
-        emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录超时"));
+        emitResult(false, {}, {}, QStringLiteral("Gladia 转录超时"));
         return;
     }
 
@@ -223,7 +223,7 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
     connect(reply, &QNetworkReply::finished, this, [this, reply, resultUrl, attempt]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emit transcriptionFinished(false, {}, {}, reply->errorString());
+            emitResult(false, {}, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
@@ -232,11 +232,11 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
             QString text = obj.value("result").toObject()
                                 .value("transcription").toObject()
                                 .value("full_transcript").toString();
-            emit transcriptionFinished(true, text, postProcess(text), {});
+            emitResult(true, text, postProcess(text), {});
             return;
         }
         if (status == QStringLiteral("error")) {
-            emit transcriptionFinished(false, {}, {}, QStringLiteral("Gladia 转录失败"));
+            emitResult(false, {}, {}, QStringLiteral("Gladia 转录失败"));
             return;
         }
         // 仍处理中：1s 后重试
@@ -244,6 +244,14 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
             pollGladiaResult(resultUrl, attempt + 1);
         });
     });
+}
+
+void TranscriptionService::emitResult(bool success, const QString &rawText,
+                                      const QString &finalText, const QString &errorMsg) {
+    if (m_fileMode)
+        emit fileSegmentFinished(success, rawText, finalText, errorMsg);
+    else
+        emit transcriptionFinished(success, rawText, finalText, errorMsg);
 }
 
 QString TranscriptionService::postProcess(const QString &rawText) {

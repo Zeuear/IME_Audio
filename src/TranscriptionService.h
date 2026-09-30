@@ -20,7 +20,18 @@ public:
 
     void transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
 
+    // 文件转录模式
+    void setFileMode(bool on) { m_fileMode = on; }
+    bool fileMode() const { return m_fileMode; }
+
+signals:
+    void fileSegmentFinished(bool success, const QString &rawText,
+                             const QString &finalText, const QString &errorMsg);
+
 private:
+    void emitResult(bool success, const QString &rawText,
+                    const QString &finalText, const QString &errorMsg);
+
     void transcribeGroq(const QByteArray &wavBytes);
     void transcribeGladia(const QByteArray &wavBytes);
     void submitGladiaTranscription(const QString &audioUrl);
@@ -32,6 +43,7 @@ private:
     QString postProcess(const QString &rawText);
 
     TextPostProcessor* m_textProcessor;
+    bool m_fileMode = false;
 
     const AppConfig& m_config;
     QNetworkAccessManager* m_manager;
