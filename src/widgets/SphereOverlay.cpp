@@ -10,6 +10,11 @@ SphereOverlay::SphereOverlay(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    // macOS 上 Tool 窗口在应用失去焦点时会被系统隐藏；而录音时焦点在目标应用里，
+    // 不加这条的话悬浮球在最需要看到的时候是看不见的。
+#ifdef Q_OS_MACOS
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow);
+#endif
     resize(120, 120);
 
     m_controller = new SphereController(this);

@@ -4,11 +4,14 @@
 
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QMimeData>
 #include <QThread>
+#include <QTimer>
 
 #include <algorithm>
 #include <vector>
 
+#import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
 
 namespace {
@@ -18,6 +21,59 @@ constexpr CGKeyCode kVkCommand = 0x37;
 
 constexpr int kUnicodeChunk = 20;
 constexpr unsigned long kChunkDelayMs = 2;
+
+// ⌘V 发出后目标应用是异步读取剪贴板的，太早恢复会让它粘到旧内容。
+constexpr int kClipboardRestoreMs = 600;
+
+// 粘贴会覆盖用户的剪贴板，所以先存一份快照，粘完再还原。
+// 连续注入（连续模式）时只保留最早那份，否则第二次会把"上一句转录"当成用户的剪贴板存下来。
+struct ClipboardRestore {
+    QMimeData* saved = nullptr;
+    QString injectedText;
+    QTimer* timer = nullptr;
+};
+
+ClipboardRestore& restoreState() {
+    static ClipboardRestore s;
+    return s;
+}
+
+QMimeData* snapshotClipboard(const QClipboard* clipboard) {
+    auto* copy = new QMimeData;
+    if (const QMimeData* src = clipboard->mimeData()) {
+        for (const QString& format : src->formats()) {
+            copy->setData(format, src->data(format));
+        }
+    }
+    return copy;
+}
+
+void restoreClipboardNow() {
+    ClipboardRestore& s = restoreState();
+    if (!s.saved) return;
+
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    // 用户在这段时间里自己复制了别的东西，就不能再用旧快照覆盖回去。
+    if (clipboard && clipboard->text() == s.injectedText) {
+        clipboard->setMimeData(s.saved);   // 所有权移交给剪贴板
+        LOG_DEBUG("InputInjector(mac): clipboard restored");
+    } else {
+        delete s.saved;
+        LOG_DEBUG("InputInjector(mac): clipboard changed meanwhile, skip restore");
+    }
+    s.saved = nullptr;
+}
+
+void scheduleClipboardRestore(const QString& injectedText) {
+    ClipboardRestore& s = restoreState();
+    s.injectedText = injectedText;
+    if (!s.timer) {
+        s.timer = new QTimer;   // 只会在主线程调用
+        s.timer->setSingleShot(true);
+        QObject::connect(s.timer, &QTimer::timeout, restoreClipboardNow);
+    }
+    s.timer->start(kClipboardRestoreMs);
+}
 
 class EventSource {
 public:
@@ -125,11 +181,27 @@ bool InputInjector::pasteViaClipboard(const QString& text) {
         return false;
     }
 
+    LOG_DEBUG(QString("InputInjector(mac): paste via clipboard, %1 chars").arg(text.size()));
+    ClipboardRestore& state = restoreState();
+    if (!state.saved) {
+        state.saved = snapshotClipboard(clipboard);
+    }
+
     clipboard->setText(text);
     // 给 pasteboard 的跨进程同步留出时间：⌘V 到达得比剪贴板内容更新更早的话，
     // 目标应用粘贴的会是上一次的内容。
-    QThread::msleep(30);
-    return sendCtrlV();
+    QThread::msleep(50);
+
+    if (sendCtrlV()) {
+        scheduleClipboardRestore(text);
+        return true;
+    }
+
+    // ⌘V 没发出去（通常是缺辅助功能授权）：把转录文本留在剪贴板里，用户可以手动 ⌘V。
+    delete state.saved;
+    state.saved = nullptr;
+    LOG_WARN("InputInjector(mac): ⌘V not sent; transcription left in clipboard for manual paste");
+    return false;
 }
 
 bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
@@ -142,6 +214,7 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
         return false;
     }
 
+    LOG_DEBUG(QString("InputInjector(mac): unicode typing, %1 UTF-16 units").arg(text.size()));
     const UniChar* utf16 = reinterpret_cast<const UniChar*>(text.utf16());
     std::vector<UniChar> units(utf16, utf16 + text.size());
 
@@ -161,16 +234,38 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     return true;
 }
 
+InputInjector::Mode InputInjector::defaultMode() {
+    // 拼音等输入法会拦截合成的按键事件：逐字输入的 Unicode 事件带着 keycode 0（字母 a），
+    // 输入法按字母键处理，文本被吞掉或变成拼音串。⌘V 不经过输入法，所以默认走剪贴板粘贴。
+    return Mode::ClipboardOnly;
+}
+
 bool InputInjector::inject(const QString& text, Mode mode) {
     if (text.isEmpty()) return false;
 
+    bool ok = false;
     switch (mode) {
     case Mode::ClipboardOnly:
-        return pasteViaClipboard(text);
+        ok = pasteViaClipboard(text);
+        break;
     case Mode::PreferClipboard:
-        return pasteViaClipboard(text) || pasteViaUnicodeTyping(text);
+        ok = pasteViaClipboard(text);
+        if (!ok) {
+            LOG_WARN("InputInjector(mac): clipboard paste failed, falling back to unicode typing");
+            ok = pasteViaUnicodeTyping(text);
+        }
+        break;
     case Mode::UnicodeTypeOnly:
     default:
-        return pasteViaUnicodeTyping(text);
+        ok = pasteViaUnicodeTyping(text);
+        break;
     }
+
+    // CGEventPost 没有返回值：ok 只代表事件已投递，不代表目标应用收到。
+    // 目标应用一栏用于定位"焦点在哪个应用"这类问题。
+    NSRunningApplication* front = [[NSWorkspace sharedWorkspace] frontmostApplication];
+    LOG_DEBUG(QString("InputInjector(mac): inject mode=%1 ok=%2 chars=%3 frontmost=%4")
+                  .arg(static_cast<int>(mode)).arg(ok).arg(text.size())
+                  .arg(front ? QString::fromNSString(front.bundleIdentifier ?: front.localizedName) : QString("?")));
+    return ok;
 }

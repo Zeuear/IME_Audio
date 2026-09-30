@@ -7,6 +7,9 @@
 #include <QTimer>
 #include <QtConcurrent> 
 #include "../utils/Logger.h"
+#include "../utils/Diagnostics.h"
+#include "../utils/AppPaths.h"
+#include <QElapsedTimer>
 #include "../utils/ExtractTool.h"
 #include "../ConfigManager.h"
 
@@ -129,14 +132,20 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         config.sherpa.localModelRepoId);
 
     if (repoId.isEmpty()) {
-        LOG_WARN("Model not found");
+        LOG_WARN(QString("Model not found (languageModel=%1, localModelRepoId=%2)")
+                     .arg(config.sherpa.languageModel, config.sherpa.localModelRepoId));
         return;
     }
 
+    const QString modelDir = ModelConfigFactory::getSherpaModel() + "/" + repoId.split("/").last();
+    LOG_DEBUG(QString("Model load | repo=%1 dir=%2 threads=%3 gpu=%4 reload=%5")
+                  .arg(repoId, modelDir).arg(config.sherpa.threads).arg(config.sherpa.useGpu).arg(isReload));
+
     if (!SherpaInstaller::isInstalled(repoId)) {
-        LOG_WARN("Model not installed");
+        LOG_WARN(QString("Model not installed: %1").arg(modelDir));
         return;
     }
+    Diagnostics::logDirectoryListing("Model load | files", modelDir);
 
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);
     bool punctuatorBound = ModelRegistry::shouldUseNeuralPunct(*desc);
@@ -144,7 +153,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         QString punctDirName = ModelRegistry::NeuralPunctModel::sharedDir();
         if (!ModelRegistry::NeuralPunctModel::isInstalled()) {
 
-            LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(punctDirName));
+            LOG_WARN(tr("Model or tokens file does not exist! %1").arg(punctDirName));
         }else {
             if (!m_punctuator->load(punctDirName)) {
                 LOG_WARN("Neural punctuation model failed to load; reverting to heuristic punctuation.");
@@ -168,14 +177,17 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     m_kind = RecognizerKind::None;
     m_currentRepoId.clear();
 
+	QElapsedTimer loadTimer;
+	loadTimer.start();
 	auto result = ModelRegistry::GetConfig(repoId, numThreads, useGpu);
 	m_isLoaded = result.isLoaded;
 	if (result.cudaFellBack) {
 	    emit gpuFallbackToCpu();
 	}
 	if (!result.isLoaded) {
-	    LOG_ERROR("Load failed: model file missing or does not exist");
-	    LOG_WARN(tr("Model or tokens file does not exist! 1%").arg(repoId));
+	    LOG_ERROR(QString("Load failed: recognizer not created for %1 after %2 ms (dir=%3)，"
+	                      "具体原因见上方 Failed to create recognizer 记录与 voice_ime.stderr.log")
+	                  .arg(repoId).arg(loadTimer.elapsed()).arg(modelDir));
 	    return;
 	}
 
@@ -206,6 +218,11 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     if (m_isLoaded) {
         m_currentRepoId = repoId;
         m_configCopy = config;
+        LOG_DEBUG(QString("Model load | ok: %1 kind=%2 in %3 ms")
+                      .arg(repoId).arg(static_cast<int>(m_kind)).arg(loadTimer.elapsed()));
+    } else {
+        LOG_ERROR(QString("Model load | recognizer variant unusable for %1 (kind=%2)")
+                      .arg(repoId).arg(static_cast<int>(result.kind)));
     }
 }
 
@@ -501,7 +518,7 @@ void SherpaInstaller::ensureVadModel()
 {
     const QString vadGroup = ModelRegistry::VadModel::repoId;
     const QString path = ModelRegistry::VadModel::localPath;
-    if (QFile::exists(path)) {
+    if (QFile::exists(path) || QFile::exists(AppPaths::vadModelFile())) {
         emit vadModelReady(true, tr("VAD model ready"));
         return;
     }

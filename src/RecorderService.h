@@ -316,7 +316,13 @@ private:
     bool ensureMicrophonePermission();
 
     void finalizeSegmentIfNeeded(bool forceCut);
+    // 下游（频谱 / VAD / 识别）统一按「配置采样率、单声道、Int16」处理，
+    // 所以这里返回的是转换后的码率，而不是设备的。
     int bytesPerMs() const;
+
+    // 设备不支持请求的格式时会回退到 preferredFormat（macOS 内置麦克风常见 48k/Float/立体声），
+    // 直接把这些字节当 16k Int16 单声道喂给识别器只会得到乱码，必须先转换。
+    QByteArray normalizeChunk(const QByteArray& chunk) const;
 
     QAudioSource *m_audioSource = nullptr;
     QIODevice *m_audioDevice = nullptr;
@@ -328,7 +334,8 @@ private:
     SystemAudioEndpointController m_endpointController;
 
     RuntimeStatus m_status;
-    int m_actualChannels = 1;
+    QAudioFormat m_actualFormat;
+    bool m_needsConversion = false;
     const AppConfig& m_config;
     QByteArray m_segmentBuffer;   
 

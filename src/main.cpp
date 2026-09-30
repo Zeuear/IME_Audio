@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "utils/AppPaths.h"
 #include "utils/SingleInstanceGuard.h"
+#include "utils/PlatformPermissions.h"
 
 #include <cstdio>
 #include <iostream>
@@ -49,10 +50,9 @@ void test() {
 
 int main(int argc, char *argv[])
 {
-    //test();
     Application a(argc, argv);
 
-    // 跑第二份会重复注册全局热键并与第一份争抢配置文件
+    // 单例
     SingleInstanceGuard guard(AppPaths::dataDir());
     if (!guard.acquireOrNotifyExisting()) {
         return 0;
@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
     QObject::connect(&guard, &SingleInstanceGuard::anotherInstanceStarted,
                      &w, &MainWin::onShowWindow);
     w.show();
+
+    PlatformPermissions::requestStartupPermissions();
 
     return a.exec();
 }

@@ -19,3 +19,5 @@ bool PlatformPermissions::requestAccessibility(bool) {
 }
 
 void PlatformPermissions::openAccessibilitySettings() {}
+
+void PlatformPermissions::requestStartupPermissions() {}

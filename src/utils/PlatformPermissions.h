@@ -30,4 +30,8 @@ public:
     static bool requestAccessibility(bool prompt);
 
     static void openAccessibilitySettings();
+
+    // 应用启动完成后调用一次：把本平台上功能必需的授权提前引导完，
+    // 而不是等到用户第一次用到时才失败。已授权或本平台无需授权时无任何界面。
+    static void requestStartupPermissions();
 };

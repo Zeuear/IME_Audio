@@ -11,8 +11,11 @@
 #include <QApplication>
 #include <QDir>
 #include <QThread>
+#include <cstring>
 #include "utils/Logger.h"
 #include "utils/PlatformPermissions.h"
+#include "utils/Diagnostics.h"
+#include "utils/AppPaths.h"
 
 
 SpectrumWorker::SpectrumWorker(int sampleRate):QObject(nullptr), m_sampleRate(sampleRate){
@@ -175,22 +178,36 @@ VadWorker::VadWorker(const AppConfig& config, int sampleRate, QObject* parent)
 
 void VadWorker::rebuildDetector()
 {
-    if (!QFile::exists(m_config.sherpa.vadPath)) {
-        LOG_ERROR("VAD model not found");
+    // vadPath 是构造配置时解析的；VAD 模型可能是之后才下载好的，这里重新解析一次
+    QString vadPath = m_config.sherpa.vadPath;
+    if (!QFile::exists(vadPath)) {
+        vadPath = AppPaths::vadModelFile();
+    }
+    if (!QFile::exists(vadPath)) {
+        LOG_ERROR(QString("VAD model not found: %1").arg(vadPath));
         emit errorOccurred(tr("录音启动失败"), tr("VAD 模型缺失，正在自动下载，请稍候重试"));
         return;
     }
         
     sherpa_onnx::cxx::VadModelConfig vadConfig;
-    vadConfig.silero_vad.model = m_config.sherpa.vadPath.toStdString();
+    vadConfig.silero_vad.model = vadPath.toStdString();
     vadConfig.silero_vad.threshold = static_cast<float>(m_config.audio.voiceThreshold) / 1000;
     vadConfig.silero_vad.min_silence_duration = static_cast<float>(m_config.audio.silenceTimeoutMs) / 1000;
     vadConfig.silero_vad.min_speech_duration = static_cast<float>(m_config.audio.minRecordMs) / 1000;
     vadConfig.silero_vad.max_speech_duration = static_cast<float>(m_config.audio.maxRecordMs) / 1000;
     vadConfig.sample_rate = m_config.audio.sampleRate;
 
-    auto newVad = std::make_unique<sherpa_onnx::cxx::VoiceActivityDetector>(
-        sherpa_onnx::cxx::VoiceActivityDetector::Create(vadConfig, static_cast<float>(m_config.audio.maxRecordMs) / 1000.0f + 5.0f));
+    Diagnostics::logFileState("VAD | model", vadPath);
+    std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> newVad;
+    try {
+        newVad = std::make_unique<sherpa_onnx::cxx::VoiceActivityDetector>(
+            sherpa_onnx::cxx::VoiceActivityDetector::Create(vadConfig, static_cast<float>(m_config.audio.maxRecordMs) / 1000.0f + 5.0f));
+    }
+    catch (const std::exception& e) {
+        LOG_ERROR(QString("VAD | create failed: %1").arg(e.what()));
+        emit errorOccurred(tr("录音启动失败"), tr("VAD 模型加载失败，详见日志"));
+        return;
+    }
 
     {
         std::lock_guard<std::mutex> lock(m_vadMutex);
@@ -206,7 +223,8 @@ void VadWorker::rebuildDetector()
     m_historyStartSample = 0;
     m_totalSamplesFed = 0;
     m_agcGain = 1.0f;
-    LOG_DEBUG("VAD Model update successful");
+    LOG_DEBUG(QString("VAD Model update successful (threshold=%1, silence=%2ms, sampleRate=%3)")
+                  .arg(vadConfig.silero_vad.threshold).arg(m_config.audio.silenceTimeoutMs).arg(m_config.audio.sampleRate));
 }
 
 
@@ -353,7 +371,78 @@ void AudioRecorderService::updateConfig() {
 
 int AudioRecorderService::bytesPerMs() const
 {
-    return (m_config.audio.sampleRate * m_actualChannels * (m_config.audio.bitsPerSample / 8)) / 1000;
+    return (m_config.audio.sampleRate * static_cast<int>(sizeof(int16_t))) / 1000;
+}
+
+QByteArray AudioRecorderService::normalizeChunk(const QByteArray& chunk) const
+{
+    const QAudioFormat& fmt = m_actualFormat;
+    const int channels = std::max(1, fmt.channelCount());
+    const int bytesPerSample = fmt.bytesPerSample();
+    if (bytesPerSample <= 0) return {};
+
+    const qsizetype frames = chunk.size() / (bytesPerSample * channels);
+    if (frames == 0) return {};
+
+    // 1) 解码并混成单声道 float
+    std::vector<float> mono(static_cast<size_t>(frames));
+    const char* raw = chunk.constData();
+    for (qsizetype i = 0; i < frames; ++i) {
+        float acc = 0.0f;
+        for (int c = 0; c < channels; ++c) {
+            const char* p = raw + (i * channels + c) * bytesPerSample;
+            switch (fmt.sampleFormat()) {
+            case QAudioFormat::UInt8:
+                acc += (static_cast<uint8_t>(*p) - 128) / 128.0f;
+                break;
+            case QAudioFormat::Int16: {
+                int16_t v; memcpy(&v, p, sizeof(v));
+                acc += v / 32768.0f;
+                break;
+            }
+            case QAudioFormat::Int32: {
+                int32_t v; memcpy(&v, p, sizeof(v));
+                acc += v / 2147483648.0f;
+                break;
+            }
+            case QAudioFormat::Float: {
+                float v; memcpy(&v, p, sizeof(v));
+                acc += v;
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        mono[static_cast<size_t>(i)] = acc / channels;
+    }
+
+    // 2) 重采样到配置采样率。降采样时对窗口内取平均，相当于一个最简单的低通，
+    //    避免高频折叠成噪声；升采样（少见）用线性插值。
+    const int dstRate = m_config.audio.sampleRate;
+    const double step = static_cast<double>(fmt.sampleRate()) / dstRate;
+    const qsizetype outCount = static_cast<qsizetype>(frames / step);
+    QByteArray out(static_cast<qsizetype>(outCount * sizeof(int16_t)), Qt::Uninitialized);
+    int16_t* dst = reinterpret_cast<int16_t*>(out.data());
+
+    for (qsizetype k = 0; k < outCount; ++k) {
+        float v;
+        if (step > 1.0) {
+            const qsizetype begin = static_cast<qsizetype>(k * step);
+            const qsizetype end = std::min<qsizetype>(frames, std::max<qsizetype>(begin + 1, static_cast<qsizetype>((k + 1) * step)));
+            float sum = 0.0f;
+            for (qsizetype i = begin; i < end; ++i) sum += mono[static_cast<size_t>(i)];
+            v = sum / static_cast<float>(end - begin);
+        } else {
+            const double pos = k * step;
+            const qsizetype i0 = static_cast<qsizetype>(pos);
+            const qsizetype i1 = std::min<qsizetype>(i0 + 1, frames - 1);
+            const float frac = static_cast<float>(pos - i0);
+            v = mono[static_cast<size_t>(i0)] * (1.0f - frac) + mono[static_cast<size_t>(i1)] * frac;
+        }
+        dst[k] = static_cast<int16_t>(std::clamp(v, -1.0f, 1.0f) * 32767.0f);
+    }
+    return out;
 }
 
 bool AudioRecorderService::ensureMicrophonePermission()
@@ -361,6 +450,7 @@ bool AudioRecorderService::ensureMicrophonePermission()
     using Status = PlatformPermissions::Status;
 
     const Status status = PlatformPermissions::microphoneStatus();
+    LOG_DEBUG(QString("Recorder | microphone permission status=%1").arg(static_cast<int>(status)));
     if (status == Status::Granted || status == Status::NotRequired) {
         return true;
     }
@@ -415,19 +505,47 @@ bool AudioRecorderService::startListening() {
         m_endpointController.setDefaultInput(device.id().toStdString());
     }
 
+    LOG_DEBUG(QString("Recorder | input device: %1 (id=%2, null=%3), configured name='%4'")
+                  .arg(device.description(), QString::fromUtf8(device.id())).arg(device.isNull()).arg(m_config.audio.deviceName));
+    if (device.isNull()) {
+        LOG_ERROR("Recorder | 没有可用的音频输入设备");
+    }
+
     if (!device.isFormatSupported(format)) {
-        LOG_DEBUG("Default format not supported, trying to use the nearest.");
+        LOG_DEBUG(QString("Default format not supported (rate=%1 ch=%2 fmt=%3), trying to use the nearest.")
+                      .arg(format.sampleRate()).arg(format.channelCount()).arg(static_cast<int>(format.sampleFormat())));
         format = device.preferredFormat();
     }
 
     m_audioSource = new QAudioSource(device, format, this);
-    m_audioSource->setBufferSize(bytesPerMs() * 800);
+    // 缓冲区是设备侧的，必须按设备实际格式算，不能用下游的 bytesPerMs()
+    m_audioSource->setBufferSize(static_cast<qsizetype>(format.bytesForDuration(800 * 1000)));
+    connect(m_audioSource, &QAudioSource::stateChanged, this, [this](QAudio::State state) {
+        LOG_DEBUG(QString("Recorder | QAudioSource state=%1 error=%2")
+                      .arg(static_cast<int>(state)).arg(m_audioSource ? static_cast<int>(m_audioSource->error()) : -1));
+    });
     m_audioDevice = m_audioSource->start();
-    if (!m_audioDevice) return false;
+    if (!m_audioDevice) {
+        LOG_ERROR(QString("Recorder | QAudioSource::start failed (state=%1, error=%2)，"
+                          "若麦克风授权正常，请检查该设备是否被其它应用独占")
+                      .arg(static_cast<int>(m_audioSource->state())).arg(static_cast<int>(m_audioSource->error())));
+        m_audioSource->deleteLater();
+        m_audioSource = nullptr;
+        return false;
+    }
 
     auto _format = m_audioSource->format();
-    // 实际打开设备的声道数（虚拟声卡可能是立体声），用于缓冲时长计算，避免错位
-    m_actualChannels = _format.channelCount() > 0 ? _format.channelCount() : 1;
+    m_actualFormat = _format;
+    // 实际打开的设备格式（回退到 preferredFormat 或虚拟声卡的立体声）与下游期望的
+    // 「配置采样率 / 单声道 / Int16」不一致时，在 onAudioDataReady 里统一转换。
+    m_needsConversion = _format.sampleFormat() != QAudioFormat::Int16
+                     || _format.channelCount() != 1
+                     || _format.sampleRate() != m_config.audio.sampleRate;
+    if (m_needsConversion) {
+        LOG_WARN(QString("Recorder | 设备实际格式 %1Hz/%2ch/fmt=%3 与识别期望 %4Hz/1ch/Int16 不同，已启用格式转换")
+                     .arg(_format.sampleRate()).arg(_format.channelCount())
+                     .arg(static_cast<int>(_format.sampleFormat())).arg(m_config.audio.sampleRate));
+    }
     LOG_DEBUG(QString("Sample Rate: %1").arg(_format.sampleRate()));
     LOG_DEBUG(QString("Channels: %1").arg(_format.channelCount()));
     LOG_DEBUG(QString("Sample Format: %1").arg(static_cast<int>(_format.sampleFormat())));
@@ -495,6 +613,10 @@ void AudioRecorderService::onAudioDataReady() {
     if (!m_audioDevice) return;
     QByteArray chunk = m_audioDevice->readAll();
     if (chunk.isEmpty()) return;
+    if (m_needsConversion) {
+        chunk = normalizeChunk(chunk);
+        if (chunk.isEmpty()) return;
+    }
 
     QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
         Q_ARG(QByteArray, chunk));

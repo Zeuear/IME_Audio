@@ -175,12 +175,12 @@ void WorkflowManager::processInjectQueue() {
     m_injecting = true;
     QString text = m_injectQueue.dequeue();
 
-    bool ok = InputInjector::inject(text);
+    bool ok = InputInjector::inject(text, InputInjector::defaultMode());
     if (!ok) {
-        LOG_WARN(QString("InputInjector failed for text: %1").arg(text));
+        LOG_WARN(QString("InputInjector failed (%1 chars)").arg(text.size()));
         if (PlatformPermissions::accessibilityStatus() == PlatformPermissions::Status::Denied) {
             emit errorOccurred(tr("文本注入失败"),
-                               tr("请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用，然后重启应用"));
+                               tr("请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴"));
         }
     }
 

@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QMutexLocker>
 #include "c-api.h"
+#include "../utils/Logger.h"
 
 SherpaPunctuator::SherpaPunctuator(QObject* parent)
     : QObject(parent)
@@ -29,6 +30,7 @@ bool SherpaPunctuator::load(const QString& modelDir, bool forceReload)
 
     const QString modelFile = QDir(modelDir).filePath("model.onnx");
     if (!QFileInfo::exists(modelFile)) {
+        LOG_WARN(QString("Punctuator: model file missing: %1").arg(modelFile));
         return false;
     }
 
@@ -42,8 +44,12 @@ bool SherpaPunctuator::load(const QString& modelDir, bool forceReload)
 
     const SherpaOnnxOfflinePunctuation* newPunct = SherpaOnnxCreateOfflinePunctuation(&config);
     if (!newPunct) {
+        LOG_ERROR(QString("Punctuator: SherpaOnnxCreateOfflinePunctuation returned null for %1 (%2 bytes)，"
+                          "底层原因见 voice_ime.stderr.log")
+                      .arg(modelFile).arg(QFileInfo(modelFile).size()));
         return false;
     }
+    LOG_DEBUG(QString("Punctuator: loaded %1").arg(modelFile));
 
     {
         QMutexLocker locker(&m_mutex);

@@ -1115,7 +1115,9 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }, configVar);
 
     result.repoId = repoId;
-    result.isLoaded = true;
+    // 创建识别器失败时上面返回的是 monostate；此时不能报告"已加载"，
+    // 否则上层会带着一个空识别器进入可转录状态，表现为静默无输出。
+    result.isLoaded = !std::holds_alternative<std::monostate>(result.recognizer);
     return result;
 }
 

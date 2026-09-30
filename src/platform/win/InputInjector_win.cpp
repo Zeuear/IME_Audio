@@ -444,6 +444,10 @@ bool InputInjector::pasteViaUnicodeTyping(const QString& text) {
     return true;
 }
 
+InputInjector::Mode InputInjector::defaultMode() {
+    return Mode::UnicodeTypeOnly;
+}
+
 bool InputInjector::inject(const QString& text, Mode mode) {
     if (text.isEmpty()) return false;
 

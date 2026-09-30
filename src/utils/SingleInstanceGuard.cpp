@@ -40,10 +40,11 @@ bool SingleInstanceGuard::acquireOrNotifyExisting()
     m_server = new QLocalServer(this);
     m_server->setSocketOptions(QLocalServer::UserAccessOption);
     const QString name = serverNameForDataDir(m_dataDir);
+
     // 上一个实例崩溃后 Unix 会残留套接字文件，不清掉监听会一直失败
     QLocalServer::removeServer(name);
+    
     if (!m_server->listen(name)) {
-        // 通知通道起不来不影响唯一性判定，降级即可
         LOG_DEBUG(QString("SingleInstance: notify channel unavailable: %1")
                       .arg(m_server->errorString()));
         delete m_server;

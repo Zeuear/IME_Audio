@@ -8,7 +8,9 @@ public:
         ClipboardOnly,
         UnicodeTypeOnly
     };
-    static bool inject(const QString& text, Mode mode = Mode::UnicodeTypeOnly);
+    // 各平台最可靠的注入方式由 platform/<os>/ 决定，调用方不应自己按系统挑选。
+    static Mode defaultMode();
+    static bool inject(const QString& text, Mode mode);
 
 private:
     static bool sendCtrlV();

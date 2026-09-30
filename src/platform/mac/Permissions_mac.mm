@@ -1,4 +1,5 @@
 #include "../../utils/PlatformPermissions.h"
+#include "../../utils/Logger.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <AppKit/AppKit.h>
@@ -15,14 +16,24 @@ void openPrivacyPane(NSString* anchor) {
         stringWithFormat:@"x-apple.systempreferences:com.apple.preference.security?%@", anchor];
     NSURL* url = [NSURL URLWithString:spec];
     if (url) {
-        [[NSWorkspace sharedWorkspace] openURL:url];
+        const BOOL opened = [[NSWorkspace sharedWorkspace] openURL:url];
+        LOG_DEBUG(QString("Permissions(mac): open privacy pane %1 -> %2")
+                      .arg(QString::fromNSString(anchor)).arg(opened == YES));
+    } else {
+        LOG_WARN(QString("Permissions(mac): invalid privacy pane url for %1").arg(QString::fromNSString(anchor)));
     }
 }
 
 } // namespace
 
 PlatformPermissions::Status PlatformPermissions::microphoneStatus() {
-    switch ([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio]) {
+    const AVAuthorizationStatus raw = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+    // 原始值 0=NotDetermined 1=Restricted 2=Denied 3=Authorized；Restricted 与 Denied 在下面被合并，
+    // 排查"为什么弹不出授权框"时需要区分。
+    if (raw == AVAuthorizationStatusRestricted) {
+        LOG_WARN("Permissions(mac): 麦克风授权状态为 Restricted（家长控制/MDM 限制）");
+    }
+    switch (raw) {
     case AVAuthorizationStatusAuthorized:
         return Status::Granted;
     case AVAuthorizationStatusNotDetermined:
@@ -39,8 +50,10 @@ PlatformPermissions::Status PlatformPermissions::microphoneStatus() {
 void PlatformPermissions::requestMicrophoneAccess(std::function<void(bool)> callback) {
     // block 会逃逸到系统的授权流程里，std::function 必须堆分配后按值捕获。
     auto shared = std::make_shared<std::function<void(bool)>>(std::move(callback));
+    LOG_DEBUG("Permissions(mac): requesting microphone access");
     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio
                              completionHandler:^(BOOL granted) {
+                                 LOG_DEBUG(QString("Permissions(mac): microphone request completed, granted=%1").arg(granted == YES));
                                  if (*shared) {
                                      (*shared)(granted == YES);
                                  }
@@ -58,9 +71,19 @@ PlatformPermissions::Status PlatformPermissions::accessibilityStatus() {
 
 bool PlatformPermissions::requestAccessibility(bool prompt) {
     NSDictionary* options = @{ (__bridge id)kAXTrustedCheckOptionPrompt : @(prompt) };
-    return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options) == TRUE;
+    const bool trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options) == TRUE;
+    LOG_DEBUG(QString("Permissions(mac): accessibility trusted=%1 (prompt=%2)，"
+                      "若已在系统设置中勾选仍为 false，请删除旧条目后重新添加并重启应用（重新签名会使授权失效）")
+                  .arg(trusted).arg(prompt));
+    return trusted;
 }
 
 void PlatformPermissions::openAccessibilitySettings() {
     openPrivacyPane(@"Privacy_Accessibility");
+}
+
+void PlatformPermissions::requestStartupPermissions() {
+    // 辅助功能授权是文本注入的硬性前提。启动时就引导授权，而不是等第一句话转录完、
+    // 发现输不进去才提示。
+    requestAccessibility(true);
 }

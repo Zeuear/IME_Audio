@@ -24,12 +24,9 @@ else()
     set(_platform_ext "cpp")
 endif()
 
-set(PLATFORM_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/InputInjector_${_platform_dir}.${_platform_ext}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/AudioEndpoint_${_platform_dir}.${_platform_ext}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/Elevation_${_platform_dir}.${_platform_ext}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/Permissions_${_platform_dir}.${_platform_ext}"
-)
+
+file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/*.${_platform_ext}")
 list(APPEND SOURCES ${PLATFORM_SOURCES})
 file(GLOB_RECURSE UIFILES CONFIGURE_DEPENDS "*.ui")
 file(GLOB_RECURSE QRCFILES CONFIGURE_DEPENDS "*.qrc")

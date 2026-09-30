@@ -67,7 +67,15 @@ QString sherpaModelsDir()
 
 QString vadModelFile()
 {
-    return QDir(resourceDir()).absoluteFilePath("sherpa/vad/silero_vad.onnx");
+    const QString bundled = QDir(resourceDir()).absoluteFilePath("sherpa/vad/silero_vad.onnx");
+#ifdef Q_OS_MACOS
+    // 构建时会把 VAD 模型拷进 bundle 的 Resources；但 SherpaInstaller::ensureVadModel 缺失时
+    // 下载到的是数据目录（bundle 内不可写）。两处都要认，否则下载成功了也永远找不到。
+    if (!QFile::exists(bundled)) {
+        return QDir(sherpaRoot()).absoluteFilePath("vad/silero_vad.onnx");
+    }
+#endif
+    return bundled;
 }
 
 }
