@@ -2,7 +2,6 @@
 #include "ModelInfoDelegate.h"
 #include "ModelInfoModel.h"
 #include <QEvent>
-#include <QLabel>
 #include <QListView>
 #include <QPainter>
 #include <QVBoxLayout>
@@ -56,16 +55,9 @@ void ModelListWidget::setupUi()
     m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    m_note = new QLabel(this);
-    m_note->setWordWrap(true);
-    QPalette notePal = m_note->palette();
-    notePal.setColor(QPalette::WindowText, notePal.color(QPalette::PlaceholderText));
-    m_note->setPalette(notePal);
-
     m_header = new HeaderBar(this);
     layout->addWidget(m_header);
     layout->addWidget(m_list);
-    layout->addWidget(m_note);
 
     connect(m_list, &QListView::clicked, this, [this](const QModelIndex& index) {
         emit modelActivated(index.data(Qt::DisplayRole).toString());
@@ -85,8 +77,6 @@ void ModelListWidget::changeEvent(QEvent* event)
 
 void ModelListWidget::retranslateUi()
 {
-    m_note->setText(tr("Accuracy and speed are measured on the FLEURS test set "
-                       "(120 sentences per language, CPU). Hover for details."));
     // 表头与行内的“已安装/自带标点”在绘制时 tr，重绘即可刷新
     m_header->update();
     m_list->viewport()->update();

@@ -697,97 +697,97 @@
         <translation type="unfinished">About</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="493"/>
+        <location filename="../../src/MainWin.cpp" line="518"/>
         <source>该模型正在安装....</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="235"/>
+        <location filename="../../src/MainWin.cpp" line="224"/>
         <source>开始下载模型...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="239"/>
+        <location filename="../../src/MainWin.cpp" line="228"/>
         <source>模型下载完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="240"/>
+        <location filename="../../src/MainWin.cpp" line="229"/>
         <source>模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="240"/>
+        <location filename="../../src/MainWin.cpp" line="229"/>
         <source>请检查网络后重试</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="247"/>
+        <location filename="../../src/MainWin.cpp" line="236"/>
         <source>VAD 模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="247"/>
+        <location filename="../../src/MainWin.cpp" line="236"/>
         <source>请检查网络后重试，或前往 &quot;下载列表&quot; 查看进度</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="252"/>
+        <location filename="../../src/MainWin.cpp" line="241"/>
         <source>已切换至 CPU 模式</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="252"/>
+        <location filename="../../src/MainWin.cpp" line="241"/>
         <source>显卡不可用，识别速度可能下降</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="347"/>
+        <location filename="../../src/MainWin.cpp" line="336"/>
         <source>模型加载成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="377"/>
+        <location filename="../../src/MainWin.cpp" line="366"/>
         <source>成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="378"/>
+        <location filename="../../src/MainWin.cpp" line="367"/>
         <source>冲突</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="859"/>
+        <location filename="../../src/MainWin.cpp" line="884"/>
         <source>Update Available</source>
         <translation type="unfinished">Update Available</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="860"/>
+        <location filename="../../src/MainWin.cpp" line="885"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">A new version (%1) is available!</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="861"/>
+        <location filename="../../src/MainWin.cpp" line="886"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">Would you like to download and install it now?</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="869"/>
+        <location filename="../../src/MainWin.cpp" line="894"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">Do not remind me again</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="896"/>
+        <location filename="../../src/MainWin.cpp" line="921"/>
         <source>Restart Required</source>
         <translation type="unfinished">Restart Required</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="897"/>
+        <location filename="../../src/MainWin.cpp" line="922"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">Update downloaded successfully. The application will now close and restart to apply the update. Continue?</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="906"/>
+        <location filename="../../src/MainWin.cpp" line="931"/>
         <source>更新失败</source>
         <translation type="unfinished">Update failed</translation>
     </message>
@@ -836,11 +836,6 @@
         <location filename="../../src/widgets/ModelListWidget.cpp" line="29"/>
         <source>FEATURES</source>
         <translation>FEATURES</translation>
-    </message>
-    <message>
-        <location filename="../../src/widgets/ModelListWidget.cpp" line="87"/>
-        <source>Accuracy and speed are measured on the FLEURS test set (120 sentences per language, CPU). Hover for details.</source>
-        <translation>Accuracy and speed are measured on the FLEURS test set (120 sentences per language, CPU). Hover for details.</translation>
     </message>
 </context>
 <context>

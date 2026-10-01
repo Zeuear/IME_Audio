@@ -2,7 +2,6 @@
 #include <QWidget>
 
 class QListView;
-class QLabel;
 class ModelInfoModel;
 
 // @brief
@@ -32,5 +31,4 @@ private:
     ModelInfoModel* m_model = nullptr;
     QWidget* m_header = nullptr;
     QListView* m_list = nullptr;
-    QLabel* m_note = nullptr;
 };
