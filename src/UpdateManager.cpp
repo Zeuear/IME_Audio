@@ -8,6 +8,7 @@
 #include <QVersionNumber>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QSysInfo>
 #include "utils/Logger.h"
 #include "version.h"
 
@@ -96,13 +97,24 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
     expectedSuffix = ".AppImage";
 #endif
 
+    // macOS 同一版本同时发布 arm64 与 x86_64 两个 dmg，必须按本程序的架构挑选，
+    // 否则 Intel 机器可能下到 arm64 包而无法运行
+    QString expectedArch;
+#if defined(Q_OS_MAC)
+    expectedArch = QSysInfo::buildCpuArchitecture();
+#endif
+
     QString downloadUrl;
     for (int i = 0; i < assets.size(); ++i) {
         QString assetName = assets[i].toObject().value("name").toString();
-        if (!expectedSuffix.isEmpty() && assetName.endsWith(expectedSuffix, Qt::CaseInsensitive)) {
-            downloadUrl = assets[i].toObject().value("browser_download_url").toString();
-            break;
+        if (expectedSuffix.isEmpty() || !assetName.endsWith(expectedSuffix, Qt::CaseInsensitive)) {
+            continue;
         }
+        if (!expectedArch.isEmpty() && !assetName.contains(expectedArch, Qt::CaseInsensitive)) {
+            continue;
+        }
+        downloadUrl = assets[i].toObject().value("browser_download_url").toString();
+        break;
     }
 
     if (downloadUrl.isEmpty()) {

@@ -78,8 +78,17 @@ if(WIN32)
 
 elseif(APPLE)
     set(_sherpa_platform_dir "macos")
-    # 自动识别 macOS 是 Apple Silicon (arm64) 还是 Intel (x86_64)
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    # 按目标架构选库：指定了 CMAKE_OSX_ARCHITECTURES（如在 Apple Silicon 上交叉编 x86_64）
+    # 时以它为准，否则才看构建机 CPU。sherpa 是单架构静态库，不支持一次编通用包
+    if(CMAKE_OSX_ARCHITECTURES)
+        set(_sherpa_osx_arch "${CMAKE_OSX_ARCHITECTURES}")
+    else()
+        set(_sherpa_osx_arch "${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+    if(_sherpa_osx_arch MATCHES ";")
+        message(FATAL_ERROR "sherpa-onnx static libs are single-arch; build arm64 and x86_64 separately")
+    endif()
+    if(_sherpa_osx_arch MATCHES "arm64|aarch64")
         set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-arm64-static-no-tts-lib.tar.bz2")
     else()
         # 上游 Intel 资产名用的是 x64，不是 x86_64
