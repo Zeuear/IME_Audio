@@ -56,11 +56,11 @@ void FileTranscribeWidget::setupUi()
 {
     m_model = new FileTaskModel(this);
 
-    m_addBtn = new QPushButton(tr("Add Files"), this);
-    m_transcribeBtn = new QPushButton(tr("Transcribe"), this);
-    m_cancelBtn = new QPushButton(tr("Cancel"), this);
-    m_clearBtn = new QPushButton(tr("Clear"), this);
-    m_exportBtn = new QPushButton(tr("Export"), this);
+    m_addBtn = new QPushButton(this);
+    m_transcribeBtn = new QPushButton(this);
+    m_cancelBtn = new QPushButton(this);
+    m_clearBtn = new QPushButton(this);
+    m_exportBtn = new QPushButton(this);
 
     auto* toolbar = new QHBoxLayout;
     toolbar->addWidget(m_addBtn);
@@ -71,10 +71,10 @@ void FileTranscribeWidget::setupUi()
     toolbar->addWidget(m_exportBtn);
 
     // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
-    auto* hint = new QLabel(tr("Drop audio files here, or click \"Add Files\""), this);
-    hint->setAlignment(Qt::AlignCenter);
-    hint->setWordWrap(true);
-    hint->setStyleSheet(QStringLiteral("QLabel { border: 2px dashed palette(mid); border-radius: 10px; }"));
+    m_hintLabel = new QLabel(this);
+    m_hintLabel->setAlignment(Qt::AlignCenter);
+    m_hintLabel->setWordWrap(true);
+    m_hintLabel->setStyleSheet(QStringLiteral("QLabel { border: 2px dashed palette(mid); border-radius: 10px; }"));
 
     m_list = new QListView(this);
     m_list->setModel(m_model);
@@ -97,15 +97,14 @@ void FileTranscribeWidget::setupUi()
     m_list->setMouseTracking(true);   // 悬停显示失败原因
 
     m_listStack = new QStackedWidget(this);
-    m_listStack->addWidget(hint);
+    m_listStack->addWidget(m_hintLabel);
     m_listStack->addWidget(m_list);
 
     // 下半部分：所选文件的文本预览
-    m_previewTitle = new QLabel(tr("Transcription"), this);
-    m_copyBtn = new QPushButton(tr("Copy"), this);
+    m_previewTitle = new QLabel(this);
+    m_copyBtn = new QPushButton(this);
     m_preview = new QPlainTextEdit(this);
     m_preview->setReadOnly(true);
-    m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
 
     auto* previewHeader = new QHBoxLayout;
     previewHeader->addWidget(m_previewTitle, 1);
@@ -125,7 +124,7 @@ void FileTranscribeWidget::setupUi()
     splitter->setStretchFactor(1, 1);
 
     m_statusLabel = new QLabel(this);
-    m_openFolderBtn = new QPushButton(tr("Open Folder"), this);
+    m_openFolderBtn = new QPushButton(this);
     m_openFolderBtn->hide();
 
     auto* statusRow = new QHBoxLayout;
@@ -172,13 +171,42 @@ void FileTranscribeWidget::setupUi()
     connect(m_model, &QAbstractItemModel::rowsRemoved, this, onStructureChanged);
     connect(m_model, &QAbstractItemModel::modelReset, this, onStructureChanged);
 
+    retranslateUi();
     updateButtons();
+}
+
+void FileTranscribeWidget::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::LanguageChange) {
+        this->retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void FileTranscribeWidget::retranslateUi()
+{
+    m_addBtn->setText(tr("Add Files"));
+    m_transcribeBtn->setText(tr("Transcribe"));
+    m_cancelBtn->setText(tr("Cancel"));
+    m_clearBtn->setText(tr("Clear"));
+    m_exportBtn->setText(tr("Export"));
+    m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\""));
+    m_copyBtn->setText(tr("Copy"));
+    m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
+    m_openFolderBtn->setText(tr("Open Folder"));
+
+    // 预览标题未选中时是"Transcription"；卡片状态文字由模型在绘制时 tr，重绘即可刷新
+    updatePreview();
+    m_list->viewport()->update();
 }
 
 // ---------------------------------------------------------------- 列表与按钮
 
 void FileTranscribeWidget::dragEnterEvent(QDragEnterEvent* event)
 {
+    LOG_INFO(QString("[DIAG-DND] dragEnter formats=%1 hasUrls=%2 action=%3")
+                 .arg(event->mimeData()->formats().join(','))
+                 .arg(event->mimeData()->hasUrls()).arg(int(event->proposedAction())));
     if (event->mimeData()->hasUrls())
         event->acceptProposedAction();
 }
@@ -187,6 +215,7 @@ void FileTranscribeWidget::dropEvent(QDropEvent* event)
 {
     QStringList paths;
     for (const QUrl& url : event->mimeData()->urls()) {
+        LOG_INFO(QString("[DIAG-DND] drop url=%1 local=%2").arg(url.toString()).arg(url.isLocalFile()));
         if (url.isLocalFile()) paths << url.toLocalFile();
     }
     addFiles(paths);

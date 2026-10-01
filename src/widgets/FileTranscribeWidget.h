@@ -25,23 +25,23 @@ class FileTranscribeWidget : public QWidget {
 public:
     explicit FileTranscribeWidget(QWidget* parent = nullptr);
 
-    // 依赖由 MainWin 注入（控件在 .ui 中提升，无法走带参构造）
     void setServices(TranscriptionService* transcription, SherpaManager* sherpa, const AppConfig* config);
 
     bool isBusy() const { return m_busy; }
 
 signals:
-    // 统一错误通知
     void errorOccurred(const QString& title, const QString& cause = {});
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     using Segments = QList<QByteArray>;
 
     void setupUi();
+    void retranslateUi();
 
     // 列表与按钮
     void chooseFiles();
@@ -88,6 +88,7 @@ private:
     FileTaskModel* m_model = nullptr;
     QStackedWidget* m_listStack = nullptr;
     QListView* m_list = nullptr;
+    QLabel* m_hintLabel = nullptr;
     QLabel* m_previewTitle = nullptr;
     QPlainTextEdit* m_preview = nullptr;
     QLabel* m_statusLabel = nullptr;
