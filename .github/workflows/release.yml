@@ -39,9 +39,12 @@ jobs:
           submodules: recursive
           
       - name: Setup Qt6
-        uses: jurplel/install-qt-action@v3
+        # v3 自带的 aqtinstall 3.1 / py7zr 0.20 在 Windows 上并行解压会随机报
+        # Bad7zFile "Specified path is bad"；v4 固定了规避该问题的 py7zr 版本
+        uses: jurplel/install-qt-action@v4
         with:
           version: '6.10.*'
+          cache: true
           host: ${{ matrix.platform == 'macos' && 'mac' || matrix.platform }}
           target: 'desktop'
           arch: ${{ matrix.platform == 'macos' && 'clang_64' || (matrix.platform == 'windows' && 'win64_msvc2022_64' || 'linux_gcc_64') }}
