@@ -24,8 +24,7 @@ AboutDialog::AboutDialog(QWidget* parent)
 
 QString AboutDialog::loadChangelog() const
 {
-    // 优先尝试读取打包进资源文件的 CHANGELOG.md，找不到则给出默认文案
-    QFile file(":/resources/CHANGELOG.md");
+    QFile file(":/CHANGELOG.md");
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         const QString content = QString::fromUtf8(file.readAll());
         file.close();
