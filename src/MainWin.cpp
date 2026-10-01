@@ -76,8 +76,7 @@ void MainWin::initialize() {
     auto languages = ModelRegistry::GetLanguages();
     ui->language_comb->addItems(languages);
 
-    auto models = ModelRegistry::GetModelsByLanguage(ui->language_comb->currentText());
-    ui->local_model_comb->addItems(models);
+    ui->model_list_widget->setLanguage(ui->language_comb->currentText());
 
     QStringList backend_items;
     backend_items << "本地识别(Sherpa)";
@@ -221,47 +220,22 @@ void MainWin::setupUiConnections(){
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
         m_sherpaInstaller->uninstallAll();
+        ui->model_list_widget->refreshInstalled();
     });
 
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
-		QString language = ui->language_comb->itemText(index);
-		// 阻断级联信号：重填本地模型列表时不触发下载
-		QSignalBlocker blocker(ui->local_model_comb);
-		Q_UNUSED(blocker);
-
-		auto models = ModelRegistry::GetModelsByLanguage(language);
-		ui->local_model_comb->clear();
-		ui->local_model_comb->addItems(models);
-		ui->local_model_comb->setCurrentIndex(0);
+		// 仅刷新列表并默认选中第一个模型，不触发下载
+		ui->model_list_widget->setLanguage(ui->language_comb->itemText(index));
 	});
 
-	// 下载触发：仅用户点击/键盘激活本地模型时下载
-	connect(ui->local_model_comb, &QComboBox::activated, this, [this](int index) {
-		AppConfig uiConfig = extractConfigFromUI();
-		ConfigManager::instance().updateConfig(uiConfig);
-		ConfigManager::instance().save();
-
-		const AppConfig& config = ConfigManager::instance().config();
-		QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
-			config.sherpa.localModelRepoId);
-		if (repoId.isEmpty()) {
-			LOG_ERROR("Model not found");
-			return;
-		}
-        if (m_sherpaInstaller->isInstalling(repoId)) {
-            LOG_INFO(QString("Model installing: %1").arg(repoId));
-            notify(NotifyLevel::Info, tr("该模型正在安装...."));
-            return;
-        }
-
-		LOG_DEBUG(QString("Download %1...").arg(repoId));
-		m_sherpaInstaller->installModel(repoId);
-	});
+	// 下载触发：仅用户在模型列表里点击时下载
+	connect(ui->model_list_widget, &ModelListWidget::modelActivated, this, &MainWin::onLocalModelActivated);
 
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, this, [=]() {
         notify(NotifyLevel::Info, tr("开始下载模型..."));
     });
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
+        ui->model_list_widget->refreshInstalled();
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
         else notify(NotifyLevel::Error, tr("模型下载失败"), tr("请检查网络后重试"));
     });
@@ -473,7 +447,7 @@ AppConfig MainWin::extractConfigFromUI() {
     uiConfig.sherpa.useGpu = ui->gpu_backend_widget->currentComputeMode() == GpuBackendWidget::ComputeMode::CUDA;
     uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();;
     uiConfig.sherpa.languageModel = ui->language_comb->currentText();
-	uiConfig.sherpa.localModelRepoId = ui->local_model_comb->currentText();
+	uiConfig.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
 
     // /AI 设置 (AI Group)
     uiConfig.polish.aiEngineIndex = ui->ai_engine_comb->currentIndex();
@@ -499,6 +473,29 @@ AppConfig MainWin::extractConfigFromUI() {
     for (const QString& w : rules.hotwords) hotwords += w + '\n';
     uiConfig.sherpa.hotwords = hotwords;
     return uiConfig;
+}
+
+void MainWin::onLocalModelActivated()
+{
+	AppConfig uiConfig = extractConfigFromUI();
+	ConfigManager::instance().updateConfig(uiConfig);
+	ConfigManager::instance().save();
+
+	const AppConfig& config = ConfigManager::instance().config();
+	QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
+		config.sherpa.localModelRepoId);
+	if (repoId.isEmpty()) {
+		LOG_ERROR("Model not found");
+		return;
+	}
+	if (m_sherpaInstaller->isInstalling(repoId)) {
+		LOG_INFO(QString("Model installing: %1").arg(repoId));
+		notify(NotifyLevel::Info, tr("该模型正在安装...."));
+		return;
+	}
+
+	LOG_DEBUG(QString("Download %1...").arg(repoId));
+	m_sherpaInstaller->installModel(repoId);
 }
 
 void MainWin::loadConfigToUI() {
@@ -530,14 +527,13 @@ void MainWin::loadConfigToUI() {
     ui->gpu_backend_widget->setComputeMode(cfg.sherpa.useGpu ? GpuBackendWidget::ComputeMode::CUDA : GpuBackendWidget::ComputeMode::CPU);
     int index = ui->language_comb->findText(cfg.sherpa.languageModel);
     if (index != -1) ui->language_comb->setCurrentIndex(index);
-    int localIndex = ui->local_model_comb->findText(cfg.sherpa.localModelRepoId);
-    if (localIndex != -1) ui->local_model_comb->setCurrentIndex(localIndex);
+    ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
     if (cfg.sherpa.languageModel.isEmpty() && !ui->language_comb->currentText().isEmpty())
         ConfigManager::instance().config().sherpa.languageModel = ui->language_comb->currentText();
-    if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->local_model_comb->currentText().isEmpty())
-        ConfigManager::instance().config().sherpa.localModelRepoId = ui->local_model_comb->currentText();
+    if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->model_list_widget->currentModel().isEmpty())
+        ConfigManager::instance().config().sherpa.localModelRepoId = ui->model_list_widget->currentModel();
     
     if (cfg.backend == AsrBackendKind::Sherpa) {
 

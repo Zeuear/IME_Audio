@@ -78,6 +78,7 @@ private slots:
 
     void onHotkeyPressed();
     void onStateChanged(WorkflowState newState);
+    void onLocalModelActivated();
 
 private:
     enum class NotifyLevel { Info, Success, Warning, Error };

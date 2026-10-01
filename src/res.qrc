@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file alias="title_icon">../resources/title_icon.png</file>
+        <file alias="model_benchmarks.json">../resources/model_benchmarks.json</file>
         <file alias="combo_down_black">../resources/icons/combo_down_black.svg</file>
         <file alias="combo_down_gray">../resources/icons/combo_down_gray.svg</file>
         <file alias="combo_down_white">../resources/icons/combo_down_white.svg</file>

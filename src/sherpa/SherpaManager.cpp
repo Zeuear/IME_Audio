@@ -148,7 +148,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     Diagnostics::logDirectoryListing("Model load | files", modelDir);
 
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);
-    bool punctuatorBound = ModelRegistry::shouldUseNeuralPunct(*desc);
+    bool punctuatorBound = ModelRegistry::shouldUseNeuralPunct(*desc, config.sherpa.languageModel);
     if (punctuatorBound) {
         QString punctDirName = ModelRegistry::NeuralPunctModel::sharedDir();
         if (!ModelRegistry::NeuralPunctModel::isInstalled()) {
@@ -431,7 +431,7 @@ void SherpaInstaller::ensurePunctModel(const QString& repoId)
 {
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);
     if (!desc) return;
-    if (!ModelRegistry::shouldUseNeuralPunct(*desc)) return;
+    if (!ModelRegistry::shouldUseNeuralPunct(*desc, ConfigManager::instance().config().sherpa.languageModel)) return;
     if (ModelRegistry::NeuralPunctModel::isInstalled()) return;
     if (m_downloadManager->tasksInGroup(ModelRegistry::NeuralPunctModel::repoId).isEmpty()) {
         const QString puncGroup = ModelRegistry::NeuralPunctModel::repoId;

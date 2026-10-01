@@ -79,7 +79,16 @@ struct WhisperFiles {
     QString name;
 };
 
-struct MoonshineFiles {};
+// v1：preprocessor + encoder + uncached/cached decoder；
+// v2（2026 起的单语模型）：encoder + merged decoder（.ort），其余留空
+struct MoonshineFiles {
+    QString preprocessorFile = "preprocess.onnx";
+    QString encoderFile = "encode.int8.onnx";
+    QString uncachedDecoderFile = "uncached_decode.int8.onnx";
+    QString cachedDecoderFile = "cached_decode.int8.onnx";
+    QString mergedDecoderFile;
+    QString tokensFile = "tokens.txt";
+};
 
 struct FunasrFiles {
     QString embeddingFile = "embedding.int8.onnx";
@@ -282,7 +291,7 @@ public:
 
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildNemoCtc(const QString& repoId, const QString& modelFile, int numThreads);
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildWhisper(const QString& repoId, const QString& name, int numThreads);
-	static sherpa_onnx::cxx::OfflineRecognizerConfig buildMoonshine(const QString& repoId, int numThreads);
+	static sherpa_onnx::cxx::OfflineRecognizerConfig buildMoonshine(const QString& repoId, const MoonshineFiles& files, int numThreads);
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildFireRedAsr(const QString& repoId, const FireRedAsrFiles& files, int numThreads);
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildDolphinCtc(const QString& repoId, bool useInt8, int numThreads);
 
@@ -390,14 +399,17 @@ public:
         static bool isInstalled();        
     };
 
-    static bool shouldUseNeuralPunct(const ModelDescriptor& desc);
+    // language 取用户所选语言：同一模型会出现在多个语言分组里，不能用注册表里记录的语言
+    static bool shouldUseNeuralPunct(const ModelDescriptor& desc, const QString& language);
 
     static const ModelDescriptor* Find(const QString& repoId);
     static Result GetConfig(const QString& repoId, int numThreads, bool useGpu);
 
     static QStringList GetLanguages();                              
     static QStringList GetModelsByLanguage(const QString& language); 
-    static QStringList GetLanguagesByModel(const QString& repoId); 
+    static QStringList GetLanguagesByModel(const QString& repoId);
+    static QList<ModelEntry> GetModelEntriesByLanguage(const QString& language);
+    static QStringList GetLanguagesByRepo(const QString& repoId);   // 该模型出现在哪些语言分组里
 
     static ModelInstallManifest BuildManifest(const QString& repoId);
     static const QString FindByDisplayName(const QString& language, const QString& displayName);
