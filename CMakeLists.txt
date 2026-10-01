@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.14)
 
 # 不指定时编译器按构建机的系统版本设最低运行版本：CI 的 macos-15 runner 编出的包
-# 在 macOS 13/14 上无法启动，不少 Intel Mac 停在这两个版本。13.0 是 Qt 6.10 支持的下限。
+# 在 macOS 13/14 上无法启动，不少 Intel Mac 停在这两个版本。
+# 取 13.4：Qt 6.10 下限是 13.0，但 sherpa-onnx 预编译的 onnxruntime 静态库按 13.4 编译，
+# 低于它链接时会报 "built for newer macOS version"，13.0~13.3 上可能运行出错。
 # 必须在 project() 之前设置才生效
 if(APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Minimum macOS version")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.4" CACHE STRING "Minimum macOS version")
 endif()
 
 project(ImeAudio VERSION 1.0.7 LANGUAGES CXX)
