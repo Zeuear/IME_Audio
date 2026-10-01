@@ -4,8 +4,6 @@
 #include <QAudioSink>
 #include <QBuffer>
 #include <QIODevice>
-#include <mutex>
-#include <deque>
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -237,9 +235,6 @@ private:
     EnvelopeParams m_rmsEnvelopeParams{ 15.0f, 50.0f }; // attack 稍微调快一点
 
     float m_rmsLevel = 0.0f;
-    float m_referenceLevelDb = -30.0f;   // 当前说话人的基准音量（初始给一个中庸值）
-    static constexpr float kReferenceTrackRate = 0.008f; // 涨跌用同一个速率，避免历史偏差
-    static constexpr float kFixedDbRange = 26.0f;
 
     bool m_vadVoiceActive = true;
 };
@@ -252,7 +247,6 @@ public:
 
 public slots:
     void processChunk(const QByteArray chunk);
-    void reset();
     void rebuildDetector();
 
 signals:
@@ -262,13 +256,25 @@ signals:
     void errorOccurred(const QString& title, const QString& cause = {});
 
 private:
-    float m_agcGain = 1.0f;
-    std::deque<int16_t> m_processedHistory;
-    int64_t m_historyStartSample = 0;  
-    int64_t m_totalSamplesFed = 0;
-    int     m_historyCapacity = 0;
+    // 切点之后的音频留到下一段开头
+    int64_t segmentLimitSamples() const;
+    void cutLongSegment(const std::vector<float>& samples);
+    // 主 VAD 的静音门槛是用户设置的断句时长，看不到比它短的停顿；
+    // 用一个短门槛的 VAD 重扫整段找停顿，找不到再退回按能量找最安静处
+    size_t findPauseCut(const std::vector<float>& samples, size_t searchFrom);
+    size_t findQuietCut(const std::vector<float>& samples, size_t searchFrom) const;
+    void emitSegment(const std::vector<float>& samples);
 
-    std::mutex m_vadMutex;
+    // 连续模式分段上限
+    static constexpr int kVadMaxSegmentMs = 20000;
+    static constexpr int kCutSearchMs = 10000;
+    static constexpr int kPauseSilenceMs = 150;
+
+    std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_pauseVad;
+    int64_t m_speechSamples = 0;    // 当前段已持续的语音样本数
+    int64_t m_samplesSinceCut = 0;
+    std::vector<float> m_carry;     // 上次切点之后的音频，拼到下一段开头
+
     std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_vad;
     int m_sampleRate;
     bool m_wasSpeaking = false;
@@ -346,7 +352,4 @@ private:
     QThread* m_vadThread = nullptr;
 
     std::atomic<bool> m_voiceActive{ false };
-
-    bool writeWavFile(const QString& filePath, const QByteArray& pcmData,
-        int sampleRate, int channels, int bitsPerSample) const;
 };
