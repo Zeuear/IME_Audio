@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-24.04]
+        os: [windows-latest, macos-latest, macos-15-intel, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     # Linux 之前编译不过：官方预编译的 sherpa-onnx 静态库用的是 libstdc++ 旧 ABI，
     # 与 Ubuntu 系统 GCC 的新 ABI 在 std::string 参数上符号名不一致（undefined reference
@@ -30,7 +30,7 @@ jobs:
         with:
           version: '6.10.*'
           cache: true
-          arch: ${{ matrix.os == 'macos-latest' && 'clang_64' || (matrix.os == 'windows-latest' && 'win64_msvc2022_64' || 'linux_gcc_64') }}
+          arch: ${{ startsWith(matrix.os, 'macos') && 'clang_64' || (matrix.os == 'windows-latest' && 'win64_msvc2022_64' || 'linux_gcc_64') }}
           modules: 'qtmultimedia qtshadertools'
 
       - name: Setup MSVC
