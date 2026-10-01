@@ -81,6 +81,9 @@ private slots:
     void onLocalModelActivated();
 
 private:
+    void fitToScreen();
+    bool m_fittedToScreen = false;
+
     enum class NotifyLevel { Info, Success, Warning, Error };
     void notify(NotifyLevel level, const QString& titleCN, const QString& causeCN = {});
 

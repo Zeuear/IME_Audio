@@ -36,17 +36,6 @@
 MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
 
-  // 部分屏幕分辨率较小(如笔记本 1366x768)，避免窗口初始高度超出可用桌面区域，
-  // 导致底部按钮/导航栏被挤出屏幕且无法通过拖拽缩小窗口来找回。
-  if (QScreen* screen = this->screen()) {
-      const QRect avail = screen->availableGeometry();
-      const int targetW = qMin(width(), avail.width() - 20);
-      const int targetH = qMin(height(), avail.height() - 20);
-      if (targetW > 0 && targetH > 0 && (targetW < width() || targetH < height())) {
-          resize(targetW, targetH);
-      }
-  }
-
   ui->ai_vocabulary_edit->setReadOnly(true);
   ui->identification_log_edit->setReadOnly(true);
   ui->config_log_edit->setReadOnly(true);
@@ -421,6 +410,40 @@ void MainWin::closeEvent(QCloseEvent* event)
 
 void MainWin::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
+    if (!m_fittedToScreen) {
+        m_fittedToScreen = true;
+        // 首次显示时下拉框已填充、翻译已加载，尺寸才是最终值；
+        // 推迟到下一轮事件循环，原生窗口装好标题栏后 frameGeometry 才准确
+        QTimer::singleShot(0, this, &MainWin::fitToScreen);
+    }
+}
+
+void MainWin::fitToScreen()
+{
+    QScreen* screen = this->screen();
+    if (!screen) return;
+    const QRect avail = screen->availableGeometry();
+    const QSize frameExtra = frameGeometry().size() - size();   // 标题栏与边框
+
+    LOG_DEBUG(QString("Window fit | avail=%1x%2 window=%3x%4 min=%5x%6 frame=%7x%8")
+                  .arg(avail.width()).arg(avail.height())
+                  .arg(width()).arg(height())
+                  .arg(minimumSizeHint().width()).arg(minimumSizeHint().height())
+                  .arg(frameExtra.width()).arg(frameExtra.height()));
+
+    const int maxW = avail.width() - frameExtra.width();
+    const int maxH = avail.height() - frameExtra.height();
+    if (width() > maxW || height() > maxH) {
+        resize(qMin(width(), maxW), qMin(height(), maxH));
+    }
+
+    // 尺寸缩不下（最小尺寸大于屏幕）时也至少保证左上角可见，让标题栏能拖动
+    QRect frame = frameGeometry();
+    const int x = qBound(avail.left(), frame.left(), qMax(avail.left(), avail.right() - frame.width() + 1));
+    const int y = qBound(avail.top(), frame.top(), qMax(avail.top(), avail.bottom() - frame.height() + 1));
+    if (x != frame.left() || y != frame.top()) {
+        move(x, y);
+    }
 }
 
 AppConfig MainWin::extractConfigFromUI() {
