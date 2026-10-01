@@ -1,4 +1,5 @@
 #include "../../utils/SystemAudioEndpointController.h"
+#include "../../utils/Logger.h"
 
 // Windows：通过 Core Audio COM API 切换系统默认音频端点。
 #define NOMINMAX
@@ -60,7 +61,7 @@ namespace {
         HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         bool needUninit = SUCCEEDED(hr);
         if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
-            OutputDebugStringA("[DIAG-SAEC] CoInitializeEx failed\n");
+            LOG_WARN(QString("Audio endpoint | CoInitializeEx failed hr=0x%1").arg(unsigned(hr), 8, 16, QChar('0')));
             return false;
         }
 
@@ -71,28 +72,23 @@ namespace {
         IPolicyConfig* pPolicyConfig = nullptr;
         HRESULT hrCreate = CoCreateInstance(__uuidof(CPolicyConfigClient), nullptr, CLSCTX_ALL,
             __uuidof(IPolicyConfig), (void**)&pPolicyConfig);
-        {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "[DIAG-SAEC] CoCreateInstance IPolicyConfig hr=0x%08X p=%p id='%s'\n",
-                (unsigned)hrCreate, (void*)pPolicyConfig, endpointId.c_str());
-            OutputDebugStringA(buf);
-        }
+        // 三个角色的 HRESULT，记日志用
+        auto hrs = [](HRESULT a, HRESULT b, HRESULT c) {
+            return QString("0x%1/0x%2/0x%3").arg(unsigned(a), 8, 16, QChar('0'))
+                .arg(unsigned(b), 8, 16, QChar('0')).arg(unsigned(c), 8, 16, QChar('0'));
+        };
         if (SUCCEEDED(hrCreate) && pPolicyConfig) {
             HRESULT h1 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eConsole);
             HRESULT h2 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eMultimedia);
             HRESULT h3 = pPolicyConfig->SetDefaultEndpoint(wid.c_str(), eCommunications);
             pPolicyConfig->Release();
-            {
-                char buf[256];
-                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfig::SetDefaultEndpoint h1=0x%08X h2=0x%08X h3=0x%08X\n",
-                    (unsigned)h1, (unsigned)h2, (unsigned)h3);
-                OutputDebugStringA(buf);
-            }
             // 至少一个角色成功就算切换生效（有些设备/驱动不完整支持三种角色）
             ok = SUCCEEDED(h1) || SUCCEEDED(h2) || SUCCEEDED(h3);
+            const QString msg = QString("Audio endpoint | set default %1 -> %2 (IPolicyConfig hr=%3)")
+                .arg(ok ? "ok" : "FAILED", QString::fromStdString(endpointId), hrs(h1, h2, h3));
+            if (ok) LOG_DEBUG(msg); else LOG_WARN(msg);
         }
         else {
-            OutputDebugStringA("[DIAG-SAEC] IPolicyConfig unavailable, falling back to IPolicyConfigVista\n");
             // 回退：极少数系统 IPolicyConfig 不可用时，尝试 Vista 版接口
             IPolicyConfigVista* pPolicyConfigVista = nullptr;
             HRESULT hrCreateVista = CoCreateInstance(__uuidof(CPolicyConfigVistaClient), nullptr, CLSCTX_ALL,
@@ -103,15 +99,15 @@ namespace {
                 HRESULT h3 = pPolicyConfigVista->SetDefaultEndpoint(wid.c_str(), eCommunications);
                 pPolicyConfigVista->Release();
                 ok = SUCCEEDED(h1) || SUCCEEDED(h2) || SUCCEEDED(h3);
-                char buf[256];
-                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfigVista::SetDefaultEndpoint h1=0x%08X h2=0x%08X h3=0x%08X\n",
-                    (unsigned)h1, (unsigned)h2, (unsigned)h3);
-                OutputDebugStringA(buf);
+                const QString msg = QString("Audio endpoint | set default %1 -> %2 (IPolicyConfigVista hr=%3)")
+                    .arg(ok ? "ok" : "FAILED", QString::fromStdString(endpointId), hrs(h1, h2, h3));
+                if (ok) LOG_DEBUG(msg); else LOG_WARN(msg);
             }
             else {
-                char buf[256];
-                snprintf(buf, sizeof(buf), "[DIAG-SAEC] IPolicyConfigVista also unavailable hr=0x%08X\n", (unsigned)hrCreateVista);
-                OutputDebugStringA(buf);
+                LOG_WARN(QString("Audio endpoint | IPolicyConfig unavailable (hr=0x%1 / vista 0x%2), cannot switch to %3")
+                             .arg(unsigned(hrCreate), 8, 16, QChar('0'))
+                             .arg(unsigned(hrCreateVista), 8, 16, QChar('0'))
+                             .arg(QString::fromStdString(endpointId)));
             }
         }
 
@@ -148,6 +144,7 @@ std::string SystemAudioEndpointController::getDefaultInputId() const {
 
 void SystemAudioEndpointController::restore() {
     if (!m_hasSaved) return;
+    LOG_DEBUG("Audio endpoint | restoring original default devices");
     if (!m_savedOutputId.empty()) applyDefaultEndpoint(m_savedOutputId, eRender);
     if (!m_savedInputId.empty()) applyDefaultEndpoint(m_savedInputId, eCapture);
     m_hasSaved = false;

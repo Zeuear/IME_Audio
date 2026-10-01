@@ -10,7 +10,7 @@
 class SystemAudioEndpointController {
 public:
     SystemAudioEndpointController() = default;
-    ~SystemAudioEndpointController() = default;
+    ~SystemAudioEndpointController() { restore(); }
 
     SystemAudioEndpointController(const SystemAudioEndpointController&) = delete;
     SystemAudioEndpointController& operator=(const SystemAudioEndpointController&) = delete;
