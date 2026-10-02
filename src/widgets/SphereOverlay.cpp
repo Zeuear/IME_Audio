@@ -7,7 +7,9 @@
 SphereOverlay::SphereOverlay(QWidget *parent)
     : QWidget(parent)
 {
-    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    // 悬浮球只做状态显示，不能成为焦点窗口，否则听写结果会注入到它自己身上。
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint
+                   | Qt::WindowDoesNotAcceptFocus);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
     // macOS 上 Tool 窗口在应用失去焦点时会被系统隐藏；而录音时焦点在目标应用里，
@@ -66,7 +68,10 @@ void SphereOverlay::showAtBottomCenter()
         move(geo.center().x() - width() / 2, geo.bottom() - height() - margin);
     }
     show();
+    // macOS 上 Qt 的 raise() 会抢走用户正在输入的窗口焦点。
+#ifndef Q_OS_MACOS
     raise();
+#endif
 }
 
 void SphereOverlay::hideOverlay() { hide(); }
