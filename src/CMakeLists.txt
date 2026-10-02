@@ -47,10 +47,18 @@ if(WIN32)
     set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_SOURCE_DIR}/resources/app.rc")
 endif()
 
+# macOS 的 Dock / Finder 图标取自 bundle 内 Resources 下的 .icns，缺了就是白方块
+if(APPLE)
+    set(APP_ICON_RESOURCE_MACOS "${CMAKE_SOURCE_DIR}/resources/app_icon.icns")
+    set_source_files_properties(${APP_ICON_RESOURCE_MACOS} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources")
+endif()
+
 
 if(APPLE)
     add_executable(${TARGET_NAME} MACOSX_BUNDLE
-                    ${PROJECT_SOURCES})
+                    ${PROJECT_SOURCES}
+                    ${APP_ICON_RESOURCE_MACOS})
 elseif(WIN32)
     add_executable(${TARGET_NAME} WIN32 
                     ${PROJECT_SOURCES} 
@@ -379,5 +387,6 @@ if(APPLE)
     # 进程（不是返回拒绝），因此这条是能否跑起来的硬性前提。
     set_target_properties(${TARGET_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../resources/deployment/macos/Info.plist.in"
+        MACOSX_BUNDLE_ICON_FILE app_icon.icns
     )
 endif()
