@@ -98,9 +98,20 @@ jobs:
           fi
           echo "✅ 找到 app bundle: $APP_BUNDLE"
 
-          macdeployqt "$APP_BUNDLE" -qmldir=qml -dmg
-          DMG_FILE=$(find "$(dirname "$APP_BUNDLE")" -maxdepth 1 -name "*.dmg" | head -n 1)
-          mv "$DMG_FILE" ./${{ matrix.asset_name }}
+          macdeployqt "$APP_BUNDLE" -qmldir=qml
+
+          # macdeployqt 改写了二进制，链接器给的签名随之失效；不重签的话 TCC 无法稳定
+          # 识别本应用，辅助功能勾选了也不生效。ad-hoc 签名按 cdhash 识别，同一版本内稳定，
+          # 升级后仍需重新授权（彻底解决要 Developer ID）。
+          codesign --force --deep --sign - "$APP_BUNDLE"
+          codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+
+          # 签名之后再打 dmg；放一个「应用程序」快捷方式，引导用户拖进去再运行，
+          # 直接在 dmg 里运行会被随机化路径，授权同样对不上。
+          DMG_STAGING=$(mktemp -d)
+          cp -R "$APP_BUNDLE" "$DMG_STAGING/"
+          ln -s /Applications "$DMG_STAGING/Applications"
+          hdiutil create -volname ImeAudio -srcfolder "$DMG_STAGING" -ov -format UDZO ./${{ matrix.asset_name }}
 
       # ---- LINUX 打包 ----
       - name: Deploy & Package (Linux)
