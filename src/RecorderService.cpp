@@ -76,6 +76,7 @@ bool AudioRecorderService::startListening()
 {
     if (m_audioSource) return true;
     if (!ensureMicrophonePermission()) return false;
+    if (!ensureSegmenterReady()) return false;
     if (!openMicrophone()) return false;
 
     connect(m_audioDevice, &QIODevice::readyRead, this, &AudioRecorderService::onAudioDataReady);
@@ -156,6 +157,16 @@ bool AudioRecorderService::ensureMicrophonePermission()
     PlatformPermissions::openMicrophoneSettings();
     emit errorOccurred(tr("录音启动失败"),
                        tr("麦克风权限已被拒绝，请在「系统设置 → 隐私与安全性 → 麦克风」中允许本应用后重试"));
+    return false;
+}
+
+bool AudioRecorderService::ensureSegmenterReady()
+{
+    if (!m_config.continuousMode.load() || m_segmenter->isReady()) return true;
+
+    QMetaObject::invokeMethod(m_segmenter, "reloadDetector", Qt::BlockingQueuedConnection);
+    if (m_segmenter->isReady()) return true;
+    LOG_ERROR("Recorder | VAD not ready, continuous mode cannot start");
     return false;
 }
 

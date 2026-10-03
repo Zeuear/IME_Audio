@@ -2,6 +2,7 @@
 #include <QByteArray>
 #include <QList>
 #include <QObject>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -15,17 +16,16 @@
 //   2. 一直说不停：累计到分段上限（20 秒）时强制切一刀。切点选在最近 10 秒里最长的停顿处，
 //      切点之后的音频留作「切段残留」，拼到下一句开头，所以不会丢字。
 //   3. 用户按停止：finishSession() 把还没说完的半句和切段残留一并交出，并清空状态。
-//
-// 运行在独立线程（VAD 推理有开销，不能占界面线程）。
 class SpeechSegmenter : public QObject {
     Q_OBJECT
 public:
     explicit SpeechSegmenter(const AppConfig& config, int sampleRate, QObject* parent = nullptr);
 
     // 结束本次录音会话（须在本对象所在线程调用）：返回还没输出的语音段，并把状态清空，
-    // 下次开录从干净状态开始。结果直接返回而不走 sentenceReady 信号，
-    // 因为调用方要在停止流程里同步拿到，否则尾句会在状态机回到 Idle 之后才到达。
     QList<QByteArray> finishSession();
+
+    // VAD 是否已创建成功
+    bool isReady() const { return m_ready.load(); }
 
 public slots:
     void processChunk(const QByteArray chunk);
@@ -69,6 +69,7 @@ private:
 
     std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_vad;       // 断句用，门槛 = 用户设置
     std::unique_ptr<sherpa_onnx::cxx::VoiceActivityDetector> m_pauseVad;  // 找切点用，门槛 150 ms
+    std::atomic<bool> m_ready{ false };                                   // m_vad 已创建，供录音线程查询
 
     bool m_isSpeaking = false;
     int64_t m_speechSamples = 0;      // 当前这句已连续说了多少样本

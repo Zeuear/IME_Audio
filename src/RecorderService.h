@@ -60,6 +60,7 @@ private:
     // ---- 开始录音的步骤 ----
     // 开录之前确认麦克风授权。
     bool ensureMicrophonePermission();
+    bool ensureSegmenterReady();
     bool openMicrophone();
 
     // ---- 停止录音时交出最后一句 ----

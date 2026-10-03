@@ -57,6 +57,7 @@ void SpeechSegmenter::reloadDetector()
     }
 
     m_vad = std::move(newVad);
+    m_ready.store(true);
     m_speechSamples = 0;
     m_leftover.clear();
     LOG_DEBUG(QString("VAD Model update successful (threshold=%1, silence=%2ms, sampleRate=%3)")
