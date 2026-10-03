@@ -9,37 +9,37 @@
         <translation type="unfinished">About ImeAudio</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="34"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="33"/>
         <source>暂无更新说明。</source>
         <translation type="unfinished">No update notes available.</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="56"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="55"/>
         <source>ImeAudio</source>
         <translation type="unfinished">ImeAudio</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="64"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="63"/>
         <source>版本 %1</source>
         <translation type="unfinished">Version %1</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="81"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="80"/>
         <source>ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</source>
         <translation type="unfinished">ImeAudio is a desktop tool focused on voice assistance for input methods. It supports audio capture, voice conversion, and shortcut key control, helping you complete daily input operations more efficiently.</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="83"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="82"/>
         <source>软件简介</source>
         <translation type="unfinished">Software Introduction</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="88"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="87"/>
         <source>更新说明</source>
         <translation type="unfinished">Update Notes</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/AboutDialog.cpp" line="95"/>
+        <location filename="../../src/widgets/AboutDialog.cpp" line="94"/>
         <source>关闭</source>
         <translation type="unfinished">closure</translation>
     </message>
@@ -47,18 +47,18 @@
 <context>
     <name>AudioRecorderService</name>
     <message>
-        <location filename="../../src/RecorderService.cpp" line="464"/>
-        <location filename="../../src/RecorderService.cpp" line="472"/>
+        <location filename="../../src/RecorderService.cpp" line="149"/>
+        <location filename="../../src/RecorderService.cpp" line="157"/>
         <source>录音启动失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/RecorderService.cpp" line="465"/>
+        <location filename="../../src/RecorderService.cpp" line="150"/>
         <source>请在系统弹出的授权框中允许使用麦克风，然后重新开始录音</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/RecorderService.cpp" line="473"/>
+        <location filename="../../src/RecorderService.cpp" line="158"/>
         <source>麦克风权限已被拒绝，请在「系统设置 → 隐私与安全性 → 麦克风」中允许本应用后重试</source>
         <translation type="unfinished"></translation>
     </message>
@@ -697,7 +697,7 @@
         <translation type="unfinished">About</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="518"/>
+        <location filename="../../src/MainWin.cpp" line="516"/>
         <source>该模型正在安装....</source>
         <translation type="unfinished"></translation>
     </message>
@@ -757,37 +757,37 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="884"/>
+        <location filename="../../src/MainWin.cpp" line="895"/>
         <source>Update Available</source>
         <translation type="unfinished">Update Available</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="885"/>
+        <location filename="../../src/MainWin.cpp" line="896"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">A new version (%1) is available!</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="886"/>
+        <location filename="../../src/MainWin.cpp" line="897"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">Would you like to download and install it now?</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="894"/>
+        <location filename="../../src/MainWin.cpp" line="905"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">Do not remind me again</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="921"/>
+        <location filename="../../src/MainWin.cpp" line="932"/>
         <source>Restart Required</source>
         <translation type="unfinished">Restart Required</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="922"/>
+        <location filename="../../src/MainWin.cpp" line="933"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">Update downloaded successfully. The application will now close and restart to apply the update. Continue?</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="931"/>
+        <location filename="../../src/MainWin.cpp" line="942"/>
         <source>更新失败</source>
         <translation type="unfinished">Update failed</translation>
     </message>
@@ -1020,6 +1020,25 @@
     </message>
 </context>
 <context>
+    <name>SpeechSegmenter</name>
+    <message>
+        <location filename="../../src/audio/SpeechSegmenter.cpp" line="26"/>
+        <location filename="../../src/audio/SpeechSegmenter.cpp" line="55"/>
+        <source>录音启动失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/audio/SpeechSegmenter.cpp" line="26"/>
+        <source>VAD 模型缺失，正在自动下载，请稍候重试</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/audio/SpeechSegmenter.cpp" line="55"/>
+        <source>VAD 模型加载失败，详见日志</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>TermTableModel</name>
     <message>
         <location filename="../../src/widgets/TermWidget.h" line="115"/>
@@ -1216,64 +1235,45 @@
 <context>
     <name>UpdateManager</name>
     <message>
-        <location filename="../../src/UpdateManager.cpp" line="109"/>
+        <location filename="../../src/UpdateManager.cpp" line="121"/>
         <source>Could not find an executable asset in the latest release.</source>
         <translation type="unfinished">Could not find an executable asset in the latest release.</translation>
     </message>
     <message>
-        <location filename="../../src/UpdateManager.cpp" line="120"/>
+        <location filename="../../src/UpdateManager.cpp" line="132"/>
         <source>No download URL available. Call checkForUpdates() first.</source>
         <translation type="unfinished">No download URL available. Call checkForUpdates() first.</translation>
     </message>
     <message>
-        <location filename="../../src/UpdateManager.cpp" line="130"/>
+        <location filename="../../src/UpdateManager.cpp" line="142"/>
         <source>Could not open file for writing: %1</source>
         <translation type="unfinished">Could not open file for writing: %1</translation>
     </message>
     <message>
-        <location filename="../../src/UpdateManager.cpp" line="156"/>
+        <location filename="../../src/UpdateManager.cpp" line="168"/>
         <source>Failed to save downloaded file: %1</source>
         <translation type="unfinished">无法打开文件进行写入：%1</translation>
     </message>
     <message>
-        <location filename="../../src/UpdateManager.cpp" line="163"/>
+        <location filename="../../src/UpdateManager.cpp" line="175"/>
         <source>Download finished but file was not found on disk.</source>
         <translation type="unfinished">Download finished but file was not found on disk.</translation>
     </message>
 </context>
 <context>
-    <name>VadWorker</name>
-    <message>
-        <location filename="../../src/RecorderService.cpp" line="188"/>
-        <location filename="../../src/RecorderService.cpp" line="208"/>
-        <source>录音启动失败</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/RecorderService.cpp" line="188"/>
-        <source>VAD 模型缺失，正在自动下载，请稍候重试</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/RecorderService.cpp" line="208"/>
-        <source>VAD 模型加载失败，详见日志</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>WorkflowManager</name>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="152"/>
+        <location filename="../../src/WorkflowManager.cpp" line="154"/>
         <source>语音识别失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="182"/>
+        <location filename="../../src/WorkflowManager.cpp" line="184"/>
         <source>文本注入失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="183"/>
+        <location filename="../../src/WorkflowManager.cpp" line="185"/>
         <source>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴</source>
         <translation type="unfinished"></translation>
     </message>

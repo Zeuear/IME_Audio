@@ -76,7 +76,8 @@ private:
 
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
-    int m_pending = 0;      
+    int m_pending = 0;
+    bool m_stopRequested = false;
 
 };
 

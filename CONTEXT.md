@@ -9,8 +9,10 @@
 - **VAD (Voice Activity Detection)** — 语音活动检测。本项目使用 sherpa-onnx
   的 Silero VAD。用于判断"当前有人在说话"，驱动录音段的开始/结束。
   VAD ≠ ASR：VAD 仅检测有无语音，ASR 负责识别内容。
-- **SpeechSegment** — VAD 检测到语音段后，由 `VadWorker` 输出的、裁剪好的 PCM
-  音频块。每个 SpeechSegment 代表一句话(utterance)。
+- **SpeechSegment** — VAD 检测到语音段后，由 `SpeechSegmenter`（连续模式断句器）输出的、
+  裁剪好的 PCM 音频块。每个 SpeechSegment 代表一句话(utterance)。
+- **切段残留 (leftover)** — 连续说话超过分段上限被强制切开时，切点之后的那段音频。
+  它会拼到下一句开头；停止录音时随最后半句一起交出，不会丢。
 - **PCM (Pulse-Code Modulation)** — 未压缩音频格式。本项目内部统一使用
   16-bit little-endian, 16kHz, mono。外部 API(Groq/Gladia) 需要 WAV 封装。
 

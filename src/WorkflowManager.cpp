@@ -67,6 +67,7 @@ WorkflowState WorkflowManager::state() const
 void WorkflowManager::startRecording() {
     if (m_currentState != WorkflowState::Idle) return;
     LOG_DEBUG("Start Recording");
+    m_stopRequested = false;
     transitionTo(WorkflowState::Loading, WorkflowEvent::StartRequested);
     m_sherpaManager->pauseIdleTimer();
 
@@ -117,6 +118,7 @@ void WorkflowManager::stopRecording() {
         m_currentState != WorkflowState::Loading) return;
     LOG_DEBUG("Stop Recording");
 
+    m_stopRequested = true;
     transitionTo(WorkflowState::Stopping, WorkflowEvent::StopRequested);
     m_recorder->stopListening();
     m_sherpaManager->resumeIdleTimer();
@@ -204,7 +206,7 @@ bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, Workf
                                  if (from == S::Processing)  { out = S::Processing; return true; } break;
     case E::AllTranscribed:      if (from == S::Stopping)    { out = S::Idle; return true; }   
                                  if (from == S::Idle)        { out = S::Idle; return true; }
-                                 if (m_config.continuousMode && (from == S::Recording || from == S::Transcribing || from == S::Processing)) { out = S::Recording; return true;};
+                                 if (m_config.continuousMode && !m_stopRequested && (from == S::Recording || from == S::Transcribing || from == S::Processing)) { out = S::Recording; return true;};
                                  if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Idle; return true; } break;
     case E::StopRequested:       if (from == S::Recording || from == S::Transcribing || from == S::Processing || from == S::Loading) { out = S::Stopping; return true; } break;
     case E::ErrorOccurred:       { out = S::Error; return true; } break;

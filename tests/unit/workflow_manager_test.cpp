@@ -343,6 +343,49 @@ TEST_F(WorkflowManagerContinuousTest, ExplicitStopClosesWindow) {
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
+// 连续模式：stopListening 冲刷出 VAD 里未结束的最后一句，转完必须落 Idle，
+// 而不是因连续模式规则回到 Recording（录音已停，卡在 Recording 等于状态错乱）
+TEST_F(WorkflowManagerContinuousTest, StopFlushesTailThenIdle) {
+    rec->emitUtteranceOnStop = true;
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    wf->stop();
+    EXPECT_EQ(trans->transcribeCalls, 1);   // 尾句已送转录，没有丢
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+}
+
+// 连续模式：停止时队列里还有句子 + 冲刷出尾句，全部转完才落 Idle
+TEST_F(WorkflowManagerContinuousTest, StopWithPendingAndTailThenIdle) {
+    rec->emitUtteranceOnStop = true;
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    rec->emitUtteranceReady();
+    wf->stop();
+    EXPECT_EQ(trans->transcribeCalls, 2);
+    trans->emitFinished(true);
+    EXPECT_NE(wf->state(), WorkflowState::Recording);
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+}
+
+// 连续模式：停止后再次开始，仍能正常常驻 Recording（停止标记不能残留）
+TEST_F(WorkflowManagerContinuousTest, RestartAfterStopStaysRecording) {
+    rec->emitUtteranceOnStop = true;
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    wf->stop();
+    trans->emitFinished(true);
+    ASSERT_EQ(wf->state(), WorkflowState::Idle);
+
+    rec->emitUtteranceOnStop = false;
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    rec->emitUtteranceReady();
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+}
+
 // 模型加载期间(Loading 态)用户说话：utterance 应进入转录队列，不丢弃/不缓冲
 TEST_F(WorkflowManagerTest, LoadingState_UtteranceStillTranscribed) {
     sherpa->reloadReturns = true;   // 触发异步加载 → 进入 Loading 态
