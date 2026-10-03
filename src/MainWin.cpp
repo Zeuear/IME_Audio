@@ -770,6 +770,10 @@ void MainWin::onHotkeyPressed() {
 
 void MainWin::onStateChanged(WorkflowState state)
 {
+    // Error 目前没有回到 Idle 的转换，必须当作空闲解锁，否则出错后界面会一直锁死
+    setSettingsLocked(state != WorkflowState::Idle && 
+                      state != WorkflowState::Error);
+
     switch (state) {
     case WorkflowState::Loading:
         m_sphereOverlay->setLoading();
@@ -807,6 +811,15 @@ void MainWin::onStateChanged(WorkflowState state)
     default:
         break;
     }
+}
+
+void MainWin::setSettingsLocked(bool locked)
+{
+    for (int i = 0; i < ui->tabWidget->count(); ++i) {
+        ui->tabWidget->widget(i)->setEnabled(!locked);
+    }
+    ui->setting_save_btn->setEnabled(!locked);
+    ui->setting_cancel_btn->setEnabled(!locked);
 }
 
 void MainWin::onToggleDrawer(int pageIndex) {

@@ -84,6 +84,9 @@ private:
     void fitToScreen();
     bool m_fittedToScreen = false;
 
+    // 听写进行中锁住各设置页和保存/取消
+    void setSettingsLocked(bool locked);
+
     enum class NotifyLevel { Info, Success, Warning, Error };
     void notify(NotifyLevel level, const QString& titleCN, const QString& causeCN = {});
 
