@@ -73,7 +73,7 @@ void WorkflowManager::startRecording() {
 
     // 开始录音
     if (!m_recorder->startListening()) {
-        transitionTo(WorkflowState::Error, WorkflowEvent::ErrorOccurred);
+        abortRecording(WorkflowEvent::ErrorOccurred);
         return;
     }
 
@@ -91,11 +91,19 @@ void WorkflowManager::startRecording() {
 void WorkflowManager::proceedToRecording() {
     if (m_currentState != WorkflowState::Loading) return; 
     if (m_config.backend == AsrBackendKind::Sherpa && !m_sherpaManager->isModelLoaded()) {
-        transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
         LOG_ERROR("Model load failed");
+        abortRecording(WorkflowEvent::ModelLoadFailed);
         return;
     }
     transitionTo(WorkflowState::Recording, WorkflowEvent::ModelLoaded);
+}
+
+void WorkflowManager::abortRecording(WorkflowEvent evt) {
+    transitionTo(WorkflowState::Error, evt);
+    m_recorder->stopListening();
+    m_sherpaManager->resumeIdleTimer();
+    m_pending = 0;
+    transitionTo(WorkflowState::Idle, WorkflowEvent::ErrorHandled);
 }
 
 void WorkflowManager::onModelLoadFinished(bool ok) {
@@ -103,7 +111,7 @@ void WorkflowManager::onModelLoadFinished(bool ok) {
     else LOG_ERROR("Model load failed");
     if (m_currentState != WorkflowState::Loading) return;
     if (ok) proceedToRecording();
-    else transitionTo(WorkflowState::Error, WorkflowEvent::ModelLoadFailed);
+    else abortRecording(WorkflowEvent::ModelLoadFailed);
 }
 
 void WorkflowManager::onRecorderError(const QString& title, const QString& cause) {
@@ -129,9 +137,13 @@ void WorkflowManager::stopRecording() {
 }
 
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
+    if (m_currentState == WorkflowState::Idle || m_currentState == WorkflowState::Error) {
+        LOG_WARN(QString("Utterance dropped, not recording (%1 bytes)").arg(pcmData.size()));
+        return;
+    }
     LOG_DEBUG(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
 
-    // 所有态统一入队转录
+    // 其余各态（含 Loading）统一入队转录
     m_pending++;
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
@@ -210,6 +222,7 @@ bool WorkflowManager::canTransition(WorkflowState from, WorkflowEvent evt, Workf
                                  if (from == S::Recording || from == S::Transcribing || from == S::Processing) { out = S::Idle; return true; } break;
     case E::StopRequested:       if (from == S::Recording || from == S::Transcribing || from == S::Processing || from == S::Loading) { out = S::Stopping; return true; } break;
     case E::ErrorOccurred:       { out = S::Error; return true; } break;
+    case E::ErrorHandled:        if (from == S::Error)       { out = S::Idle; return true; } break;
     }
     return false;
 }

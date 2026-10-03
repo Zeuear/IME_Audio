@@ -8,7 +8,7 @@ class FakeRecorder : public IRecorder {
 public:
     explicit FakeRecorder(QObject* parent = nullptr) : IRecorder(parent) {}
 
-    bool startListening() override { ++startListeningCalls; return true; }
+    bool startListening() override { ++startListeningCalls; return startReturns; }
     void stopListening() override { ++stopListeningCalls; if (emitUtteranceOnStop) emit utteranceReady(QByteArray("final"), 16000); }
     bool isListening() const override { return listening; }
     bool isPaused() const override { return paused; }
@@ -31,6 +31,7 @@ public:
     bool listening = false;
     bool paused = false;
     bool emitUtteranceOnStop = false;   // 模拟非连续模式 stopListening 产出最终 utterance
+    bool startReturns = true;           // false=模拟开录失败（无权限/设备占用/VAD 未就绪）
 };
 
 class FakeTranscription : public ITranscription {
@@ -242,12 +243,51 @@ TEST_F(WorkflowManagerTest, Load_AlreadyLoadedFastPath) {
     EXPECT_EQ(rec->startListeningCalls, 1);
 }
 
-// T5 模型加载失败 → Error
-TEST_F(WorkflowManagerTest, Load_FailureToError) {
+// T5 模型加载失败 → 经 Error 回到 Idle，并关掉已打开的麦克风
+TEST_F(WorkflowManagerTest, Load_FailureClosesMicAndReturnsIdle) {
+    QList<WorkflowState> states;
+    QObject::connect(wf, &WorkflowManager::stateChanged, [&](WorkflowState s) { states << s; });
+
     wf->start();                        // Loading
     EXPECT_EQ(wf->state(), WorkflowState::Loading);
     sherpa->emitModelLoadFinished(false);
-    EXPECT_EQ(wf->state(), WorkflowState::Error);
+    EXPECT_TRUE(states.contains(WorkflowState::Error));   // 界面仍能收到出错通知
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+    EXPECT_EQ(rec->stopListeningCalls, 1);
+    EXPECT_EQ(sherpa->resumeIdleCalls, 1);
+}
+
+// 出错后热键必须仍可用：再次开始能正常进入录音
+TEST_F(WorkflowManagerTest, Load_FailureThenRestartWorks) {
+    wf->start();
+    sherpa->emitModelLoadFinished(false);
+    ASSERT_EQ(wf->state(), WorkflowState::Idle);
+
+    wf->start();
+    EXPECT_EQ(rec->startListeningCalls, 2);
+    sherpa->emitModelLoadFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+}
+
+// 开录失败（权限/设备/VAD 未就绪）→ 回到 Idle，可再次开始
+TEST_F(WorkflowManagerTest, StartListeningFailsReturnsIdle) {
+    rec->startReturns = false;
+    wf->start();
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+    EXPECT_EQ(sherpa->reloadCalls, 0);  // 不应继续加载模型
+
+    rec->startReturns = true;
+    wf->start();
+    EXPECT_EQ(rec->startListeningCalls, 2);
+    EXPECT_NE(wf->state(), WorkflowState::Idle);
+}
+
+// 不在录音时到达的句子必须丢弃，否则文字会被打进前台窗口
+TEST_F(WorkflowManagerTest, UtteranceInIdleDropped) {
+    rec->emitUtteranceReady();
+    EXPECT_EQ(trans->transcribeCalls, 0);
+    EXPECT_EQ(wf->pendingCount(), 0);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
 // T5 快速 start/stop 来回不卡死
@@ -366,6 +406,16 @@ TEST_F(WorkflowManagerContinuousTest, StopWithPendingAndTailThenIdle) {
     trans->emitFinished(true);
     EXPECT_NE(wf->state(), WorkflowState::Recording);
     trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+}
+
+// 连续模式：模型加载失败时关麦克风冲刷出的尾句不能送去转录
+TEST_F(WorkflowManagerContinuousTest, LoadFailureDropsFlushedTail) {
+    rec->emitUtteranceOnStop = true;
+    wf->start();
+    sherpa->emitModelLoadFinished(false);
+    EXPECT_EQ(rec->stopListeningCalls, 1);
+    EXPECT_EQ(trans->transcribeCalls, 0);
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 

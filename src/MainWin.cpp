@@ -770,9 +770,7 @@ void MainWin::onHotkeyPressed() {
 
 void MainWin::onStateChanged(WorkflowState state)
 {
-    // Error 目前没有回到 Idle 的转换，必须当作空闲解锁，否则出错后界面会一直锁死
-    setSettingsLocked(state != WorkflowState::Idle && 
-                      state != WorkflowState::Error);
+    setSettingsLocked(state != WorkflowState::Idle);
 
     switch (state) {
     case WorkflowState::Loading:

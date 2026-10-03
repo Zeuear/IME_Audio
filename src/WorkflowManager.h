@@ -25,7 +25,8 @@ enum class WorkflowEvent {
     UtteranceTranscribed,
     AllTranscribed,
     StopRequested,
-    ErrorOccurred
+    ErrorOccurred,
+    ErrorHandled
 };
 
 class WorkflowManager : public QObject {
@@ -64,7 +65,8 @@ private:
 
     void transitionTo(WorkflowState newState, WorkflowEvent evt);
     bool canTransition(WorkflowState from, WorkflowEvent evt, WorkflowState &out) const;
-    void proceedToRecording(); 
+    void proceedToRecording();
+    void abortRecording(WorkflowEvent evt);
 
     QQueue<QString> m_injectQueue;
     bool m_injecting = false;
