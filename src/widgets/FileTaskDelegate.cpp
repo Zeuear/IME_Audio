@@ -7,7 +7,7 @@
 namespace {
 constexpr int kTileWidth = 176;
 constexpr int kTileHeight = 116;
-constexpr int kTileGap = 6;
+constexpr int kTileGap = 10;
 constexpr int kCardRadius = 8;
 const QColor kSuccessColor(46, 160, 67);
 const QColor kFailedColor(218, 54, 51);
@@ -29,7 +29,7 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     p->setRenderHint(QPainter::Antialiasing);
 
     // 卡片底
-    const QRect card = opt.rect.adjusted(kTileGap, kTileGap, -kTileGap, -kTileGap);
+    const QRect card = opt.rect.adjusted(kTileGap, kTileGap, -kTileGap, -kTileGap - 6);
     QColor bg = pal.color(QPalette::Base);
     QColor border = pal.color(QPalette::Mid);
     if (selected) {

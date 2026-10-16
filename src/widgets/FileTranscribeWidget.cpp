@@ -122,12 +122,19 @@ void FileTranscribeWidget::setupUi()
     previewLayout->addLayout(previewHeader);
     previewLayout->addWidget(m_preview, 1);
 
+    const int previewMaxHeight = m_preview->fontMetrics().lineSpacing() * 10
+                               + m_previewTitle->sizeHint().height() + 24;
+    previewPanel->setMaximumHeight(previewMaxHeight);
+    
+    const int tileHeight = m_list->itemDelegate()->sizeHint(QStyleOptionViewItem(), QModelIndex()).height();
+    m_listStack->setMaximumHeight(tileHeight * 2);
+
     auto* splitter = new QSplitter(Qt::Vertical, this);
     splitter->addWidget(m_listStack);
     splitter->addWidget(previewPanel);
     splitter->setChildrenCollapsible(false);
     splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 1);
+    splitter->setStretchFactor(1, 0);
 
     m_statusLabel = new QLabel(this);
     m_openFolderBtn = new QPushButton(this);
@@ -139,8 +146,9 @@ void FileTranscribeWidget::setupUi()
 
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(toolbar);
-    layout->addWidget(splitter, 1);
+    layout->addWidget(splitter);
     layout->addLayout(statusRow);
+    layout->addStretch(0);
 
     m_animTimer = new QTimer(this);
     m_animTimer->setInterval(80);
@@ -505,6 +513,21 @@ FileTranscribeWidget::Segments FileTranscribeWidget::segmentByVad(const QByteArr
         }
         vad.Flush();
         drain();
+
+        // VAD 遇到 0.5s 停顿就切
+        constexpr int kMergeGapSamples = kSampleRate;        // 1 s
+        constexpr int kMergeMaxSamples = kSampleRate * 10;   // 10 s
+        std::vector<std::pair<int, int>> merged;
+        for (const auto& span : spans) {
+            if (!merged.empty()
+                && span.first - merged.back().second < kMergeGapSamples
+                && span.second - merged.back().first <= kMergeMaxSamples) {
+                merged.back().second = span.second;
+            } else {
+                merged.push_back(span);
+            }
+        }
+        spans.swap(merged);
 
         // Silero 判定语音起点有滞后，切点常落在首个音节之后，句首会被截掉。
         // 前后各补 kEdgePadSamples 的真实音频；补白不越过相邻段，避免两段识别到同一段话。
