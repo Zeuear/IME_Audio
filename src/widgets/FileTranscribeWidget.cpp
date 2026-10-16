@@ -483,19 +483,12 @@ FileTranscribeWidget::Segments FileTranscribeWidget::segmentByVad(const QByteArr
 
         auto vad = sherpa_onnx::cxx::VoiceActivityDetector::Create(vc, 60.0f);
 
+        // 这里只记录切分出的采样点区间 [begin, end)；补白要等整段音频切完、知道相邻段位置后再做
+        std::vector<std::pair<int, int>> spans;
         auto drain = [&]() {
             while (!vad.IsEmpty()) {
                 auto seg = vad.Front();
-                QByteArray bytes(static_cast<int>(seg.samples.size() * sizeof(int16_t)), Qt::Uninitialized);
-                auto* dst = reinterpret_cast<int16_t*>(bytes.data());
-                for (size_t i = 0; i < seg.samples.size(); ++i)
-                    dst[i] = static_cast<int16_t>(qBound(-1.0f, seg.samples[i], 1.0f) * 32767.0f);
-                // start 是该段在整段音频里的起始采样点，据此换算字幕时间
-                Segment segment;
-                segment.pcm = bytes;
-                segment.startSec = static_cast<double>(seg.start) / kSampleRate;
-                segment.endSec = segment.startSec + static_cast<double>(seg.samples.size()) / kSampleRate;
-                out.append(segment);
+                spans.emplace_back(seg.start, seg.start + static_cast<int>(seg.samples.size()));
                 vad.Pop();
             }
         };
@@ -512,6 +505,21 @@ FileTranscribeWidget::Segments FileTranscribeWidget::segmentByVad(const QByteArr
         }
         vad.Flush();
         drain();
+
+        // Silero 判定语音起点有滞后，切点常落在首个音节之后，句首会被截掉。
+        // 前后各补 kEdgePadSamples 的真实音频；补白不越过相邻段，避免两段识别到同一段话。
+        constexpr int kEdgePadSamples = kSampleRate * 3 / 10;
+        for (size_t i = 0; i < spans.size(); ++i) {
+            const int lo = i > 0 ? spans[i - 1].second : 0;
+            const int hi = i + 1 < spans.size() ? spans[i + 1].first : total;
+            const int begin = qMax(lo, spans[i].first - kEdgePadSamples);
+            const int end = qMin(hi, spans[i].second + kEdgePadSamples);
+            Segment segment;
+            segment.pcm = pcm.mid(begin * 2, (end - begin) * 2);
+            segment.startSec = static_cast<double>(spans[i].first) / kSampleRate;
+            segment.endSec = static_cast<double>(spans[i].second) / kSampleRate;
+            out.append(segment);
+        }
     }
     catch (const std::exception& e) {
         *error = QString::fromLocal8Bit(e.what());

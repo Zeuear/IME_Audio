@@ -14,7 +14,9 @@ void TextPostProcessor::setLanguage(const QString& lang) {
 QString TextPostProcessor::postProcess(const QString& rawText) {
     QString text = rawText;
     text = TermsLibraryManager::applyReplaceRules(text, m_replaceRules);
-    text = addAutoPunctuation(text, m_language);
+    if (m_autoPunctuation) {
+        text = addAutoPunctuation(text, m_language);
+    }
     return text.trimmed();
 }
 
@@ -35,6 +37,10 @@ QString TextPostProcessor::addAutoPunctuation(const QString& text, const QString
 
 bool TextPostProcessor::endsWithSentencePunctuation(const QString& text) const {
     QString cleanText = text.trimmed();
+    static const QString kClosers = QStringLiteral("\"')]}”’」』）】》");
+    while (!cleanText.isEmpty() && kClosers.contains(cleanText.back())) {
+        cleanText.chop(1);
+    }
     if (cleanText.isEmpty()) {
         return false;
     }

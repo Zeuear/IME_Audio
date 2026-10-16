@@ -257,6 +257,7 @@ void TranscriptionService::emitResult(bool success, const QString &rawText,
 QString TranscriptionService::postProcess(const QString &rawText) {
 
     m_textProcessor->setReplaceRules(m_config.replaceRules);
+    m_textProcessor->setAutoPunctuation(!m_fileMode);
     return m_textProcessor->postProcess(rawText);
 }
 

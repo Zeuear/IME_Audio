@@ -72,3 +72,25 @@ TEST_F(TextPostProcessorTest, FullPostProcessNoRulesJustPunctuation) {
     QString result = proc.postProcess("test sentence");
     EXPECT_EQ(result, "test sentence.");
 }
+
+// --- File transcription: segment ends are not sentence ends ---
+TEST_F(TextPostProcessorTest, AutoPunctuationOffKeepsSegmentTextAsIs) {
+    TextPostProcessor proc;
+    proc.setAutoPunctuation(false);
+    proc.setLanguage("zh");
+    EXPECT_EQ(proc.postProcess("有些人肯定地说："), "有些人肯定地说：");
+    EXPECT_EQ(proc.postProcess("今天天气很好"), "今天天气很好");
+}
+
+TEST_F(TextPostProcessorTest, AutoPunctuationOffStillAppliesReplaceRules) {
+    TextPostProcessor proc;
+    proc.setAutoPunctuation(false);
+    proc.setReplaceRules("hi=>hello");
+    EXPECT_EQ(proc.postProcess("hi world"), "hello world");
+}
+
+TEST_F(TextPostProcessorTest, AutoPunctuationOnIsDefault) {
+    TextPostProcessor proc;
+    proc.setLanguage("zh");
+    EXPECT_EQ(proc.postProcess("今天天气很好"), "今天天气很好。");
+}
