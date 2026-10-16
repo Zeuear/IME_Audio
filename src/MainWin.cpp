@@ -13,8 +13,6 @@
 #include <QListWidget>
 #include <QDesktopServices>
 #include <QScreen>
-#include <QCompleter>
-#include <QLineEdit>
 #include <QSignalBlocker>
 
 #include "AppConfig.h"
@@ -1047,20 +1045,7 @@ void MainWin::setupLanguageCombo()
     for (const QString& key : ModelRegistry::GetLanguages()) {
         comb->addItem(LanguageCatalog::displayName(key), key);
     }
-
-    // 语种有上百项：允许直接输入过滤（匹配名称或代码的任意位置）
-    comb->setEditable(true);
-    comb->setInsertPolicy(QComboBox::NoInsert);
-    auto* completer = new QCompleter(comb->model(), comb);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setFilterMode(Qt::MatchContains);
-    completer->setCompletionMode(QCompleter::PopupCompletion);
-    comb->setCompleter(completer);
-
-    // 输入了列表里没有的内容就离开时，文字回退到当前选中项，避免界面显示与实际选择不一致
-    connect(comb->lineEdit(), &QLineEdit::editingFinished, this, [comb]() {
-        comb->setEditText(comb->itemText(comb->currentIndex()));
-    });
+    // 语种有上百项：SearchableComboBox 单击弹列表，双击可输入过滤（见 .ui 中的提升）
 }
 
 void MainWin::refreshLanguageComboTexts()
