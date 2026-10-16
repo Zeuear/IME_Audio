@@ -3,6 +3,7 @@
 #include <QAudioDecoder>
 #include <QAudioBuffer>
 #include <QAudioFormat>
+#include "AnimatedCheckbox.h"
 #include <QLabel>
 #include <QListView>
 #include <QPushButton>
@@ -61,6 +62,9 @@ void FileTranscribeWidget::setupUi()
     m_cancelBtn = new QPushButton(this);
     m_clearBtn = new QPushButton(this);
     m_exportBtn = new QPushButton(this);
+    m_exportTxtCheck = new AnimatedCheckBox(this);
+    m_exportTxtCheck->setChecked(true);
+    m_exportSrtCheck = new AnimatedCheckBox(this);
 
     auto* toolbar = new QHBoxLayout;
     toolbar->addWidget(m_addBtn);
@@ -68,6 +72,8 @@ void FileTranscribeWidget::setupUi()
     toolbar->addWidget(m_cancelBtn);
     toolbar->addWidget(m_clearBtn);
     toolbar->addStretch();
+    toolbar->addWidget(m_exportTxtCheck);
+    toolbar->addWidget(m_exportSrtCheck);
     toolbar->addWidget(m_exportBtn);
 
     // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
@@ -149,6 +155,9 @@ void FileTranscribeWidget::setupUi()
     connect(m_cancelBtn, &QPushButton::clicked, this, &FileTranscribeWidget::cancel);
     connect(m_clearBtn, &QPushButton::clicked, this, &FileTranscribeWidget::clearAll);
     connect(m_exportBtn, &QPushButton::clicked, this, &FileTranscribeWidget::exportResults);
+    // 两种格式都没勾时无可导出内容，按钮随勾选状态启停
+    connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
+    connect(m_exportSrtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_copyBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyPreview);
     connect(m_openFolderBtn, &QPushButton::clicked, this, [this]() {
         if (!m_lastExportDir.isEmpty()) QDesktopServices::openUrl(QUrl::fromLocalFile(m_lastExportDir));
@@ -190,6 +199,9 @@ void FileTranscribeWidget::retranslateUi()
     m_cancelBtn->setText(tr("Cancel"));
     m_clearBtn->setText(tr("Clear"));
     m_exportBtn->setText(tr("Export"));
+    m_exportTxtCheck->setLabelText(tr("TXT"));
+    m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
+    m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));
     m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\""));
     m_copyBtn->setText(tr("Copy"));
     m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
@@ -314,7 +326,8 @@ void FileTranscribeWidget::updateButtons()
     m_transcribeBtn->setEnabled(!m_busy && hasRunnable);
     m_cancelBtn->setEnabled(m_busy && !m_cancelled);
     m_clearBtn->setEnabled(!m_busy && m_model->rowCount() > 0);
-    m_exportBtn->setEnabled(m_model->count(FileTask::State::Done) > 0);
+    m_exportBtn->setEnabled(m_model->count(FileTask::State::Done) > 0
+                            && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()));
 }
 
 void FileTranscribeWidget::setBusy(bool busy)
@@ -325,14 +338,11 @@ void FileTranscribeWidget::setBusy(bool busy)
     updateButtons();
 }
 
-// ---------------------------------------------------------------- 转录批次
-
 void FileTranscribeWidget::transcribeClicked()
 {
     QList<int> rows;
     const QList<int> selected = selectedRows();
     if (!selected.isEmpty()) {
-        // 有选中：只处理选中的，已成功的跳过（要重做请用右键"重新转录"）
         for (int row : selected) {
             if (m_model->task(row).state != FileTask::State::Done) rows << row;
         }
@@ -480,7 +490,12 @@ FileTranscribeWidget::Segments FileTranscribeWidget::segmentByVad(const QByteArr
                 auto* dst = reinterpret_cast<int16_t*>(bytes.data());
                 for (size_t i = 0; i < seg.samples.size(); ++i)
                     dst[i] = static_cast<int16_t>(qBound(-1.0f, seg.samples[i], 1.0f) * 32767.0f);
-                out.append(bytes);
+                // start 是该段在整段音频里的起始采样点，据此换算字幕时间
+                Segment segment;
+                segment.pcm = bytes;
+                segment.startSec = static_cast<double>(seg.start) / kSampleRate;
+                segment.endSec = segment.startSec + static_cast<double>(seg.samples.size()) / kSampleRate;
+                out.append(segment);
                 vad.Pop();
             }
         };
@@ -535,7 +550,7 @@ void FileTranscribeWidget::transcribeNext()
     }
 
     m_waitingSegment = true;
-    m_transcription->transcribe(m_segments.at(m_nextSegment), kSampleRate, 1, 16);
+    m_transcription->transcribe(m_segments.at(m_nextSegment).pcm, kSampleRate, 1, 16);
 }
 
 void FileTranscribeWidget::onSegmentFinished(bool ok, const QString&, const QString& finalText, const QString& err)
@@ -548,7 +563,12 @@ void FileTranscribeWidget::onSegmentFinished(bool ok, const QString&, const QStr
         return;
     }
     const QString text = finalText.trimmed();
-    if (!text.isEmpty()) m_model->appendText(m_currentRow, text);
+    if (!text.isEmpty()) {
+        m_model->appendText(m_currentRow, text);
+        // m_nextSegment 此时仍指向刚完成的这一段（下面才自增）
+        const Segment& seg = m_segments.at(m_nextSegment);
+        m_model->appendCue(m_currentRow, {qRound64(seg.startSec * 1000), qRound64(seg.endSec * 1000), text});
+    }
     m_model->setProgress(m_currentRow, ++m_nextSegment, m_segments.size());
     transcribeNext();
 }
@@ -668,18 +688,40 @@ void FileTranscribeWidget::exportResults()
     const QString dir = QFileDialog::getExistingDirectory(this, tr("Choose Export Folder"), startDir);
     if (dir.isEmpty()) return;
 
-    // 按音频名称导出同名 txt；重名时加序号，不覆盖已有文件
+    QStringList exts;
+    if (m_exportTxtCheck->isChecked()) exts << QStringLiteral("txt");
+    if (m_exportSrtCheck->isChecked()) exts << QStringLiteral("srt");
+
+    // 按音频名称导出同名文件；重名时加序号，不覆盖已有文件
     int written = 0;
+    int failed = 0;
     for (int row : std::as_const(rows)) {
         const FileTask& t = m_model->task(row);
-        const QString base = QFileInfo(t.path).completeBaseName();
-        QString target = QDir(dir).filePath(base + ".txt");
-        for (int i = 2; QFile::exists(target); ++i)
-            target = QDir(dir).filePath(QStringLiteral("%1 (%2).txt").arg(base).arg(i));
-        if (writeTextFile(target, t.text)) ++written;
+        const QString base = uniqueExportBase(dir, QFileInfo(t.path).completeBaseName(), exts);
+        for (const QString& ext : std::as_const(exts)) {
+            const QString text = ext == QLatin1String("srt") ? buildSrt(t.cues) : t.text;
+            if (writeTextFile(QDir(dir).filePath(base + QLatin1Char('.') + ext), text)) ++written;
+            else ++failed;
+        }
     }
 
     m_lastExportDir = dir;
-    m_statusLabel->setText(tr("Exported %1 files to %2").arg(written).arg(dir));
+    m_statusLabel->setText(failed > 0 ? tr("Exported %1 files to %2, %3 failed").arg(written).arg(dir).arg(failed)
+                                      : tr("Exported %1 files to %2").arg(written).arg(dir));
     m_openFolderBtn->show();
+}
+
+// 同一音频的 txt 与 srt 共用一个主名：只要任一格式的目标已存在就整体换号，
+// 避免出现"a.txt 与 a (2).srt"这种配不上对的文件
+QString FileTranscribeWidget::uniqueExportBase(const QString& dir, const QString& base, const QStringList& exts)
+{
+    auto taken = [&](const QString& name) {
+        for (const QString& ext : exts) {
+            if (QFile::exists(QDir(dir).filePath(name + QLatin1Char('.') + ext))) return true;
+        }
+        return false;
+    };
+    QString name = base;
+    for (int i = 2; taken(name); ++i) name = QStringLiteral("%1 (%2)").arg(base).arg(i);
+    return name;
 }

@@ -32,8 +32,10 @@ void AnimatedCheckBox::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    int boxSize = qMin(width(), height()) * 0.6; 
-    QRectF boxRect((width() - boxSize) / 2, (height() - boxSize) / 2, boxSize, boxSize);
+    int boxSize = qMin(width(), height()) * 0.6;
+    // 无文字时方框居中；带文字时靠左，文字画在右侧
+    const qreal boxX = text().isEmpty() ? (width() - boxSize) / 2 : 4;
+    QRectF boxRect(boxX, (height() - boxSize) / 2, boxSize, boxSize);
 
     painter.setPen(Qt::NoPen);
 
@@ -62,8 +64,25 @@ void AnimatedCheckBox::paintEvent(QPaintEvent* event)
         painterCenter(painter, boxRect, QPoint(0, 0));
     }
 
-    painter.setPen(Qt::black);
-    painter.drawText(boxRect.right() + 6, boxRect.center().y() + 4, text());
+    if (!text().isEmpty()) {
+        painter.setPen(palette().color(isEnabled() ? QPalette::Active : QPalette::Disabled, QPalette::WindowText));
+        const QRectF textRect(boxRect.right() + 6, 0, width() - boxRect.right() - 6, height());
+        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text());
+    }
+}
+
+QSize AnimatedCheckBox::sizeHint() const
+{
+    if (text().isEmpty()) return QSize(30, 30);
+    // 方框 18 + 左边距 4 + 间距 6 + 文字 + 右边距
+    return QSize(28 + fontMetrics().horizontalAdvance(text()) + 6, 30);
+}
+
+void AnimatedCheckBox::setLabelText(const QString& text)
+{
+    setText(text);
+    // 构造时固定了 30x30，带文字时按文字宽度重新固定，否则文字被裁掉
+    setFixedSize(sizeHint());
 }
 
 void AnimatedCheckBox::painterCenter(QPainter& painter, QRectF& boxRect, QPoint offsetPos)

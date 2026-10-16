@@ -13,6 +13,9 @@
 #include <QListWidget>
 #include <QDesktopServices>
 #include <QScreen>
+#include <QCompleter>
+#include <QLineEdit>
+#include <QSignalBlocker>
 
 #include "AppConfig.h"
 #include "WorkflowManager.h"
@@ -23,6 +26,7 @@
 #include "UpdateManager.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/SherpaManager.h"
+#include "sherpa/LanguageCatalog.h"
 #include "utils/Logger.h"
 
 #include "widgets/SphereOverlay.h"
@@ -62,10 +66,8 @@ void MainWin::initialize() {
     auto speakers = AudioRecorderService::availableSpeakers();
     ui->source_equipment_comb->addItems(speakers);
 
-    auto languages = ModelRegistry::GetLanguages();
-    ui->language_comb->addItems(languages);
-
-    ui->model_list_widget->setLanguage(ui->language_comb->currentText());
+    setupLanguageCombo();
+    ui->model_list_widget->setLanguage(currentLanguageKey());
 
     QStringList backend_items;
     backend_items << "本地识别(Sherpa)";
@@ -214,7 +216,7 @@ void MainWin::setupUiConnections(){
 
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
 		// 仅刷新列表并默认选中第一个模型，不触发下载
-		ui->model_list_widget->setLanguage(ui->language_comb->itemText(index));
+		ui->model_list_widget->setLanguage(ui->language_comb->itemData(index).toString());
 	});
 
 	// 下载触发：仅用户在模型列表里点击时下载
@@ -385,6 +387,7 @@ void MainWin::changeEvent(QEvent* event)
 {
     if (QEvent::LanguageChange == event->type()) {
         ui->retranslateUi(this);
+        refreshLanguageComboTexts();
     }
     else if (event->type() == QEvent::WindowStateChange) {
         if (windowState() & Qt::WindowMinimized) {
@@ -469,7 +472,7 @@ AppConfig MainWin::extractConfigFromUI() {
     // Sherpa 设置 (Sherpa Group)
     uiConfig.sherpa.useGpu = ui->gpu_backend_widget->currentComputeMode() == GpuBackendWidget::ComputeMode::CUDA;
     uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();;
-    uiConfig.sherpa.languageModel = ui->language_comb->currentText();
+    uiConfig.sherpa.languageModel = currentLanguageKey();
 	uiConfig.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
 
     // /AI 设置 (AI Group)
@@ -548,13 +551,13 @@ void MainWin::loadConfigToUI() {
 
     // Sherpa
     ui->gpu_backend_widget->setComputeMode(cfg.sherpa.useGpu ? GpuBackendWidget::ComputeMode::CUDA : GpuBackendWidget::ComputeMode::CPU);
-    int index = ui->language_comb->findText(cfg.sherpa.languageModel);
+    int index = ui->language_comb->findData(cfg.sherpa.languageModel);
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
-    if (cfg.sherpa.languageModel.isEmpty() && !ui->language_comb->currentText().isEmpty())
-        ConfigManager::instance().config().sherpa.languageModel = ui->language_comb->currentText();
+    if (cfg.sherpa.languageModel.isEmpty() && !currentLanguageKey().isEmpty())
+        ConfigManager::instance().config().sherpa.languageModel = currentLanguageKey();
     if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->model_list_widget->currentModel().isEmpty())
         ConfigManager::instance().config().sherpa.localModelRepoId = ui->model_list_widget->currentModel();
     
@@ -1037,3 +1040,40 @@ void MainWin::onQuitApplication()
     qApp->exit(0);
 }
 
+
+void MainWin::setupLanguageCombo()
+{
+    QComboBox* comb = ui->language_comb;
+    for (const QString& key : ModelRegistry::GetLanguages()) {
+        comb->addItem(LanguageCatalog::displayName(key), key);
+    }
+
+    // 语种有上百项：允许直接输入过滤（匹配名称或代码的任意位置）
+    comb->setEditable(true);
+    comb->setInsertPolicy(QComboBox::NoInsert);
+    auto* completer = new QCompleter(comb->model(), comb);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
+    completer->setCompletionMode(QCompleter::PopupCompletion);
+    comb->setCompleter(completer);
+
+    // 输入了列表里没有的内容就离开时，文字回退到当前选中项，避免界面显示与实际选择不一致
+    connect(comb->lineEdit(), &QLineEdit::editingFinished, this, [comb]() {
+        comb->setEditText(comb->itemText(comb->currentIndex()));
+    });
+}
+
+void MainWin::refreshLanguageComboTexts()
+{
+    QComboBox* comb = ui->language_comb;
+    const QSignalBlocker blocker(comb);   // 只改文字，不能触发"切换语种"重置模型选择
+    for (int i = 0; i < comb->count(); ++i) {
+        comb->setItemText(i, LanguageCatalog::displayName(comb->itemData(i).toString()));
+    }
+    comb->setEditText(comb->itemText(comb->currentIndex()));
+}
+
+QString MainWin::currentLanguageKey() const
+{
+    return ui->language_comb->currentData().toString();
+}

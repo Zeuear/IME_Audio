@@ -11,6 +11,10 @@ constexpr int kPad = 12;
 constexpr int kRadioWidth = 30;
 constexpr int kMetricWidth = 104;
 constexpr int kFeatureWidth = 96;
+// 小分辨率屏幕上窗口会被压窄：行宽低于阈值时收紧指标/特性列，把宽度让给名称列，避免模型名被截成省略号
+constexpr int kCompactBelow = 560;
+constexpr int kCompactMetricWidth = 80;
+constexpr int kCompactFeatureWidth = 88;
 constexpr int kBarCount = 5;
 const QColor kSuccessColor(46, 160, 67);
 }
@@ -19,10 +23,13 @@ ModelInfoDelegate::Columns ModelInfoDelegate::columns(const QRect& row)
 {
     Columns c;
     const QRect r = row.adjusted(kPad, 0, -kPad, 0);
+    const bool compact = r.width() < kCompactBelow;
+    const int featureW = compact ? kCompactFeatureWidth : kFeatureWidth;
+    const int metricW = compact ? kCompactMetricWidth : kMetricWidth;
     c.radio = QRect(r.left(), r.top(), kRadioWidth, r.height());
-    c.features = QRect(r.right() - kFeatureWidth + 1, r.top(), kFeatureWidth, r.height());
-    c.speed = QRect(c.features.left() - kMetricWidth, r.top(), kMetricWidth, r.height());
-    c.accuracy = QRect(c.speed.left() - kMetricWidth, r.top(), kMetricWidth, r.height());
+    c.features = QRect(r.right() - featureW + 1, r.top(), featureW, r.height());
+    c.speed = QRect(c.features.left() - metricW, r.top(), metricW, r.height());
+    c.accuracy = QRect(c.speed.left() - metricW, r.top(), metricW, r.height());
     c.name = QRect(c.radio.right() + 1, r.top(), c.accuracy.left() - c.radio.right() - 9, r.height());
     return c;
 }

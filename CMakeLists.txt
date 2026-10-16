@@ -87,6 +87,7 @@ add_subdirectory(third_party/QHotkey)
 enable_testing()
 
 # src
+include(cmake/DeployQt.cmake)
 add_subdirectory(src)
 
 # tests

@@ -379,6 +379,11 @@ const std::pair<QString, ModelDescriptor> kNemoFastConformer10Lang =
              .decoderFile = "decoder.onnx",
              .joinerFile = "joiner.onnx"
          }, "NeMo FastConformer Transducer (白/德/英/西/法/克罗地亚/意/波兰/俄/乌)"}};
+const std::pair<QString, ModelDescriptor> kFunasrSenseVoice =
+    {"csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17",
+        {ModelArch::SenseVoice, "SenseVoice (Funasr-Nano 多语言)"}};
+const std::pair<QString, ModelDescriptor> kFunasrNano =
+    {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30", {ModelArch::FunasrNano}};
 const std::pair<QString, ModelDescriptor> kQwen3Asr =
     {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25", {ModelArch::Qwen3Asr}};
 const std::pair<QString, ModelDescriptor> kWhisperBase =
@@ -418,6 +423,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
                 .joinerFile = "joiner-epoch-34-avg-19.int8.onnx"
             }
         }},
+        kFunasrSenseVoice,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -448,35 +457,20 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
              },"NeMo FastConformer Transducer (白/德/英/西/法/克罗地亚/意/波兰/俄/乌)"}},
         {"csukuangfj/sherpa-onnx-moonshine-base-en-int8",
             {ModelArch::Moonshine}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
 
-
-const std::vector<std::pair<QString, ModelDescriptor>>& FunasrNano31LangModels() {
-    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
-        {"csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17",
-            {ModelArch::SenseVoice}},
-        {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30",
-            {ModelArch::FunasrNano}},
-    };
-    return table;
-}
 
 const std::vector<std::pair<QString, ModelDescriptor>>& Qwen3AsrModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25",
             {ModelArch::Qwen3Asr}},
-    };
-    return table;
-}
-
-const std::vector<std::pair<QString, ModelDescriptor>>& MoreThan1600LangModels() {
-    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
-        {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
-            {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (small)"}},
-        {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12",
-            {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (base)"}},
     };
     return table;
 }
@@ -543,6 +537,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& RussianModels() {
                 {ModelArch::NemoTransducer, "Nemo Transducer (多语言)"}},
         {"csukuangfj/sherpa-onnx-whisper-base",
                 {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kNemoFastConformer10Lang,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -567,6 +564,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& CantoneseModels() {
                 .joinerFile = "joiner-epoch-45-avg-35.int8.onnx"
             }
         }},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -587,6 +588,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& JapaneseModels() {
         }},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -597,6 +602,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& KoreanModels() {
             {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -613,6 +622,11 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ThaiModels() {
                 .joinerFile = "joiner-epoch-12-avg-5.int8.onnx"
             }
         }},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -630,6 +644,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& VietnameseModels() {
         }},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -640,6 +658,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& TibetanModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -654,6 +674,11 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArabicModels() {
                 .decoderFile = "decoder.onnx",
                 .joinerFile = "joiner.onnx"
             }}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -668,6 +693,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& GermanModels() {
             {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kNemoFastConformer10Lang,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -684,6 +712,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& GeorgianModels() {
                 .joinerFile = "joiner.onnx"
             }}},
         kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -700,6 +729,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArmenianModels() {
                 .joinerFile = "joiner.onnx"
             }}},
         kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -716,6 +746,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& TagalogModels() {
             }}},
         kOmnilingual1B,
         kOmnilingual300M,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kWhisperBase,
     };
     return table;
 }
@@ -726,6 +759,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& FrenchModels() {
             {ModelArch::NemoTransducer}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kNemoFastConformer10Lang,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -738,6 +774,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& SpanishModels() {
             {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Nemo CTC"}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kNemoFastConformer10Lang,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -752,6 +791,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& PortugueseBrazilianModel
             {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
         {"csukuangfj/sherpa-onnx-whisper-base",
             {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}},
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -763,6 +806,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ItalianModels() {
         kNemoFastConformer10Lang,
         kQwen3Asr,
         kWhisperBase,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -771,6 +816,9 @@ const std::vector<std::pair<QString, ModelDescriptor>>& UkrainianModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kNemoFastConformer10Lang,
         kParakeetV3,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -781,6 +829,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& PolishModels() {
         kParakeetV3,
         kQwen3Asr,
         kWhisperBase,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -790,6 +842,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& DutchModels() {
         kParakeetV3,
         kQwen3Asr,
         kWhisperBase,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -798,6 +854,8 @@ const std::vector<std::pair<QString, ModelDescriptor>>& TurkishModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kQwen3Asr,
         kWhisperBase,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -815,6 +873,10 @@ const std::vector<std::pair<QString, ModelDescriptor>>& IndonesianModels() {
             }, "Zipformer 流式 (阿/英/印尼/日/俄/泰/越/中)"}},
         kQwen3Asr,
         kWhisperBase,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
     };
     return table;
 }
@@ -822,6 +884,11 @@ const std::vector<std::pair<QString, ModelDescriptor>>& IndonesianModels() {
 const std::vector<std::pair<QString, ModelDescriptor>>& HindiModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kQwen3Asr,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
@@ -831,49 +898,195 @@ const std::vector<std::pair<QString, ModelDescriptor>>& HebrewModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kOmnilingual1B,
         kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
 
-const std::vector<std::pair<QString, ModelDescriptor>>& TwentyFiveLanguagesModels() {
+//  - Parakeet v3：NVIDIA 模型卡 "Supported Languages" 的 25 种欧洲语言
+//  - FastConformer：模型名 be-de-en-es-fr-hr-it-pl-ru-uk 即其语种
+//  - Funasr-Nano：FunAudioLLM/Fun-ASR-MLT-Nano-2512 模型页的 31 种语言
+//  - Omnilingual：官方 lang_ids.py（1668 项）逐一核对，只有 nn、sa 无对应项
+//  - Whisper 多语言版：OpenAI 的 99 种语言（yue 仅 large-v3 支持、ga 不在其中，base 不收）
+
+const std::vector<std::pair<QString, ModelDescriptor>>& WhisperOmniModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
-        {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
-            {ModelArch::NemoTransducer}},
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
     };
     return table;
 }
 
+// Parakeet v3 与 Funasr-Nano 共同覆盖的欧洲语种
+const std::vector<std::pair<QString, ModelDescriptor>>& EuropeanMultiModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kParakeetV3,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
+    };
+    return table;
+}
+
+// Omnilingual 不覆盖（nn、sa），只有 Whisper
+const std::vector<std::pair<QString, ModelDescriptor>>& WhisperOnlyModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kWhisperBase,
+    };
+    return table;
+}
+
+// 以下是模型组合独一份的语种
+const std::vector<std::pair<QString, ModelDescriptor>>& CroatianModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kParakeetV3,
+        kNemoFastConformer10Lang,
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
+    };
+    return table;
+}
+
+const std::vector<std::pair<QString, ModelDescriptor>>& BelarusianModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kNemoFastConformer10Lang,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
+    };
+    return table;
+}
+
+const std::vector<std::pair<QString, ModelDescriptor>>& MalayModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+        kWhisperBase,
+    };
+    return table;
+}
+
+const std::vector<std::pair<QString, ModelDescriptor>>& IrishModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        kFunasrSenseVoice,
+        kFunasrNano,
+        kOmnilingual1B,
+        kOmnilingual300M,
+    };
+    return table;
+}
 
 const QVector<ModelRegistry::LanguageTableEntry>& LanguageTables() {
     static const QVector<ModelRegistry::LanguageTableEntry> tables = {
-        {"Chinese",                     &ChineseModels},
-        {"English",                     &EnglishModels},
-        {"Georgian",                    &GeorgianModels},
-        {"Armenian",                    &ArmenianModels},
-        {"Arabic",                      &ArabicModels},
-        {"Cantonese",                   &CantoneseModels},
-        {"French",                      &FrenchModels},
-        {"German",                      &GermanModels},
-        {"Japanese",                    &JapaneseModels},
-        {"Korean",                      &KoreanModels},
-        {"Portuguese",                  &PortugueseBrazilianModels},
-        {"Russian",                     &RussianModels},
-        {"Spanish",                     &SpanishModels},
-        {"Thai",                        &ThaiModels},
-        {"Tibetan",                     &TibetanModels},
-        {"Vietnamese",                  &VietnameseModels},
-        {"Tagalog",                     &TagalogModels},
-        {"Italian",                     &ItalianModels},
-        {"Ukrainian",                   &UkrainianModels},
-        {"Polish",                      &PolishModels},
-        {"Dutch",                       &DutchModels},
-        {"Turkish",                     &TurkishModels},
-        {"Indonesian",                  &IndonesianModels},
-        {"Hindi",                       &HindiModels},
-        {"Hebrew",                      &HebrewModels},
-        {"31 languages",                &FunasrNano31LangModels},
-        {"1600+ languages",             &MoreThan1600LangModels},
-        {"25 European languages",       &TwentyFiveLanguagesModels},
+        {"Chinese",                &ChineseModels},
+        {"English",                &EnglishModels},
+        {"Cantonese",              &CantoneseModels},
+        {"Japanese",               &JapaneseModels},
+        {"Korean",                 &KoreanModels},
+        {"French",                 &FrenchModels},
+        {"German",                 &GermanModels},
+        {"Spanish",                &SpanishModels},
+        {"Portuguese",             &PortugueseBrazilianModels},
+        {"Russian",                &RussianModels},
+        {"Italian",                &ItalianModels},
+        {"Arabic",                 &ArabicModels},
+        {"Hindi",                  &HindiModels},
+        {"Thai",                   &ThaiModels},
+        {"Vietnamese",             &VietnameseModels},
+        {"Indonesian",             &IndonesianModels},
+        {"Turkish",                &TurkishModels},
+        {"Polish",                 &PolishModels},
+        {"Dutch",                  &DutchModels},
+        {"Ukrainian",              &UkrainianModels},
+        {"Hebrew",                 &HebrewModels},
+        {"Georgian",               &GeorgianModels},
+        {"Armenian",               &ArmenianModels},
+        {"Tibetan",                &TibetanModels},
+        {"Tagalog",                &TagalogModels},
+        {"Afrikaans",              &WhisperOmniModels},
+        {"Amharic",                &WhisperOmniModels},
+        {"Assamese",               &WhisperOmniModels},
+        {"Azerbaijani",            &WhisperOmniModels},
+        {"Bashkir",                &WhisperOmniModels},
+        {"Belarusian",             &BelarusianModels},
+        {"Bulgarian",              &EuropeanMultiModels},
+        {"Bengali",                &WhisperOmniModels},
+        {"Breton",                 &WhisperOmniModels},
+        {"Bosnian",                &WhisperOmniModels},
+        {"Catalan",                &WhisperOmniModels},
+        {"Czech",                  &EuropeanMultiModels},
+        {"Welsh",                  &WhisperOmniModels},
+        {"Danish",                 &EuropeanMultiModels},
+        {"Greek",                  &EuropeanMultiModels},
+        {"Estonian",               &EuropeanMultiModels},
+        {"Basque",                 &WhisperOmniModels},
+        {"Persian",                &WhisperOmniModels},
+        {"Finnish",                &EuropeanMultiModels},
+        {"Faroese",                &WhisperOmniModels},
+        {"Galician",               &WhisperOmniModels},
+        {"Gujarati",               &WhisperOmniModels},
+        {"Hausa",                  &WhisperOmniModels},
+        {"Hawaiian",               &WhisperOmniModels},
+        {"Croatian",               &CroatianModels},
+        {"Haitian Creole",         &WhisperOmniModels},
+        {"Hungarian",              &EuropeanMultiModels},
+        {"Icelandic",              &WhisperOmniModels},
+        {"Javanese",               &WhisperOmniModels},
+        {"Kazakh",                 &WhisperOmniModels},
+        {"Khmer",                  &WhisperOmniModels},
+        {"Kannada",                &WhisperOmniModels},
+        {"Latin",                  &WhisperOmniModels},
+        {"Luxembourgish",          &WhisperOmniModels},
+        {"Lingala",                &WhisperOmniModels},
+        {"Lao",                    &WhisperOmniModels},
+        {"Lithuanian",             &EuropeanMultiModels},
+        {"Latvian",                &EuropeanMultiModels},
+        {"Malagasy",               &WhisperOmniModels},
+        {"Maori",                  &WhisperOmniModels},
+        {"Macedonian",             &WhisperOmniModels},
+        {"Malayalam",              &WhisperOmniModels},
+        {"Mongolian",              &WhisperOmniModels},
+        {"Marathi",                &WhisperOmniModels},
+        {"Malay",                  &MalayModels},
+        {"Maltese",                &EuropeanMultiModels},
+        {"Burmese",                &WhisperOmniModels},
+        {"Nepali",                 &WhisperOmniModels},
+        {"Norwegian Nynorsk",      &WhisperOnlyModels},
+        {"Norwegian",              &WhisperOmniModels},
+        {"Occitan",                &WhisperOmniModels},
+        {"Punjabi",                &WhisperOmniModels},
+        {"Pashto",                 &WhisperOmniModels},
+        {"Romanian",               &EuropeanMultiModels},
+        {"Sanskrit",               &WhisperOnlyModels},
+        {"Sindhi",                 &WhisperOmniModels},
+        {"Sinhala",                &WhisperOmniModels},
+        {"Slovak",                 &EuropeanMultiModels},
+        {"Slovenian",              &EuropeanMultiModels},
+        {"Shona",                  &WhisperOmniModels},
+        {"Somali",                 &WhisperOmniModels},
+        {"Albanian",               &WhisperOmniModels},
+        {"Serbian",                &WhisperOmniModels},
+        {"Sundanese",              &WhisperOmniModels},
+        {"Swedish",                &EuropeanMultiModels},
+        {"Swahili",                &WhisperOmniModels},
+        {"Tamil",                  &WhisperOmniModels},
+        {"Telugu",                 &WhisperOmniModels},
+        {"Tajik",                  &WhisperOmniModels},
+        {"Turkmen",                &WhisperOmniModels},
+        {"Tatar",                  &WhisperOmniModels},
+        {"Urdu",                   &WhisperOmniModels},
+        {"Uzbek",                  &WhisperOmniModels},
+        {"Yiddish",                &WhisperOmniModels},
+        {"Yoruba",                 &WhisperOmniModels},
+        {"Irish",                  &IrishModels},
     };
     return tables;
 }
@@ -893,7 +1106,7 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
                     d.arch == ModelArch::Canary || 
                     d.arch == ModelArch::Qwen3Asr ||
                     d.arch == ModelArch::Whisper ||
-                    // Parakeet TDT v3 自带标点与大小写，与其它 NemoTransducer 不同
+                    d.arch == ModelArch::FunasrNano ||
                     pair.first.contains("parakeet-tdt-0.6b-v3")) {
                     d.hasBuiltinPunctuation = true;
                 }
@@ -1058,19 +1271,19 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         configVar = ModelConfigFactory::buildOfflineTransducer(
             repoId,
             files.encoderFile, files.decoderFile, files.joinerFile,
-            files.tokensSubfolder, files.modelSubfolder, 4, 2);
+            files.tokensSubfolder, files.modelSubfolder, 4, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
     case ModelArch::TransducerOnline: {
         auto files = std::get<TransducerFiles>(desc->files);
-        configVar = ModelConfigFactory::buildOnlineTransducer(repoId, files.encoderFile, files.decoderFile, files.joinerFile, 4, 2);
+        configVar = ModelConfigFactory::buildOnlineTransducer(repoId, files.encoderFile, files.decoderFile, files.joinerFile, 4, numThreads);
         result.kind = RecognizerKind::Online;
         break;
     }
     case ModelArch::NemoCtc: {
         auto files = std::get<SingleFileModelFiles>(desc->files);
-        configVar = ModelConfigFactory::buildNemoCtc(repoId, files.modelFile, 2);
+        configVar = ModelConfigFactory::buildNemoCtc(repoId, files.modelFile, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
@@ -1081,23 +1294,23 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         break;
     }
     case ModelArch::Whisper: {
-        configVar = ModelConfigFactory::buildWhisper(repoId, std::get<WhisperFiles>(desc->files).name, 2);
+        configVar = ModelConfigFactory::buildWhisper(repoId, std::get<WhisperFiles>(desc->files).name, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
     case ModelArch::Moonshine: {
-        configVar = ModelConfigFactory::buildMoonshine(repoId, std::get<MoonshineFiles>(desc->files), 2);
+        configVar = ModelConfigFactory::buildMoonshine(repoId, std::get<MoonshineFiles>(desc->files), numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
     case ModelArch::FireRedAsr: {
-        configVar = ModelConfigFactory::buildFireRedAsr(repoId, std::get<FireRedAsrFiles>(desc->files), 2);
+        configVar = ModelConfigFactory::buildFireRedAsr(repoId, std::get<FireRedAsrFiles>(desc->files), numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
     case ModelArch::DolphinCtc: {
         bool useInt8 = repoId.contains("int8");
-        configVar = ModelConfigFactory::buildDolphinCtc(repoId, useInt8, 2);
+        configVar = ModelConfigFactory::buildDolphinCtc(repoId, useInt8, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }
@@ -1204,8 +1417,6 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 LOG_WARN(tr("Hotwords configured but architecture does not support contextual biasing, ignored: %1").arg(repoId));
             }
 
-            // CUDA 不存在的平台上不要进入这个 try/catch：它会吞掉异常并把任何模型加载
-            // 失败都记成"回退到 CPU"，掩盖真实错误。
             if (useGpu && cudaPlatformSpec().detectable) {
                 try {
                     config.model_config.provider = "cuda";

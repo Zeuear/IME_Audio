@@ -44,6 +44,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
 )
 
@@ -143,4 +144,6 @@ endif()
 
 # Register with CTest (gtest_discover_tests enumerates each TEST case as a CTest entry)
 include(GoogleTest)
-gtest_discover_tests(imeaudio_tests)
+# 默认的 POST_BUILD 会在链接后立刻运行测试程序来枚举用例；VS 的 RelWithDebInfo 输出目录里没有 Qt DLL，
+# 程序启动即 0xc0000135（缺 DLL）导致整个构建失败。改到 ctest 运行时再枚举，构建阶段不启动测试程序。
+gtest_discover_tests(imeaudio_tests DISCOVERY_MODE PRE_TEST)

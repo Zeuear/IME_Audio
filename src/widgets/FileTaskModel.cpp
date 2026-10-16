@@ -105,6 +105,7 @@ void FileTaskModel::reset(int row)
     t.segDone = 0;
     t.segTotal = 0;
     t.text.clear();
+    t.cues.clear();
     t.error.clear();
     touch(row);
 }
@@ -130,6 +131,11 @@ void FileTaskModel::appendText(int row, const QString& text)
     if (!t.text.isEmpty()) t.text += QLatin1Char('\n');
     t.text += text;
     touch(row);
+}
+
+void FileTaskModel::appendCue(int row, const SubtitleCue& cue)
+{
+    m_tasks[row].cues.append(cue);   // 不影响卡片显示，无需 touch
 }
 
 void FileTaskModel::setFailed(int row, const QString& error)

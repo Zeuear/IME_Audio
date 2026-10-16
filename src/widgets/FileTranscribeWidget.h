@@ -6,6 +6,7 @@
 #include "FileTaskModel.h"
 
 class QAudioDecoder;
+class AnimatedCheckBox;
 class QLabel;
 class QListView;
 class QPlainTextEdit;
@@ -38,7 +39,12 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
-    using Segments = QList<QByteArray>;
+    struct Segment {
+        QByteArray pcm;
+        double startSec = 0;   // 相对原音频开头
+        double endSec = 0;
+    };
+    using Segments = QList<Segment>;
 
     void setupUi();
     void retranslateUi();
@@ -74,6 +80,7 @@ private:
     void exportResults();
     void copyPreview();
     static bool writeTextFile(const QString& path, const QString& text);
+    static QString uniqueExportBase(const QString& dir, const QString& base, const QStringList& exts);
 
     static Segments segmentByVad(const QByteArray& pcm, const AppConfig& config, QString* error);
 
@@ -97,6 +104,8 @@ private:
     QPushButton* m_cancelBtn = nullptr;
     QPushButton* m_clearBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
+    AnimatedCheckBox* m_exportTxtCheck = nullptr;
+    AnimatedCheckBox* m_exportSrtCheck = nullptr;
     QPushButton* m_copyBtn = nullptr;
     QPushButton* m_openFolderBtn = nullptr;
     QTimer* m_animTimer = nullptr;   // 驱动"解码中"不确定进度条的重绘

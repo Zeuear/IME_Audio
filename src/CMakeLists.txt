@@ -315,6 +315,8 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMENT "Copying silero_vad.onnx to output directory"
 )
 
+imeaudio_deploy_qt(${TARGET_NAME} QMLDIR "${CMAKE_SOURCE_DIR}/qml")
+
 
 
 if(WIN32)

@@ -92,6 +92,9 @@ private:
 
     AppConfig extractConfigFromUI();
     void loadConfigToUI();
+    void setupLanguageCombo();
+    void refreshLanguageComboTexts();
+    QString currentLanguageKey() const;
     void initSystemTray();
 
     Ui::MainWin *ui;

@@ -2,6 +2,7 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QString>
+#include "SubtitleFormat.h"
 
 // 一个待转录文件及其进度/结果
 struct FileTask {
@@ -13,6 +14,7 @@ struct FileTask {
     int segDone = 0;
     int segTotal = 0;
     QString text;
+    QList<SubtitleCue> cues;   // 按 VAD 分段记录的带时间字幕，导出 SRT 用
     QString error;
 };
 
@@ -46,6 +48,7 @@ public:
     void setState(int row, FileTask::State state);
     void setProgress(int row, int done, int total);
     void appendText(int row, const QString& text);
+    void appendCue(int row, const SubtitleCue& cue);
     void setFailed(int row, const QString& error);
 
 private:

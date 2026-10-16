@@ -19,6 +19,10 @@ public:
 
     void painterCenter(QPainter& painter, QRectF& boxRect, QPoint offsetPos);
 
+    // 带文字使用：设置文字并按文字宽度调整控件大小
+    void setLabelText(const QString& text);
+    QSize sizeHint() const override;
+
 signals:
     void clicked();
 
