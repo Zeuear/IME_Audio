@@ -1,6 +1,7 @@
 # @brief 基准测试的语言表与模型表，对照 src/sherpa/SherpaConfig.cpp 的 LanguageTables()。
 #
-# 多语言分组（31 languages / 1600+ / 25 European）不单独测。
+# 软件里各语言的模型表变更时，这里同步增减；已跑出的 raw 结果不会重跑，
+# 所以只追加、不删除（软件下掉的模型保留作对照，由 NOT_IN_APP 排除导出）。
 # 模型参数（线程数、文件名、Whisper 不指定语言）与 ModelRegistry::GetConfig 保持一致，
 # 这样分数反映的是软件里真实跑出来的效果。
 # in_app=False 的模型软件里没有，只作对照（如 FireRed、非商用许可的 Shenava）。
@@ -17,46 +18,140 @@ class Lang:
     in_app: bool = True      # False：只测不进软件（不导出到 model_benchmarks.json）
 
 
+# 与 SherpaConfig.cpp 共用的多语言模型组合
+_WO = ["omnilingual-1b", "omnilingual-300m", "whisper-base"]  # WhisperOmniModels
+# EuropeanMultiModels：Parakeet v3 与 Funasr-Nano 共同覆盖的欧洲语种
+_EU = ["parakeet-tdt-v3", "funasr-sense-voice", "funasr-nano",
+       "omnilingual-1b", "omnilingual-300m", "whisper-base"]
+# 新增多语言模型的追加组合（旧语种在 SherpaConfig 里新增的）
+_FU = ["funasr-sense-voice", "funasr-nano"]
+_OM = ["omnilingual-1b", "omnilingual-300m"]
+
+_NOSET = "FLEURS 无此语种公开测试集，暂无稳定可下载的开源测试集"
+
+
 # key 为软件语言列表里的名字
 LANGS: dict[str, Lang] = {
     "Chinese":    Lang("cmn_hans_cn", "cer", ["paraformer-zh", "zipformer-ctc-zh", "zipformer-multi-zh-en",
-                                              "sense-voice", "sense-voice-2024", "qwen3-asr", "funasr-nano", "fire-red-asr"]),
+                                              "sense-voice", "sense-voice-2024", "qwen3-asr", "funasr-nano", "fire-red-asr",
+                                              "funasr-sense-voice"] + _OM + ["whisper-base"]),
     "English":    Lang("en_us", "wer", ["parakeet-tdt-v3", "whisper-tiny.en", "whisper-base.en", "whisper-small.en",
                                         "moonshine-base-en", "paraformer-en", "zipformer-multi-zh-en",
-                                        "sense-voice", "sense-voice-2024", "nemo-fc-20k", "fire-red-asr"]),
+                                        "sense-voice", "sense-voice-2024", "nemo-fc-20k", "fire-red-asr",
+                                        "funasr-sense-voice", "funasr-nano"] + _OM + ["whisper-base"]),
     # ka/hy/tl：sherpa 没有其它专用模型，补测多语言模型作为替换候选
     "Georgian":   Lang("ka_ge", "wer", ["nemo-ka", "whisper-base", "whisper-small", "omnilingual-300m", "omnilingual-1b"]),
     "Armenian":   Lang("hy_am", "wer", ["nemo-hy", "whisper-base", "whisper-small", "omnilingual-300m", "omnilingual-1b"]),
-    "Arabic":     Lang("ar_eg", "wer", ["nemo-ar", "whisper-base"]),
-    "Cantonese":  Lang("yue_hant_hk", "cer", ["wenet-yue", "mdcc-zipformer", "sense-voice", "sense-voice-2024"]),
-    "French":     Lang("fr_fr", "wer", ["parakeet-tdt-v3", "whisper-base"]),
-    "German":     Lang("de_de", "wer", ["parakeet-tdt-v3", "nemo-transducer-de", "nemo-ctc-de", "whisper-base"]),
-    "Japanese":   Lang("ja_jp", "cer", ["reazonspeech", "sense-voice", "sense-voice-2024", "whisper-base"]),
-    "Korean":     Lang("ko_kr", "cer", ["zipformer-ko", "sense-voice", "sense-voice-2024", "whisper-base"]),
-    "Portuguese": Lang("pt_br", "wer", ["parakeet-tdt-v3", "nemo-ctc-pt", "nemo-transducer-pt", "whisper-base"]),
+    "Arabic":     Lang("ar_eg", "wer", ["nemo-ar", "whisper-base"] + _FU + _OM),
+    "Cantonese":  Lang("yue_hant_hk", "cer", ["wenet-yue", "mdcc-zipformer", "sense-voice", "sense-voice-2024"] + _FU + _OM),
+    "French":     Lang("fr_fr", "wer", ["parakeet-tdt-v3", "whisper-base", "nemo-fc-20k"] + _OM),
+    "German":     Lang("de_de", "wer", ["parakeet-tdt-v3", "nemo-transducer-de", "nemo-ctc-de", "whisper-base",
+                                        "nemo-fc-20k"] + _OM),
+    "Japanese":   Lang("ja_jp", "cer", ["reazonspeech", "sense-voice", "sense-voice-2024", "whisper-base"] + _FU + _OM),
+    "Korean":     Lang("ko_kr", "cer", ["zipformer-ko", "sense-voice", "sense-voice-2024", "whisper-base"] + _FU + _OM),
+    "Portuguese": Lang("pt_br", "wer", ["parakeet-tdt-v3", "nemo-ctc-pt", "nemo-transducer-pt", "whisper-base"] + _FU + _OM),
     "Russian":    Lang("ru_ru", "wer", ["gigaam-ctc-v3", "gigaam-ctc-v2", "gigaam-ctc-v1",
                                         "gigaam-rnnt-v3", "gigaam-rnnt-v2", "gigaam-rnnt-v1", "gigaam-rnnt-punct-v3",
-                                        "parakeet-tdt-v3", "whisper-base", "vosk-ru", "vosk-small-ru"]),
-    "Spanish":    Lang("es_419", "wer", ["parakeet-tdt-v3", "whisper-base", "nemo-ctc-es"]),
-    "Thai":       Lang("th_th", "cer", ["zipformer-th", "whisper-base"]),
-    "Tibetan":    Lang(None, "cer", ["whisper-base"],
+                                        "parakeet-tdt-v3", "whisper-base", "vosk-ru",
+                                        "nemo-fc-20k"] + _OM),
+    "Spanish":    Lang("es_419", "wer", ["parakeet-tdt-v3", "whisper-base", "nemo-ctc-es", "nemo-fc-20k"] + _OM),
+    "Thai":       Lang("th_th", "cer", ["zipformer-th", "whisper-base"] + _FU + _OM),
+    "Tibetan":    Lang(None, "cer", ["whisper-base", "omnilingual-1b", "omnilingual-300m"],
                        "FLEURS / Common Voice have no Tibetan; no open test set with a stable download"),
-    "Vietnamese": Lang("vi_vn", "wer", ["zipformer-vi", "whisper-base"]),
+    "Vietnamese": Lang("vi_vn", "wer", ["zipformer-vi", "whisper-base"] + _FU + _OM),
     "Tagalog":    Lang("fil_ph", "wer", ["nemo-tl", "whisper-base", "qwen3-asr", "whisper-small",
-                                         "omnilingual-300m", "omnilingual-1b"]),
+                                         "omnilingual-300m", "omnilingual-1b"] + _FU),
 
     # ---- 新增语种候选 ----
-    "Italian":    Lang("it_it", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "qwen3-asr", "whisper-base"], new=True),
-    "Ukrainian":  Lang("uk_ua", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "moonshine-base-uk", "whisper-base"], new=True),
-    "Polish":     Lang("pl_pl", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "qwen3-asr", "whisper-base"], new=True),
-    "Dutch":      Lang("nl_nl", "wer", ["parakeet-tdt-v3", "qwen3-asr", "whisper-base"], new=True),
-    "Turkish":    Lang("tr_tr", "wer", ["qwen3-asr", "whisper-base"], new=True),
-    "Indonesian": Lang("id_id", "wer", ["qwen3-asr", "zipformer-streaming-8lang", "whisper-base"], new=True),
-    "Hindi":      Lang("hi_in", "wer", ["qwen3-asr", "whisper-base"], new=True),
-    "Persian":    Lang("fa_ir", "wer", ["qwen3-asr", "shenava-rizeh-fa", "shenava-koochik-fa", "whisper-base"], new=True,
-                       # 通用模型都不可用（Qwen3 CER 58%），唯一可用的 Shenava 为 CC-BY-NC 非商用许可
-                       in_app=False),
+    "Italian":    Lang("it_it", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "qwen3-asr", "whisper-base"] + _OM, new=True),
+    "Ukrainian":  Lang("uk_ua", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "moonshine-base-uk", "whisper-base"] + _OM, new=True),
+    "Polish":     Lang("pl_pl", "wer", ["parakeet-tdt-v3", "nemo-fc-20k", "qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
+    "Dutch":      Lang("nl_nl", "wer", ["parakeet-tdt-v3", "qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
+    "Turkish":    Lang("tr_tr", "wer", ["qwen3-asr", "whisper-base"] + _OM, new=True),
+    "Indonesian": Lang("id_id", "wer", ["qwen3-asr", "zipformer-streaming-8lang", "whisper-base"] + _FU + _OM, new=True),
+    "Hindi":      Lang("hi_in", "wer", ["qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
+    "Persian":    Lang("fa_ir", "wer", ["omnilingual-1b", "omnilingual-300m", "whisper-base"], new=True),
     "Hebrew":     Lang("he_il", "wer", ["whisper-base", "whisper-small", "omnilingual-300m", "omnilingual-1b"], new=True),
+
+    # ---- 软件新增语种（对照 LanguageTables）：多语言模型组合 ----
+    "Bulgarian":  Lang("bg_bg", "wer", _EU, new=True),
+    "Czech":      Lang("cs_cz", "wer", _EU, new=True),
+    "Danish":     Lang("da_dk", "wer", _EU, new=True),
+    "Greek":      Lang("el_gr", "wer", _EU, new=True),
+    "Estonian":   Lang("et_ee", "wer", _EU, new=True),
+    "Finnish":    Lang("fi_fi", "wer", _EU, new=True),
+    "Hungarian":  Lang("hu_hu", "wer", _EU, new=True),
+    "Lithuanian": Lang("lt_lt", "wer", _EU, new=True),
+    "Latvian":    Lang("lv_lv", "wer", _EU, new=True),
+    "Maltese":    Lang("mt_mt", "wer", _EU, new=True),
+    "Romanian":   Lang("ro_ro", "wer", _EU, new=True),
+    "Slovak":     Lang("sk_sk", "wer", _EU, new=True),
+    "Slovenian":  Lang("sl_si", "wer", _EU, new=True),
+    "Swedish":    Lang("sv_se", "wer", _EU, new=True),
+    "Croatian":   Lang("hr_hr", "wer", ["parakeet-tdt-v3", "nemo-fc-20k"] + _FU + _OM + ["whisper-base"], new=True),
+    "Belarusian": Lang("be_by", "wer", ["nemo-fc-20k"] + _WO, new=True),
+    "Malay":      Lang("ms_my", "wer", _FU + _WO, new=True),
+    "Irish":      Lang("ga_ie", "wer", _FU + _OM, new=True),
+
+    "Afrikaans":  Lang("af_za", "wer", _WO, new=True),
+    "Amharic":    Lang("am_et", "wer", _WO, new=True),
+    "Assamese":   Lang("as_in", "wer", _WO, new=True),
+    "Azerbaijani": Lang("az_az", "wer", _WO, new=True),
+    "Bengali":    Lang("bn_in", "wer", _WO, new=True),
+    "Bosnian":    Lang("bs_ba", "wer", _WO, new=True),
+    "Catalan":    Lang("ca_es", "wer", _WO, new=True),
+    "Welsh":      Lang("cy_gb", "wer", _WO, new=True),
+    "Galician":   Lang("gl_es", "wer", _WO, new=True),
+    "Gujarati":   Lang("gu_in", "wer", _WO, new=True),
+    "Hausa":      Lang("ha_ng", "wer", _WO, new=True),
+    "Icelandic":  Lang("is_is", "wer", _WO, new=True),
+    "Javanese":   Lang("jv_id", "wer", _WO, new=True),
+    "Kazakh":     Lang("kk_kz", "wer", _WO, new=True),
+    "Khmer":      Lang("km_kh", "cer", _WO, new=True),
+    "Kannada":    Lang("kn_in", "wer", _WO, new=True),
+    "Lingala":    Lang("ln_cd", "wer", _WO, new=True),
+    "Lao":        Lang("lo_la", "cer", _WO, new=True),
+    "Maori":      Lang("mi_nz", "wer", _WO, new=True),
+    "Macedonian": Lang("mk_mk", "wer", _WO, new=True),
+    "Malayalam":  Lang("ml_in", "wer", _WO, new=True),
+    "Mongolian":  Lang("mn_mn", "wer", _WO, new=True),
+    "Marathi":    Lang("mr_in", "wer", _WO, new=True),
+    "Burmese":    Lang("my_mm", "cer", _WO, new=True),
+    "Nepali":     Lang("ne_np", "wer", _WO, new=True),
+    "Norwegian":  Lang("nb_no", "wer", _WO, new=True),
+    "Occitan":    Lang("oc_fr", "wer", _WO, new=True),
+    "Punjabi":    Lang("pa_in", "wer", _WO, new=True),
+    "Pashto":     Lang("ps_af", "wer", _WO, new=True),
+    "Sindhi":     Lang("sd_in", "wer", _WO, new=True),
+    "Shona":      Lang("sn_zw", "wer", _WO, new=True),
+    "Somali":     Lang("so_so", "wer", _WO, new=True),
+    "Serbian":    Lang("sr_rs", "wer", _WO, new=True),
+    "Swahili":    Lang("sw_ke", "wer", _WO, new=True),
+    "Tamil":      Lang("ta_in", "wer", _WO, new=True),
+    "Telugu":     Lang("te_in", "wer", _WO, new=True),
+    "Tajik":      Lang("tg_tj", "wer", _WO, new=True),
+    "Luxembourgish": Lang("lb_lu", "wer", _WO, new=True),
+    "Urdu":       Lang("ur_pk", "wer", _WO, new=True),
+    "Uzbek":      Lang("uz_uz", "wer", _WO, new=True),
+    "Yoruba":     Lang("yo_ng", "wer", _WO, new=True),
+
+    # ---- 软件有但无公开测试集的语种：只登记模型，不跑分 ----
+    "Bashkir":    Lang(None, "wer", _WO, _NOSET, new=True),
+    "Breton":     Lang(None, "wer", _WO, _NOSET, new=True),
+    "Faroese":    Lang(None, "wer", _WO, _NOSET, new=True),
+    "Hawaiian":   Lang(None, "wer", _WO, _NOSET, new=True),
+    "Haitian Creole": Lang(None, "wer", _WO, _NOSET, new=True),
+    "Latin":      Lang(None, "wer", _WO, _NOSET, new=True),
+    "Malagasy":   Lang(None, "wer", _WO, _NOSET, new=True),
+    "Sanskrit":   Lang(None, "wer", ["whisper-base"], _NOSET, new=True),
+    "Tatar":      Lang(None, "wer", _WO, _NOSET, new=True),
+    "Turkmen":    Lang(None, "wer", _WO, _NOSET, new=True),
+    "Yiddish":    Lang(None, "wer", _WO, _NOSET, new=True),
+    "Basque":     Lang(None, "wer", _WO, _NOSET, new=True),
+    "Albanian":   Lang(None, "wer", _WO, _NOSET, new=True),
+    "Sinhala":    Lang(None, "wer", _WO, _NOSET, new=True),
+    "Sundanese":  Lang(None, "wer", _WO, _NOSET, new=True),
+    "Norwegian Nynorsk": Lang(None, "wer", ["whisper-base"], _NOSET, new=True),
 }
 
 
@@ -67,7 +162,6 @@ NOT_IN_APP: set[tuple[str, str]] = {
     ("Japanese", "sense-voice"), ("Korean", "sense-voice"),
     ("Cantonese", "sense-voice-2024"),
     ("Korean", "zipformer-ko"),          # 超过约 10 秒的音频返回空结果
-    ("Russian", "vosk-small-ru"),        # 超过约 20 秒的音频推理报错
     ("Ukrainian", "moonshine-base-uk"),  # 超过约 9 秒的音频返回空结果
     ("Ukrainian", "whisper-base"), ("Arabic", "whisper-base"), ("Thai", "whisper-base"),
     ("Georgian", "whisper-base"), ("Georgian", "whisper-small"),
@@ -123,6 +217,9 @@ MODELS: dict[str, Model] = {
     # 2025-09-09 版实为 ASLP-lab WSYue 粤语微调版，会把日/韩语识别成粤语；原版对照
     "sense-voice-2024": Model("csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17", "sense_voice",
                               {"model": "model.int8.onnx", "tokens": "tokens.txt"}, 4, "SenseVoice 2024-07-17"),
+    # 软件多语言分组里的 SenseVoice（Funasr-Nano 多语言），与 GetConfig 默认 language=auto、use_itn=true 一致
+    "funasr-sense-voice": Model("csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17", "sense_voice",
+                                {"model": "model.int8.onnx", "tokens": "tokens.txt"}, 4, "SenseVoice Funasr-Nano"),
     "qwen3-asr": Model("k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25", "qwen3",
                        {"conv_frontend": "conv_frontend.onnx", "encoder": "encoder.int8.onnx",
                         "decoder": "decoder.int8.onnx", "tokenizer": "tokenizer"}, 4, "Qwen3-ASR 0.6B",
@@ -183,9 +280,6 @@ MODELS: dict[str, Model] = {
     "vosk-ru": Model("alphacep/vosk-model-ru", "transducer",
                      _tr("am-onnx/encoder.int8.onnx", "am-onnx/decoder.int8.onnx", "am-onnx/joiner.int8.onnx",
                          "lang/tokens.txt"), 4, "Vosk ru"),
-    "vosk-small-ru": Model("alphacep/vosk-model-small-ru", "transducer",
-                           _tr("am/encoder.int8.onnx", "am/decoder.int8.onnx", "am/joiner.int8.onnx", "lang/tokens.txt"),
-                           4, "Vosk small ru"),
     "nemo-ctc-es": Model("csukuangfj/sherpa-onnx-nemo-fast-conformer-ctc-es-1424-int8", "nemo_ctc", _CTC_INT8, 2,
                          "NeMo FastConformer CTC es"),
     "zipformer-th": Model("yfyeung/icefall-asr-gigaspeech2-th-zipformer-2024-06-20", "transducer",
