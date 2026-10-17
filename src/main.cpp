@@ -2,7 +2,7 @@
 #include "Application.h"
 #include "utils/AppPaths.h"
 #include "utils/SingleInstanceGuard.h"
-#include "utils/PlatformPermissions.h"
+#include "widgets/PermissionGuideDialog.h"
 
 #include <cstdio>
 #include <iostream>
@@ -63,7 +63,12 @@ int main(int argc, char *argv[])
                      &w, &MainWin::onShowWindow);
     w.show();
 
-    PlatformPermissions::requestStartupPermissions();
+    // 缺少必需授权时（目前只有 macOS）引导授权；
+    if (PermissionGuideDialog::isNeeded()) {
+        auto* guide = new PermissionGuideDialog(&w);
+        guide->setAttribute(Qt::WA_DeleteOnClose);
+        guide->show();
+    }
 
     return a.exec();
 }

@@ -31,8 +31,6 @@ public:
 
     static void openAccessibilitySettings();
 
-    // 应用启动完成后调用一次：把本平台上功能必需的授权提前引导完，
-    // 而不是等到用户第一次用到时才失败。已授权或本平台无需授权时无任何界面。
-    // macOS：依次引导麦克风与辅助功能，全部授权后自动重启进程使其生效。
-    static void requestStartupPermissions();
+    // 授权要重启进程才生效（macOS）
+    static void relaunchApp();
 };

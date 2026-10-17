@@ -147,142 +147,142 @@
 <context>
     <name>FileTranscribeWidget</name>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="197"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="205"/>
         <source>Add Files</source>
         <translation>添加文件</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="198"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="206"/>
         <source>Transcribe</source>
         <translation>转录</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="199"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="207"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="200"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="208"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="201"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="209"/>
         <source>Export</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="205"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="213"/>
         <source>Drop audio files here, or click &quot;Add Files&quot;</source>
         <translation>将音频文件拖到此处，或点击“添加文件”</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="300"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="308"/>
         <source>Transcription</source>
         <translation>转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="206"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="214"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="202"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="210"/>
         <source>TXT</source>
         <translation>TXT 文本</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="203"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="211"/>
         <source>SRT subtitles</source>
         <translation>SRT 字幕</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="204"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="212"/>
         <source>Timestamps follow speech pauses, one subtitle per detected sentence</source>
         <translation>时间戳依据语音停顿划分，每个检测到的句子对应一条字幕</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="207"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="215"/>
         <source>Select a file to view its transcription</source>
         <translation>选择一个文件查看转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="208"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="216"/>
         <source>Open Folder</source>
         <translation>打开文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="239"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="247"/>
         <source>Choose Audio Files</source>
         <translation>选择音频文件</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="240"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="248"/>
         <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
         <translation>音频文件 (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="248"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="256"/>
         <source>No new files added</source>
         <translation>没有新增文件</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="253"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="261"/>
         <source>Added %1 files</source>
         <translation>已添加 %1 个文件</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="286"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="294"/>
         <source>Re-transcribe</source>
         <translation>重新转录</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="287"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="295"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="399"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="408"/>
         <source>Processing file %1/%2</source>
         <translation>正在处理文件 %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="444"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="484"/>
         <source>No audio data decoded</source>
         <translation>没有解码出音频数据</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="580"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="647"/>
         <source>Cancelling...</source>
         <translation>正在取消…</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="636"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="707"/>
         <source>Cancelled</source>
         <translation>已取消</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="638"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="709"/>
         <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
         <translation>完成：成功 %1 个，失败 %2 个，无语音 %3 个</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="661"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="732"/>
         <source>Copied to clipboard</source>
         <translation>已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="688"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="759"/>
         <source>Choose Export Folder</source>
         <translation>选择导出文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="709"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="780"/>
         <source>Exported %1 files to %2, %3 failed</source>
         <translation>已导出 %1 个文件到 %2，%3 个失败</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="710"/>
+        <location filename="../../src/widgets/FileTranscribeWidget.cpp" line="781"/>
         <source>Exported %1 files to %2</source>
         <translation>已导出 %1 个文件到 %2</translation>
     </message>
@@ -432,507 +432,507 @@
 <context>
     <name>LanguageCatalog</name>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="9"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="13"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="10"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="14"/>
         <source>English</source>
         <translation>英语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="11"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="15"/>
         <source>Cantonese</source>
         <translation>粤语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="12"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="16"/>
         <source>Japanese</source>
         <translation>日语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="13"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="17"/>
         <source>Korean</source>
         <translation>韩语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="14"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="18"/>
         <source>French</source>
         <translation>法语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="15"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="19"/>
         <source>German</source>
         <translation>德语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="16"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="20"/>
         <source>Spanish</source>
         <translation>西班牙语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="17"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="21"/>
         <source>Portuguese</source>
         <translation>葡萄牙语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="18"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="22"/>
         <source>Russian</source>
         <translation>俄语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="19"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="23"/>
         <source>Italian</source>
         <translation>意大利语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="20"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="24"/>
         <source>Arabic</source>
         <translation>阿拉伯语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="21"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="25"/>
         <source>Hindi</source>
         <translation>印地语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="22"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="26"/>
         <source>Thai</source>
         <translation>泰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="23"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="27"/>
         <source>Vietnamese</source>
         <translation>越南语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="24"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="28"/>
         <source>Indonesian</source>
         <translation>印度尼西亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="25"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="29"/>
         <source>Turkish</source>
         <translation>土耳其语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="26"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="30"/>
         <source>Polish</source>
         <translation>波兰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="27"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="31"/>
         <source>Dutch</source>
         <translation>荷兰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="28"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="32"/>
         <source>Ukrainian</source>
         <translation>乌克兰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="29"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="33"/>
         <source>Hebrew</source>
         <translation>希伯来语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="30"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="34"/>
         <source>Georgian</source>
         <translation>格鲁吉亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="31"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="35"/>
         <source>Armenian</source>
         <translation>亚美尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="32"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="36"/>
         <source>Tibetan</source>
         <translation>藏语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="33"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="37"/>
         <source>Tagalog</source>
         <translation>他加禄语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="34"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="38"/>
         <source>Afrikaans</source>
         <translation>南非荷兰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="35"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="39"/>
         <source>Amharic</source>
         <translation>阿姆哈拉语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="36"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="40"/>
         <source>Assamese</source>
         <translation>阿萨姆语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="37"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="41"/>
         <source>Azerbaijani</source>
         <translation>阿塞拜疆语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="38"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="42"/>
         <source>Bashkir</source>
         <translation>巴什基尔语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="39"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="43"/>
         <source>Belarusian</source>
         <translation>白俄罗斯语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="40"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="44"/>
         <source>Bulgarian</source>
         <translation>保加利亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="41"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="45"/>
         <source>Bengali</source>
         <translation>孟加拉语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="42"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="46"/>
         <source>Breton</source>
         <translation>布列塔尼语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="43"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="47"/>
         <source>Bosnian</source>
         <translation>波斯尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="44"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="48"/>
         <source>Catalan</source>
         <translation>加泰罗尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="45"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="49"/>
         <source>Czech</source>
         <translation>捷克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="46"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="50"/>
         <source>Welsh</source>
         <translation>威尔士语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="47"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="51"/>
         <source>Danish</source>
         <translation>丹麦语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="48"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="52"/>
         <source>Greek</source>
         <translation>希腊语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="49"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="53"/>
         <source>Estonian</source>
         <translation>爱沙尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="50"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="54"/>
         <source>Basque</source>
         <translation>巴斯克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="51"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="55"/>
         <source>Persian</source>
         <translation>波斯语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="52"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="56"/>
         <source>Finnish</source>
         <translation>芬兰语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="53"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="57"/>
         <source>Faroese</source>
         <translation>法罗语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="54"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="58"/>
         <source>Galician</source>
         <translation>加利西亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="55"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="59"/>
         <source>Gujarati</source>
         <translation>古吉拉特语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="56"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="60"/>
         <source>Hausa</source>
         <translation>豪萨语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="57"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="61"/>
         <source>Hawaiian</source>
         <translation>夏威夷语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="58"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="62"/>
         <source>Croatian</source>
         <translation>克罗地亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="59"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="63"/>
         <source>Haitian Creole</source>
         <translation>海地克里奥尔语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="60"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="64"/>
         <source>Hungarian</source>
         <translation>匈牙利语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="61"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="65"/>
         <source>Icelandic</source>
         <translation>冰岛语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="62"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="66"/>
         <source>Javanese</source>
         <translation>爪哇语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="63"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="67"/>
         <source>Kazakh</source>
         <translation>哈萨克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="64"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="68"/>
         <source>Khmer</source>
         <translation>高棉语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="65"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="69"/>
         <source>Kannada</source>
         <translation>卡纳达语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="66"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="70"/>
         <source>Latin</source>
         <translation>拉丁语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="67"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="71"/>
         <source>Luxembourgish</source>
         <translation>卢森堡语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="68"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="72"/>
         <source>Lingala</source>
         <translation>林加拉语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="69"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="73"/>
         <source>Lao</source>
         <translation>老挝语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="70"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="74"/>
         <source>Lithuanian</source>
         <translation>立陶宛语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="71"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="75"/>
         <source>Latvian</source>
         <translation>拉脱维亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="72"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="76"/>
         <source>Malagasy</source>
         <translation>马达加斯加语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="73"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="77"/>
         <source>Maori</source>
         <translation>毛利语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="74"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="78"/>
         <source>Macedonian</source>
         <translation>马其顿语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="75"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="79"/>
         <source>Malayalam</source>
         <translation>马拉雅拉姆语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="76"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="80"/>
         <source>Mongolian</source>
         <translation>蒙古语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="77"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="81"/>
         <source>Marathi</source>
         <translation>马拉地语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="78"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="82"/>
         <source>Malay</source>
         <translation>马来语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="79"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="83"/>
         <source>Maltese</source>
         <translation>马耳他语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="80"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="84"/>
         <source>Burmese</source>
         <translation>缅甸语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="81"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="85"/>
         <source>Nepali</source>
         <translation>尼泊尔语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="82"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="86"/>
         <source>Norwegian Nynorsk</source>
         <translation>新挪威语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="83"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="87"/>
         <source>Norwegian</source>
         <translation>挪威语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="84"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="88"/>
         <source>Occitan</source>
         <translation>奥克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="85"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="89"/>
         <source>Punjabi</source>
         <translation>旁遮普语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="86"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="90"/>
         <source>Pashto</source>
         <translation>普什图语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="87"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="91"/>
         <source>Romanian</source>
         <translation>罗马尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="88"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="92"/>
         <source>Sanskrit</source>
         <translation>梵语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="89"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="93"/>
         <source>Sindhi</source>
         <translation>信德语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="90"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="94"/>
         <source>Sinhala</source>
         <translation>僧伽罗语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="91"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="95"/>
         <source>Slovak</source>
         <translation>斯洛伐克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="92"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="96"/>
         <source>Slovenian</source>
         <translation>斯洛文尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="93"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="97"/>
         <source>Shona</source>
         <translation>绍纳语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="94"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="98"/>
         <source>Somali</source>
         <translation>索马里语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="95"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="99"/>
         <source>Albanian</source>
         <translation>阿尔巴尼亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="96"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="100"/>
         <source>Serbian</source>
         <translation>塞尔维亚语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="97"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="101"/>
         <source>Sundanese</source>
         <translation>巽他语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="98"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="102"/>
         <source>Swedish</source>
         <translation>瑞典语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="99"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="103"/>
         <source>Swahili</source>
         <translation>斯瓦希里语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="100"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="104"/>
         <source>Tamil</source>
         <translation>泰米尔语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="101"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="105"/>
         <source>Telugu</source>
         <translation>泰卢固语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="102"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="106"/>
         <source>Tajik</source>
         <translation>塔吉克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="103"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="107"/>
         <source>Turkmen</source>
         <translation>土库曼语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="104"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="108"/>
         <source>Tatar</source>
         <translation>鞑靼语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="105"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="109"/>
         <source>Urdu</source>
         <translation>乌尔都语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="106"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="110"/>
         <source>Uzbek</source>
         <translation>乌兹别克语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="107"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="111"/>
         <source>Yiddish</source>
         <translation>意第绪语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="108"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="112"/>
         <source>Yoruba</source>
         <translation>约鲁巴语</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="109"/>
+        <location filename="../../src/sherpa/LanguageCatalog.cpp" line="113"/>
         <source>Irish</source>
         <translation>爱尔兰语</translation>
     </message>
@@ -1225,97 +1225,97 @@
         <translation type="unfinished">关于</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="519"/>
+        <location filename="../../src/MainWin.cpp" line="517"/>
         <source>该模型正在安装....</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="226"/>
+        <location filename="../../src/MainWin.cpp" line="224"/>
         <source>开始下载模型...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="230"/>
+        <location filename="../../src/MainWin.cpp" line="228"/>
         <source>模型下载完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="231"/>
+        <location filename="../../src/MainWin.cpp" line="229"/>
         <source>模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="231"/>
+        <location filename="../../src/MainWin.cpp" line="229"/>
         <source>请检查网络后重试</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="238"/>
+        <location filename="../../src/MainWin.cpp" line="236"/>
         <source>VAD 模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="238"/>
+        <location filename="../../src/MainWin.cpp" line="236"/>
         <source>请检查网络后重试，或前往 &quot;下载列表&quot; 查看进度</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="243"/>
+        <location filename="../../src/MainWin.cpp" line="241"/>
         <source>已切换至 CPU 模式</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="243"/>
+        <location filename="../../src/MainWin.cpp" line="241"/>
         <source>显卡不可用，识别速度可能下降</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="338"/>
+        <location filename="../../src/MainWin.cpp" line="336"/>
         <source>模型加载成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="368"/>
+        <location filename="../../src/MainWin.cpp" line="366"/>
         <source>成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="369"/>
+        <location filename="../../src/MainWin.cpp" line="367"/>
         <source>冲突</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="896"/>
+        <location filename="../../src/MainWin.cpp" line="894"/>
         <source>Update Available</source>
         <translation type="unfinished">更新可用</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="897"/>
+        <location filename="../../src/MainWin.cpp" line="895"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">新版本（%1）已发布！</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="898"/>
+        <location filename="../../src/MainWin.cpp" line="896"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">您现在想下载并安装吗？</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="906"/>
+        <location filename="../../src/MainWin.cpp" line="904"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">不要再提醒我了</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="933"/>
+        <location filename="../../src/MainWin.cpp" line="931"/>
         <source>Restart Required</source>
         <translation type="unfinished">需要重启</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="934"/>
+        <location filename="../../src/MainWin.cpp" line="932"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">更新已成功下载。应用程序即将关闭并重新启动以应用更新。是否继续？</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="943"/>
+        <location filename="../../src/MainWin.cpp" line="941"/>
         <source>更新失败</source>
         <translation type="unfinished">更新失败</translation>
     </message>
@@ -1369,55 +1369,139 @@
 <context>
     <name>ModelRegistry</name>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1066"/>
         <location filename="../../src/sherpa/SherpaConfig.cpp" line="1312"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1580"/>
         <source>Model not registered in ModelRegistry: %1</source>
         <translation type="unfinished">模型未在模型注册表中注册：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1070"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1316"/>
         <source>This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</source>
         <translation type="unfinished">此模型仅有 TorchScript(.pt) 版本，cxx-api 不支持该版本: 1%</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1209"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1474"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
         <translation type="unfinished">未找到 Qwen3-ASR 模型文件，請先安裝模型：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1238"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1503"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
         <translation type="unfinished">热门关键词应用于 arch=%1，score=%2</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1241"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1506"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
         <translation type="unfinished">已配置热词，但架构不支持上下文偏好，已忽略：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1256"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1521"/>
         <source>CUDA initialization failed: %1. Automatically falling back to CPU.</source>
         <translation type="unfinished">CUDA 初始化失败：%1。自动回退到 CPU。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1277"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1542"/>
         <source>Failed to create recognizer on CPU: %1</source>
         <translation type="unfinished">在 CPU 上创建识别器失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1280"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1545"/>
         <source>Failed to create recognizer on CPU due to an unknown error.</source>
         <translation type="unfinished">由于未知错误，在 CPU 上创建识别器失败。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1330"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1598"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
         <translation type="unfinished">ModelDescriptor.files 类型与 %1 不匹配，使用默认值</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1433"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1711"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
         <translation type="unfinished">BuildManifest：不支持或未映射的 ModelArch（适用于 %1）。</translation>
+    </message>
+</context>
+<context>
+    <name>PermissionGuideDialog</name>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="29"/>
+        <source>Permissions Setup</source>
+        <translation>授权设置</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="52"/>
+        <source>ImeAudio needs two permissions to record your voice and type the result into other apps. Usually you only need to do this once.</source>
+        <translation>ImeAudio 需要两项授权：录制你的声音，并把识别结果输入到其它软件中。通常只需设置一次。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="61"/>
+        <source>Microphone</source>
+        <translation>麦克风</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="61"/>
+        <source>Record your voice for transcription.</source>
+        <translation>录制声音用于语音识别。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="62"/>
+        <source>Accessibility</source>
+        <translation>辅助功能</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="62"/>
+        <source>Type the transcribed text into the active window.</source>
+        <translation>把识别出的文字输入到当前窗口。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="66"/>
+        <source>Already ticked but still shown as not granted? Select ImeAudio in the list, remove it with &quot;−&quot;, add it again with &quot;+&quot;, then restart ImeAudio.</source>
+        <translation>已经勾选却仍显示未授权？在列表中选中 ImeAudio，点「−」删除，再点「+」重新添加，然后重启 ImeAudio。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="78"/>
+        <source>Later</source>
+        <translation>稍后</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="79"/>
+        <source>Restart Now</source>
+        <translation>立即重启</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="126"/>
+        <source>Allow</source>
+        <translation>允许</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="126"/>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="130"/>
+        <source>Open Settings</source>
+        <translation>打开系统设置</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="137"/>
+        <source>All set. Restart ImeAudio to apply the permissions.</source>
+        <translation>授权已完成，重启 ImeAudio 后生效。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="138"/>
+        <source>Grant the permissions above. This window updates automatically.</source>
+        <translation>请完成上面的授权，本窗口会自动刷新状态。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="147"/>
+        <source>Granted</source>
+        <translation>已授权</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="151"/>
+        <source>Not requested</source>
+        <translation>尚未申请</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/PermissionGuideDialog.cpp" line="155"/>
+        <source>Not granted</source>
+        <translation>未授权</translation>
     </message>
 </context>
 <context>
