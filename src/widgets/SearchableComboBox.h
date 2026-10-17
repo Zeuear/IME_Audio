@@ -14,11 +14,16 @@ public:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     void setupUi();
     void enterEditMode();
     void leaveEditMode();
+    bool isEditing() const;
 
-    QElapsedTimer m_popupClock;   // 列表弹出后计时，用来识别落在列表外的"第二次点击"
+    QElapsedTimer m_popupClock;          // 列表弹出后计时，用来识别落在列表外的"第二次点击"
+    bool m_swallowEditClick = false;     // 双击进入输入后，吞掉第二下剩余的双击/松开事件
+    bool m_openingPress = false;         // 单击输入框弹出列表的那次按下，其松开不能让列表收起
 };
