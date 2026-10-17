@@ -27,4 +27,10 @@ Qt 自带的 FFmpeg 主版本变了（DLL 名里的数字变了），需要同�
 
 ## macOS / Linux
 
-暂未启用：Qt 在这两个平台自带的 FFmpeg 库位置和版本尚未验证，文件转录仍使用 `QAudioDecoder`。
+CMake 在 Qt 的 `lib` 目录（`Qt6_DIR/../..`）里按主版本号找 `libavformat.61.dylib` / `libavformat.so.61` 等四个库，
+dylib / so 直接链接，不需要 `.def`。运行时由 `macdeployqt` / linuxdeploy 随 Qt 一起部署。
+
+- 只在 Qt 自己的目录里找，不会链到 Homebrew 或系统包管理器装的 FFmpeg（版本可能不同，也可能是 GPL 构建）。
+- 四个库缺任何一个就不启用，配置时打印 `FFmpeg: ... not found`，文件转录回退到 `QAudioDecoder`。
+- 尚未在真机上验证：确认配置输出为 `FFmpeg: using Qt bundled libraries`，并检查打包后的 `.app` / AppImage
+  里确实带上了这几个库（macOS：`otool -L` 看 `Contents/MacOS/ImeAudio` 的依赖都指向 `@rpath` / `Frameworks`）。
