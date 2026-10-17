@@ -91,6 +91,10 @@ QLabel {
 QLabel:disabled {
     color: rgb(170,170,170);
 }
+/* 本地识别页的“语言模型”标签：卡片已贴边，标签自己留出左侧距离 */
+QLabel#label_9 {
+    padding-left: 10px;
+}
 
 /* ---------------- Button ---------------- */
 QPushButton {
@@ -171,6 +175,18 @@ QTextEdit, QPlainTextEdit {
 }
 QTextEdit:focus, QPlainTextEdit:focus {
     border: 1px solid rgb(0, 120, 215);
+}
+
+/* 日志面板：无边框，顶部接一条表头（ID 选择器优先级高于上面的 :focus 规则） */
+QTextEdit#identification_log_edit, QTextEdit#config_log_edit {
+    border: none;
+}
+QLabel#identification_log_header, QLabel#config_log_header {
+    background-color: rgb(245, 245, 245);
+    color: rgb(110, 110, 110);
+    border-bottom: 1px solid rgb(200, 200, 200);
+    font: bold 8pt "Microsoft YaHei";
+    padding: 4px 8px;
 }
 
 /* ---------------- ComboBox ---------------- */

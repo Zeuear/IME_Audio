@@ -51,13 +51,13 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <property name="leftMargin">
-       <number>9</number>
+       <number>0</number>
       </property>
       <property name="topMargin">
        <number>0</number>
       </property>
       <property name="rightMargin">
-       <number>9</number>
+       <number>0</number>
       </property>
       <property name="bottomMargin">
        <number>0</number>
@@ -603,13 +603,13 @@
             <item>
              <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,1,1,1">
               <property name="leftMargin">
-               <number>10</number>
+               <number>0</number>
               </property>
               <property name="topMargin">
                <number>10</number>
               </property>
               <property name="rightMargin">
-               <number>10</number>
+               <number>0</number>
               </property>
               <property name="bottomMargin">
                <number>10</number>
@@ -1039,13 +1039,13 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_4">
       <property name="leftMargin">
-       <number>9</number>
+       <number>0</number>
       </property>
       <property name="topMargin">
        <number>0</number>
       </property>
       <property name="rightMargin">
-       <number>9</number>
+       <number>0</number>
       </property>
       <property name="bottomMargin">
        <number>0</number>
@@ -1078,6 +1078,9 @@
           </sizepolicy>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_5">
+          <property name="spacing">
+           <number>0</number>
+          </property>
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -1091,6 +1094,13 @@
            <number>0</number>
           </property>
           <item>
+           <widget class="QLabel" name="identification_log_header">
+            <property name="text">
+             <string>Recognition Log</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QTextEdit" name="identification_log_edit"/>
           </item>
          </layout>
@@ -1102,7 +1112,10 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_config_log">
+          <property name="spacing">
+           <number>0</number>
+          </property>
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -1115,6 +1128,13 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <widget class="QLabel" name="config_log_header">
+            <property name="text">
+             <string>Config Log</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QTextEdit" name="config_log_edit"/>
           </item>

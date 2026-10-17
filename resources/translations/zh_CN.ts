@@ -1319,6 +1319,16 @@
         <source>更新失败</source>
         <translation type="unfinished">更新失败</translation>
     </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="1094"/>
+        <source>Recognition Log</source>
+        <translation type="unfinished">识别日志</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="1119"/>
+        <source>Config Log</source>
+        <translation type="unfinished">配置日志</translation>
+    </message>
 </context>
 <context>
     <name>ModelInfoDelegate</name>
