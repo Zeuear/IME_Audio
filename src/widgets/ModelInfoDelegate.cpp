@@ -71,10 +71,13 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         bg.setAlpha(selected ? 40 : 16);
         p->fillRect(opt.rect, bg);
     }
-    QColor line = pal.color(QPalette::Mid);
-    line.setAlpha(110);
-    p->setPen(line);
-    p->drawLine(opt.rect.bottomLeft(), opt.rect.bottomRight());
+    // 最后一行下方就是卡片边框，不再画分隔线
+    if (index.row() < index.model()->rowCount() - 1) {
+        QColor line = pal.color(QPalette::Text);
+        line.setAlpha(28);
+        p->setPen(line);
+        p->drawLine(opt.rect.bottomLeft(), opt.rect.bottomRight());
+    }
 
     const Columns c = columns(opt.rect);
 

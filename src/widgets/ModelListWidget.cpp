@@ -4,21 +4,54 @@
 #include <QEvent>
 #include <QListView>
 #include <QPainter>
+#include <QPainterPath>
+#include <QResizeEvent>
 #include <QVBoxLayout>
 
 namespace {
-// 表头：列标题与行共用 ModelInfoDelegate::columns，保证对齐
+constexpr int kCardRadius = 8;
+
+QColor headerColor(const QPalette& pal)
+{
+    // 表头比行底色向文字色偏一点，深浅主题都只是轻微区分
+    const QColor base = pal.color(QPalette::Base);
+    const QColor text = pal.color(QPalette::Text);
+    constexpr double k = 0.07;
+    return QColor::fromRgbF(base.redF() + (text.redF() - base.redF()) * k,
+                            base.greenF() + (text.greenF() - base.greenF()) * k,
+                            base.blueF() + (text.blueF() - base.blueF()) * k);
+}
+
+QColor borderColor(const QPalette& pal)
+{
+    // 取文字色的淡色：QSS 主题下 Mid 的深浅不稳定，边框容易过重
+    QColor c = pal.color(QPalette::Text);
+    c.setAlpha(38);
+    return c;
+}
+
+// 表头：列标题与行共用 ModelInfoDelegate::columns，保证对齐；作为卡片的第一行，上方两角随卡片圆角
 class HeaderBar : public QWidget {
 public:
-    explicit HeaderBar(QWidget* parent) : QWidget(parent) { setFixedHeight(26); }
+    explicit HeaderBar(QWidget* parent) : QWidget(parent) { setFixedHeight(34); }
 
 protected:
     void paintEvent(QPaintEvent*) override
     {
         QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        QPainterPath bg;
+        const QRectF r = QRectF(rect()).adjusted(0.5, 0.5, -0.5, 0);
+        bg.addRoundedRect(r.adjusted(0, 0, 0, kCardRadius), kCardRadius, kCardRadius);
+        p.setClipRect(rect());
+        p.fillPath(bg, headerColor(palette()));
+        p.setPen(borderColor(palette()));
+        p.drawLine(QPointF(0, height() - 0.5), QPointF(width(), height() - 0.5));
+
         QFont f = font();
-        f.setPointSizeF(f.pointSizeF() * 0.85);
+        f.setPointSizeF(f.pointSizeF() * 0.82);
         f.setBold(true);
+        f.setLetterSpacing(QFont::AbsoluteSpacing, 0.8);
         p.setFont(f);
         p.setPen(palette().color(QPalette::PlaceholderText));
         const auto c = ModelInfoDelegate::columns(rect());
@@ -39,9 +72,10 @@ ModelListWidget::ModelListWidget(QWidget* parent)
 
 void ModelListWidget::setupUi()
 {
+    // 表头 + 列表画在同一张圆角卡片里；1px 边距留给卡片边框
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
+    layout->setContentsMargins(1, 1, 1, 1);
+    layout->setSpacing(0);
 
     m_model = new ModelInfoModel(this);
     m_list = new QListView(this);
@@ -54,6 +88,7 @@ void ModelListWidget::setupUi()
     // 行数不多，整表展开，由外层页面滚动，避免嵌套滚动条
     m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_list->setFrameShape(QFrame::NoFrame);
 
     m_header = new HeaderBar(this);
     layout->addWidget(m_header);
@@ -112,4 +147,24 @@ void ModelListWidget::fitHeight()
 {
     const int rowH = m_model->rowCount() > 0 ? m_list->sizeHintForRow(0) : 0;
     m_list->setFixedHeight(rowH * m_model->rowCount() + 2 * m_list->frameWidth());
+}
+
+void ModelListWidget::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+    const QRectF card = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+    p.setPen(borderColor(palette()));
+    p.setBrush(palette().color(QPalette::Base));
+    p.drawRoundedRect(card, kCardRadius, kCardRadius);
+}
+
+void ModelListWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    // 列表是方角的，最后一行的选中底色会盖住卡片下方圆角：按卡片圆角裁掉列表底部两角
+    QPainterPath path;
+    const QRect r = m_list->rect();
+    path.addRoundedRect(QRectF(r).adjusted(0, -kCardRadius, 0, 0), kCardRadius - 1, kCardRadius - 1);
+    m_list->setMask(QRegion(path.toFillPolygon().toPolygon()));
 }

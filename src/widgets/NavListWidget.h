@@ -20,6 +20,9 @@ public:
     void setIndicatorState(IndicatorState state);
     IndicatorState indicatorState() const { return m_state; }
 
+    void setActive(bool active);   // 是否为当前页
+    int preferredWidth() const;
+
 private:
     QLabel* m_iconLabel = nullptr;
     QLabel* m_textLabel = nullptr;

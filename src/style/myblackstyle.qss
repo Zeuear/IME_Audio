@@ -686,8 +686,15 @@ QFrame[frameShape="HLine"] {
 }
 
 /* 选中的条目样式 (QListWidget 的 item 选中状态) */
-QListWidget::item:selected {
-    background-color: rgba(255, 255, 255, 0.1);
+#nav_list_widget::item {
+    border-radius: 6px;
+    margin: 3px 0px;
+}
+#nav_list_widget::item:selected {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+#nav_list_widget::item:hover:!selected {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* 导航条目整体 (NavListItemWidget) */
@@ -705,14 +712,20 @@ QListWidget::item:selected {
     font-size: 16px;
 }
 #navItemText {
-    color: #e5e5e7;
-    font-size: 10px;
+    color: #a1a1a6;
+    font-size: 11px;
+}
+#navItemText[active="true"] {
+    color: #f0f0f2;
 }
 
 /* 指示灯 (Indicator Dot) */
 #navItemIndicator {
-    border-radius: 4px;
-    background-color: #3a3a3c; /* 默认灰色 */
+    border-radius: 3px;
+    background-color: #4a4a4e;
+}
+#navItemIndicator[active="true"] {
+    background-color: #32d74b;
 }
 #navItemIndicator[indicatorColor="yellow"] {
     background-color: #ffcc00; /* 下载中 */
@@ -735,4 +748,17 @@ QListWidget::item:selected {
     background-color: #2a2b30;
     border: 1px solid #2a2b30;
     border-radius: 12px;
+}
+
+/* ==========================================================================
+   ModelListWidget：自绘的圆角卡片（表头 + 行）
+   ========================================================================== */
+/* 去掉上面全局 QListView 的边框与底色，否则会在卡片里再套一层框 */
+ModelListWidget QListView {
+    background: transparent;
+    border: none;
+}
+/* 卡片底色，与全局 QListView 一致，比页面底色略深 */
+ModelListWidget {
+    background-color: rgb(45, 45, 45);
 }

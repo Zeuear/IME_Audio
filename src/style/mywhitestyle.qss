@@ -657,8 +657,15 @@ QWidget#download_list_viewport {
     background-color: #ffffff;
 }
 
-QListWidget::item:selected {
+#nav_list_widget::item {
+    border-radius: 6px;
+    margin: 3px 0px;
+}
+#nav_list_widget::item:selected {
     background-color: #f2f2f7;
+}
+#nav_list_widget::item:hover:!selected {
+    background-color: #f7f7fa;
 }
 
 #navItemContainer {
@@ -673,21 +680,38 @@ QListWidget::item:selected {
     color: #8e8e93;
 }
 #navItemText {
+    color: #6e6e73;
+    font-size: 11px;
+}
+#navItemText[active="true"] {
     color: #000000;
 }
 
 #navItemIndicator {
+    border-radius: 3px;
     background-color: #d1d1d6;
 }
+#navItemIndicator[active="true"] {
+    background-color: #34c759;
+}
 #navItemIndicator[indicatorColor="yellow"] {
-    background-color: #ffcc00;
+    background-color: #ffcc00; /* 下载中 */
 }
 #navItemIndicator[indicatorColor="green"] {
-    background-color: #34c759;
+    background-color: #34c759; /* 已完成 */
 }
 
 #shortcut_edit{
     background-color:#e0e0e2;
     border: 1px solid #e0e0e2;
     border-radius: 12px;
+}
+
+/* ==========================================================================
+   ModelListWidget：自绘的圆角卡片（表头 + 行）
+   ========================================================================== */
+/* 去掉上面全局 QListView 的边框与底色，否则会在卡片里再套一层框 */
+ModelListWidget QListView {
+    background: transparent;
+    border: none;
 }
