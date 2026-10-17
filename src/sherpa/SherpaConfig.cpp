@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QCoreApplication>
 #include <QDir>
+#include <QHash>
 #include <QDebug>
 #include <QtConcurrent> 
 #include "../cuda/CudaPlatformSpec.h"
@@ -363,6 +364,43 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildCanary(
     return config;
 }
 
+// FireRedASR2 CTC（单文件）
+sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFireRedAsrCtc(
+    const QString& repoId, const QString& modelFile, int numThreads)
+{
+    sherpa_onnx::cxx::OfflineRecognizerConfig config;
+    config.model_config.tokens = getTokensPath(repoId).toStdString();
+    config.model_config.fire_red_asr_ctc.model = getModelPath(repoId, "", modelFile).toStdString();
+    config.model_config.num_threads = numThreads;
+    return config;
+}
+
+// Cohere Transcribe：encoder 的外部权重 .data 由 onnxruntime 按 .onnx 所在目录自动加载，这里不用传
+sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildCohereTranscribe(
+    const QString& repoId, const CohereTranscribeFiles& files, const QString& languageCode, int numThreads)
+{
+    sherpa_onnx::cxx::OfflineRecognizerConfig config;
+    config.model_config.tokens = getModelPath(repoId, "", files.tokensFile).toStdString();
+    config.model_config.cohere_transcribe.encoder = getModelPath(repoId, "", files.encoderFile).toStdString();
+    config.model_config.cohere_transcribe.decoder = getModelPath(repoId, "", files.decoderFile).toStdString();
+    config.model_config.cohere_transcribe.language = languageCode.toStdString();
+    config.model_config.cohere_transcribe.use_punct = files.usePunct;
+    config.model_config.cohere_transcribe.use_itn = files.useItn;
+    config.model_config.num_threads = numThreads;
+    return config;
+}
+
+QString ModelConfigFactory::cohereLanguageCode(const QString& languageName)
+{
+    // 与 tools/asr_bench/langs.py 的 COHERE_LANGS 一致
+    static const QHash<QString, QString> codes = {
+        {"English", "en"}, {"French", "fr"}, {"German", "de"}, {"Italian", "it"}, {"Spanish", "es"},
+        {"Portuguese", "pt"}, {"Greek", "el"}, {"Dutch", "nl"}, {"Polish", "pl"}, {"Chinese", "zh"},
+        {"Japanese", "ja"}, {"Korean", "ko"}, {"Vietnamese", "vi"}, {"Arabic", "ar"},
+    };
+    return codes.value(languageName);
+}
+
 
 // 多个语言表共用的多语言模型
 namespace {
@@ -392,6 +430,11 @@ const std::pair<QString, ModelDescriptor> kWhisperBase =
 const std::pair<QString, ModelDescriptor> kOmnilingual300M =
     {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (small)"}};
+// 2026 新增：在 tools/asr_bench 测出分数前先放在各表末尾。
+// FireRedASR2 CTC 已测（中文 90.2 / RTF 0.58，粤语 92.3 / 0.66），准确度与速度都不如现有模型，未列入
+// 约 2.9 GB，CPU 上偏慢，更适合文件转录；必须指定语种，没有自动识别
+const std::pair<QString, ModelDescriptor> kCohereTranscribe =
+    {"csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01", {ModelArch::CohereTranscribe}};
 const std::pair<QString, ModelDescriptor> kOmnilingual1B =
     {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12",
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (base)"}};
@@ -427,6 +470,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
         kOmnilingual1B,
         kOmnilingual300M,
         kWhisperBase,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -462,6 +506,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EnglishModels() {
         kOmnilingual1B,
         kOmnilingual300M,
         kWhisperBase,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -592,6 +637,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& JapaneseModels() {
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -606,6 +652,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& KoreanModels() {
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -648,6 +695,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& VietnameseModels() {
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -679,6 +727,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArabicModels() {
         kOmnilingual1B,
         kOmnilingual300M,
         kWhisperBase,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -696,6 +745,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& GermanModels() {
         kNemoFastConformer10Lang,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -762,6 +812,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& FrenchModels() {
         kNemoFastConformer10Lang,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -777,6 +828,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& SpanishModels() {
         kNemoFastConformer10Lang,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -795,6 +847,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& PortugueseBrazilianModel
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -808,6 +861,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ItalianModels() {
         kWhisperBase,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -833,6 +887,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& PolishModels() {
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -846,6 +901,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& DutchModels() {
         kFunasrNano,
         kOmnilingual1B,
         kOmnilingual300M,
+        kCohereTranscribe,
     };
     return table;
 }
@@ -928,6 +984,16 @@ const std::vector<std::pair<QString, ModelDescriptor>>& EuropeanMultiModels() {
         kOmnilingual300M,
         kWhisperBase,
     };
+    return table;
+}
+
+// 希腊语：欧洲多语言模型 + Cohere（Cohere 不支持共用该表的其它语种）
+const std::vector<std::pair<QString, ModelDescriptor>>& GreekModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = [] {
+        auto t = EuropeanMultiModels();
+        t.push_back(kCohereTranscribe);
+        return t;
+    }();
     return table;
 }
 
@@ -1025,7 +1091,7 @@ const QVector<ModelRegistry::LanguageTableEntry>& LanguageTables() {
         {"Czech",                  &EuropeanMultiModels},
         {"Welsh",                  &WhisperOmniModels},
         {"Danish",                 &EuropeanMultiModels},
-        {"Greek",                  &EuropeanMultiModels},
+        {"Greek",                  &GreekModels},
         {"Estonian",               &EuropeanMultiModels},
         {"Basque",                 &WhisperOmniModels},
         {"Persian",                &WhisperOmniModels},
@@ -1104,6 +1170,7 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
                 d.language = entry.languageName;   
                 if (d.arch == ModelArch::SenseVoice || 
                     d.arch == ModelArch::Canary || 
+                    d.arch == ModelArch::CohereTranscribe ||
                     d.arch == ModelArch::Qwen3Asr ||
                     d.arch == ModelArch::Whisper ||
                     d.arch == ModelArch::FunasrNano ||
@@ -1376,6 +1443,25 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         result.kind = RecognizerKind::Offline;
         break;
     }
+    case ModelArch::FireRedAsrCtc: {
+        auto files = std::get<SingleFileModelFiles>(desc->files);
+        configVar = ModelConfigFactory::buildFireRedAsrCtc(repoId, files.modelFile, numThreads);
+        result.kind = RecognizerKind::Offline;
+        break;
+    }
+    case ModelArch::CohereTranscribe: {
+        // 语种取当前选中的语言：同一仓库在多个语言表里共用一个描述符，不能写死在表里
+        const QString languageName = ConfigManager::instance().config().sherpa.languageModel;
+        const QString code = ModelConfigFactory::cohereLanguageCode(languageName);
+        if (code.isEmpty()) {
+            LOG_WARN(QString("Cohere Transcribe does not support language '%1': repo=%2").arg(languageName, repoId));
+            return result;
+        }
+        configVar = ModelConfigFactory::buildCohereTranscribe(
+            repoId, std::get<CohereTranscribeFiles>(desc->files), code, numThreads);
+        result.kind = RecognizerKind::Offline;
+        break;
+    }
     case ModelArch::Qwen3Asr: {
         auto files = std::get<Qwen3AsrFiles>(desc->files);
 
@@ -1520,7 +1606,8 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
     case ModelArch::TeleSpeechCtc:
     case ModelArch::WenetCtcOffline:
     case ModelArch::OmnilingualAsr:
-    case ModelArch::TOneCtcStreaming: {
+    case ModelArch::TOneCtcStreaming:
+    case ModelArch::FireRedAsrCtc: {
         auto files = safeGet(SingleFileModelFiles{});
         addFile("", files.tokensFile);
         addFile("", files.modelFile);
@@ -1585,6 +1672,15 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
         addFile(files.tokenizerSubfolder, files.tokenizerJsonFile);
         addFile(files.tokenizerSubfolder, files.mergesFile);
         addFile(files.tokenizerSubfolder, files.vocabFile);
+        break;
+    }
+
+    case ModelArch::CohereTranscribe: {
+        auto files = safeGet(CohereTranscribeFiles{});
+        addFile("", files.tokensFile);
+        addFile("", files.encoderFile);
+        addFile("", files.encoderDataFile);
+        addFile("", files.decoderFile);
         break;
     }
 

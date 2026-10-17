@@ -267,10 +267,15 @@ def run_model(key: str, pairs: list[str], failures: list, rtf_only: int = 0) -> 
         return
     try:
         t0 = time.perf_counter()
-        rec, online = create_recognizer(key, root)
+        rec, online = create_recognizer(key, root, todo[0])
         load_s = time.perf_counter() - t0
         print(f"[{key}] loaded in {load_s:.1f}s")
         for lang in todo:
+            # Cohere 的语种在构建时固定，换语种要重建（软件里切换语言同样会重载模型）
+            if MODELS[key].arch == "cohere" and lang != todo[0]:
+                rec = None
+                gc.collect()
+                rec, online = create_recognizer(key, root, lang)
             if rtf_only:
                 remeasure_rtf(lang, key, rec, online, rtf_only)
             else:

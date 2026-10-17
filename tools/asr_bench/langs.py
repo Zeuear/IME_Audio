@@ -155,6 +155,15 @@ LANGS: dict[str, Lang] = {
 }
 
 
+# 2026 新模型追加到各语种（与 SherpaConfig.cpp 中的语言表一致）
+for _name in ("Chinese", "Cantonese"):
+    LANGS[_name].models.append("fire-red-asr2-ctc")
+for _name in ("English", "French", "German", "Italian", "Spanish", "Portuguese", "Greek", "Dutch", "Polish",
+              "Chinese", "Japanese", "Korean", "Vietnamese", "Arabic"):
+    LANGS[_name].models.append("cohere-transcribe")
+LANGS["English"].models.append("moonshine-v2-en")
+
+
 # 测过但没放进软件对应语言表的组合（得分 < 50 且有更好选择，或有缺陷），不导出到 model_benchmarks.json
 NOT_IN_APP: set[tuple[str, str]] = {
     ("English", "zipformer-multi-zh-en"),
@@ -303,6 +312,20 @@ MODELS: dict[str, Model] = {
     "shenava-koochik-fa": Model("mah92/sherpa-onnx-nemo-ctc-fa-shenava-koochik-v1.0-non-streaming-int8-2026-06-26", "nemo_ctc",
                                 _CTC_INT8, 2, "Shenava Koochik fa", in_app=False),
     "whisper-small": Model("csukuangfj/sherpa-onnx-whisper-small", "whisper", _w("small"), 2, "Whisper small"),
+    # ---- 2026 新模型 ----
+    # FireRedASR2 CTC：中英 + 20 多种方言，单文件 CTC
+    "fire-red-asr2-ctc": Model("csukuangfj2/sherpa-onnx-fire-red-asr2-ctc-zh_en-int8-2026-02-25", "fire_red_ctc",
+                               _CTC_INT8, 4, "FireRedASR2 CTC", in_app=False),
+    # Cohere Transcribe 2B：14 种语言，必须指定语言（按 COHERE_LANGS 传入，与软件按当前语言传入一致）；
+    # encoder 权重在 encoder.int8.onnx.data，与 .onnx 同目录即可
+    "cohere-transcribe": Model("csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01", "cohere",
+                               {"encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx", "tokens": "tokens.txt"},
+                               4, "Cohere Transcribe 2B"),
+    # Moonshine v2：sherpa-onnx 对超过约 9.5 秒的音频直接返回空结果（en/uk 实测一致），
+    # 9 秒以内的英文 WER 9.6% 也不如现有 Moonshine v1（8.8%），不进软件，只留作对照
+    "moonshine-v2-en": Model("csukuangfj2/sherpa-onnx-moonshine-base-en-quantized-2026-02-27", "moonshine_v2",
+                             {"encoder": "encoder_model.ort", "decoder": "decoder_model_merged.ort", "tokens": "tokens.txt"},
+                             4, "Moonshine v2 base en", in_app=False),
     # 软件的 "1600+ languages" 分组里已有
     "omnilingual-300m": Model("csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
                               "omnilingual", _CTC_INT8, 4, "Omnilingual 300M"),
@@ -311,8 +334,17 @@ MODELS: dict[str, Model] = {
 }
 
 
-def create_recognizer(key: str, models_root):
-    """按 ModelRegistry::GetConfig 的参数构建识别器（CPU）。返回 (recognizer, is_online)。"""
+# Cohere Transcribe 支持的语种 -> 语言代码（与 SherpaConfig.cpp 的 cohereLanguageCode 一致）
+COHERE_LANGS: dict[str, str] = {
+    "English": "en", "French": "fr", "German": "de", "Italian": "it", "Spanish": "es", "Portuguese": "pt",
+    "Greek": "el", "Dutch": "nl", "Polish": "pl", "Chinese": "zh", "Japanese": "ja", "Korean": "ko",
+    "Vietnamese": "vi", "Arabic": "ar",
+}
+
+
+def create_recognizer(key: str, models_root, language: str = ""):
+    """按 ModelRegistry::GetConfig 的参数构建识别器（CPU）。返回 (recognizer, is_online)。
+    language 只对需要指定语种的模型（Cohere）有效，传软件语言名。"""
     import sherpa_onnx as so
 
     m = MODELS[key]
@@ -352,6 +384,11 @@ def create_recognizer(key: str, models_root):
         return R.from_moonshine_v2(encoder=f["encoder"], decoder=f["decoder"], tokens=f["tokens"], num_threads=t), False
     if m.arch == "fire_red":
         return R.from_fire_red_asr(encoder=f["encoder"], decoder=f["decoder"], tokens=f["tokens"], num_threads=t), False
+    if m.arch == "fire_red_ctc":
+        return R.from_fire_red_asr_ctc(model=f["model"], tokens=f["tokens"], num_threads=t), False
+    if m.arch == "cohere":
+        return R.from_cohere_transcribe(encoder=f["encoder"], decoder=f["decoder"], tokens=f["tokens"],
+                                        language=COHERE_LANGS[language], num_threads=t), False
     if m.arch == "qwen3":
         return R.from_qwen3_asr(conv_frontend=f["conv_frontend"], encoder=f["encoder"], decoder=f["decoder"],
                                 tokenizer=f["tokenizer"], num_threads=t), False

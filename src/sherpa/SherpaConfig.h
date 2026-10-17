@@ -33,6 +33,8 @@ enum class ModelArch {
     FunasrNano,
     Qwen3Asr,
     Canary,
+    FireRedAsrCtc,
+    CohereTranscribe,
     Unsupported
 };
 
@@ -122,9 +124,19 @@ struct CanaryFiles {
     bool usePnc = true;      
 };
 
+// 语种不在这里：同一仓库出现在多个语言表里，按当前选中的语言在加载时传入
+struct CohereTranscribeFiles {
+    QString encoderFile = "encoder.int8.onnx";
+    QString encoderDataFile = "encoder.int8.onnx.data";   // encoder 的外部权重（约 2.7 GB），须与 .onnx 同目录
+    QString decoderFile = "decoder.int8.onnx";
+    QString tokensFile = "tokens.txt";
+    bool usePunct = true;
+    bool useItn = true;
+};
+
 using ModelFiles = std::variant<SingleFileModelFiles, TransducerFiles, SenseVoiceFiles,
     ParaformerStreamingFiles, WhisperFiles, MoonshineFiles, FireRedAsrFiles,
-    FunasrFiles, Qwen3AsrFiles, CanaryFiles>;
+    FunasrFiles, Qwen3AsrFiles, CanaryFiles, CohereTranscribeFiles>;
 
 
 
@@ -177,6 +189,9 @@ struct ModelDescriptor {
         case ModelArch::TOneCtcStreaming:
             return SingleFileModelFiles{};
 
+        case ModelArch::FireRedAsrCtc:
+            return SingleFileModelFiles{.modelFile = "model.int8.onnx"};
+
         case ModelArch::FireRedAsr:
             return FireRedAsrFiles{};
 
@@ -197,6 +212,9 @@ struct ModelDescriptor {
 
         case ModelArch::Canary:               
             return CanaryFiles{};
+
+        case ModelArch::CohereTranscribe:
+            return CohereTranscribeFiles{};
 
         case ModelArch::Qwen3Asr:
             return Qwen3AsrFiles{
@@ -235,6 +253,8 @@ struct ModelDescriptor {
             case ModelArch::FunasrNano:          return "FunASR Nano (2025)";
             case ModelArch::Qwen3Asr:            return "Qwen3-ASR (大语言声学模型)";
             case ModelArch::Canary:              return "Canary";
+            case ModelArch::FireRedAsrCtc:       return "FireRed ASR2 CTC (中英/方言)";
+            case ModelArch::CohereTranscribe:    return "Cohere Transcribe (14 语种)";
             default:                             return "Unknown";
             }
     }
@@ -324,6 +344,21 @@ public:
         const QString& repoId,
         const CanaryFiles& files,
         int numThreads);
+
+    static sherpa_onnx::cxx::OfflineRecognizerConfig buildFireRedAsrCtc(
+        const QString& repoId,
+        const QString& modelFile,
+        int numThreads);
+
+    // languageCode 为 Cohere 的语言代码（"zh"、"en" …），由 cohereLanguageCode() 从软件语言名换算
+    static sherpa_onnx::cxx::OfflineRecognizerConfig buildCohereTranscribe(
+        const QString& repoId,
+        const CohereTranscribeFiles& files,
+        const QString& languageCode,
+        int numThreads);
+
+    // 软件语言名（如 "Chinese"）→ Cohere 语言代码；不支持的语种返回空串
+    static QString cohereLanguageCode(const QString& languageName);
 
 };
 
