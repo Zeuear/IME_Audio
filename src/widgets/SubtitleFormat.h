@@ -23,6 +23,27 @@ inline QString formatSrtTime(qint64 ms)
         .arg(milli, 3, 10, QLatin1Char('0'));
 }
 
+// 预览用时间戳 hh:mm:ss.mmm，与 SRT 只差毫秒分隔符，便于和导出的字幕对照
+inline QString formatPreviewTime(qint64 ms)
+{
+    QString t = formatSrtTime(ms);
+    t[t.size() - 4] = QLatin1Char('.');
+    return t;
+}
+
+// 每段一行、行首带起止时间，只用于界面预览；导出 txt 仍是不带时间戳的纯文本
+inline QString buildTimestampedText(const QList<SubtitleCue>& cues)
+{
+    QStringList out;
+    for (const SubtitleCue& cue : cues) {
+        const QString text = cue.text.trimmed();
+        if (text.isEmpty()) continue;
+        const qint64 end = cue.endMs > cue.startMs ? cue.endMs : cue.startMs;
+        out << QStringLiteral("[%1 --> %2] %3").arg(formatPreviewTime(cue.startMs), formatPreviewTime(end), text);
+    }
+    return out.join(QLatin1Char('\n'));
+}
+
 inline QString buildSrt(const QList<SubtitleCue>& cues)
 {
     QString out;

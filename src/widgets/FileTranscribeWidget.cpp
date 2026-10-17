@@ -313,7 +313,8 @@ void FileTranscribeWidget::updatePreview()
 
     const FileTask& t = m_model->task(idx.row());
     m_previewTitle->setText(QFileInfo(t.path).fileName());
-    const QString text = t.state == FileTask::State::Failed ? t.error : t.text;
+    // 预览每行带时间戳便于对照音频；复制与导出 txt 用的是不带时间戳的 t.text
+    const QString text = t.state == FileTask::State::Failed ? t.error : buildTimestampedText(t.cues);
     if (m_preview->toPlainText() != text) m_preview->setPlainText(text);
     m_copyBtn->setEnabled(!t.text.isEmpty());
 }

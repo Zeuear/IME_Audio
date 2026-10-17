@@ -45,3 +45,16 @@ TEST(SubtitleFormat, EndNeverEarlierThanStart) {
 TEST(SubtitleFormat, EmptyInputGivesEmptyOutput) {
     EXPECT_TRUE(buildSrt({}).isEmpty());
 }
+
+TEST(SubtitleFormat, PreviewTimeUsesDotForMilliseconds) {
+    EXPECT_EQ(formatPreviewTime(0), QString("00:00:00.000"));
+    EXPECT_EQ(formatPreviewTime(83500), QString("00:01:23.500"));
+    EXPECT_EQ(formatPreviewTime(3723004), QString("01:02:03.004"));
+    EXPECT_EQ(formatPreviewTime(100LL * 3600000), QString("100:00:00.000"));
+}
+
+TEST(SubtitleFormat, TimestampedTextShowsStartAndEndAndSkipsEmpty) {
+    const QList<SubtitleCue> cues = {{0, 1500, "你好"}, {1500, 2000, "  "}, {65000, 70250, "world"}};
+    EXPECT_EQ(buildTimestampedText(cues),
+              QString("[00:00:00.000 --> 00:00:01.500] 你好\n[00:01:05.000 --> 00:01:10.250] world"));
+}
