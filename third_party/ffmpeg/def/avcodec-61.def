@@ -1,0 +1,11 @@
+LIBRARY avcodec-61.dll
+EXPORTS
+    avcodec_alloc_context3
+    avcodec_free_context
+    avcodec_parameters_to_context
+    avcodec_open2
+    avcodec_send_packet
+    avcodec_receive_frame
+    av_packet_alloc
+    av_packet_free
+    av_packet_unref

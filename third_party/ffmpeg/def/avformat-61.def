@@ -1,0 +1,7 @@
+LIBRARY avformat-61.dll
+EXPORTS
+    avformat_open_input
+    avformat_find_stream_info
+    avformat_close_input
+    av_find_best_stream
+    av_read_frame

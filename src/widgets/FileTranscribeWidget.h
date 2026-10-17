@@ -3,7 +3,10 @@
 #include <QByteArray>
 #include <QList>
 #include <QFutureWatcher>
+#include <atomic>
+#include <memory>
 #include "FileTaskModel.h"
+#include "audio/AudioFileDecoder.h"
 
 class QAudioDecoder;
 class AnimatedCheckBox;
@@ -19,7 +22,8 @@ struct AppConfig;
 
 // @brief
 // 文件转录页：上半部分是文件卡片列表（拖入/选择添加），下半部分预览所选文件的转录文本。
-// 转录流程：解码为 16k 单声道 PCM → VAD 切段 → 逐段送入转录后端，按队列依次处理各文件。
+// 转录流程：解码为 16k 单声道 PCM（有 FFmpeg 时用 AudioFileDecoder，否则 QAudioDecoder）
+// → VAD 切段 → 逐段送入转录后端，按队列依次处理各文件。
 // 转录期间 TranscriptionService 处于文件模式，结果不会走听写工作流（不会被注入前台窗口）。
 class FileTranscribeWidget : public QWidget {
     Q_OBJECT
@@ -70,8 +74,11 @@ private:
     void fail(const QString& cause);
     void finishAll();
 
+    void startQtDecode();
     void onDecodeBuffer();
     void onDecodeFinished();
+    void onFileDecoded();
+    void startSegmenting();
     void onSegmentsReady();
     void transcribeNext();
     void onSegmentFinished(bool ok, const QString& rawText, const QString& finalText, const QString& err);
@@ -89,6 +96,9 @@ private:
     const AppConfig* m_config = nullptr;
 
     QAudioDecoder* m_decoder = nullptr;
+    QFutureWatcher<AudioFileDecoder::Result>* m_fileDecodeWatcher = nullptr;
+    // 每个文件一份：后台解码线程持有共享所有权，控件先销毁也不会读到悬空的标志
+    std::shared_ptr<std::atomic_bool> m_decodeCancel;
     QFutureWatcher<Segments>* m_vadWatcher = nullptr;
     QString m_vadError;
 

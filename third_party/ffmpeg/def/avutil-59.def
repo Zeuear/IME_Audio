@@ -1,0 +1,6 @@
+LIBRARY avutil-59.dll
+EXPORTS
+    av_strerror
+    av_frame_alloc
+    av_frame_free
+    av_frame_unref

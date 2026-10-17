@@ -407,6 +407,37 @@ void FileTranscribeWidget::startNextFile()
     m_statusLabel->setText(tr("Processing file %1/%2").arg(m_fileDone + 1).arg(m_fileTotal));
     m_list->scrollTo(m_model->index(m_currentRow));
 
+    if (!AudioFileDecoder::isAvailable()) {
+        startQtDecode();
+        return;
+    }
+
+    if (!m_fileDecodeWatcher) {
+        m_fileDecodeWatcher = new QFutureWatcher<AudioFileDecoder::Result>(this);
+        connect(m_fileDecodeWatcher, &QFutureWatcher<AudioFileDecoder::Result>::finished,
+                this, &FileTranscribeWidget::onFileDecoded);
+    }
+    m_decodeCancel = std::make_shared<std::atomic_bool>(false);
+    const QString path = m_path;
+    const auto cancelFlag = m_decodeCancel;
+    m_fileDecodeWatcher->setFuture(QtConcurrent::run([path, cancelFlag]() {
+        return AudioFileDecoder::decode(path, kSampleRate, cancelFlag.get());
+    }));
+}
+
+void FileTranscribeWidget::onFileDecoded()
+{
+    // 取消或失败后 finishFile 已经收尾；这里收到的是被放弃的那次解码，直接丢弃
+    if (!m_fileActive) return;
+    AudioFileDecoder::Result r = m_fileDecodeWatcher->result();
+    if (m_cancelled) { finishFile(FileTask::State::Pending); return; }
+    if (!r.error.isEmpty()) { fail(r.error); return; }
+    m_pcm = std::move(r.pcm);
+    startSegmenting();
+}
+
+void FileTranscribeWidget::startQtDecode()
+{
     // 每个文件新建解码器：复用同一个 QAudioDecoder 时，第二个文件起会立刻 finished 且没有任何数据
     if (m_decoder) {
         m_decoder->disconnect(this);
@@ -452,7 +483,11 @@ void FileTranscribeWidget::onDecodeFinished()
         fail(tr("No audio data decoded"));
         return;
     }
+    startSegmenting();
+}
 
+void FileTranscribeWidget::startSegmenting()
+{
     if (!m_vadWatcher) {
         m_vadWatcher = new QFutureWatcher<Segments>(this);
         connect(m_vadWatcher, &QFutureWatcher<Segments>::finished,
@@ -613,6 +648,9 @@ void FileTranscribeWidget::cancel()
     if (m_decoder && m_decoder->isDecoding()) {
         m_decoder->stop();
         finishFile(FileTask::State::Pending);
+    } else if (m_fileDecodeWatcher && m_fileDecodeWatcher->isRunning()) {
+        // 不等后台解码返回：finishFile 会置取消标志，解码线程在下一个包处退出，结果被 onFileDecoded 丢弃
+        finishFile(FileTask::State::Pending);
     }
     // 其余阶段在当前步骤完成后由 transcribeNext / onSegmentsReady 检查标志退出
 }
@@ -622,6 +660,7 @@ void FileTranscribeWidget::finishFile(FileTask::State state, const QString& erro
     if (!m_fileActive) return;
     m_fileActive = false;
     if (m_decoder && m_decoder->isDecoding()) m_decoder->stop();
+    if (m_decodeCancel) *m_decodeCancel = true;
 
     m_waitingSegment = false;
     m_pcm.clear();

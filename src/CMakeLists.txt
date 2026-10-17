@@ -236,6 +236,34 @@ set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
 target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
 target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
+# ============================================================
+# FFmpeg：文件转录直接解码（仅 Windows，见 third_party/ffmpeg/README.md）
+# ============================================================
+# 运行时复用 Qt Multimedia 自带、由 windeployqt 部署的 FFmpeg DLL；仓库里只有头文件和 .def，
+# 导入库在构建时用 lib.exe 生成，名字必须与 Qt 自带的 DLL 一致。
+if(MSVC)
+    set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/third_party/ffmpeg")
+    set(_ffmpeg_import_dir "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg")
+    set(_ffmpeg_import_libs)
+    foreach(_dll avformat-61 avcodec-61 avutil-59 swresample-5)
+        set(_def "${FFMPEG_ROOT}/def/${_dll}.def")
+        set(_lib "${_ffmpeg_import_dir}/${_dll}.lib")
+        add_custom_command(OUTPUT "${_lib}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_ffmpeg_import_dir}"
+            COMMAND "${CMAKE_AR}" /nologo /machine:x64 "/def:${_def}" "/out:${_lib}"
+            DEPENDS "${_def}"
+            COMMENT "Generating FFmpeg import library ${_dll}.lib"
+            VERBATIM)
+        list(APPEND _ffmpeg_import_libs "${_lib}")
+    endforeach()
+    add_custom_target(ffmpeg_import_libs DEPENDS ${_ffmpeg_import_libs})
+    add_dependencies(${TARGET_NAME} ffmpeg_import_libs)
+
+    target_include_directories(${TARGET_NAME} PRIVATE "${FFMPEG_ROOT}/include")
+    target_link_libraries(${TARGET_NAME} PRIVATE ${_ffmpeg_import_libs})
+    target_compile_definitions(${TARGET_NAME} PRIVATE IMEAUDIO_HAS_FFMPEG)
+endif()
+
 # 官方预编译的 sherpa-onnx Linux 静态库是用 libstdc++ 旧 ABI 编译的，cxx-api 里凡是把
 # std::string 直接摆上函数签名的调用（如 OfflinePunctuation::AddPunctuation）都会因为
 # 符号名不匹配导致链接期 undefined reference。这里不整体切换本 target 的 ABI（风险大、

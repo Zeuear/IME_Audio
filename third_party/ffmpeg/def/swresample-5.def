@@ -1,0 +1,7 @@
+LIBRARY swresample-5.dll
+EXPORTS
+    swr_alloc_set_opts2
+    swr_init
+    swr_free
+    swr_get_out_samples
+    swr_convert
