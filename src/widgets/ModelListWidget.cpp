@@ -16,7 +16,7 @@ QColor headerColor(const QPalette& pal)
     // 表头比行底色向文字色偏一点，深浅主题都只是轻微区分
     const QColor base = pal.color(QPalette::Base);
     const QColor text = pal.color(QPalette::Text);
-    constexpr double k = 0.07;
+    constexpr double k = -0.07;
     return QColor::fromRgbF(base.redF() + (text.redF() - base.redF()) * k,
                             base.greenF() + (text.greenF() - base.greenF()) * k,
                             base.blueF() + (text.blueF() - base.blueF()) * k);
@@ -26,11 +26,10 @@ QColor borderColor(const QPalette& pal)
 {
     // 取文字色的淡色：QSS 主题下 Mid 的深浅不稳定，边框容易过重
     QColor c = pal.color(QPalette::Text);
-    c.setAlpha(38);
+    c.setAlpha(0);
     return c;
 }
 
-// 表头：列标题与行共用 ModelInfoDelegate::columns，保证对齐；作为卡片的第一行，上方两角随卡片圆角
 class HeaderBar : public QWidget {
 public:
     explicit HeaderBar(QWidget* parent) : QWidget(parent) { setFixedHeight(34); }
@@ -45,8 +44,6 @@ protected:
         bg.addRoundedRect(r.adjusted(0, 0, 0, kCardRadius), kCardRadius, kCardRadius);
         p.setClipRect(rect());
         p.fillPath(bg, headerColor(palette()));
-        p.setPen(borderColor(palette()));
-        p.drawLine(QPointF(0, height() - 0.5), QPointF(width(), height() - 0.5));
 
         QFont f = font();
         f.setPointSizeF(f.pointSizeF() * 0.82);
@@ -101,7 +98,6 @@ void ModelListWidget::setupUi()
     retranslateUi();
 }
 
-// 翻译器在 MainWin 构造之后才安装（readIni），构造时 tr 的文字必须在语言切换时重设
 void ModelListWidget::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::LanguageChange) {
@@ -112,7 +108,6 @@ void ModelListWidget::changeEvent(QEvent* event)
 
 void ModelListWidget::retranslateUi()
 {
-    // 表头与行内的“已安装/自带标点”在绘制时 tr，重绘即可刷新
     m_header->update();
     m_list->viewport()->update();
 }
@@ -155,14 +150,13 @@ void ModelListWidget::paintEvent(QPaintEvent*)
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF card = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
     p.setPen(borderColor(palette()));
-    p.setBrush(palette().color(QPalette::Base));
+    p.setBrush(headerColor(palette()));
     p.drawRoundedRect(card, kCardRadius, kCardRadius);
 }
 
 void ModelListWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    // 列表是方角的，最后一行的选中底色会盖住卡片下方圆角：按卡片圆角裁掉列表底部两角
     QPainterPath path;
     const QRect r = m_list->rect();
     path.addRoundedRect(QRectF(r).adjusted(0, -kCardRadius, 0, 0), kCardRadius - 1, kCardRadius - 1);

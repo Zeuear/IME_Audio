@@ -91,10 +91,6 @@ QLabel {
 QLabel:disabled {
     color: rgb(110,110,110);
 }
-/* 本地识别页的“语言模型”标签：卡片已贴边，标签自己留出左侧距离 */
-QLabel#label_9 {
-    padding-left: 10px;
-}
 
 /* ---------------- Button ---------------- */
 QPushButton {
@@ -602,8 +598,8 @@ QToolTip {
 }
 
 #gpu_backend_widget{
-    background-color:#504d4e54;
-    border: 1px solid #4d4e54;
+    background-color:#504d4d4d;
+    border: 1px solid #4d4d4d;
     border-radius: 12px;
 }
 

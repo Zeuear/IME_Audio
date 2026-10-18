@@ -91,10 +91,6 @@ QLabel {
 QLabel:disabled {
     color: rgb(120,120,120);
 }
-/* 本地识别页的“语言模型”标签：卡片已贴边，标签自己留出左侧距离 */
-QLabel#label_9 {
-    padding-left: 10px;
-}
 
 /* ---------------- Button ---------------- */
 QPushButton {
@@ -602,8 +598,8 @@ QToolTip {
 }
 
 #gpu_backend_widget{
-    background-color: #2a2b30;
-    border: 1px solid #2a2b30;
+    background-color: #2a2a2a;
+    border: 1px solid #2a2a2a;
     border-radius: 12px;
 }
 
@@ -773,8 +769,4 @@ QFrame[frameShape="HLine"] {
 ModelListWidget QListView {
     background: transparent;
     border: none;
-}
-/* 卡片底色，与全局 QListView 一致，比页面底色略深 */
-ModelListWidget {
-    background-color: rgb(45, 45, 45);
 }
