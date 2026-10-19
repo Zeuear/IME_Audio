@@ -319,7 +319,8 @@ MODELS: dict[str, Model] = {
     # Cohere Transcribe 2B：14 种语言，必须指定语言（按 COHERE_LANGS 传入，与软件按当前语言传入一致）；
     # encoder 权重在 encoder.int8.onnx.data，与 .onnx 同目录即可
     "cohere-transcribe": Model("csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01", "cohere",
-                               {"encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx", "tokens": "tokens.txt"},
+                               {"encoder": "encoder.int8.onnx", "encoder_data": "encoder.int8.onnx.data",
+                                "decoder": "decoder.int8.onnx", "tokens": "tokens.txt"},
                                4, "Cohere Transcribe 2B"),
     # Moonshine v2：sherpa-onnx 对超过约 9.5 秒的音频直接返回空结果（en/uk 实测一致），
     # 9 秒以内的英文 WER 9.6% 也不如现有 Moonshine v1（8.8%），不进软件，只留作对照

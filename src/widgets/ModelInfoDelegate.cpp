@@ -122,12 +122,11 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         p->setPen(pal.color(QPalette::Text));
         p->drawText(col.adjusted(kBarCount * 6 + 8, 0, 0, 0), Qt::AlignLeft | Qt::AlignVCenter, value);
     };
-    const double rtf = index.data(ModelInfoModel::RtfRole).toDouble();
+    // 两项都显示 1.0~5.0 的评分（一位小数），具体错误率和耗时放在悬停提示里
     drawMetric(c.accuracy, index.data(ModelInfoModel::AccuracyLevelRole).toInt(),
-               QString::number(index.data(ModelInfoModel::ScoreRole).toDouble(), 'f', 1));
-    // 速度用“比实时快多少倍”，比 RTF 更直观
+               QString::number(index.data(ModelInfoModel::AccuracyRatingRole).toDouble(), 'f', 1));
     drawMetric(c.speed, index.data(ModelInfoModel::SpeedLevelRole).toInt(),
-               rtf > 0 ? QStringLiteral("%1×").arg(qRound(1.0 / rtf)) : QString());
+               QString::number(index.data(ModelInfoModel::SpeedRatingRole).toDouble(), 'f', 1));
 
     // 特性：已安装（成功语义色）/ 自带标点
     QStringList features;

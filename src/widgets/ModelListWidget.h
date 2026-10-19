@@ -1,8 +1,8 @@
 #pragma once
+#include "ModelInfoModel.h"
 #include <QWidget>
 
 class QListView;
-class ModelInfoModel;
 
 // @brief
 // 本地识别页的模型列表：显示所选语言下各模型的准确度、速度与特性，点击即选中该模型。
@@ -29,8 +29,12 @@ private:
     void setupUi();
     void retranslateUi();
     void fitHeight();
+    void onHeaderSortClicked(ModelInfoModel::SortKey key);
+    void applySort();
 
     ModelInfoModel* m_model = nullptr;
     QWidget* m_header = nullptr;
     QListView* m_list = nullptr;
+    ModelInfoModel::SortKey m_sortKey = ModelInfoModel::SortKey::Default;
+    Qt::SortOrder m_sortOrder = Qt::DescendingOrder;
 };
