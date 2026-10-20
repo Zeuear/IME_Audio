@@ -445,9 +445,37 @@ void SherpaInstaller::ensurePunctModel(const QString& repoId)
     }
 }
 
+void SherpaInstaller::ensureStreamingModel(const QString& language)
+{
+    const QString repoId = ModelRegistry::StreamingModelFor(language);
+    if (repoId.isEmpty()) return;
+
+    if (isInstalled(repoId)) {
+        emit streamingModelReady(repoId);
+        return;
+    }
+    if (isInstalling(repoId)) return;
+
+    ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
+    if (manifest.files.empty()) {
+        LOG_WARN(QString("Live caption model has no files to download: %1").arg(repoId));
+        return;
+    }
+    LOG_INFO(QString("Downloading live caption model: %1").arg(repoId));
+    m_companionGroups.insert(repoId);
+    for (const auto& f : manifest.files) {
+        m_downloadManager->addGroupTask(repoId, manifest.displayName, f.sourceUrl, f.localPath);
+    }
+    emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
+}
+
 void SherpaInstaller::installModel(const QString& repoId)
 {
     ensurePunctModel(repoId);
+    {
+        const AppConfig& cfg = ConfigManager::instance().config();
+        if (cfg.liveCaptionEnabled.load()) ensureStreamingModel(cfg.sherpa.languageModel);
+    }
 
     QString repoName = repoId.split("/").last();
     QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
@@ -566,6 +594,18 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
                 emit installGroupFinished(puncGroup, ok, ok ? tr("Neural punctuation model ready") : tr("Neural punctuation decompression failed"));
             });
         m_extractQueue->addTask(task);
+        return;
+    }
+
+    if (m_companionGroups.contains(groupId)) {
+        m_companionGroups.remove(groupId);
+        if (!success) {
+            uninstallModel(groupId);
+            emit installGroupFinished(groupId, false, tr("Download Error"));
+            return;
+        }
+        emit installGroupFinished(groupId, true, tr("Download Complete"));
+        emit streamingModelReady(groupId);
         return;
     }
 

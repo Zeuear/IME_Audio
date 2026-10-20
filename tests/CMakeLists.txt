@@ -46,6 +46,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/live_caption_model_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -78,6 +79,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/interfaces/workflow_interfaces.h
     # 神经标点：SherpaPunctuator 封装 + SherpaConfig 的 shouldUseNeuralPunct 判定
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigManager.cpp
+    # 字幕内容模型是 Q_OBJECT 类，.h 也要交给 AUTOMOC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.h
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用

@@ -27,7 +27,9 @@
 #include "sherpa/LanguageCatalog.h"
 #include "utils/Logger.h"
 
-#include "widgets/SphereOverlay.h"
+#include "sherpa/StreamingCaptionEngine.h"
+#include "widgets/LiveOverlay.h"
+#include "widgets/LiveCaptionModel.h"
 #include "widgets/AboutDialog.h"
 #include "widgets/FileTranscribeWidget.h"
 #include "widgets/NavListWidget.h"
@@ -133,9 +135,10 @@ void MainWin::initialize() {
     m_drawerAnimation->setEasingCurve(QEasingCurve::InOutQuart);
 
     // 声音控件
-    m_sphereOverlay = new SphereOverlay();
-    //m_sphereOverlay->showAtBottomCenter();
-    //m_sphereOverlay->setListening();
+    m_liveOverlay = new LiveOverlay();
+    m_captionModel = new LiveCaptionModel(this);
+    m_captionEngine = new StreamingCaptionEngine();
+    m_liveOverlay->setCaptionModel(m_captionModel);
 
     // 启动时检查一次更新
     QTimer::singleShot(2000, this, [this]() { 
@@ -322,10 +325,23 @@ void MainWin::setupUiConnections(){
     });
 
     // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
-    connect(m_recorderService, &AudioRecorderService::levelUpdated, m_sphereOverlay, &SphereOverlay::setLevel);
-    connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_sphereOverlay, &SphereOverlay::setSpectrumLevels);
-    connect(m_recorderService, &AudioRecorderService::voiceStopped, m_sphereOverlay, &SphereOverlay::onVoiceStopped);
-    connect(m_recorderService, &AudioRecorderService::voiceStarted, m_sphereOverlay, &SphereOverlay::onVoiceStarted);
+    connect(m_recorderService, &AudioRecorderService::levelUpdated, m_liveOverlay, &LiveOverlay::setLevel);
+    connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_liveOverlay, &LiveOverlay::setSpectrumLevels);
+    connect(m_recorderService, &AudioRecorderService::voiceStopped, m_liveOverlay, &LiveOverlay::onVoiceStopped);
+    connect(m_recorderService, &AudioRecorderService::voiceStarted, m_liveOverlay, &LiveOverlay::onVoiceStarted);
+
+    // 实时字幕：音频 → 流式引擎(独立线程) → 中间结果 → 字幕模型；正式结果到达后替换并变深色
+    connect(m_recorderService, &AudioRecorderService::audioChunk, m_captionEngine, &StreamingCaptionEngine::acceptAudio);
+    connect(m_captionEngine, &StreamingCaptionEngine::partialText, m_captionModel, &LiveCaptionModel::setPartial);
+    connect(m_captionModel, &LiveCaptionModel::epochChanged, m_captionEngine, &StreamingCaptionEngine::resetStream);
+    connect(m_captionEngine, &StreamingCaptionEngine::modelReady, this, [this](const QString&, bool ok) {
+        m_recorderService->setAudioTapEnabled(ok && ConfigManager::instance().config().liveCaptionEnabled.load());
+    });
+    connect(m_recorderService, &AudioRecorderService::voiceStarted, m_captionModel, [this]() { m_captionModel->setSpeaking(true); });
+    connect(m_recorderService, &AudioRecorderService::voiceStopped, m_captionModel, [this]() { m_captionModel->setSpeaking(false); });
+    connect(m_workflow, &WorkflowManager::utteranceAccepted, m_captionModel, [this]() { m_captionModel->onUtteranceReady(); });
+    connect(m_workflow, &WorkflowManager::utteranceFinished, m_captionModel, [this](const QString& text) { m_captionModel->onTranscribed(text); });
+    connect(m_sherpaInstaller, &SherpaInstaller::streamingModelReady, this, &MainWin::syncLiveCaption);
 
     // Sherpa 模型安装器：安装成功后经门面预热模型（不再直戳 m_sherpaManager）
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
@@ -337,12 +353,12 @@ void MainWin::setupUiConnections(){
             }
         });
 
-    connect(m_sphereOverlay, &SphereOverlay::sphereClicked, this, [this]() {
+    connect(m_liveOverlay, &LiveOverlay::sphereClicked, this, [this]() {
         m_workflow->togglePause();
         if (m_recorderService->isPaused()) {
-            m_sphereOverlay->setPaused();
+            m_liveOverlay->setPaused();
         } else {
-            m_sphereOverlay->setListening();
+            m_liveOverlay->setListening();
         }
     });
 
@@ -377,8 +393,31 @@ void MainWin::setupUiConnections(){
 }
 
 MainWin::~MainWin() {
+  // 字幕引擎自带线程，先于 UI 收掉；同时避免保存配置时又去装载模型
+  delete m_captionEngine;
+  m_captionEngine = nullptr;
   onSaveConfig();
   delete ui;
+}
+
+void MainWin::syncLiveCaption()
+{
+    if (!m_captionEngine) return;
+    const AppConfig& cfg = ConfigManager::instance().config();
+    const QString repoId = ModelRegistry::StreamingModelFor(cfg.sherpa.languageModel);
+    const bool on = cfg.liveCaptionEnabled.load() && !repoId.isEmpty()
+        && SherpaInstaller::isInstalled(repoId) && !m_sherpaInstaller->isInstalling(repoId);
+
+    if (on) {
+        // 音频抽头等引擎报告 modelReady 之后再开，避免白白投递数据
+        QMetaObject::invokeMethod(m_captionEngine, [engine = m_captionEngine, repoId]() {
+            engine->loadModel(repoId, 2);
+        }, Qt::QueuedConnection);
+    } else {
+        m_recorderService->setAudioTapEnabled(false);
+        QMetaObject::invokeMethod(m_captionEngine, &StreamingCaptionEngine::unloadModel, Qt::QueuedConnection);
+        m_captionModel->clear();
+    }
 }
 
 void MainWin::changeEvent(QEvent* event)
@@ -452,6 +491,7 @@ AppConfig MainWin::extractConfigFromUI() {
     // 基础/全局设置 (Global/Misc)
     uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
     uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
+    uiConfig.liveCaptionEnabled = ui->live_caption_checkbox->isChecked();
     uiConfig.hotkey = ui->shortcut_edit->getShortCut();
     uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();
 
@@ -528,6 +568,7 @@ void MainWin::loadConfigToUI() {
 
     // 基础/全局
     ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
+    ui->live_caption_checkbox->setChecked(cfg.liveCaptionEnabled);
     ui->shortcut_edit->setShortCut(cfg.hotkey);
 	ui->identification_backend_comb->setCurrentIndex(static_cast<int>(cfg.backend));
     ui->cpu_thread_number_spin->setValue(cfg.sherpa.threads);
@@ -606,6 +647,7 @@ void MainWin::readIni() {
     styleFile.close();
 
     ui->action_dark->setChecked(true);
+    m_liveOverlay->setTheme(LiveOverlay::Theme::Dark);
   } else if (style == "gray") {
     QString style = "Fusion";
     qApp->setStyle(QStyleFactory::create(style));
@@ -616,6 +658,7 @@ void MainWin::readIni() {
     styleFile.close();
 
     ui->action_gray->setChecked(true);
+    m_liveOverlay->setTheme(LiveOverlay::Theme::Gray);
   } else {
     QString style = "Fusion";
     qApp->setStyle(QStyleFactory::create(style));
@@ -626,6 +669,7 @@ void MainWin::readIni() {
     styleFile.close();
 
     ui->action_light->setChecked(true);
+    m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
   }
 
   Language = settings.value("Language", "System").toString();
@@ -659,6 +703,7 @@ void MainWin::on_action_light_triggered() {
     styleFile.close();
 
     ui->action_light->setChecked(true);
+    m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
 
     QString inifile = ConfigManager::configFilePath();
     QSettings setting(inifile, QSettings::IniFormat);
@@ -676,6 +721,7 @@ void MainWin::on_action_gray_triggered() {
   qApp->setFont(QFont("Arial", 9));
 
   ui->action_gray->setChecked(true);
+  m_liveOverlay->setTheme(LiveOverlay::Theme::Gray);
 
   QString inifile = ConfigManager::configFilePath();
   QSettings setting(inifile, QSettings::IniFormat);
@@ -693,6 +739,7 @@ void MainWin::on_action_dark_triggered() {
   qApp->setFont(QFont("Arial", 9));
 
   ui->action_dark->setChecked(true);
+  m_liveOverlay->setTheme(LiveOverlay::Theme::Dark);
 
   QString inifile = ConfigManager::configFilePath();
   QSettings setting(inifile, QSettings::IniFormat);
@@ -740,7 +787,7 @@ void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
     if (ui->file_transcribe_widget->isBusy()) {
         LOG_WARN("File transcription in progress, dictation hotkey ignored");
-        m_sphereOverlay->hideOverlay();
+        m_liveOverlay->hideOverlay();
         return;
     }
     const auto& config = ConfigManager::instance().config();
@@ -749,13 +796,13 @@ void MainWin::onHotkeyPressed() {
                                                       config.sherpa.localModelRepoId);
     if (!m_sherpaInstaller->isInstalled(repoId)) {
         LOG_ERROR("Current model is not installed, please install it first");
-        m_sphereOverlay->hideOverlay();
+        m_liveOverlay->hideOverlay();
         return;
     }
     
     if (m_sherpaInstaller->isInstalling(repoId)){
         LOG_ERROR("Current model is being installed");
-        m_sphereOverlay->hideOverlay();
+        m_liveOverlay->hideOverlay();
         return;
     }
 
@@ -775,36 +822,38 @@ void MainWin::onStateChanged(WorkflowState state)
 
     switch (state) {
     case WorkflowState::Loading:
-        m_sphereOverlay->setLoading();
-        m_sphereOverlay->showAtBottomCenter();
+        m_captionModel->clear();
+        m_liveOverlay->setLoading();
+        m_liveOverlay->showAtBottomCenter();
         break;
     case WorkflowState::Recording:
-        m_sphereOverlay->setListening();
-        m_sphereOverlay->showAtBottomCenter();
+        m_liveOverlay->setListening();
+        m_liveOverlay->showAtBottomCenter();
         if (ConfigManager::instance().config().continuousMode.load()
             && !m_recorderService->isVoiceActive()) {
-            m_sphereOverlay->hideTimerStart();
+            m_liveOverlay->hideTimerStart();
         }
         else {
-            m_sphereOverlay->hideTimerStop();   
+            m_liveOverlay->hideTimerStop();   
         }
         break;
     case WorkflowState::Transcribing:
-        m_sphereOverlay->hideTimerStop();
-        m_sphereOverlay->setTranscribe();
-        m_sphereOverlay->showAtBottomCenter();
+        m_liveOverlay->hideTimerStop();
+        m_liveOverlay->setTranscribe();
+        m_liveOverlay->showAtBottomCenter();
         break;
     case WorkflowState::Processing:
-        m_sphereOverlay->hideTimerStart();
+        m_liveOverlay->hideTimerStart();
         break;
     case WorkflowState::Idle:
-        QTimer::singleShot(200, [this]() {
-            m_sphereOverlay->hideOverlay();
+        // 有字幕时多留一会儿，让用户看清最终结果；期间若又开始了新一轮录音就不能再隐藏
+        QTimer::singleShot(m_liveOverlay->hasCaption() ? 1800 : 200, this, [this]() {
+            if (m_workflow->state() == WorkflowState::Idle) m_liveOverlay->hideOverlay();
         });
         break;
     case WorkflowState::Error:
         QTimer::singleShot(200, [this]() {
-            m_sphereOverlay->hideOverlay();
+            m_liveOverlay->hideOverlay();
             });
         break;
     default:
@@ -954,6 +1003,7 @@ void MainWin::onLoadConfig()
     readIni();
 
     m_workflow->applyRecorderConfig();
+    syncLiveCaption();
 }
 
 void MainWin::onSaveConfig()
@@ -967,6 +1017,11 @@ void MainWin::onSaveConfig()
 		LOG_DEBUG("Save Configuration Success");
         m_workflow->applyRecorderConfig();
         ui->shortcut_edit->setShortCut(uiConfig.hotkey);
+        if (m_captionEngine) {
+            // 刚勾选实时字幕或换了语言时，缺流式模型就补下载
+            if (uiConfig.liveCaptionEnabled.load()) m_sherpaInstaller->ensureStreamingModel(uiConfig.sherpa.languageModel);
+            syncLiveCaption();
+        }
     }
     else {
         LOG_ERROR("Save Configuration Failed");

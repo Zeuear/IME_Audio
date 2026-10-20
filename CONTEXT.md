@@ -48,6 +48,17 @@
   ≠ TermsLibrary（terms.tsv）：replaceRules 是手动输入的扁平字符串，
   TermsLibrary 是结构化 TSV 数据库。
 
+## 实时字幕 (Live Caption)
+
+- **Live Caption（实时字幕）** — 说话时在悬浮窗里滚动显示的识别中文字。只显示、不注入前台窗口。
+  与"听写结果"是两条通道：字幕走 `LiveCaptionModel`，注入仍走 `WorkflowManager`。
+- **StreamingCaptionEngine** — 字幕用的流式识别引擎，自带线程和常驻识别流，产出中间结果（partial）。
+  ≠ `SherpaManager`：后者负责正式转录，串行队列。
+- **Streaming Companion（流式伴随模型）** — 为某种语言配的小型流式模型，随该语言的主模型一起下载，
+  不出现在模型列表里。没有伴随模型的语言，字幕降级为句末才显示。
+- **Epoch** — 字幕模型里每切出一句加一；流式引擎的中间结果带着自己的 epoch，不匹配即属于上一句，丢弃。
+- **Pending / Final** — 字幕里一句话的状态：Pending（浅色，识别中）→ Final（深色，正式结果已到达）。
+
 ## 输出 (Output / Injection)
 
 - **InputInjector** — 将最终文本注入到活动窗口的类。使用 WinAPI 模拟输入。

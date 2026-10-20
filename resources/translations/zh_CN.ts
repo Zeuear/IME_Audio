@@ -940,129 +940,129 @@
 <context>
     <name>MainWin</name>
     <message>
-        <location filename="../../src/MainWin.ui" line="1171"/>
-        <location filename="../../src/MainWin.ui" line="1247"/>
+        <location filename="../../src/MainWin.ui" line="1255"/>
+        <location filename="../../src/MainWin.ui" line="1331"/>
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1179"/>
+        <location filename="../../src/MainWin.ui" line="1263"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1183"/>
+        <location filename="../../src/MainWin.ui" line="1267"/>
         <source>Theme</source>
         <translation>主题</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="884"/>
-        <location filename="../../src/MainWin.ui" line="1191"/>
+        <location filename="../../src/MainWin.ui" line="921"/>
+        <location filename="../../src/MainWin.ui" line="1275"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="70"/>
+        <location filename="../../src/MainWin.ui" line="94"/>
         <source>Basic Settings</source>
         <translation type="unfinished">基础设置</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="502"/>
+        <location filename="../../src/MainWin.ui" line="526"/>
         <source>Longest Recording(ms)</source>
         <translation type="unfinished">最长录音(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="151"/>
+        <location filename="../../src/MainWin.ui" line="175"/>
         <source>Shortest Recording(ms)</source>
         <translation type="unfinished">最短录音(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="270"/>
+        <location filename="../../src/MainWin.ui" line="294"/>
         <source>Volume Threshold</source>
         <translation type="unfinished">音量阈值</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="436"/>
+        <location filename="../../src/MainWin.ui" line="460"/>
         <source>Automatic Monitoring</source>
         <translation type="unfinished">自动监听</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="126"/>
+        <location filename="../../src/MainWin.ui" line="150"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;continues automatically after identification&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished">识别后自动继续</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="524"/>
+        <location filename="../../src/MainWin.ui" line="548"/>
         <source>Recording Equipment</source>
         <translation type="unfinished">录音设备</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="414"/>
+        <location filename="../../src/MainWin.ui" line="438"/>
         <source>Mute Duration(ms)</source>
         <translation type="unfinished">静音时长(ms)</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="571"/>
+        <location filename="../../src/MainWin.ui" line="630"/>
         <source>Local Recognition</source>
         <translation type="unfinished">本地识别</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="647"/>
+        <location filename="../../src/MainWin.ui" line="682"/>
         <source>Open Path</source>
         <translation type="unfinished">打开路径</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="183"/>
+        <location filename="../../src/MainWin.ui" line="207"/>
         <source>Grop Key</source>
         <translation type="unfinished">Grop Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="251"/>
+        <location filename="../../src/MainWin.ui" line="275"/>
         <source>Gladia Key</source>
         <translation type="unfinished">Gladia Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="737"/>
+        <location filename="../../src/MainWin.ui" line="774"/>
         <source>AI Enhancement</source>
         <translation type="unfinished">AI 增强</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="804"/>
+        <location filename="../../src/MainWin.ui" line="841"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable Gemini intelligent optimization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;启用 Gemini 智能优化&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="874"/>
+        <location filename="../../src/MainWin.ui" line="911"/>
         <source>Check Connection</source>
         <translation type="unfinished">测试连接</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="844"/>
+        <location filename="../../src/MainWin.ui" line="881"/>
         <source>Model</source>
         <translation type="unfinished">模型</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="837"/>
+        <location filename="../../src/MainWin.ui" line="874"/>
         <source>Custom Commands</source>
         <translation type="unfinished">自定义指令</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="295"/>
+        <location filename="../../src/MainWin.ui" line="319"/>
         <source>Identification Backend</source>
         <translation type="unfinished">识别后端</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="827"/>
+        <location filename="../../src/MainWin.ui" line="864"/>
         <source>API Key</source>
         <translation type="unfinished">API Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="787"/>
+        <location filename="../../src/MainWin.ui" line="824"/>
         <source>Style</source>
         <translation type="unfinished">风格</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="907"/>
+        <location filename="../../src/MainWin.ui" line="944"/>
         <source>AI vocabulary</source>
         <translation type="unfinished">AI 词库</translation>
     </message>
@@ -1072,260 +1072,265 @@
         <translation type="unfinished">Ime音频</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="196"/>
+        <location filename="../../src/MainWin.ui" line="220"/>
         <source>CPU Thread Number</source>
         <translation type="unfinished">CPU线程</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="797"/>
+        <location filename="../../src/MainWin.ui" line="564"/>
+        <source>Live Captions</source>
+        <translation>实时字幕</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="580"/>
+        <source>Show the recognized text in the floating window while you speak (needs a streaming model for the selected language; it is downloaded together with the language model)</source>
+        <translation>说话时在悬浮窗里实时显示识别中的文字（需要所选语言有流式模型，会随语言模型一起下载）</translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWin.ui" line="834"/>
         <source>API Url</source>
         <translation type="unfinished">API Url</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="897"/>
+        <location filename="../../src/MainWin.ui" line="934"/>
         <source>AI Engine</source>
         <translation type="unfinished">AI 引擎</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="938"/>
+        <location filename="../../src/MainWin.ui" line="975"/>
         <source>Theaurus</source>
         <translation type="unfinished">词库</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="950"/>
+        <location filename="../../src/MainWin.ui" line="987"/>
         <source>File Transcription</source>
         <translation>文件转录</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="608"/>
+        <location filename="../../src/MainWin.ui" line="667"/>
         <source>Language Model</source>
         <translation type="unfinished">语言模型</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="316"/>
+        <location filename="../../src/MainWin.ui" line="340"/>
         <source>Source Equipment</source>
         <translation type="unfinished">音源设备</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="309"/>
+        <location filename="../../src/MainWin.ui" line="333"/>
         <source>Gemini Key</source>
         <translation type="unfinished">Gemini Key</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="654"/>
+        <location filename="../../src/MainWin.ui" line="689"/>
         <source>Uninstall All</source>
         <translation type="unfinished">卸载全部</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="302"/>
+        <location filename="../../src/MainWin.ui" line="326"/>
         <source>Test</source>
         <translation type="unfinished">测试</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="621"/>
-        <source>Local Model</source>
-        <translation type="unfinished">本地模型</translation>
-    </message>
-    <message>
-        <location filename="../../src/MainWin.ui" line="867"/>
+        <location filename="../../src/MainWin.ui" line="904"/>
         <source>Enable Enhancement</source>
         <translation type="unfinished">开启AI增强</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="988"/>
+        <location filename="../../src/MainWin.ui" line="1028"/>
         <source>Save</source>
         <translation type="unfinished">保存</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1013"/>
+        <location filename="../../src/MainWin.ui" line="1053"/>
         <source>Cancel</source>
         <translation type="unfinished">取消</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1203"/>
+        <location filename="../../src/MainWin.ui" line="1287"/>
         <source>File</source>
         <translation>文件</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1214"/>
+        <location filename="../../src/MainWin.ui" line="1298"/>
         <source>About Qt</source>
         <translation>关于Qt</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1225"/>
-        <location filename="../../src/MainWin.ui" line="1228"/>
+        <location filename="../../src/MainWin.ui" line="1309"/>
+        <location filename="../../src/MainWin.ui" line="1312"/>
         <source>Light</source>
         <translation>亮色</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1239"/>
-        <location filename="../../src/MainWin.ui" line="1242"/>
+        <location filename="../../src/MainWin.ui" line="1323"/>
+        <location filename="../../src/MainWin.ui" line="1326"/>
         <source>Dark</source>
         <translation>暗色</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1255"/>
+        <location filename="../../src/MainWin.ui" line="1339"/>
         <source>System</source>
         <translation>系统</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1263"/>
-        <location filename="../../src/MainWin.ui" line="1266"/>
+        <location filename="../../src/MainWin.ui" line="1347"/>
+        <location filename="../../src/MainWin.ui" line="1350"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1274"/>
+        <location filename="../../src/MainWin.ui" line="1358"/>
         <source>English</source>
         <translation>英文</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1282"/>
+        <location filename="../../src/MainWin.ui" line="1366"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1287"/>
+        <location filename="../../src/MainWin.ui" line="1371"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1290"/>
+        <location filename="../../src/MainWin.ui" line="1374"/>
         <source>Ctrl+Q</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1295"/>
+        <location filename="../../src/MainWin.ui" line="1379"/>
         <source>yt-dlp Update</source>
         <translation>更新yt-dlp</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1300"/>
+        <location filename="../../src/MainWin.ui" line="1384"/>
         <source>Input Device</source>
         <translation type="unfinished">输入设备</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1305"/>
+        <location filename="../../src/MainWin.ui" line="1389"/>
         <source>Preferences</source>
         <translation type="unfinished">设置</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1310"/>
+        <location filename="../../src/MainWin.ui" line="1394"/>
         <source>Shortcut Key</source>
         <translation type="unfinished">快捷键</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1315"/>
+        <location filename="../../src/MainWin.ui" line="1399"/>
         <source>Check Update</source>
         <translation type="unfinished">检查更新</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1320"/>
+        <location filename="../../src/MainWin.ui" line="1404"/>
         <source>About</source>
         <translation type="unfinished">关于</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="517"/>
+        <location filename="../../src/MainWin.cpp" line="557"/>
         <source>该模型正在安装....</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="224"/>
+        <location filename="../../src/MainWin.cpp" line="227"/>
         <source>开始下载模型...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="228"/>
+        <location filename="../../src/MainWin.cpp" line="231"/>
         <source>模型下载完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="229"/>
+        <location filename="../../src/MainWin.cpp" line="232"/>
         <source>模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="229"/>
+        <location filename="../../src/MainWin.cpp" line="232"/>
         <source>请检查网络后重试</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="236"/>
+        <location filename="../../src/MainWin.cpp" line="239"/>
         <source>VAD 模型下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="236"/>
+        <location filename="../../src/MainWin.cpp" line="239"/>
         <source>请检查网络后重试，或前往 &quot;下载列表&quot; 查看进度</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="241"/>
+        <location filename="../../src/MainWin.cpp" line="244"/>
         <source>已切换至 CPU 模式</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="241"/>
+        <location filename="../../src/MainWin.cpp" line="244"/>
         <source>显卡不可用，识别速度可能下降</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="336"/>
+        <location filename="../../src/MainWin.cpp" line="352"/>
         <source>模型加载成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="366"/>
+        <location filename="../../src/MainWin.cpp" line="382"/>
         <source>成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="367"/>
+        <location filename="../../src/MainWin.cpp" line="383"/>
         <source>冲突</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="894"/>
+        <location filename="../../src/MainWin.cpp" line="937"/>
         <source>Update Available</source>
         <translation type="unfinished">更新可用</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="895"/>
+        <location filename="../../src/MainWin.cpp" line="938"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">新版本（%1）已发布！</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="896"/>
+        <location filename="../../src/MainWin.cpp" line="939"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">您现在想下载并安装吗？</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="904"/>
+        <location filename="../../src/MainWin.cpp" line="947"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">不要再提醒我了</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="931"/>
+        <location filename="../../src/MainWin.cpp" line="974"/>
         <source>Restart Required</source>
         <translation type="unfinished">需要重启</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="932"/>
+        <location filename="../../src/MainWin.cpp" line="975"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">更新已成功下载。应用程序即将关闭并重新启动以应用更新。是否继续？</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.cpp" line="941"/>
+        <location filename="../../src/MainWin.cpp" line="984"/>
         <source>更新失败</source>
         <translation type="unfinished">更新失败</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1094"/>
+        <location filename="../../src/MainWin.ui" line="1137"/>
         <source>Recognition Log</source>
         <translation type="unfinished">识别日志</translation>
     </message>
     <message>
-        <location filename="../../src/MainWin.ui" line="1119"/>
+        <location filename="../../src/MainWin.ui" line="1172"/>
         <source>Config Log</source>
         <translation type="unfinished">配置日志</translation>
     </message>
@@ -1333,22 +1338,22 @@
 <context>
     <name>ModelInfoDelegate</name>
     <message>
-        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="133"/>
+        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="135"/>
         <source>Installed</source>
         <translation>已安装</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="137"/>
+        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="139"/>
         <source>Punctuation</source>
         <translation>自带标点</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="163"/>
+        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="165"/>
         <source>Not benchmarked for this language yet</source>
         <translation>该语言暂无测试数据</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="168"/>
+        <location filename="../../src/widgets/ModelInfoDelegate.cpp" line="170"/>
         <source>%1 error rate %2% · %3 s to transcribe 10 s of speech (CPU)</source>
         <translation>%1 错误率 %2% · 10 秒语音约需 %3 秒识别（CPU）</translation>
     </message>
@@ -1356,22 +1361,22 @@
 <context>
     <name>ModelListWidget</name>
     <message>
-        <location filename="../../src/widgets/ModelListWidget.cpp" line="26"/>
+        <location filename="../../src/widgets/ModelListWidget.cpp" line="109"/>
         <source>MODEL</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelListWidget.cpp" line="27"/>
+        <location filename="../../src/widgets/ModelListWidget.cpp" line="110"/>
         <source>ACCURACY</source>
         <translation>准确度</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelListWidget.cpp" line="28"/>
+        <location filename="../../src/widgets/ModelListWidget.cpp" line="111"/>
         <source>SPEED</source>
         <translation>速度</translation>
     </message>
     <message>
-        <location filename="../../src/widgets/ModelListWidget.cpp" line="29"/>
+        <location filename="../../src/widgets/ModelListWidget.cpp" line="118"/>
         <source>FEATURES</source>
         <translation>特性</translation>
     </message>
@@ -1379,53 +1384,53 @@
 <context>
     <name>ModelRegistry</name>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1312"/>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1580"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1390"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1658"/>
         <source>Model not registered in ModelRegistry: %1</source>
         <translation type="unfinished">模型未在模型注册表中注册：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1316"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1394"/>
         <source>This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</source>
         <translation type="unfinished">此模型仅有 TorchScript(.pt) 版本，cxx-api 不支持该版本: 1%</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1474"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1552"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
         <translation type="unfinished">未找到 Qwen3-ASR 模型文件，請先安裝模型：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1503"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1581"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
         <translation type="unfinished">热门关键词应用于 arch=%1，score=%2</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1506"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1584"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
         <translation type="unfinished">已配置热词，但架构不支持上下文偏好，已忽略：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1521"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1599"/>
         <source>CUDA initialization failed: %1. Automatically falling back to CPU.</source>
         <translation type="unfinished">CUDA 初始化失败：%1。自动回退到 CPU。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1542"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1620"/>
         <source>Failed to create recognizer on CPU: %1</source>
         <translation type="unfinished">在 CPU 上创建识别器失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1545"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1623"/>
         <source>Failed to create recognizer on CPU due to an unknown error.</source>
         <translation type="unfinished">由于未知错误，在 CPU 上创建识别器失败。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1598"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1676"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
         <translation type="unfinished">ModelDescriptor.files 类型与 %1 不匹配，使用默认值</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1711"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1789"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
         <translation type="unfinished">BuildManifest：不支持或未映射的 ModelArch（适用于 %1）。</translation>
     </message>
@@ -1564,62 +1569,64 @@
 <context>
     <name>SherpaInstaller</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="455"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="483"/>
         <source>%1 is exist.</source>
         <translation type="unfinished">%1 存在。</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="456"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="580"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="581"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="613"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="614"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="484"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="607"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="620"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="621"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="653"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="654"/>
         <source>Download Complete</source>
         <translation type="unfinished">下载完全</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="522"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="540"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="550"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="568"/>
         <source>VAD model ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="531"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="559"/>
         <source>VAD Voice Activity Model</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="540"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="568"/>
         <source>VAD model download failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="552"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="580"/>
         <source>Neural punctuation model download failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="566"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="594"/>
         <source>Neural punctuation model ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="566"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="594"/>
         <source>Neural punctuation decompression failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="574"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="604"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="614"/>
         <source>Download Error</source>
         <translation type="unfinished">下载失败</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="586"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="626"/>
         <source>Decoding in progress %1 ...</source>
         <translation type="unfinished">解码进行中 %1 ...</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="610"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="650"/>
         <source>Extract Error</source>
         <translation type="unfinished">解压失败</translation>
     </message>
@@ -1885,17 +1892,17 @@
 <context>
     <name>WorkflowManager</name>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="166"/>
+        <location filename="../../src/WorkflowManager.cpp" line="168"/>
         <source>语音识别失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="196"/>
+        <location filename="../../src/WorkflowManager.cpp" line="198"/>
         <source>文本注入失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/WorkflowManager.cpp" line="197"/>
+        <location filename="../../src/WorkflowManager.cpp" line="199"/>
         <source>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴</source>
         <translation type="unfinished"></translation>
     </message>

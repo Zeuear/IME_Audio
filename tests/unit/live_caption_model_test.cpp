@@ -1,0 +1,223 @@
+#include <gtest/gtest.h>
+#include <QCoreApplication>
+#include <QObject>
+
+#include "widgets/LiveCaptionModel.h"
+
+namespace {
+// 不依赖 Qt Test 的信号计数器
+class Counter : public QObject {
+public:
+    template <typename Sender, typename Signal>
+    Counter(Sender* s, Signal sig) { connect(s, sig, this, [this]() { ++count_; }); }
+    int count() const { return count_; }
+private:
+    int count_ = 0;
+};
+} // namespace
+
+class LiveCaptionModelTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        if (!qApp) {
+            static int argc = 0;
+            static char* argv[] = { nullptr };
+            m_app = new QCoreApplication(argc, argv);
+        }
+        model.setSpeaking(true);
+    }
+
+    void speak(const QString& partial) { model.setPartial(model.epoch(), partial); }
+    void cut(qint64 now = 1000) { model.onUtteranceReady(now); }
+
+    QCoreApplication* m_app = nullptr;
+    LiveCaptionModel model;
+};
+
+
+TEST_F(LiveCaptionModelTest, PartialShowsAsPendingColorSegment) {
+    speak("hello");
+    const auto segs = model.segments();
+    ASSERT_EQ(segs.size(), 1);
+    EXPECT_EQ(segs[0].text, "hello");
+    EXPECT_FALSE(segs[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, PartialUpdatesReplaceSameSentence) {
+    speak("hello");
+    speak("hello wor");
+    speak("hello world");
+    EXPECT_EQ(model.plainText(), "hello world");
+    EXPECT_EQ(model.segments().size(), 1);
+}
+
+TEST_F(LiveCaptionModelTest, EmptyPartialDoesNotEraseExistingText) {
+    speak("你好世界");
+    speak("");
+    EXPECT_EQ(model.plainText(), "你好世界");
+}
+
+TEST_F(LiveCaptionModelTest, PartialIgnoredWhenNotSpeaking) {
+    model.setSpeaking(false);
+    speak("noise");
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, StaleEpochPartialIsDropped) {
+    speak("first");
+    const quint64 old = model.epoch();
+    cut();
+    model.setPartial(old, "late partial of the first sentence");
+    EXPECT_EQ(model.plainText(), "first");
+}
+
+TEST_F(LiveCaptionModelTest, ChangedSignalOnlyWhenTextChanges) {
+    Counter spy(&model, &LiveCaptionModel::changed);
+    speak("abc");
+    speak("abc");
+    EXPECT_EQ(spy.count(), 1);
+}
+
+
+TEST_F(LiveCaptionModelTest, UtteranceReadyBumpsEpochAndKeepsText) {
+    Counter spy(&model, &LiveCaptionModel::epochChanged);
+    speak("你好");
+    const quint64 before = model.epoch();
+    cut();
+    EXPECT_EQ(model.epoch(), before + 1);
+    EXPECT_EQ(spy.count(), 1);
+    EXPECT_EQ(model.plainText(), "你好");
+    EXPECT_FALSE(model.segments()[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, FinalReplacesPendingAndTurnsFinal) {
+    speak("hello wor");
+    cut();
+    model.onTranscribed("Hello world.", 2000);
+    const auto segs = model.segments();
+    ASSERT_EQ(segs.size(), 1);
+    EXPECT_EQ(segs[0].text, "Hello world.");
+    EXPECT_TRUE(segs[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, FinalsMatchPendingInFifoOrder) {
+    speak("one");  cut(1000);
+    speak("two");  cut(1001);
+    speak("three");
+    model.onTranscribed("ONE-final", 2000);
+    // 第一句已最终、第二句仍待定、第三句仍在说
+    auto segs = model.segments();
+    ASSERT_EQ(segs.size(), 2);
+    EXPECT_TRUE(segs[0].isFinal);
+    EXPECT_EQ(segs[0].text, "ONE-final");
+    EXPECT_FALSE(segs[1].isFinal);
+    EXPECT_EQ(segs[1].text, " two three");
+
+    model.onTranscribed("TWO-final", 2001);
+    segs = model.segments();
+    ASSERT_EQ(segs.size(), 2);
+    EXPECT_EQ(segs[0].text, "ONE-final TWO-final");
+    EXPECT_TRUE(segs[0].isFinal);
+    EXPECT_EQ(segs[1].text, " three");
+}
+
+TEST_F(LiveCaptionModelTest, EmptyFinalRemovesThePendingSentence) {
+    speak("noise words");
+    cut();
+    model.onTranscribed("", 2000);   // 转录失败/空结果：浅色残留必须消失
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, CutWithoutAnyPartialStillOccupiesASlot) {
+    // 没有流式模型的语言：从未有中间结果，但正式结果仍要对上号
+    cut(1000);
+    cut(1001);
+    model.onTranscribed("A.", 2000);
+    model.onTranscribed("B.", 2001);
+    EXPECT_EQ(model.plainText(), "A. B.");
+    EXPECT_TRUE(model.segments()[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, FinalWithNothingPendingIsAppended) {
+    model.onTranscribed("orphan", 1000);
+    ASSERT_EQ(model.segments().size(), 1);
+    EXPECT_TRUE(model.segments()[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, NewSentenceAfterFinalStartsFreshLine) {
+    speak("first"); cut(); model.onTranscribed("First.", 1000);
+    speak("second");
+    const auto segs = model.segments();
+    ASSERT_EQ(segs.size(), 2);
+    EXPECT_EQ(segs[0].text, "First.");
+    EXPECT_EQ(segs[1].text, " second");
+}
+
+
+TEST_F(LiveCaptionModelTest, FinalExpiresAfterLinger) {
+    speak("x"); cut(); model.onTranscribed("done", 10000);
+    EXPECT_FALSE(model.expire(10000 + LiveCaptionModel::kFinalLingerMs - 1));
+    EXPECT_FALSE(model.isEmpty());
+    EXPECT_TRUE(model.expire(10000 + LiveCaptionModel::kFinalLingerMs));
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, PendingNeverExpiresEarlyButEventuallyDoes) {
+    speak("slow cloud"); cut(5000);
+    EXPECT_FALSE(model.expire(5000 + LiveCaptionModel::kFinalLingerMs + 1));   // 云端慢，不能像最终句那样很快消失
+    EXPECT_FALSE(model.isEmpty());
+    EXPECT_TRUE(model.expire(5000 + LiveCaptionModel::kPendingTimeoutMs));
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, ClearEmptiesAndInvalidatesOldEpoch) {
+    speak("old");
+    const quint64 old = model.epoch();
+    model.clear();
+    EXPECT_TRUE(model.isEmpty());
+    model.setSpeaking(true);
+    model.setPartial(old, "ghost");
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, ClearEmitsEpochChangedEvenWhenEmpty) {
+    Counter spy(&model, &LiveCaptionModel::epochChanged);
+    model.clear();
+    EXPECT_EQ(spy.count(), 1);   // 流式引擎靠它重置，空内容也不能漏
+}
+
+TEST_F(LiveCaptionModelTest, KeepsOnlyMostRecentSentences) {
+    for (int i = 0; i < LiveCaptionModel::kMaxSentences + 4; ++i) {
+        speak(QString("s%1").arg(i));
+        cut(1000 + i);
+        model.onTranscribed(QString("F%1").arg(i), 2000 + i);
+    }
+    const QString text = model.plainText();
+    EXPECT_FALSE(text.contains("F0"));
+    EXPECT_TRUE(text.contains(QString("F%1").arg(LiveCaptionModel::kMaxSentences + 3)));
+}
+
+
+TEST(CaptionText, AllCapsEnglishBecomesSentenceCase) {
+    EXPECT_EQ(CaptionText::normalizePartial("HELLO WORLD"), "Hello world");
+    EXPECT_EQ(CaptionText::normalizePartial("I THINK I CAN"), "I think I can");
+}
+
+TEST(CaptionText, MixedCaseIsLeftAlone) {
+    EXPECT_EQ(CaptionText::normalizePartial("Hello World"), "Hello World");
+    EXPECT_EQ(CaptionText::normalizePartial("iPhone"), "iPhone");
+}
+
+TEST(CaptionText, ChineseIsLeftAloneAndWhitespaceCollapsed) {
+    EXPECT_EQ(CaptionText::normalizePartial("  你好   世界 "), "你好 世界");
+    EXPECT_EQ(CaptionText::normalizePartial(""), "");
+}
+
+TEST(CaptionText, SeparatorNoSpaceAroundCjk) {
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("你好", "世界"), "");
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("hello", "世界"), "");
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("你好", "world"), "");
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("안녕", "하세요"), "");
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("hello", "world"), " ");
+    EXPECT_EQ(LiveCaptionModel::separatorBetween("", "world"), "");
+}

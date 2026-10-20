@@ -19,7 +19,7 @@ ImeAudio is a high-performance, AI-driven real-time speech transcription and tex
 
 ### 🛠️ Seamless Workflow
 * **Global Hotkeys:** Trigger transcription anytime, anywhere with a single keystroke.
-* **Modern UI/UX:** A sleek, macOS-inspired interface built with Qt/QML, featuring smooth animations and modern aesthetics.
+* **Modern UI/UX:** A sleek, macOS-inspired interface built with Qt Widgets, featuring smooth animations and modern aesthetics.
 * **Background Operation:** Lightweight system tray integration for non-intrusive use.
 * **Auto-Update:** Stay current with the built-in automatic update system.
 
@@ -47,7 +47,7 @@ The application uses an `AppConfig` system allowing you to customize:
 * **Speech Rules:** Custom vocabulary and polishing styles.
 
 ## 🛠 Technical Stack
-* **Framework:** Qt 6 (C++/QML)
+* **Framework:** Qt 6 (C++/Widgets)
 * **Audio Engine:** miniaudio / QAudioSource
 * **DSP:** kiss_fft
 * **AI Engines:** Sherpa (Local), Gemini, Groq, OpenAI

@@ -3,6 +3,7 @@
 #include <QProcess>
 #include <QString>
 #include <QQueue>
+#include <QSet>
 #include <QUrl>
 #include <QFileInfo>
 #include <QThread>
@@ -104,6 +105,7 @@ public:
     void installModel(const QString& repoId);
     void uninstallModel(const QString& repoId);
     void ensurePunctModel(const QString& repoId);
+    void ensureStreamingModel(const QString& language);
 
     // VAD 模型。
     void ensureVadModel();
@@ -129,6 +131,9 @@ signals:
 
     void loadModel(const QString& repoId, bool success, const QString& msg);
 
+    // 伴随模型就绪：不走 loadModel，否则会误触发主模型预热和"模型加载成功"提示
+    void streamingModelReady(const QString& repoId);
+
     void vadModelReady(bool success, const QString& msg);
 
 private slots:
@@ -142,6 +147,7 @@ private slots:
 private:
     DownloadManager* m_downloadManager = nullptr;
     QHash<QString, ModelInstallManifest> m_activeManifests;
+    QSet<QString> m_companionGroups;
     TaskQueueManager* m_extractQueue = nullptr;
 };
 

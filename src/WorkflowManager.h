@@ -50,6 +50,8 @@ public:
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
+    void utteranceAccepted();
+    void utteranceFinished(const QString &finalText);
     void errorOccurred(const QString &title, const QString &cause = {});
 
 private slots:

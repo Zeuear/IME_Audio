@@ -145,12 +145,14 @@ void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate
 
     // 其余各态（含 Loading）统一入队转录
     m_pending++;
+    emit utteranceAccepted();
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
 }
 
 void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawText, const QString& finalText, const QString& errorMsg) {
     if (m_pending > 0) m_pending--;
+    emit utteranceFinished(success ? finalText : QString());
 
     if (success) {
         if (!finalText.isEmpty()) {

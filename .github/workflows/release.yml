@@ -98,7 +98,7 @@ jobs:
           fi
           echo "✅ 找到 app bundle: $APP_BUNDLE"
 
-          macdeployqt "$APP_BUNDLE" -qmldir=qml
+          macdeployqt "$APP_BUNDLE"
 
           # macdeployqt 改写了二进制，链接器给的签名随之失效；不重签的话 TCC 无法稳定
           # 识别本应用，辅助功能勾选了也不生效。ad-hoc 签名按 cdhash 识别，同一版本内稳定，
@@ -139,16 +139,6 @@ jobs:
           
           export VERSION=${{ github.ref_name }}
           export APPIMAGE_EXTRACT_AND_RUN=1
-
-          # 检查 qml 目录是否存在，避免变量指向空目录
-          if [ -d "$(pwd)/qml" ]; then
-            export QML_SOURCES_PATHS="$(pwd)/qml"
-          elif [ -d "$(pwd)/src" ]; then
-            export QML_SOURCES_PATHS="$(pwd)/src"
-          else
-            echo "⚠️ 未找到 qml 源码目录，跳过 QML_SOURCES_PATHS 设置"
-          fi
-          echo "QML_SOURCES_PATHS=${QML_SOURCES_PATHS:-<unset>}"
 
           rm -rf appdir
           set +e

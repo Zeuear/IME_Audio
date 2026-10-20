@@ -470,3 +470,47 @@ TEST_F(WorkflowManagerTest, AlreadyLoaded_StartGoesStraightToRecording) {
     EXPECT_EQ(trans->transcribeCalls, 1);
 }
 
+
+// 实时字幕依赖：每接收一句发一次 accepted，每句结束发一次 finished，两者成对
+
+TEST_F(WorkflowManagerTest, CaptionSignals_AcceptedAndFinishedStayPaired) {
+    int accepted = 0;
+    QStringList finished;
+    QObject::connect(wf, &WorkflowManager::utteranceAccepted, wf, [&]() { ++accepted; });
+    QObject::connect(wf, &WorkflowManager::utteranceFinished, wf, [&](const QString& t) { finished << t; });
+
+    sherpa->reloadReturns = false;
+    wf->start();
+    ASSERT_EQ(wf->state(), WorkflowState::Recording);
+
+    rec->emitUtteranceReady();
+    rec->emitUtteranceReady();
+    EXPECT_EQ(accepted, 2);
+    EXPECT_TRUE(finished.isEmpty());
+
+    trans->emitFinished(true, "first");
+    trans->emitFinished(true, "second");
+    EXPECT_EQ(finished, (QStringList{"first", "second"}));
+}
+
+TEST_F(WorkflowManagerTest, CaptionSignals_FailureAndEmptyTextFinishWithEmptyString) {
+    QStringList finished;
+    QObject::connect(wf, &WorkflowManager::utteranceFinished, wf, [&](const QString& t) { finished << t; });
+
+    sherpa->reloadReturns = false;
+    wf->start();
+    rec->emitUtteranceReady();
+    rec->emitUtteranceReady();
+    trans->emitFinished(false);        // 识别失败：字幕里的浅色文字必须能被清掉
+    trans->emitFinished(true, "");     // 空文本
+    ASSERT_EQ(finished.size(), 2);
+    EXPECT_TRUE(finished[0].isEmpty());
+    EXPECT_TRUE(finished[1].isEmpty());
+}
+
+TEST_F(WorkflowManagerTest, CaptionSignals_DroppedUtteranceIsNotAccepted) {
+    int accepted = 0;
+    QObject::connect(wf, &WorkflowManager::utteranceAccepted, wf, [&]() { ++accepted; });
+    rec->emitUtteranceReady();         // Idle 态：被丢弃，不能让字幕多出一个永远等不到结果的位置
+    EXPECT_EQ(accepted, 0);
+}

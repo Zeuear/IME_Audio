@@ -81,6 +81,7 @@ struct AppConfig {
 
     std::atomic<bool> continuousMode { false };
     std::atomic<bool> autoStopEnabled { true };
+    std::atomic<bool> liveCaptionEnabled { true };
 
     QString hotkey;
 
@@ -103,6 +104,7 @@ struct AppConfig {
         replaceRules = other.replaceRules;
         continuousMode.store(other.continuousMode.load());
         autoStopEnabled.store(other.autoStopEnabled.load());
+        liveCaptionEnabled.store(other.liveCaptionEnabled.load());
         hotkey = other.hotkey;
         style = other.style;
         Language = other.Language;

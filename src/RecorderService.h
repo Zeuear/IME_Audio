@@ -44,11 +44,17 @@ public:
 
     bool isVoiceActive() const;
 
+    // 实时字幕的音频抽头，默认关闭；开启后每块 16k/单声道/Int16 数据通过 audioChunk 发出
+    void setAudioTapEnabled(bool enabled) { m_audioTap = enabled; }
+
     static QStringList availableMicrophones();
     static QStringList availableSpeakers();
 
 public slots:
     void playTestTone() override;
+
+signals:
+    void audioChunk(const QByteArray& pcm);
 
 private slots:
     void onAudioDataReady();
@@ -81,6 +87,7 @@ private:
     bool m_needsConversion = false;
     bool m_isPaused = false;
     std::atomic<bool> m_voiceActive{ false };
+    std::atomic<bool> m_audioTap{ false };
 
     QByteArray m_singleUtterance;
 

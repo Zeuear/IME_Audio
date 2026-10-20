@@ -1157,10 +1157,90 @@ const QVector<ModelRegistry::LanguageTableEntry>& LanguageTables() {
     return tables;
 }
 
+namespace {
+// 文件名均对照 HuggingFace 仓库实际文件核实过。编码器/联合网络用 int8，解码器很小，用 fp32 精度更稳。
+const std::vector<std::pair<QString, ModelDescriptor>>& StreamingCaptionModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{
+                .modelSubfolder = "",
+                .tokensSubfolder = "",
+                .encoderFile = "encoder-epoch-99-avg-1.int8.onnx",
+                .decoderFile = "decoder-epoch-99-avg-1.onnx",
+                .joinerFile = "joiner-epoch-99-avg-1.int8.onnx"
+            }, "Zipformer 流式 (中/英)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{
+                .modelSubfolder = "",
+                .tokensSubfolder = "",
+                .encoderFile = "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+                .decoderFile = "decoder-epoch-99-avg-1-chunk-16-left-128.onnx",
+                .joinerFile = "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
+            }, "Zipformer 流式 (英)"}},
+        {"k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{
+                .modelSubfolder = "",
+                .tokensSubfolder = "",
+                .encoderFile = "encoder-epoch-99-avg-1.int8.onnx",
+                .decoderFile = "decoder-epoch-99-avg-1.onnx",
+                .joinerFile = "joiner-epoch-99-avg-1.int8.onnx"
+            }, "Zipformer 流式 (韩)"}},
+        {"shaojieli/sherpa-onnx-streaming-zipformer-fr-2023-04-14", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{
+                .modelSubfolder = "",
+                .tokensSubfolder = "",
+                .encoderFile = "encoder-epoch-29-avg-9-with-averaged-model.int8.onnx",
+                .decoderFile = "decoder-epoch-29-avg-9-with-averaged-model.onnx",
+                .joinerFile = "joiner-epoch-29-avg-9-with-averaged-model.int8.onnx"
+            }, "Zipformer 流式 (法)"}},
+    };
+    return table;
+}
+
+constexpr auto kMultiLangStreamingRepo =
+    "csukuangfj/sherpa-onnx-streaming-zipformer-ar_en_id_ja_ru_th_vi_zh-2025-02-10";
+} // namespace
+
+QString ModelRegistry::StreamingModelFor(const QString& language)
+{
+    static const QHash<QString, QString> byLanguage = {
+        {"Chinese",    "csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"},
+        {"English",    "csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26"},
+        {"Korean",     "k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16"},
+        {"French",     "shaojieli/sherpa-onnx-streaming-zipformer-fr-2023-04-14"},
+        {"Arabic",     kMultiLangStreamingRepo},
+        {"Indonesian", kMultiLangStreamingRepo},
+        {"Japanese",   kMultiLangStreamingRepo},
+        {"Russian",    kMultiLangStreamingRepo},
+        {"Thai",       kMultiLangStreamingRepo},
+        {"Vietnamese", kMultiLangStreamingRepo},
+    };
+    return byLanguage.value(language);
+}
+
+bool ModelRegistry::IsStreamingCompanion(const QString& repoId)
+{
+    if (repoId == QLatin1String(kMultiLangStreamingRepo)) return true;
+    for (const auto& pair : StreamingCaptionModels()) {
+        if (pair.first == repoId) return true;
+    }
+    return false;
+}
+
 const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
 {
     static const QMap<QString, ModelDescriptor> merged = [] {
         QMap<QString, ModelDescriptor> t;
+        // 先放伴随模型：语言表里的同名条目（多语种流式模型）随后覆盖它，保持原有行为
+        for (const auto& pair : StreamingCaptionModels()) {
+            ModelDescriptor d = pair.second;
+            d.hasBuiltinPunctuation = true;   // 不绑神经标点
+            t.insert(pair.first, d);
+        }
         for (const auto& entry : LanguageTables()) {
             const auto& sub = entry.getter();
             for (const auto& pair : sub) {
@@ -1301,7 +1381,7 @@ static bool ArchSupportsHotwords(ModelArch arch) {
     }
 }
 
-ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThreads, bool useGpu)
+ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords)
 {
     Result result;
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);
@@ -1322,7 +1402,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         LOG_DEBUG("CUDA not available. Sherpa fallback to [CPU].");
     }
 
-	QString hotwords = ConfigManager::instance().config().sherpa.hotwords;
+	QString hotwords = allowHotwords ? ConfigManager::instance().config().sherpa.hotwords : QString();
 	float hotscores = ConfigManager::instance().config().sherpa.hotscores;
 
     RecognizerConfigVar configVar = std::monostate{};

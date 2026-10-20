@@ -54,23 +54,15 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS
             Widgets 
             Network 
             Multimedia 
-            Concurrent 
-            Qml 
-            Quick 
-            QuickWidgets 
-            LinguistTools 
-            ShaderTools REQUIRED)
+            Concurrent
+            LinguistTools REQUIRED)
 
 set(QtModules 
       Qt${QT_VERSION_MAJOR}::Core 
       Qt${QT_VERSION_MAJOR}::Widgets 
       Qt${QT_VERSION_MAJOR}::Network 
       Qt${QT_VERSION_MAJOR}::Concurrent 
-      Qt${QT_VERSION_MAJOR}::Multimedia  
-      Qt${QT_VERSION_MAJOR}::Qml 
-      Qt${QT_VERSION_MAJOR}::Quick 
-      Qt${QT_VERSION_MAJOR}::QuickWidgets 
-      Qt${QT_VERSION_MAJOR}::ShaderTools 
+      Qt${QT_VERSION_MAJOR}::Multimedia
 )
 
 # 3rdparty

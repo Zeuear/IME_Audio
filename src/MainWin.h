@@ -21,7 +21,9 @@ class WorkflowManager;
 class TermsLibraryManager;
 class SherpaInstaller;
 class SherpaManager;
-class SphereOverlay;
+class LiveOverlay;
+class LiveCaptionModel;
+class StreamingCaptionEngine;
 class TextPolishService;
 class CudaInstaller;
 
@@ -97,6 +99,8 @@ private:
     QString currentLanguageKey() const;
     void initSystemTray();
 
+    void syncLiveCaption();
+
     Ui::MainWin *ui;
 
     QSystemTrayIcon* trayIcon;
@@ -107,7 +111,9 @@ private:
     QAction* separatorAction;
 
     QNetworkAccessManager* m_networkManager = nullptr;
-    SphereOverlay* m_sphereOverlay = nullptr;
+    LiveOverlay* m_liveOverlay = nullptr;
+    LiveCaptionModel* m_captionModel = nullptr;
+    StreamingCaptionEngine* m_captionEngine = nullptr;   // 自带线程，无 parent，析构里显式删除
 
     TextPolishService* m_textPolishService = nullptr;
     SherpaManager* m_sherpaManager = nullptr;

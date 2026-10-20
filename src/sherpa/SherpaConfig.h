@@ -438,7 +438,13 @@ public:
     static bool shouldUseNeuralPunct(const ModelDescriptor& desc, const QString& language);
 
     static const ModelDescriptor* Find(const QString& repoId);
-    static Result GetConfig(const QString& repoId, int numThreads, bool useGpu);
+    // allowHotwords=false 用于实时字幕：流式 BPE 模型没配词表，套用全局热词可能导致创建失败
+    static Result GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords = true);
+
+    // 实时字幕的流式伴随模型：不在语言表里（不出现在模型列表），但并入 Table()，
+    // 所以 Find / BuildManifest / GetConfig 照常可用。没有伴随模型的语言返回空串。
+    static QString StreamingModelFor(const QString& language);
+    static bool IsStreamingCompanion(const QString& repoId);
 
     static QStringList GetLanguages();                              
     static QStringList GetModelsByLanguage(const QString& language); 

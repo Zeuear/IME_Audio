@@ -249,6 +249,10 @@ void AudioRecorderService::readAndDispatch()
     QMetaObject::invokeMethod(m_spectrumWorker, "processChunk", Qt::QueuedConnection,
         Q_ARG(QByteArray, chunk));
 
+    if (m_audioTap.load()) {
+        emit audioChunk(chunk);
+    }
+
     if (m_config.continuousMode.load()) {
         QMetaObject::invokeMethod(m_segmenter, "processChunk", Qt::QueuedConnection,
             Q_ARG(QByteArray, chunk));
