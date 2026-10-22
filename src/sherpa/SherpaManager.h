@@ -50,8 +50,10 @@ signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
     void gpuFallbackToCpu();
+    void idleUnloaded();
 
 private:
+    void armIdleTimer();
     bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
     bool transcribeOffline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
     bool transcribeOnline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
@@ -84,6 +86,7 @@ private:
     // 空闲自动卸载
     static constexpr int kIdleUnloadMs = 30 * 60 * 1000;
     QTimer* m_idleTimer = nullptr;
+    std::atomic<bool> m_idlePaused{ false };
 
     mutable QMutex m_recognizerMutex; 
 

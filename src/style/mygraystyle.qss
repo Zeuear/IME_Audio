@@ -603,6 +603,21 @@ QToolTip {
     border-radius: 12px;
 }
 
+/* 设置页分组卡片：与 GPU 后端卡片同色；卡片内自绘控件不能沿用页面底色 */
+QFrame[card="true"] {
+    background-color: #504d4d4d;
+    border: 1px solid #4d4d4d;
+    border-radius: 12px;
+}
+QFrame[card="true"] AnimatedCheckBox,
+QFrame[card="true"] StatusIndicator {
+    background-color: transparent;
+}
+QFrame[card="true"] #shortcut_edit {
+    background-color: transparent;
+    border: none;
+}
+
 /* ==========================================================================
    GRAY THEME (中间灰色模式)
    ========================================================================== */
@@ -722,4 +737,15 @@ QWidget#download_list_viewport {
 ModelListWidget QListView {
     background: transparent;
     border: none;
+}
+
+/* 词典卡片：比页面底色略亮（浅色主题略暗），与输入框区分；禁用卡片接近页面底色 */
+#terms_list {
+    background-color: rgb(160, 160, 160);
+    border: none;
+    qproperty-cardColor: rgb(182, 182, 182);
+    qproperty-cardBorderColor: rgb(130, 130, 130);
+    qproperty-disabledCardColor: rgb(150, 150, 150);
+    qproperty-textColor: rgb(0, 0, 0);
+    qproperty-hintColor: rgb(85, 85, 85);
 }

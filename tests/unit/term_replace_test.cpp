@@ -2,6 +2,7 @@
 #include <QString>
 #include <QVector>
 #include <QPair>
+#include <QTemporaryDir>
 
 #include "TermsLibraryManager.h"
 
@@ -119,4 +120,77 @@ TEST_F(TermReplaceTest, RulesAlreadySortedByLength) {
     QString resultB = TermsLibraryManager::applyReplaceRules(input, rulesB);
     EXPECT_EQ(resultA, resultB);
     EXPECT_EQ(resultA, "by");
+}
+
+// ---------- 词条规则生成 ----------
+// 词库指向临时文件，不碰用户的 terms.tsv
+
+namespace {
+TermItem term(const QString& heard, const QString& correct, bool enabled = true) {
+    TermItem t;
+    t.setHeard(TermsLibraryManager::splitWords(heard));
+    t.correct = correct;
+    t.enabled = enabled;
+    return t;
+}
+} // namespace
+
+class TermRulesTest : public ::testing::Test {
+protected:
+    void SetUp() override { mgr.items().clear(); }
+    QTemporaryDir dir;
+    TermsLibraryManager mgr{ dir.filePath("terms.tsv") };
+};
+
+TEST_F(TermRulesTest, HeardRoundTripsThroughWrongAndAliases) {
+    const TermItem t = term("开八斯，k8s、K8S", "Kubernetes");
+    EXPECT_EQ(t.wrong, "开八斯");
+    EXPECT_EQ(t.heard(), (QStringList{"开八斯", "k8s", "K8S"}));
+}
+
+TEST_F(TermRulesTest, HotwordsContainOnlyCorrectSpelling) {
+    mgr.items() << term("开八斯, k8s", "Kubernetes");
+    const auto rules = mgr.buildAllRules();
+    EXPECT_EQ(rules.hotwords, (QStringList{"Kubernetes"}));
+}
+
+TEST_F(TermRulesTest, EveryHeardWordBecomesReplaceRule) {
+    mgr.items() << term("开八斯, k8s", "Kubernetes");
+    const auto rules = mgr.buildAllRules();
+    EXPECT_EQ(TermsLibraryManager::applyReplaceRules("用开八斯和k8s", rules.replaceRules), "用Kubernetes和Kubernetes");
+}
+
+TEST_F(TermRulesTest, CorrectOnlyTermIsHotwordAndVocabButNotReplace) {
+    mgr.items() << term("", "李韬");
+    const auto rules = mgr.buildAllRules();
+    EXPECT_TRUE(rules.replaceRules.isEmpty());
+    EXPECT_EQ(rules.hotwords, (QStringList{"李韬"}));
+    EXPECT_EQ(rules.aiVocab, "李韬");
+}
+
+TEST_F(TermRulesTest, LegacyModeIsIgnored) {
+    TermItem t = term("克劳德", "Claude");
+    t.mode = "hotword";
+    mgr.items() << t;
+    const auto rules = mgr.buildAllRules();
+    EXPECT_EQ(rules.replaceRules, "克劳德=>Claude");
+}
+
+TEST_F(TermRulesTest, DisabledTermProducesNothing) {
+    mgr.items() << term("克劳德", "Claude", false);
+    const auto rules = mgr.buildAllRules();
+    EXPECT_TRUE(rules.replaceRules.isEmpty());
+    EXPECT_TRUE(rules.hotwords.isEmpty());
+}
+
+TEST_F(TermRulesTest, CorrectOnlyTermsDoNotConflictWithEachOther) {
+    mgr.items() << term("", "李韬") << term("", "ImeAudio");
+    EXPECT_TRUE(mgr.checkConflicts().isEmpty());
+}
+
+TEST_F(TermRulesTest, ConflictsAreFoundAcrossAliases) {
+    mgr.items() << term("开八斯, k8s", "Kubernetes") << term("k8s", "K8s");
+    EXPECT_EQ(mgr.checkConflicts().size(), 1);
+    EXPECT_EQ(mgr.duplicateHeard({"K8S"}, 1), "K8S");
+    EXPECT_TRUE(mgr.duplicateHeard({"新词"}).isEmpty());
 }

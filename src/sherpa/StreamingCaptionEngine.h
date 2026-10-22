@@ -10,16 +10,11 @@
 
 class QThread;
 
-// @brief 实时字幕用的流式识别引擎：独立的 OnlineRecognizer 加一个常驻 OnlineStream，只产出中间结果，
-//        正式文本仍由 SherpaManager / 云端后端给出。
-//
-// 不放进 SherpaManager 的串行队列：那里一次转录可能占数秒，字幕解码会被挤到句末才出。
-// 槽都在引擎自己的线程里执行，其它线程请走队列连接。
+// @brief 实时字幕用的流式识别引擎
 class StreamingCaptionEngine : public QObject
 {
     Q_OBJECT
 public:
-    // 不接受 parent：构造时就要 moveToThread，而有父对象的 QObject 不能换线程，由使用方显式 delete
     StreamingCaptionEngine();
     ~StreamingCaptionEngine() override;
 
@@ -31,11 +26,11 @@ public slots:
     void unloadModel();
     // 16 kHz / mono / 16-bit PCM
     void acceptAudio(const QByteArray &pcm);
-    // 一句话结束：换一个新流，此后的中间结果带新的 epoch
     void resetStream(quint64 epoch);
 
 signals:
     void partialText(quint64 epoch, const QString &text);
+    // 运行中解码出错也发 ok=false，使用方据此关掉音频抽头
     void modelReady(const QString &repoId, bool ok);
 
 private:

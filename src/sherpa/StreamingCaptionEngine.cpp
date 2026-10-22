@@ -97,9 +97,9 @@ void StreamingCaptionEngine::acceptAudio(const QByteArray &pcm)
             emit partialText(m_epoch, text);
         }
     } catch (const std::exception &e) {
-        // 字幕只是辅助，出错就停用自己，不影响正式转录
         LOG_WARN(QString("Live caption decode failed, disabled: %1").arg(QString::fromLocal8Bit(e.what())));
         m_ready = false;
+        emit modelReady(loadedRepoId(), false);
     }
 }
 
@@ -114,5 +114,6 @@ void StreamingCaptionEngine::resetStream(quint64 epoch)
     } catch (const std::exception &e) {
         LOG_WARN(QString("Live caption reset failed, disabled: %1").arg(QString::fromLocal8Bit(e.what())));
         m_ready = false;
+        emit modelReady(loadedRepoId(), false);
     }
 }

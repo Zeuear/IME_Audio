@@ -28,6 +28,7 @@ SherpaManager::SherpaManager(QObject* parent)
     connect(m_idleTimer, &QTimer::timeout, this, [this]() {
         LOG_INFO("Model idle over 30 minutes, auto-unloaded to free memory");
         unloadModel();
+        emit idleUnloaded();
     });
 }
 
@@ -340,12 +341,23 @@ void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
 
 void SherpaManager::pauseIdleTimer()
 {
+    m_idlePaused = true;
     if (m_idleTimer) m_idleTimer->stop();
 }
 
 void SherpaManager::resumeIdleTimer()
 {
+    m_idlePaused = false;
     if (m_idleTimer) m_idleTimer->start();
+}
+
+// 在 worker 线程调用：定时器属于主线程，且录音 / 文件转录期间不能武装，否则长任务会被空闲卸载打断。
+// 暂停标志在主线程上再检查一次，避免排队期间刚好进入暂停
+void SherpaManager::armIdleTimer()
+{
+    QMetaObject::invokeMethod(this, [this]() {
+        if (!m_idlePaused && m_isLoaded) m_idleTimer->start();
+    }, Qt::QueuedConnection);
 }
 
 void SherpaManager::workerLoop()
@@ -369,7 +381,8 @@ void SherpaManager::workerLoop()
         switch (task.type) {
         case TaskType::Load:
             loadModel(task.config, task.isReload);
-            emit modelLoadFinished(m_isLoaded);      
+            if (m_isLoaded) armIdleTimer();
+            emit modelLoadFinished(m_isLoaded);
             break;
         case TaskType::Transcribe: {
             QString text, error;

@@ -84,6 +84,7 @@ private slots:
 
 private:
     void fitToScreen();
+    void alignSettingsCards();
     bool m_fittedToScreen = false;
 
     // 听写进行中锁住各设置页和保存/取消
@@ -114,6 +115,7 @@ private:
     LiveOverlay* m_liveOverlay = nullptr;
     LiveCaptionModel* m_captionModel = nullptr;
     StreamingCaptionEngine* m_captionEngine = nullptr;   // 自带线程，无 parent，析构里显式删除
+    bool m_liveCaptionFailNotified = false;
 
     TextPolishService* m_textPolishService = nullptr;
     SherpaManager* m_sherpaManager = nullptr;

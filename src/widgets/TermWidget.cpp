@@ -1,136 +1,232 @@
 #include "TermWidget.h"
-#include <QMessageBox>
+#include "TermCardDelegate.h"
+#include "TermListModel.h"
+#include <QApplication>
 #include <QFileDialog>
+#include <QHBoxLayout>
+#include <QKeyEvent>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListView>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QSortFilterProxyModel>
+#include <QStackedWidget>
+#include <QToolButton>
+#include <QVariantAnimation>
+#include <QVBoxLayout>
 #include "../utils/Logger.h"
 
 TermWidget::TermWidget(QWidget *parent) : QWidget(parent) {
-
     setupUi();
 }
 
 void TermWidget::setupUi() {
-    // 主布局
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(10);
+    mainLayout->setSpacing(8);
 
-    // Search Area
-    QHBoxLayout* searchLayout = new QHBoxLayout();
-    m_labelSearch = new QLabel(tr("Search Terms"), this);
-    m_searchEdit = new QLineEdit(this);
-    m_searchEdit->setPlaceholderText(tr("Enter terms..."));
+    // 普通工具栏：搜索 + 添加
+    auto* normalBar = new QWidget(this);
+    auto* normalLayout = new QHBoxLayout(normalBar);
+    normalLayout->setContentsMargins(0, 0, 0, 0);
+    m_searchEdit = new QLineEdit(normalBar);
+    m_searchEdit->setClearButtonEnabled(true);
+    m_heardEdit = new QLineEdit(normalBar);
+    m_correctEdit = new QLineEdit(normalBar);
+    m_addBtn = new QPushButton(normalBar);
+    m_moreBtn = new QToolButton(normalBar);
+    m_moreBtn->setText(QStringLiteral("⋯"));
+    m_moreBtn->setPopupMode(QToolButton::InstantPopup);
+    auto* moreMenu = new QMenu(m_moreBtn);
+    m_moreBtn->setMenu(moreMenu);
+    normalLayout->addWidget(m_searchEdit, 1);
+    normalLayout->addSpacing(12);
+    normalLayout->addWidget(m_heardEdit, 1);
+    normalLayout->addWidget(new QLabel(QStringLiteral("→"), normalBar));
+    normalLayout->addWidget(m_correctEdit, 1);
+    normalLayout->addWidget(m_addBtn);
+    normalLayout->addWidget(m_moreBtn);
 
-    m_reloadBtn = new QPushButton(tr("Reload Terms"), this);
+    // 多选工具栏：左边选择，右边操作
+    auto* selectBar = new QWidget(this);
+    auto* selectLayout = new QHBoxLayout(selectBar);
+    selectLayout->setContentsMargins(0, 0, 0, 0);
+    m_selectAllBtn = new QPushButton(selectBar);
+    m_reverseBtn = new QPushButton(selectBar);
+    m_countLabel = new QLabel(selectBar);
+    m_enableBtn = new QPushButton(selectBar);
+    m_disableBtn = new QPushButton(selectBar);
+    m_deleteBtn = new QPushButton(selectBar);
+    m_doneBtn = new QPushButton(selectBar);
+    selectLayout->addWidget(m_selectAllBtn);
+    selectLayout->addWidget(m_reverseBtn);
+    selectLayout->addSpacing(8);
+    selectLayout->addWidget(m_countLabel);
+    selectLayout->addStretch();
+    selectLayout->addWidget(m_enableBtn);
+    selectLayout->addWidget(m_disableBtn);
+    selectLayout->addWidget(m_deleteBtn);
+    selectLayout->addWidget(m_doneBtn);
 
-    searchLayout->addWidget(m_labelSearch);
-    searchLayout->addWidget(m_searchEdit);
-    searchLayout->addStretch(); 
-    searchLayout->addWidget(m_reloadBtn);
+    m_barStack = new QStackedWidget(this);
+    m_barStack->addWidget(normalBar);
+    m_barStack->addWidget(selectBar);
+    m_barStack->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-    // Table Area
-    QWidget* tableContainer = new QWidget(this);
-    QVBoxLayout* tableContainerLayout = new QVBoxLayout(tableContainer);
-    tableContainerLayout->setContentsMargins(0, 0, 0, 0);
-    tableContainerLayout->setSpacing(4);
+    m_list = new TermListView(this);
+    m_list->setObjectName("terms_list");
+    m_list->setFrameShape(QFrame::NoFrame);
+    m_list->setSelectionMode(QAbstractItemView::NoSelection);
+    m_list->setEditTriggers(QAbstractItemView::NoEditTriggers);   // 双击编辑由 onDoubleClicked 自己处理
+    m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_list->setUniformItemSizes(true);
+    m_list->setMouseTracking(true);
+    m_delegate = new TermCardDelegate(m_list);
+    m_list->setItemDelegate(m_delegate);
 
-    m_termsTableView = new QTableView(this);
-    m_termsTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_termsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_termsTableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    mainLayout->addWidget(m_barStack);
+    mainLayout->addWidget(m_list, 1);
 
-    tableContainerLayout->addWidget(m_termsTableView);
+    m_selectAnim = new QVariantAnimation(this);
+    m_selectAnim->setDuration(180);
+    m_selectAnim->setEasingCurve(QEasingCurve::OutCubic);
+    connect(m_selectAnim, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
+        m_delegate->setSelectProgress(v.toReal());
+        m_list->viewport()->update();
+    });
 
-    // Selection & Add Row
-    QHBoxLayout* actionRow1 = new QHBoxLayout();
-    m_deleteSelectedBtn = new QPushButton(tr("Delete Selected"), this);
-    m_selectAllBtn = new QPushButton(tr("Select All"), this);
-    m_addRowBtn = new QPushButton(tr("Add Row"), this);
-    actionRow1->addWidget(m_deleteSelectedBtn);
-    actionRow1->addWidget(m_selectAllBtn);
-    actionRow1->addWidget(m_addRowBtn);
-
-    // Batch Operations
-    QHBoxLayout* actionRow2 = new QHBoxLayout();
-    m_reverseSelectBtn = new QPushButton(tr("Reverse Select"), this);
-    m_batchEnableBtn = new QPushButton(tr("Batch Enable"), this);
-    m_batchDisableBtn = new QPushButton(tr("Batch Disable"), this);
-    actionRow2->addWidget(m_reverseSelectBtn);
-    actionRow2->addWidget(m_batchEnableBtn);
-    actionRow2->addWidget(m_batchDisableBtn);
-
-    // Import/Export & Check 
-    QHBoxLayout* actionRow3 = new QHBoxLayout();
-    m_checkBtn = new QPushButton(tr("Check"), this);
-    m_importBtn = new QPushButton(tr("Import TSV"), this);
-    m_exportBtn = new QPushButton(tr("Export TSV"), this);
-    actionRow3->addWidget(m_checkBtn);
-    actionRow3->addWidget(m_importBtn);
-    actionRow3->addWidget(m_exportBtn);
-
-    // 将所有行添加到主布局
-    mainLayout->addLayout(searchLayout);
-    mainLayout->addWidget(tableContainer);
-    mainLayout->addLayout(actionRow1);
-    mainLayout->addLayout(actionRow2);
-    mainLayout->addLayout(actionRow3);
-
-    connect(m_searchEdit, &QLineEdit::textChanged, this, &TermWidget::handleSearch);
-    connect(m_reloadBtn, &QPushButton::clicked, this, &TermWidget::handleReload);
-    connect(m_deleteSelectedBtn, &QPushButton::clicked, this, &TermWidget::handleDeleteSelected);
+    connect(m_addBtn, &QPushButton::clicked, this, &TermWidget::handleAdd);
+    connect(m_heardEdit, &QLineEdit::returnPressed, this, &TermWidget::handleAdd);
+    connect(m_correctEdit, &QLineEdit::returnPressed, this, &TermWidget::handleAdd);
     connect(m_selectAllBtn, &QPushButton::clicked, this, &TermWidget::handleSelectAll);
-    connect(m_addRowBtn, &QPushButton::clicked, this, &TermWidget::handleAddRow);
-    connect(m_reverseSelectBtn, &QPushButton::clicked, this, &TermWidget::handleReverseSelect);
-    connect(m_batchEnableBtn, &QPushButton::clicked, this, &TermWidget::handleBatchEnable);
-    connect(m_batchDisableBtn, &QPushButton::clicked, this, &TermWidget::handleBatchDisable);
-    connect(m_checkBtn, &QPushButton::clicked, this, &TermWidget::handleCheckAction);
-    connect(m_importBtn, &QPushButton::clicked, this, &TermWidget::handleImport);
-    connect(m_exportBtn, &QPushButton::clicked, this, &TermWidget::handleExport);
+    connect(m_reverseBtn, &QPushButton::clicked, this, &TermWidget::handleReverseSelect);
+    connect(m_enableBtn, &QPushButton::clicked, this, [this]() { handleSetEnabled(true); });
+    connect(m_disableBtn, &QPushButton::clicked, this, [this]() { handleSetEnabled(false); });
+    connect(m_deleteBtn, &QPushButton::clicked, this, &TermWidget::handleDelete);
+    connect(m_doneBtn, &QPushButton::clicked, this, [this]() { setSelectMode(false); });
+    m_clickTimer = new QTimer(this);
+    m_clickTimer->setSingleShot(true);
+    connect(m_clickTimer, &QTimer::timeout, this, [this]() {
+        if (m_pendingClick.isValid()) toggleChecked(m_pendingClick);
+        m_pendingClick = QPersistentModelIndex();
+    });
+    connect(m_list, &QListView::clicked, this, &TermWidget::onClicked);
+    connect(m_list, &QListView::doubleClicked, this, &TermWidget::onDoubleClicked);
+
+    retranslateUi();
 }
 
 void TermWidget::setTermsManager(TermsLibraryManager* termsManager) {
     m_termsManager = termsManager;
-    m_termsModel = new TermTableModel(m_termsManager, this);
-    connect(m_termsModel, &TermTableModel::errorOccurred, this, [this](const QString& message) {
-        emit errorOccurred(tr("输入有误"), message);
+    m_model = new TermListModel(m_termsManager, this);
+    connect(m_model, &TermListModel::errorOccurred, this, [this](const QString& cause) {
+        emit errorOccurred(tr("输入有误"), cause);
     });
+    connect(m_model, &TermListModel::checkedChanged, this, &TermWidget::updateSelectBar);
 
-    m_proxyModel = new QSortFilterProxyModel(this);
-    m_proxyModel->setSourceModel(m_termsModel);
-    m_proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    m_proxyModel->setFilterKeyColumn(-1);
-    m_termsTableView->setModel(m_proxyModel);
-    retranslateUi();
-
+    m_proxy = new QSortFilterProxyModel(this);
+    m_proxy->setSourceModel(m_model);
+    m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_list->setModel(m_proxy);
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+        m_proxy->setFilterFixedString(text.trimmed());
+    });
 }
 
-void TermWidget::handleSearch() {
-    QString searchText = m_searchEdit->text().trimmed();
-    m_proxyModel->setFilterFixedString(searchText);
-}
+void TermWidget::onClicked(const QModelIndex& proxyIndex) {
+    // 双击的第二下松开时还会再来一次 clicked，此时编辑器已打开，忽略
+    if (!proxyIndex.isValid() || m_list->indexWidget(proxyIndex)) return;
 
-QList<int> TermWidget::selectedSourceRows() const {
-    QSet<int> rowsSet;
-    QItemSelectionModel* selection = m_termsTableView->selectionModel();
-    if (!selection) return {};
-
-    const QModelIndexList selectedProxyIndices = selection->selectedRows();
-    for (const QModelIndex& proxyIndex : selectedProxyIndices) {
-        QModelIndex sourceIndex = m_proxyModel->mapToSource(proxyIndex);
-        if (sourceIndex.isValid()) {
-            rowsSet.insert(sourceIndex.row());
-        }
+    // 多选中单击就是勾选，立即响应；平时单击等一个双击间隔，看是不是双击
+    if (m_selectMode) {
+        toggleChecked(proxyIndex);
+        return;
     }
+    m_pendingClick = proxyIndex;
+    m_clickTimer->start(QApplication::doubleClickInterval());
+}
 
-    QList<int> rows = rowsSet.values();
-    std::sort(rows.begin(), rows.end());
+void TermWidget::onDoubleClicked(const QModelIndex& proxyIndex) {
+    // 多选中只做勾选，不进入编辑
+    if (!proxyIndex.isValid() || m_selectMode) return;
+    m_clickTimer->stop();
+    m_pendingClick = QPersistentModelIndex();
+    m_list->edit(proxyIndex);
+}
+
+void TermWidget::toggleChecked(const QModelIndex& proxyIndex) {
+    const int row = m_proxy->mapToSource(proxyIndex).row();
+    const QList<int> before = m_model->checkedRows();
+    QSet<int> checked(before.begin(), before.end());
+    if (!checked.remove(row)) checked.insert(row);
+    m_model->setChecked(checked);
+    setSelectMode(!checked.isEmpty());
+}
+
+void TermWidget::setSelectMode(bool on) {
+    if (on == m_selectMode) return;
+    m_selectMode = on;
+    if (!on) m_model->setChecked({});
+    m_barStack->setCurrentIndex(on ? 1 : 0);
+
+    m_selectAnim->stop();
+    m_selectAnim->setStartValue(m_selectAnim->currentValue().isValid() ? m_selectAnim->currentValue() : QVariant(on ? 0.0 : 1.0));
+    m_selectAnim->setEndValue(on ? 1.0 : 0.0);
+    m_selectAnim->start();
+}
+
+void TermWidget::updateSelectBar() {
+    const int n = m_model->checkedRows().size();
+    m_countLabel->setText(tr("%1 selected").arg(n));
+    for (QPushButton* b : { m_enableBtn, m_disableBtn, m_deleteBtn }) b->setEnabled(n > 0);
+}
+
+QList<int> TermWidget::visibleSourceRows() const {
+    QList<int> rows;
+    for (int i = 0; i < m_proxy->rowCount(); ++i) rows << m_proxy->mapToSource(m_proxy->index(i, 0)).row();
     return rows;
 }
 
+void TermWidget::handleAdd() {
+    if (m_model->addTerm(m_heardEdit->text(), m_correctEdit->text())) {
+        m_heardEdit->clear();
+        m_correctEdit->clear();
+        m_heardEdit->setFocus();
+        m_list->scrollToBottom();
+    }
+}
 
+void TermWidget::handleSelectAll() {
+    const QList<int> rows = visibleSourceRows();
+    m_model->setChecked(QSet<int>(rows.begin(), rows.end()));
+}
+
+void TermWidget::handleReverseSelect() {
+    QSet<int> next;
+    for (int row : visibleSourceRows()) {
+        if (!m_model->isChecked(row)) next.insert(row);
+    }
+    m_model->setChecked(next);
+}
+
+void TermWidget::handleSetEnabled(bool enabled) {
+    m_termsManager->setEnabled(m_model->checkedRows(), enabled);
+}
+
+void TermWidget::handleDelete() {
+    const QList<int> rows = m_model->checkedRows();
+    if (rows.isEmpty()) return;
+    auto res = QMessageBox::question(this, tr("Confirm"), tr("Delete %1 selected rows?").arg(rows.size()),
+                                     QMessageBox::Yes | QMessageBox::No);
+    if (res != QMessageBox::Yes) return;
+    m_termsManager->removeItems(rows);
+    setSelectMode(false);
+}
 
 void TermWidget::handleReload() {
-    if (m_termsManager->loadFromTsv(m_termsManager->defaultPath())) {
+    if (m_termsManager->importFromFile(m_termsManager->defaultPath())) {
         LOG_INFO("Terms reloaded successfully.");
     }
     else {
@@ -138,143 +234,77 @@ void TermWidget::handleReload() {
     }
 }
 
-void TermWidget::handleDeleteSelected() {
-    QList<int> sortedRows = selectedSourceRows();
-    if (sortedRows.isEmpty()) return;
-
-    auto res = QMessageBox::question(this, tr("Confirm"),
-        tr("Delete %1 selected rows?").arg(sortedRows.size()),
-        QMessageBox::Yes | QMessageBox::No);
-    if (res != QMessageBox::Yes) return;
-
-    for (int i = sortedRows.size() - 1; i >= 0; --i) {
-        m_termsManager->removeItem(sortedRows.at(i));
-    }
-}
-
-void TermWidget::handleSelectAll() {
-    m_termsTableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    QItemSelectionModel* selection = m_termsTableView->selectionModel();
-    if (!selection) return;
-
-    int rowCount = m_proxyModel->rowCount();
-    if (rowCount == 0) return;
-
-    QItemSelection all(m_proxyModel->index(0, 0),
-        m_proxyModel->index(rowCount - 1, m_proxyModel->columnCount() - 1));
-    selection->select(all, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-}
-
-void TermWidget::handleAddRow() {
-    TermItem newItem;
-    m_termsManager->addItem(newItem);
-    m_termsModel->layoutChanged();
-}
-
-void TermWidget::handleReverseSelect() {
-    QItemSelectionModel* selection = m_termsTableView->selectionModel();
-    if (!selection) return;
-
-    int rowCount = m_proxyModel->rowCount();
-    if (rowCount == 0) return;
-
-    QModelIndexList selectedIndices = selection->selectedRows();
-    QSet<int> selectedRowsSet;
-    for (const QModelIndex& idx : selectedIndices) {
-        selectedRowsSet.insert(idx.row());
-    }
-
-    QItemSelection unselectedSelection;
-    for (int i = 0; i < rowCount; ++i) {
-        if (!selectedRowsSet.contains(i)) {
-            unselectedSelection.select(m_proxyModel->index(i, 0), m_proxyModel->index(i, 0)); // 改成 proxy
-        }
-    }
-    selection->clear();
-    selection->select(unselectedSelection, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-}
-
-void TermWidget::handleBatchEnable() {
-    const QList<int> rows = selectedSourceRows();
-    for (int row : rows) {
-        TermItem item = m_termsManager->items().at(row);
-        item.enabled = true;
-        m_termsManager->updateItem(row, item);
-    }
-}
-
-void TermWidget::handleBatchDisable() {
-    const QList<int> rows = selectedSourceRows();
-    for (int row : rows) {
-        TermItem item = m_termsManager->items().at(row);
-        item.enabled = false;
-        m_termsManager->updateItem(row, item);
-    }
-}
-
-void TermWidget::handleCheckAction() {
-    // 调用 Manager 的冲突检查功能
+void TermWidget::handleCheckConflicts() {
     QStringList conflicts = m_termsManager->checkConflicts();
     if (conflicts.isEmpty()) {
         emit errorOccurred(tr("术语冲突检查"), tr("未发现冲突"));
     }
     else {
-        QString msg = conflicts.join("\n");
-        emit errorOccurred(tr("检测到术语冲突"), msg);
+        emit errorOccurred(tr("检测到术语冲突"), conflicts.join("\n"));
     }
 }
 
 void TermWidget::handleImport() {
     QString path = QFileDialog::getOpenFileName(this, tr("Import TSV"), "", "TSV Files (*.tsv)");
-    if (!path.isEmpty()) {
-        if (m_termsManager->importFromFile(path)) {
-            emit errorOccurred(tr("术语库导入成功"));
-        }
-        else {
-            emit errorOccurred(tr("术语库导入失败"), tr("文件读写失败，请检查路径与权限"));
-        }
+    if (path.isEmpty()) return;
+    if (m_termsManager->importFromFile(path)) {
+        emit errorOccurred(tr("术语库导入成功"));
+    }
+    else {
+        emit errorOccurred(tr("术语库导入失败"), tr("文件读写失败，请检查路径与权限"));
     }
 }
 
 void TermWidget::handleExport() {
     QString path = QFileDialog::getSaveFileName(this, tr("Export TSV"), "", "TSV Files (*.tsv)");
-    if (!path.isEmpty()) {
-        if (m_termsManager->exportToFile(path)) {
-            emit errorOccurred(tr("术语库导出成功"));
-        }
-        else {
-            emit errorOccurred(tr("术语库导出失败"), tr("文件读写失败，请检查路径与权限"));
-        }
+    if (path.isEmpty()) return;
+    if (m_termsManager->exportToFile(path)) {
+        emit errorOccurred(tr("术语库导出成功"));
     }
+    else {
+        emit errorOccurred(tr("术语库导出失败"), tr("文件读写失败，请检查路径与权限"));
+    }
+}
+
+void TermWidget::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape && m_selectMode) {
+        setSelectMode(false);
+        return;
+    }
+    QWidget::keyPressEvent(event);
 }
 
 void TermWidget::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::LanguageChange) {
-        this->retranslateUi();
+        retranslateUi();
     }
     QWidget::changeEvent(event);
 }
 
 void TermWidget::retranslateUi()
 {
-    m_labelSearch->setText(tr("Search Terms:"));
-    m_searchEdit->setPlaceholderText(tr("Enter terms..."));
+    m_searchEdit->setPlaceholderText(tr("Search terms..."));
+    m_heardEdit->setPlaceholderText(tr("Heard as (optional)"));
+    m_heardEdit->setToolTip(tr("What the recognizer mistakenly outputs; separate several with commas. "
+                               "Leave empty to just teach the recognizer a new word, e.g. a name."));
+    m_correctEdit->setPlaceholderText(tr("Write as"));
+    m_addBtn->setText(tr("+ Add"));
+    m_moreBtn->setToolTip(tr("More"));
 
-    // 2. 重新设置底部按钮组
-    m_reloadBtn->setText(tr("Reload Terms"));
-    m_deleteSelectedBtn->setText(tr("Delete Selected"));
+    QMenu* menu = m_moreBtn->menu();
+    menu->clear();
+    menu->addAction(tr("Reload Terms"), this, &TermWidget::handleReload);
+    menu->addAction(tr("Check Conflicts"), this, &TermWidget::handleCheckConflicts);
+    menu->addSeparator();
+    menu->addAction(tr("Import TSV"), this, &TermWidget::handleImport);
+    menu->addAction(tr("Export TSV"), this, &TermWidget::handleExport);
+
     m_selectAllBtn->setText(tr("Select All"));
-    m_addRowBtn->setText(tr("Add Row"));
-    m_reverseSelectBtn->setText(tr("Reverse Select"));
-    m_batchEnableBtn->setText(tr("Batch Enable"));
-    m_batchDisableBtn->setText(tr("Batch Disable"));
-
-    // 3. 重新设置底部按钮组
-    m_checkBtn->setText(tr("Check Conflicts"));
-    m_importBtn->setText(tr("Import TSV"));
-    m_exportBtn->setText(tr("Export TSV"));
-
-    // 4. 重新设置表格的表头
-    m_termsModel->retranslate();
+    m_reverseBtn->setText(tr("Reverse Select"));
+    m_enableBtn->setText(tr("Enable"));
+    m_disableBtn->setText(tr("Disable"));
+    m_deleteBtn->setText(tr("Delete"));
+    m_doneBtn->setText(tr("Done"));
+    if (m_model) updateSelectBar();
 }

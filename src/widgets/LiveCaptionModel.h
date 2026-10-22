@@ -3,12 +3,11 @@
 #include <QString>
 #include <QTimer>
 #include <QVector>
+#include <functional>
 
-// @brief 实时字幕的内容模型：把流式识别的中间结果和正式转录的最终结果合并成一串可显示的句子，
-//        不涉及绘制，LiveOverlay 按 segments() 渲染。
+// @brief 实时字幕的内容模型
 //
 // 一句话的生命周期：Active（正在说）→ Pending（已切出送去转录，仍显示中间文本）→ Final（正式结果替换文本）。
-// 转录队列是串行的，所以正式结果按先进先出对应 Pending。
 class LiveCaptionModel : public QObject
 {
     Q_OBJECT
@@ -19,6 +18,8 @@ public:
         QString text;
         State state = State::Active;
         qint64 stamp = 0;
+        quint64 epoch = 0;
+        quint64 id = 0;   // 切句后才有
     };
 
     struct Segment {
@@ -28,18 +29,16 @@ public:
 
     static constexpr int kMaxSentences = 6;
     static constexpr qint64 kFinalLingerMs = 4000;
-    static constexpr qint64 kPendingTimeoutMs = 60000;   // 云端后端可能很慢，超时放弃以免浅色文字残留
+    static constexpr qint64 kPendingTimeoutMs = 60000;
 
     explicit LiveCaptionModel(QObject *parent = nullptr);
 
-    // 只有说话期间的中间结果才显示，避免静音噪声被识别成字
+    // 中间结果显示前的加工（如术语替换），让浅色字和正式结果的专有名词一致
+    void setTextFilter(std::function<QString(const QString &)> filter) { m_filter = std::move(filter); }
     void setSpeaking(bool speaking);
-    // text 是本句累计全文；epoch 与当前不符的属于上一句，丢弃
     void setPartial(quint64 epoch, const QString &text);
-    // 与 utteranceReady 一一对应
-    void onUtteranceReady(qint64 nowMs = -1);
-    // 与 transcriptionFinished 一一对应，空文本表示失败或无内容
-    void onTranscribed(const QString &finalText, qint64 nowMs = -1);
+    void onUtteranceReady(quint64 id, qint64 nowMs = -1);
+    void onTranscribed(quint64 id, const QString &finalText, qint64 nowMs = -1);
     // nowMs 供测试传入伪造时间；返回内容是否变化
     bool expire(qint64 nowMs = -1);
     void clear();
@@ -54,7 +53,7 @@ public:
 
 signals:
     void changed();
-    // 流式引擎据此重置识别流，并给后续中间结果打上新 epoch
+    // 流式引擎据此重置识别流
     void epochChanged(quint64 epoch);
 
 private:
@@ -64,6 +63,7 @@ private:
     QVector<Sentence> m_sentences;
     quint64 m_epoch = 0;
     bool m_speaking = false;
+    std::function<QString(const QString &)> m_filter;
     QTimer *m_expireTimer = nullptr;
 };
 

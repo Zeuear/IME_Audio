@@ -76,9 +76,13 @@ void AboutDialog::setupUi()
 
     m_descriptionText = new QTextEdit(this);
     m_descriptionText->setReadOnly(true);
+    // 模型署名：Kroko 社区模型为 CC-BY-SA 许可，要求注明来源
     m_descriptionText->setText(
         tr("ImeAudio 是一款专注于输入法语音辅助的桌面工具，"
-           "支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。"));
+           "支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。")
+        + QStringLiteral("\n\n")
+        + tr("语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。"
+             "英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。"));
     tabWidget->addTab(m_descriptionText, tr("软件简介"));
 
     m_changelogText = new QTextEdit(this);

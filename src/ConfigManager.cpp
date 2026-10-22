@@ -66,6 +66,8 @@ bool ConfigManager::load() {
     m_config.continuousMode = s.value("continuousMode", false).toBool();
     m_config.autoStopEnabled = s.value("autoStopEnabled", true).toBool();
     m_config.liveCaptionEnabled = s.value("liveCaptionEnabled", true).toBool();
+    m_config.liveCaptionFontSize = s.value("liveCaptionFontSize", 12).toInt();
+    m_config.liveCaptionAtTop = s.value("liveCaptionAtTop", false).toBool();
     m_config.geminiKey = s.value("geminiKey").toString();
     m_config.gladiaKey = s.value("gladiaKey").toString();
     m_config.groqKey = s.value("groqKey").toString();
@@ -121,6 +123,8 @@ bool ConfigManager::save() {
     s.setValue("continuousMode", m_config.continuousMode.load());
     s.setValue("autoStopEnabled", m_config.autoStopEnabled.load());
     s.setValue("liveCaptionEnabled", m_config.liveCaptionEnabled.load());
+    s.setValue("liveCaptionFontSize", m_config.liveCaptionFontSize);
+    s.setValue("liveCaptionAtTop", m_config.liveCaptionAtTop);
     s.setValue("geminiKey", m_config.geminiKey);
     s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("groqKey", m_config.groqKey);

@@ -111,8 +111,6 @@ private:
     QLabel* m_statusLabel = nullptr;
     QPushButton* m_addBtn = nullptr;
     QPushButton* m_transcribeBtn = nullptr;
-    QPushButton* m_cancelBtn = nullptr;
-    QPushButton* m_clearBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     AnimatedCheckBox* m_exportTxtCheck = nullptr;
     AnimatedCheckBox* m_exportSrtCheck = nullptr;

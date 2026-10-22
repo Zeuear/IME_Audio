@@ -493,6 +493,24 @@ TEST_F(WorkflowManagerTest, CaptionSignals_AcceptedAndFinishedStayPaired) {
     EXPECT_EQ(finished, (QStringList{"first", "second"}));
 }
 
+TEST_F(WorkflowManagerTest, CaptionSignals_FinishedCarriesAcceptedId) {
+    QList<quint64> acceptedIds, finishedIds;
+    QObject::connect(wf, &WorkflowManager::utteranceAccepted, wf, [&](quint64 id) { acceptedIds << id; });
+    QObject::connect(wf, &WorkflowManager::utteranceFinished, wf,
+                     [&](const QString&, quint64 id) { finishedIds << id; });
+
+    sherpa->reloadReturns = false;
+    wf->start();
+    rec->emitUtteranceReady();
+    rec->emitUtteranceReady();
+    trans->emitFinished(true, "first");
+    trans->emitFinished(true, "second");
+    ASSERT_EQ(acceptedIds.size(), 2);
+    EXPECT_NE(acceptedIds[0], 0u);
+    EXPECT_NE(acceptedIds[0], acceptedIds[1]);
+    EXPECT_EQ(finishedIds, acceptedIds);
+}
+
 TEST_F(WorkflowManagerTest, CaptionSignals_FailureAndEmptyTextFinishWithEmptyString) {
     QStringList finished;
     QObject::connect(wf, &WorkflowManager::utteranceFinished, wf, [&](const QString& t) { finished << t; });

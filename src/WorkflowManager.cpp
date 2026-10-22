@@ -103,6 +103,7 @@ void WorkflowManager::abortRecording(WorkflowEvent evt) {
     m_recorder->stopListening();
     m_sherpaManager->resumeIdleTimer();
     m_pending = 0;
+    m_utteranceIds.clear();
     transitionTo(WorkflowState::Idle, WorkflowEvent::ErrorHandled);
 }
 
@@ -145,14 +146,17 @@ void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate
 
     // 其余各态（含 Loading）统一入队转录
     m_pending++;
-    emit utteranceAccepted();
+    const quint64 id = ++m_nextUtteranceId;
+    m_utteranceIds.enqueue(id);
+    emit utteranceAccepted(id);
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
 }
 
 void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawText, const QString& finalText, const QString& errorMsg) {
     if (m_pending > 0) m_pending--;
-    emit utteranceFinished(success ? finalText : QString());
+    const quint64 id = m_utteranceIds.isEmpty() ? 0 : m_utteranceIds.dequeue();
+    emit utteranceFinished(success ? finalText : QString(), id);
 
     if (success) {
         if (!finalText.isEmpty()) {

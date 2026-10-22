@@ -6,6 +6,8 @@
 #include "sherpa/SherpaManager.h"
 #include "TextPostProcessor.h"
 #include "interfaces/workflow_interfaces.h"
+#include "utils/OrderedResults.h"
+#include <QQueue>
 
 // @brief  
 // 统一转录入口：根据 backend 类型分发到 Groq / Sherpa / Gladia / Gemini
@@ -29,21 +31,37 @@ signals:
                              const QString &finalText, const QString &errorMsg);
 
 private:
-    void emitResult(bool success, const QString &rawText,
-                    const QString &finalText, const QString &errorMsg);
+    // 一次转录请求。云端请求是并发的，结果可能乱序回来，按 seq 排好再发出；
+    // fileMode 在提交时定下，避免结果到达时模式已切换、文件转录结果被注入前台窗口
+    struct Ticket {
+        quint64 seq = 0;
+        bool fileMode = false;
+    };
+    struct Result {
+        bool success = false;
+        QString rawText, finalText, errorMsg;
+        bool fileMode = false;
+    };
+    // 网络请求无响应时的兜底，否则一句卡住会挡住后面所有结果；要长于上传加 Gladia 最多约 60 秒的轮询
+    static constexpr int kNetworkTimeoutMs = 150 * 1000;
 
-    void transcribeGroq(const QByteArray &wavBytes);
-    void transcribeGladia(const QByteArray &wavBytes);
-    void submitGladiaTranscription(const QString &audioUrl);
-    void pollGladiaResult(const QString &resultUrl, int attempt);
-    void transcribeSherpa(const QByteArray& pcmData, int sampleRate);
-    void transcribeGemini(const QByteArray &wavBytes);
+    void finish(const Ticket& t, bool success, const QString& rawText, const QString& errorMsg);
+    void armTimeout(const Ticket& t);
+
+    void transcribeGroq(const QByteArray &wavBytes, const Ticket& t);
+    void transcribeGladia(const QByteArray &wavBytes, const Ticket& t);
+    void submitGladiaTranscription(const QString &audioUrl, const Ticket& t);
+    void pollGladiaResult(const QString &resultUrl, int attempt, const Ticket& t);
+    void transcribeGemini(const QByteArray &wavBytes, const Ticket& t);
+    void onSherpaTranscribed(bool ok, const QString& text, const QString& err);
 
     static QByteArray buildWavBytes(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
-    QString postProcess(const QString &rawText);
+    QString postProcess(const QString &rawText, bool fileMode);
 
     TextPostProcessor* m_textProcessor;
     bool m_fileMode = false;
+    OrderedResults<Result> m_results;
+    QQueue<Ticket> m_sherpaTickets;   // Sherpa 串行转录，结果按提交顺序回来
 
     const AppConfig& m_config;
     QNetworkAccessManager* m_manager;

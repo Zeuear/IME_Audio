@@ -28,10 +28,12 @@ protected:
     }
 
     void speak(const QString& partial) { model.setPartial(model.epoch(), partial); }
-    void cut(qint64 now = 1000) { model.onUtteranceReady(now); }
+    // 模拟 WorkflowManager：每次切句分配一个新 id
+    quint64 cut(qint64 now = 1000) { model.onUtteranceReady(++m_nextId, now); return m_nextId; }
 
     QCoreApplication* m_app = nullptr;
     LiveCaptionModel model;
+    quint64 m_nextId = 0;
 };
 
 
@@ -63,12 +65,43 @@ TEST_F(LiveCaptionModelTest, PartialIgnoredWhenNotSpeaking) {
     EXPECT_TRUE(model.isEmpty());
 }
 
-TEST_F(LiveCaptionModelTest, StaleEpochPartialIsDropped) {
+TEST_F(LiveCaptionModelTest, ActiveSentenceKeepsUpdatingAfterVoiceStops) {
+    speak("hello");
+    model.setSpeaking(false);   // VAD 已判定结束，流式解码还在追句尾
+    speak("hello world");
+    EXPECT_EQ(model.plainText(), "hello world");
+}
+
+TEST_F(LiveCaptionModelTest, LatePartialOfCutSentenceUpdatesThatSentence) {
     speak("first");
     const quint64 old = model.epoch();
     cut();
-    model.setPartial(old, "late partial of the first sentence");
-    EXPECT_EQ(model.plainText(), "first");
+    speak("second");
+    model.setPartial(old, "first tail");   // 切句后才解出来的句尾
+    EXPECT_EQ(model.plainText(), "first tail second");
+}
+
+TEST_F(LiveCaptionModelTest, LatePartialFillsPlaceholderWithoutText) {
+    const quint64 old = model.epoch();
+    cut();                                  // 切句时流式还没出字
+    model.setPartial(old, "late");
+    EXPECT_EQ(model.plainText(), "late");
+    EXPECT_FALSE(model.segments()[0].isFinal);
+}
+
+TEST_F(LiveCaptionModelTest, LatePartialDoesNotOverwriteFinal) {
+    speak("first");
+    const quint64 old = model.epoch();
+    const quint64 id = cut();
+    model.onTranscribed(id, "First.", 2000);
+    model.setPartial(old, "first tail");
+    EXPECT_EQ(model.plainText(), "First.");
+}
+
+TEST_F(LiveCaptionModelTest, TextFilterAppliesToPartials) {
+    model.setTextFilter([](const QString& t) { QString s = t; return s.replace("k8s", "Kubernetes"); });
+    speak("deploy k8s");
+    EXPECT_EQ(model.plainText(), "deploy Kubernetes");
 }
 
 TEST_F(LiveCaptionModelTest, ChangedSignalOnlyWhenTextChanges) {
@@ -92,19 +125,19 @@ TEST_F(LiveCaptionModelTest, UtteranceReadyBumpsEpochAndKeepsText) {
 
 TEST_F(LiveCaptionModelTest, FinalReplacesPendingAndTurnsFinal) {
     speak("hello wor");
-    cut();
-    model.onTranscribed("Hello world.", 2000);
+    const quint64 id = cut();
+    model.onTranscribed(id, "Hello world.", 2000);
     const auto segs = model.segments();
     ASSERT_EQ(segs.size(), 1);
     EXPECT_EQ(segs[0].text, "Hello world.");
     EXPECT_TRUE(segs[0].isFinal);
 }
 
-TEST_F(LiveCaptionModelTest, FinalsMatchPendingInFifoOrder) {
-    speak("one");  cut(1000);
-    speak("two");  cut(1001);
+TEST_F(LiveCaptionModelTest, FinalsMatchPendingById) {
+    speak("one");  const quint64 one = cut(1000);
+    speak("two");  const quint64 two = cut(1001);
     speak("three");
-    model.onTranscribed("ONE-final", 2000);
+    model.onTranscribed(one, "ONE-final", 2000);
     // 第一句已最终、第二句仍待定、第三句仍在说
     auto segs = model.segments();
     ASSERT_EQ(segs.size(), 2);
@@ -113,7 +146,7 @@ TEST_F(LiveCaptionModelTest, FinalsMatchPendingInFifoOrder) {
     EXPECT_FALSE(segs[1].isFinal);
     EXPECT_EQ(segs[1].text, " two three");
 
-    model.onTranscribed("TWO-final", 2001);
+    model.onTranscribed(two, "TWO-final", 2001);
     segs = model.segments();
     ASSERT_EQ(segs.size(), 2);
     EXPECT_EQ(segs[0].text, "ONE-final TWO-final");
@@ -123,29 +156,39 @@ TEST_F(LiveCaptionModelTest, FinalsMatchPendingInFifoOrder) {
 
 TEST_F(LiveCaptionModelTest, EmptyFinalRemovesThePendingSentence) {
     speak("noise words");
-    cut();
-    model.onTranscribed("", 2000);   // 转录失败/空结果：浅色残留必须消失
+    const quint64 id = cut();
+    model.onTranscribed(id, "", 2000);   // 转录失败/空结果：浅色残留必须消失
     EXPECT_TRUE(model.isEmpty());
 }
 
 TEST_F(LiveCaptionModelTest, CutWithoutAnyPartialStillOccupiesASlot) {
     // 没有流式模型的语言：从未有中间结果，但正式结果仍要对上号
-    cut(1000);
-    cut(1001);
-    model.onTranscribed("A.", 2000);
-    model.onTranscribed("B.", 2001);
+    const quint64 a = cut(1000);
+    const quint64 b = cut(1001);
+    model.onTranscribed(a, "A.", 2000);
+    model.onTranscribed(b, "B.", 2001);
     EXPECT_EQ(model.plainText(), "A. B.");
     EXPECT_TRUE(model.segments()[0].isFinal);
 }
 
-TEST_F(LiveCaptionModelTest, FinalWithNothingPendingIsAppended) {
-    model.onTranscribed("orphan", 1000);
-    ASSERT_EQ(model.segments().size(), 1);
-    EXPECT_TRUE(model.segments()[0].isFinal);
+TEST_F(LiveCaptionModelTest, FinalWithUnknownIdIsDropped) {
+    model.onTranscribed(0, "orphan", 1000);
+    EXPECT_TRUE(model.isEmpty());
+}
+
+TEST_F(LiveCaptionModelTest, ExpiredPendingDoesNotShiftLaterFinals) {
+    speak("slow"); const quint64 slow = cut(0);
+    model.expire(LiveCaptionModel::kPendingTimeoutMs);   // 第一句超时被移除
+    speak("next"); const quint64 next = cut(LiveCaptionModel::kPendingTimeoutMs + 1);
+    model.onTranscribed(slow, "SLOW-final", LiveCaptionModel::kPendingTimeoutMs + 2);   // 迟到的结果
+    EXPECT_EQ(model.plainText(), "next");
+    EXPECT_FALSE(model.segments()[0].isFinal);
+    model.onTranscribed(next, "NEXT-final", LiveCaptionModel::kPendingTimeoutMs + 3);
+    EXPECT_EQ(model.plainText(), "NEXT-final");
 }
 
 TEST_F(LiveCaptionModelTest, NewSentenceAfterFinalStartsFreshLine) {
-    speak("first"); cut(); model.onTranscribed("First.", 1000);
+    speak("first"); const quint64 id = cut(); model.onTranscribed(id, "First.", 1000);
     speak("second");
     const auto segs = model.segments();
     ASSERT_EQ(segs.size(), 2);
@@ -155,7 +198,7 @@ TEST_F(LiveCaptionModelTest, NewSentenceAfterFinalStartsFreshLine) {
 
 
 TEST_F(LiveCaptionModelTest, FinalExpiresAfterLinger) {
-    speak("x"); cut(); model.onTranscribed("done", 10000);
+    speak("x"); const quint64 id = cut(); model.onTranscribed(id, "done", 10000);
     EXPECT_FALSE(model.expire(10000 + LiveCaptionModel::kFinalLingerMs - 1));
     EXPECT_FALSE(model.isEmpty());
     EXPECT_TRUE(model.expire(10000 + LiveCaptionModel::kFinalLingerMs));
@@ -189,8 +232,8 @@ TEST_F(LiveCaptionModelTest, ClearEmitsEpochChangedEvenWhenEmpty) {
 TEST_F(LiveCaptionModelTest, KeepsOnlyMostRecentSentences) {
     for (int i = 0; i < LiveCaptionModel::kMaxSentences + 4; ++i) {
         speak(QString("s%1").arg(i));
-        cut(1000 + i);
-        model.onTranscribed(QString("F%1").arg(i), 2000 + i);
+        const quint64 id = cut(1000 + i);
+        model.onTranscribed(id, QString("F%1").arg(i), 2000 + i);
     }
     const QString text = model.plainText();
     EXPECT_FALSE(text.contains("F0"));
@@ -206,6 +249,10 @@ TEST(CaptionText, AllCapsEnglishBecomesSentenceCase) {
 TEST(CaptionText, MixedCaseIsLeftAlone) {
     EXPECT_EQ(CaptionText::normalizePartial("Hello World"), "Hello World");
     EXPECT_EQ(CaptionText::normalizePartial("iPhone"), "iPhone");
+}
+
+TEST(CaptionText, UpperCaseInsideCjkIsKept) {
+    EXPECT_EQ(CaptionText::normalizePartial("我用 API 调用"), "我用 API 调用");
 }
 
 TEST(CaptionText, ChineseIsLeftAloneAndWhitespaceCollapsed) {

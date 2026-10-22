@@ -82,6 +82,8 @@ struct AppConfig {
     std::atomic<bool> continuousMode { false };
     std::atomic<bool> autoStopEnabled { true };
     std::atomic<bool> liveCaptionEnabled { true };
+    int liveCaptionFontSize = 12;   // pt
+    bool liveCaptionAtTop = false;  // 字幕悬浮条贴屏幕顶部，默认底部
 
     QString hotkey;
 
@@ -101,10 +103,13 @@ struct AppConfig {
         terms = other.terms;
         gladiaKey = other.gladiaKey;
         groqKey = other.groqKey;
+        geminiKey = other.geminiKey;
         replaceRules = other.replaceRules;
         continuousMode.store(other.continuousMode.load());
         autoStopEnabled.store(other.autoStopEnabled.load());
         liveCaptionEnabled.store(other.liveCaptionEnabled.load());
+        liveCaptionFontSize = other.liveCaptionFontSize;
+        liveCaptionAtTop = other.liveCaptionAtTop;
         hotkey = other.hotkey;
         style = other.style;
         Language = other.Language;

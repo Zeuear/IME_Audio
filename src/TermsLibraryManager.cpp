@@ -3,15 +3,18 @@
 #include <QTextStream>
 #include <QSet>
 #include <QMap>
+#include <algorithm>
+#include <functional>
 #include <QCoreApplication>
 #include "utils/AppPaths.h"
-TermsLibraryManager::TermsLibraryManager(QObject *parent) : QObject(parent) {
+TermsLibraryManager::TermsLibraryManager(QObject *parent) : TermsLibraryManager(defaultPath(), parent) {}
+
+TermsLibraryManager::TermsLibraryManager(const QString &path, QObject *parent) : QObject(parent), m_path(path) {
     connect(this, &TermsLibraryManager::termsReloaded, this, [this]() {
-        saveToTsv(defaultPath());
+        saveToTsv(m_path);
     });
 
-    loadFromTsv(defaultPath());
-
+    loadFromTsv(m_path);
 }
 
 QString TermsLibraryManager::defaultPath() {
@@ -62,44 +65,40 @@ bool TermsLibraryManager::exportToFile(const QString &path) const { return saveT
 
 QStringList TermsLibraryManager::checkConflicts() const {
     QStringList conflicts;
-    // 1. 检查重复和无效
-    QMap<QString, int> wrongMap;
+    QMap<QString, int> heardMap;   // 听成 → 所在词条
     for (int i = 0; i < m_items.size(); ++i) {
         const auto& item = m_items[i];
         if (!item.enabled) continue;
 
-        if (item.wrong == item.correct) {
-            conflicts << QString("无效替换(相同): %1").arg(item.wrong);
-        }
-
-        // 2. 映射冲突检查 (同一个错词对应了不同的正词)
-        if (wrongMap.contains(item.wrong)) {
-            int otherIdx = wrongMap[item.wrong];
-            if (m_items[otherIdx].correct != item.correct) {
-                conflicts << QString("映射冲突: [%1] 分别指向 [%2] 和 [%3]")
-                    .arg(item.wrong, m_items[otherIdx].correct, item.correct);
+        for (const QString& w : item.heard()) {
+            if (w == item.correct) {
+                conflicts << QString("无效替换(相同): %1").arg(w);
+                continue;
+            }
+            // 同一个听成对应了不同的写成
+            if (heardMap.contains(w)) {
+                const QString& other = m_items[heardMap[w]].correct;
+                if (other != item.correct) {
+                    conflicts << QString("映射冲突: [%1] 分别指向 [%2] 和 [%3]").arg(w, other, item.correct);
+                }
+            } else {
+                heardMap.insert(w, i);
             }
         }
-        else {
-            wrongMap.insert(item.wrong, i);
-        }
 
-        // 3. 循环引用 & 链式依赖
+        // 写成又是别的词条的听成：A->B, B->C 会链式替换，A->B, B->A 互相抵消
         for (int j = 0; j < m_items.size(); ++j) {
-            if (i == j || !m_items[j].enabled) continue;
-            // 循环: A->B, B->A
-            if (item.correct == m_items[j].wrong && m_items[j].correct == item.wrong) {
-                conflicts << QString("循环引用: [%1]->[%2] <-> [%3]->[%4]")
-                    .arg(item.wrong, item.correct, m_items[j].wrong, m_items[j].correct);
-            }
-            // 链式: A->B, B->C
-            else if (item.correct == m_items[j].wrong) {
-                conflicts << QString("链式依赖: [%1]->[%2]->[%3]")
-                    .arg(item.wrong, item.correct, m_items[j].correct);
+            if (i == j || !m_items[j].enabled || !m_items[j].heard().contains(item.correct)) continue;
+            if (item.heard().contains(m_items[j].correct)) {
+                if (i < j) {
+                    conflicts << QString("循环引用: [%1] <-> [%2]").arg(item.correct, m_items[j].correct);
+                }
+            } else {
+                conflicts << QString("链式依赖: [%1]->[%2]").arg(item.correct, m_items[j].correct);
             }
         }
     }
-    return conflicts; 
+    return conflicts;
 }
 
 void TermsLibraryManager::updateItem(int index, const TermItem& newItem) {
@@ -121,37 +120,35 @@ void TermsLibraryManager::removeItem(int index) {
     }
 }
 
+void TermsLibraryManager::setEnabled(const QList<int>& rows, bool enabled) {
+    for (int row : rows) {
+        if (row >= 0 && row < m_items.size()) m_items[row].enabled = enabled;
+    }
+    emit termsReloaded();
+}
+
+void TermsLibraryManager::removeItems(QList<int> rows) {
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    for (int row : rows) {
+        if (row >= 0 && row < m_items.size()) m_items.removeAt(row);
+    }
+    emit termsReloaded();
+}
+
 void TermsLibraryManager::clear() {
     m_items.clear();
     emit termsReloaded();
 }
 
-bool TermsLibraryManager::hasDuplicateWrong(const QString& targetWrong, int currentRow) {
-    if (targetWrong.isEmpty()) return false;
-
+QString TermsLibraryManager::duplicateHeard(const QStringList& words, int excludeRow) const {
     for (int i = 0; i < m_items.size(); ++i) {
-        if (i == currentRow) continue; 
-
-        if (m_items[i].enabled &&
-            m_items[i].wrong.compare(targetWrong, Qt::CaseInsensitive) == 0) {
-            return true; 
+        if (i == excludeRow || !m_items[i].enabled) continue;
+        const QStringList existing = m_items[i].heard();
+        for (const QString& w : words) {
+            if (existing.contains(w, Qt::CaseInsensitive)) return w;
         }
     }
-    return false;
-}
-
-bool TermsLibraryManager::hasDuplicateCorrect(const QString& targetCorrect, int currentRow) {
-    if (targetCorrect.isEmpty()) return false;
-
-    for (int i = 0; i < m_items.size(); ++i) {
-        if (i == currentRow) continue;
-
-        if (m_items[i].enabled &&
-            m_items[i].correct.compare(targetCorrect, Qt::CaseInsensitive) == 0) {
-            return true;
-        }
-    }
-    return false;
+    return {};
 }
 
 QString TermsLibraryManager::applyReplaceRules(const QString& text, const QString& rules) {
@@ -191,8 +188,8 @@ QString TermsLibraryManager::applyReplaceRules(const QString& text, const QStrin
     return result;
 }
 
-static QStringList splitAliases(const QString& aliases) {
-    QString normalized = aliases;
+QStringList TermsLibraryManager::splitWords(const QString& text) {
+    QString normalized = text;
     normalized.replace("，", ",").replace("、", ",").replace(";", ",").replace("；", ",").replace("/", ",");
     QStringList list = normalized.split(',', Qt::SkipEmptyParts);
     for (QString& s : list) s = s.trimmed();
@@ -200,9 +197,16 @@ static QStringList splitAliases(const QString& aliases) {
     return list;
 }
 
-bool TermsLibraryManager::modeMatches(const QString& mode, const QString& target) {
-    if (mode.isEmpty() || mode == "all") return true;
-    return mode.contains(target);
+QStringList TermItem::heard() const {
+    QStringList words;
+    if (!wrong.trimmed().isEmpty()) words << wrong.trimmed();
+    words << TermsLibraryManager::splitWords(aliases);
+    return words;
+}
+
+void TermItem::setHeard(const QStringList& words) {
+    wrong = words.value(0);
+    aliases = words.mid(1).join(", ");
 }
 
 TermsLibraryManager::TermsRuleSet TermsLibraryManager::buildAllRules() const {
@@ -212,33 +216,24 @@ TermsLibraryManager::TermsRuleSet TermsLibraryManager::buildAllRules() const {
 
     for (const auto& item : m_items) {
         if (!item.enabled) continue;
-        if (item.wrong.isEmpty() || item.correct.isEmpty()) continue;
+        const QString correct = item.correct.trimmed();
+        if (correct.isEmpty()) continue;
 
         result.enabledCount++;
-        const auto aliasList = splitAliases(item.aliases);
+        const QStringList heard = item.heard();
 
-        if (modeMatches(item.mode, "replace")) {
-            replaceRules << QString("%1=>%2").arg(item.wrong, item.correct);
-            for (const QString& alias : aliasList) {
-                replaceRules << QString("%1=>%2").arg(alias, item.correct);
-            }
-            result.replaceCount++;
+        for (const QString& w : heard) {
+            if (w != correct) replaceRules << QString("%1=>%2").arg(w, correct);
         }
+        if (!heard.isEmpty()) result.replaceCount++;
 
-        if (modeMatches(item.mode, "ai")) {
-            aiRules << QString("%1=%2").arg(item.wrong, item.correct);
-            result.aiCount++;
-        }
+        aiRules << (heard.isEmpty() ? correct : QString("%1=%2").arg(heard.join('/'), correct));
+        result.aiCount++;
 
-        if (modeMatches(item.mode, "hotword")) {
-            auto addWord = [&](const QString& w) {
-                if (w.isEmpty() || hotwordSeen.contains(w)) return;
-                hotwordSeen.insert(w);
-                result.hotwords << w;
-                };
-            addWord(item.wrong);
-            addWord(item.correct);
-            for (const QString& alias : aliasList) addWord(alias);
+        // 热词只放正确写法：放进听错的词等于让识别器更倾向于识别出错词
+        if (!hotwordSeen.contains(correct)) {
+            hotwordSeen.insert(correct);
+            result.hotwords << correct;
             result.hotwordCount++;
         }
     }

@@ -24,11 +24,6 @@ TranscriptionService::TranscriptionService(
       m_textPolishService(textPolishService),
       m_textProcessor(new TextPostProcessor(this))
 {
-
-    connect(m_textPolishService, &TextPolishService::polishFinished, this, [&](bool success, const QString& text, const QString& error) {
-        emitResult(success, text, success ? postProcess(text) : QString(), error);
-    });
-
     connect(m_textPolishService, &TextPolishService::connectionTested, this,
         [this](bool success, const QString& message) {
             if (!success) {
@@ -39,48 +34,66 @@ TranscriptionService::TranscriptionService(
             }
         });
 
-    connect(m_sherpaManager, &SherpaManager::utteranceTranscribed, this,
-            [this](bool ok, const QString &text, const QString &err) {
-                if (m_config.polish.enableAiEnhancement) {
-                    TextPolishService::RequestParams params;
-                    params.aiEngine = m_config.polish.aiEngineIndex;
-                    params.apiKey = m_config.polish.apiKey;
-                    params.customUrl = m_config.polish.apiUrl;
-                    params.model = m_config.polish.model;
-                    params.style = m_config.polish.aiStyle;
-                    params.customPrompt = m_config.polish.prompt;
-                    params.aiVocab = m_config.polish.vocab;
-                    params.targetLang = m_config.polish.targetLang;
-
-                    m_textPolishService->polishText(text, params);
-                }
-                else {
-                    emitResult(ok, text, ok ? postProcess(text) : QString(), err);
-                }
-            });
+    connect(m_sherpaManager, &SherpaManager::utteranceTranscribed, this, &TranscriptionService::onSherpaTranscribed);
+    // 卸载会清掉 Sherpa 的任务队列，排着的请求不会再有结果，按失败放行
+    connect(m_sherpaManager, &SherpaManager::idleUnloaded, this, [this]() {
+        while (!m_sherpaTickets.isEmpty()) finish(m_sherpaTickets.dequeue(), false, {}, QStringLiteral("模型已卸载"));
+    });
 }
 
 void TranscriptionService::transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample){
-    if (m_config.backend == AsrBackendKind::Sherpa) {
-        transcribeSherpa(pcmData, sampleRate);
+    const Ticket t{ m_results.reserve(), m_fileMode };
+    // 每个序号都必须有结果，否则会挡住后面所有结果；SherpaManager 对空音频不入队也不回结果
+    if (pcmData.isEmpty()) {
+        finish(t, false, {}, QStringLiteral("音频为空"));
         return;
     }
 
+    if (m_config.backend == AsrBackendKind::Sherpa) {
+        m_sherpaTickets.enqueue(t);
+        m_sherpaManager->transcribeAsync(pcmData, sampleRate);
+        return;
+    }
+
+    armTimeout(t);
     QByteArray wavBytes = buildWavBytes(pcmData, sampleRate, channels, bitsPerSample);
     switch (m_config.backend) {
-    case AsrBackendKind::Groq:   transcribeGroq(wavBytes); break;
-    case AsrBackendKind::Gladia: transcribeGladia(wavBytes); break;
-    case AsrBackendKind::Gemini: transcribeGemini(wavBytes); break;
-    default: break;
+    case AsrBackendKind::Groq:   transcribeGroq(wavBytes, t); break;
+    case AsrBackendKind::Gladia: transcribeGladia(wavBytes, t); break;
+    case AsrBackendKind::Gemini: transcribeGemini(wavBytes, t); break;
+    default: finish(t, false, {}, QStringLiteral("未知的识别后端")); break;
     }
 }
 
-void TranscriptionService::transcribeSherpa(const QByteArray& pcmData, int sampleRate) {
-    QString text, error;
-    m_sherpaManager->transcribeAsync(pcmData, sampleRate);
+void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, const QString& err) {
+    // SherpaManager 只在空闲卸载时清队列，而录音 / 文件转录期间不会空闲卸载，所以这里不该为空
+    if (m_sherpaTickets.isEmpty()) {
+        LOG_WARN("Sherpa result without a pending request, dropped");
+        return;
+    }
+    const Ticket t = m_sherpaTickets.dequeue();
+    if (!ok || !m_config.polish.enableAiEnhancement) {
+        finish(t, ok, text, err);
+        return;
+    }
+
+    TextPolishService::RequestParams params;
+    params.aiEngine = m_config.polish.aiEngineIndex;
+    params.apiKey = m_config.polish.apiKey;
+    params.customUrl = m_config.polish.apiUrl;
+    params.model = m_config.polish.model;
+    params.style = m_config.polish.aiStyle;
+    params.customPrompt = m_config.polish.prompt;
+    params.aiVocab = m_config.polish.vocab;
+    params.targetLang = m_config.polish.targetLang;
+
+    armTimeout(t);
+    m_textPolishService->polishText(text, params, [this, t](bool success, const QString& polished, const QString& error) {
+        finish(t, success, polished, error);
+    });
 }
 
-void TranscriptionService::transcribeGemini(const QByteArray &wavBytes) {
+void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ticket& t) {
     TextPolishService::RequestParams p;
     p.apiKey = m_config.polish.apiKey;
     p.model = m_config.polish.model;
@@ -93,15 +106,15 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes) {
     p.aiEngine = m_config.polish.aiEngineIndex;
 
     GeminiProvider provider;
-    provider.transcribe(wavBytes, p, m_manager, [this](bool ok, QString text, QString err) {
-        emitResult(ok, text, ok ? postProcess(text) : QString(), err);
+    provider.transcribe(wavBytes, p, m_manager, [this, t](bool ok, QString text, QString err) {
+        finish(t, ok, text, err);
     });
 }
 
-void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
+void TranscriptionService::transcribeGroq(const QByteArray &wavBytes, const Ticket& t) {
     // Groq Whisper API：multipart/form-data 上传音频文件
     if (m_config.groqKey.isEmpty()) {
-        emitResult(false, {}, {}, QStringLiteral("Groq API Key 未配置"));
+        finish(t, false, {}, QStringLiteral("Groq API Key 未配置"));
         return;
     }
 
@@ -130,22 +143,22 @@ void TranscriptionService::transcribeGroq(const QByteArray &wavBytes) {
     QNetworkReply *reply = m_manager->post(req, multiPart);
     multiPart->setParent(reply);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, t]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emitResult(false, {}, {}, reply->errorString());
+            finish(t, false, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         QString text = obj.value("text").toString();
-        emitResult(true, text, postProcess(text), {});
+        finish(t, true, text, {});
     });
 }
 
-void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
+void TranscriptionService::transcribeGladia(const QByteArray &wavBytes, const Ticket& t) {
     // Gladia v2 真实流程：上传拿 audio_url → 提交转录（异步）→ 轮询 result_url
     if (m_config.gladiaKey.isEmpty()) {
-        emitResult(false, {}, {}, QStringLiteral("Gladia API Key 未配置"));
+        finish(t, false, {}, QStringLiteral("Gladia API Key 未配置"));
         return;
     }
 
@@ -167,23 +180,23 @@ void TranscriptionService::transcribeGladia(const QByteArray &wavBytes) {
     QNetworkReply *upReply = m_manager->post(upReq, multiPart);
     multiPart->setParent(upReply);
 
-    connect(upReply, &QNetworkReply::finished, this, [this, upReply]() {
+    connect(upReply, &QNetworkReply::finished, this, [this, upReply, t]() {
         upReply->deleteLater();
         if (upReply->error() != QNetworkReply::NoError) {
-            emitResult(false, {}, {}, upReply->errorString());
+            finish(t, false, {}, upReply->errorString());
             return;
         }
         QJsonObject upObj = QJsonDocument::fromJson(upReply->readAll()).object();
         QString audioUrl = upObj.value("audio_url").toString();
         if (audioUrl.isEmpty()) {
-            emitResult(false, {}, {}, QStringLiteral("Gladia 上传失败：未返回 audio_url"));
+            finish(t, false, {}, QStringLiteral("Gladia 上传失败：未返回 audio_url"));
             return;
         }
-        submitGladiaTranscription(audioUrl);
+        submitGladiaTranscription(audioUrl, t);
     });
 }
 
-void TranscriptionService::submitGladiaTranscription(const QString &audioUrl) {
+void TranscriptionService::submitGladiaTranscription(const QString &audioUrl, const Ticket& t) {
     QJsonObject body;
     body["audio_url"] = audioUrl;
     QJsonDocument doc(body);
@@ -193,26 +206,26 @@ void TranscriptionService::submitGladiaTranscription(const QString &audioUrl) {
     req.setRawHeader("x-gladia-key", m_config.gladiaKey.toUtf8());
 
     QNetworkReply *reply = m_manager->post(req, doc.toJson());
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, t]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emitResult(false, {}, {}, reply->errorString());
+            finish(t, false, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         QString resultUrl = obj.value("result_url").toString();
         if (resultUrl.isEmpty()) {
-            emitResult(false, {}, {}, QStringLiteral("Gladia 转录提交失败：未返回 result_url"));
+            finish(t, false, {}, QStringLiteral("Gladia 转录提交失败：未返回 result_url"));
             return;
         }
-        pollGladiaResult(resultUrl, 0);
+        pollGladiaResult(resultUrl, 0, t);
     });
 }
 
-void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attempt) {
+void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attempt, const Ticket& t) {
     static const int kMaxAttempts = 60; // ~60s @ 1s
     if (attempt >= kMaxAttempts) {
-        emitResult(false, {}, {}, QStringLiteral("Gladia 转录超时"));
+        finish(t, false, {}, QStringLiteral("Gladia 转录超时"));
         return;
     }
 
@@ -220,10 +233,10 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
     req.setRawHeader("x-gladia-key", m_config.gladiaKey.toUtf8());
 
     QNetworkReply *reply = m_manager->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, resultUrl, attempt]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, resultUrl, attempt, t]() {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            emitResult(false, {}, {}, reply->errorString());
+            finish(t, false, {}, reply->errorString());
             return;
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
@@ -232,32 +245,43 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
             QString text = obj.value("result").toObject()
                                 .value("transcription").toObject()
                                 .value("full_transcript").toString();
-            emitResult(true, text, postProcess(text), {});
+            finish(t, true, text, {});
             return;
         }
         if (status == QStringLiteral("error")) {
-            emitResult(false, {}, {}, QStringLiteral("Gladia 转录失败"));
+            finish(t, false, {}, QStringLiteral("Gladia 转录失败"));
             return;
         }
         // 仍处理中：1s 后重试
-        QTimer::singleShot(1000, this, [this, resultUrl, attempt]() {
-            pollGladiaResult(resultUrl, attempt + 1);
+        QTimer::singleShot(1000, this, [this, resultUrl, attempt, t]() {
+            pollGladiaResult(resultUrl, attempt + 1, t);
         });
     });
 }
 
-void TranscriptionService::emitResult(bool success, const QString &rawText,
-                                      const QString &finalText, const QString &errorMsg) {
-    if (m_fileMode)
-        emit fileSegmentFinished(success, rawText, finalText, errorMsg);
-    else
-        emit transcriptionFinished(success, rawText, finalText, errorMsg);
+void TranscriptionService::finish(const Ticket& t, bool success, const QString& rawText, const QString& errorMsg) {
+    const Result r{ success, rawText, success ? postProcess(rawText, t.fileMode) : QString(), errorMsg, t.fileMode };
+    // 超时兜底后真实结果又回来了：已经按失败放行过，丢弃
+    if (!m_results.complete(t.seq, r)) return;
+
+    for (const Result& ready : m_results.takeReady()) {
+        if (ready.fileMode)
+            emit fileSegmentFinished(ready.success, ready.rawText, ready.finalText, ready.errorMsg);
+        else
+            emit transcriptionFinished(ready.success, ready.rawText, ready.finalText, ready.errorMsg);
+    }
 }
 
-QString TranscriptionService::postProcess(const QString &rawText) {
+void TranscriptionService::armTimeout(const Ticket& t) {
+    QTimer::singleShot(kNetworkTimeoutMs, this, [this, t]() {
+        finish(t, false, {}, QStringLiteral("请求超时，无响应"));
+    });
+}
+
+QString TranscriptionService::postProcess(const QString &rawText, bool fileMode) {
 
     m_textProcessor->setReplaceRules(m_config.replaceRules);
-    m_textProcessor->setAutoPunctuation(!m_fileMode);
+    m_textProcessor->setAutoPunctuation(!fileMode);
     return m_textProcessor->postProcess(rawText);
 }
 

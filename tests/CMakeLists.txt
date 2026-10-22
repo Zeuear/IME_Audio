@@ -47,6 +47,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/live_caption_model_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/ordered_results_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:

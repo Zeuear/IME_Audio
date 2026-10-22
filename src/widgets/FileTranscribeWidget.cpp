@@ -58,9 +58,7 @@ void FileTranscribeWidget::setupUi()
     m_model = new FileTaskModel(this);
 
     m_addBtn = new QPushButton(this);
-    m_transcribeBtn = new QPushButton(this);
-    m_cancelBtn = new QPushButton(this);
-    m_clearBtn = new QPushButton(this);
+    m_transcribeBtn = new QPushButton(this);   // 空闲时"开始转录"，转录中变为"取消"
     m_exportBtn = new QPushButton(this);
     m_exportTxtCheck = new AnimatedCheckBox(this);
     m_exportTxtCheck->setChecked(true);
@@ -69,12 +67,7 @@ void FileTranscribeWidget::setupUi()
     auto* toolbar = new QHBoxLayout;
     toolbar->addWidget(m_addBtn);
     toolbar->addWidget(m_transcribeBtn);
-    toolbar->addWidget(m_cancelBtn);
-    toolbar->addWidget(m_clearBtn);
     toolbar->addStretch();
-    toolbar->addWidget(m_exportTxtCheck);
-    toolbar->addWidget(m_exportSrtCheck);
-    toolbar->addWidget(m_exportBtn);
 
     // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
     m_hintLabel = new QLabel(this);
@@ -112,18 +105,29 @@ void FileTranscribeWidget::setupUi()
     m_preview = new QPlainTextEdit(this);
     m_preview->setReadOnly(true);
 
+    // 标题加粗作为下半区的分组标题；导出跟着结果放在这里
+    QFont titleFont = m_previewTitle->font();
+    titleFont.setBold(true);
+    m_previewTitle->setFont(titleFont);
+
     auto* previewHeader = new QHBoxLayout;
     previewHeader->addWidget(m_previewTitle, 1);
     previewHeader->addWidget(m_copyBtn);
+    previewHeader->addSpacing(12);
+    previewHeader->addWidget(m_exportTxtCheck);
+    previewHeader->addWidget(m_exportSrtCheck);
+    previewHeader->addWidget(m_exportBtn);
 
     auto* previewPanel = new QWidget(this);
     auto* previewLayout = new QVBoxLayout(previewPanel);
-    previewLayout->setContentsMargins(0, 0, 0, 0);
+    // 上边距把预览区和上面的文件区隔开，不再紧贴
+    previewLayout->setContentsMargins(0, 14, 0, 0);
+    previewLayout->setSpacing(8);
     previewLayout->addLayout(previewHeader);
     previewLayout->addWidget(m_preview, 1);
 
     const int previewMaxHeight = m_preview->fontMetrics().lineSpacing() * 10
-                               + m_previewTitle->sizeHint().height() + 24;
+                               + m_previewTitle->sizeHint().height() + 24 + 14;
     previewPanel->setMaximumHeight(previewMaxHeight);
     
     const int tileHeight = m_list->itemDelegate()->sizeHint(QStyleOptionViewItem(), QModelIndex()).height();
@@ -159,9 +163,10 @@ void FileTranscribeWidget::setupUi()
     });
 
     connect(m_addBtn, &QPushButton::clicked, this, &FileTranscribeWidget::chooseFiles);
-    connect(m_transcribeBtn, &QPushButton::clicked, this, &FileTranscribeWidget::transcribeClicked);
-    connect(m_cancelBtn, &QPushButton::clicked, this, &FileTranscribeWidget::cancel);
-    connect(m_clearBtn, &QPushButton::clicked, this, &FileTranscribeWidget::clearAll);
+    connect(m_transcribeBtn, &QPushButton::clicked, this, [this]() {
+        if (m_busy) cancel();
+        else transcribeClicked();
+    });
     connect(m_exportBtn, &QPushButton::clicked, this, &FileTranscribeWidget::exportResults);
     // 两种格式都没勾时无可导出内容，按钮随勾选状态启停
     connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
@@ -203,10 +208,6 @@ void FileTranscribeWidget::changeEvent(QEvent* event)
 void FileTranscribeWidget::retranslateUi()
 {
     m_addBtn->setText(tr("Add Files"));
-    m_transcribeBtn->setText(tr("Transcribe"));
-    m_cancelBtn->setText(tr("Cancel"));
-    m_clearBtn->setText(tr("Clear"));
-    m_exportBtn->setText(tr("Export"));
     m_exportTxtCheck->setLabelText(tr("TXT"));
     m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
     m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));
@@ -216,7 +217,9 @@ void FileTranscribeWidget::retranslateUi()
     m_openFolderBtn->setText(tr("Open Folder"));
 
     // 预览标题未选中时是"Transcription"；卡片状态文字由模型在绘制时 tr，重绘即可刷新
+    // 主按钮和导出按钮的文字随状态变化，由 updateButtons 设置
     updatePreview();
+    updateButtons();
     m_list->viewport()->update();
 }
 
@@ -293,12 +296,16 @@ void FileTranscribeWidget::showContextMenu(const QPoint& pos)
     QMenu menu(this);
     QAction* retry = menu.addAction(tr("Re-transcribe"));
     QAction* remove = menu.addAction(tr("Remove"));
+    menu.addSeparator();
+    QAction* clear = menu.addAction(tr("Clear All"));
     retry->setEnabled(!m_busy);
     remove->setEnabled(!m_busy);
+    clear->setEnabled(!m_busy);
 
     const QAction* chosen = menu.exec(m_list->viewport()->mapToGlobal(pos));
     if (chosen == retry) startRun(selectedRows());
     else if (chosen == remove) removeSelected();
+    else if (chosen == clear) clearAll();
 }
 
 void FileTranscribeWidget::updatePreview()
@@ -332,11 +339,23 @@ void FileTranscribeWidget::updateButtons()
     }
 
     m_addBtn->setEnabled(true);   // 转录中也允许追加
-    m_transcribeBtn->setEnabled(!m_busy && hasRunnable);
-    m_cancelBtn->setEnabled(m_busy && !m_cancelled);
-    m_clearBtn->setEnabled(!m_busy && m_model->rowCount() > 0);
-    m_exportBtn->setEnabled(m_model->count(FileTask::State::Done) > 0
-                            && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()));
+    if (m_busy) {
+        m_transcribeBtn->setText(m_cancelled ? tr("Cancelling...") : tr("Cancel"));
+        m_transcribeBtn->setEnabled(!m_cancelled);
+    } else {
+        m_transcribeBtn->setText(tr("Transcribe"));
+        m_transcribeBtn->setEnabled(hasRunnable);
+    }
+
+    // 按钮文字说明导出范围：有选中的已完成项就只导出它们，否则导出全部已完成项
+    int selectedDone = 0;
+    for (int row : selected) {
+        if (m_model->task(row).state == FileTask::State::Done) ++selectedDone;
+    }
+    const int exportCount = selectedDone > 0 ? selectedDone : m_model->count(FileTask::State::Done);
+    m_exportBtn->setText(selectedDone > 0 ? tr("Export Selected (%1)").arg(exportCount)
+                                          : tr("Export All (%1)").arg(exportCount));
+    m_exportBtn->setEnabled(exportCount > 0 && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()));
 }
 
 void FileTranscribeWidget::setBusy(bool busy)

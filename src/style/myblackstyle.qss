@@ -603,6 +603,21 @@ QToolTip {
     border-radius: 12px;
 }
 
+/* 设置页分组卡片：与 GPU 后端卡片同色；卡片内自绘控件不能沿用页面底色 */
+QFrame[card="true"] {
+    background-color: #2a2a2a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+}
+QFrame[card="true"] AnimatedCheckBox,
+QFrame[card="true"] StatusIndicator {
+    background-color: transparent;
+}
+QFrame[card="true"] #shortcut_edit {
+    background-color: transparent;
+    border: none;
+}
+
 
 
 
@@ -769,4 +784,15 @@ QFrame[frameShape="HLine"] {
 ModelListWidget QListView {
     background: transparent;
     border: none;
+}
+
+/* 词典卡片：比页面底色略亮（浅色主题略暗），与输入框区分；禁用卡片接近页面底色 */
+#terms_list {
+    background-color: rgb(53, 53, 53);
+    border: none;
+    qproperty-cardColor: rgb(68, 68, 68);
+    qproperty-cardBorderColor: rgb(84, 84, 84);
+    qproperty-disabledCardColor: rgb(46, 46, 46);
+    qproperty-textColor: rgb(220, 220, 220);
+    qproperty-hintColor: rgb(140, 140, 140);
 }

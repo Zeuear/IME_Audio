@@ -2,6 +2,7 @@
 #include "ui_MainWin.h"
 
 #include <QActionGroup>
+#include <algorithm>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -55,6 +56,30 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   initialize();
   setupUiConnections();
   onLoadConfig();
+  alignSettingsCards();
+}
+
+// 设置页每张卡片是独立的网格，标签列各自按内容定宽会参差不齐：
+// 取所有卡片同一列里最宽的标签作为统一宽度，标签和输入框之间只留网格自带的间距
+void MainWin::alignSettingsCards()
+{
+    const QList<QGridLayout*> grids{ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout };
+    for (int col : { 0, 3 }) {
+        int width = 0;
+        for (QGridLayout* grid : grids) {
+            for (int i = 0; i < grid->count(); ++i) {
+                // 只算正好占这一列的控件：横跨多列的下拉框、输入框也会出现在这一列，不能算进标签宽度
+                int r, c, rowSpan, colSpan;
+                grid->getItemPosition(i, &r, &c, &rowSpan, &colSpan);
+                if (c == col && colSpan == 1 && grid->itemAt(i)->widget())
+                    width = std::max(width, grid->itemAt(i)->widget()->sizeHint().width());
+            }
+        }
+        for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(col, width);
+    }
+    // 第 2 列是左右两组之间的空隔；各卡片其余列宽相同、第 1 / 4 列等分剩余宽度，
+    // 所以右侧输入框和第一张卡片的"测试"按钮左边缘对齐
+    for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(2, 24);
 }
     
 void MainWin::initialize() {
@@ -139,6 +164,9 @@ void MainWin::initialize() {
     m_captionModel = new LiveCaptionModel(this);
     m_captionEngine = new StreamingCaptionEngine();
     m_liveOverlay->setCaptionModel(m_captionModel);
+    m_captionModel->setTextFilter([](const QString& text) {
+        return TermsLibraryManager::applyReplaceRules(text, ConfigManager::instance().config().replaceRules);
+    });
 
     // 启动时检查一次更新
     QTimer::singleShot(2000, this, [this]() { 
@@ -169,6 +197,13 @@ void MainWin::setupUiConnections(){
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
+
+    // 关掉实时字幕时字号和位置置灰，数值保留
+    connect(ui->live_caption_checkbox, &QCheckBox::toggled, this, [this](bool on) {
+        const QList<QWidget*> options{ ui->label_live_caption_font, ui->live_caption_font_spin,
+                                       ui->label_live_caption_position, ui->live_caption_position_comb };
+        for (QWidget* w : options) w->setEnabled(on);
+    });
 
     connect(ui->identification_backend_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
         bool gropVisible = false;
@@ -336,12 +371,22 @@ void MainWin::setupUiConnections(){
     connect(m_captionModel, &LiveCaptionModel::epochChanged, m_captionEngine, &StreamingCaptionEngine::resetStream);
     connect(m_captionEngine, &StreamingCaptionEngine::modelReady, this, [this](const QString&, bool ok) {
         m_recorderService->setAudioTapEnabled(ok && ConfigManager::instance().config().liveCaptionEnabled.load());
+        // 每次开始录音都会重试装载，只提示一次，免得每次录音都弹窗
+        if (!ok && !m_liveCaptionFailNotified) {
+            m_liveCaptionFailNotified = true;
+            notify(NotifyLevel::Warning, tr("实时字幕不可用"), tr("流式识别模型加载或解码失败，听写不受影响"));
+        }
     });
     connect(m_recorderService, &AudioRecorderService::voiceStarted, m_captionModel, [this]() { m_captionModel->setSpeaking(true); });
     connect(m_recorderService, &AudioRecorderService::voiceStopped, m_captionModel, [this]() { m_captionModel->setSpeaking(false); });
-    connect(m_workflow, &WorkflowManager::utteranceAccepted, m_captionModel, [this]() { m_captionModel->onUtteranceReady(); });
-    connect(m_workflow, &WorkflowManager::utteranceFinished, m_captionModel, [this](const QString& text) { m_captionModel->onTranscribed(text); });
+    connect(m_workflow, &WorkflowManager::utteranceAccepted, m_captionModel, [this](quint64 id) { m_captionModel->onUtteranceReady(id); });
+    connect(m_workflow, &WorkflowManager::utteranceFinished, m_captionModel,
+            [this](const QString& text, quint64 id) { m_captionModel->onTranscribed(id, text); });
     connect(m_sherpaInstaller, &SherpaInstaller::streamingModelReady, this, &MainWin::syncLiveCaption);
+    connect(m_sherpaManager, &SherpaManager::idleUnloaded, this, [this]() {
+        m_recorderService->setAudioTapEnabled(false);
+        QMetaObject::invokeMethod(m_captionEngine, &StreamingCaptionEngine::unloadModel, Qt::QueuedConnection);
+    });
 
     // Sherpa 模型安装器：安装成功后经门面预热模型（不再直戳 m_sherpaManager）
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
@@ -404,14 +449,19 @@ void MainWin::syncLiveCaption()
 {
     if (!m_captionEngine) return;
     const AppConfig& cfg = ConfigManager::instance().config();
+    m_liveOverlay->setCaptionFontSize(cfg.liveCaptionFontSize);
+    m_liveOverlay->setAtTop(cfg.liveCaptionAtTop);
+
     const QString repoId = ModelRegistry::StreamingModelFor(cfg.sherpa.languageModel);
     const bool on = cfg.liveCaptionEnabled.load() && !repoId.isEmpty()
         && SherpaInstaller::isInstalled(repoId) && !m_sherpaInstaller->isInstalling(repoId);
 
     if (on) {
         // 音频抽头等引擎报告 modelReady 之后再开，避免白白投递数据
-        QMetaObject::invokeMethod(m_captionEngine, [engine = m_captionEngine, repoId]() {
-            engine->loadModel(repoId, 2);
+        // 主模型优先：字幕最多用一半线程，且不超过 2
+        const int threads = std::clamp(cfg.sherpa.threads / 2, 1, 2);
+        QMetaObject::invokeMethod(m_captionEngine, [engine = m_captionEngine, repoId, threads]() {
+            engine->loadModel(repoId, threads);
         }, Qt::QueuedConnection);
     } else {
         m_recorderService->setAudioTapEnabled(false);
@@ -425,6 +475,7 @@ void MainWin::changeEvent(QEvent* event)
     if (QEvent::LanguageChange == event->type()) {
         ui->retranslateUi(this);
         refreshLanguageComboTexts();
+        alignSettingsCards();
     }
     else if (event->type() == QEvent::WindowStateChange) {
         if (windowState() & Qt::WindowMinimized) {
@@ -492,6 +543,8 @@ AppConfig MainWin::extractConfigFromUI() {
     uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
     uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
     uiConfig.liveCaptionEnabled = ui->live_caption_checkbox->isChecked();
+    uiConfig.liveCaptionFontSize = ui->live_caption_font_spin->value();
+    uiConfig.liveCaptionAtTop = ui->live_caption_position_comb->currentIndex() == 1;
     uiConfig.hotkey = ui->shortcut_edit->getShortCut();
     uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();
 
@@ -569,6 +622,8 @@ void MainWin::loadConfigToUI() {
     // 基础/全局
     ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
     ui->live_caption_checkbox->setChecked(cfg.liveCaptionEnabled);
+    ui->live_caption_font_spin->setValue(cfg.liveCaptionFontSize);
+    ui->live_caption_position_comb->setCurrentIndex(cfg.liveCaptionAtTop ? 1 : 0);
     ui->shortcut_edit->setShortCut(cfg.hotkey);
 	ui->identification_backend_comb->setCurrentIndex(static_cast<int>(cfg.backend));
     ui->cpu_thread_number_spin->setValue(cfg.sherpa.threads);
@@ -823,12 +878,13 @@ void MainWin::onStateChanged(WorkflowState state)
     switch (state) {
     case WorkflowState::Loading:
         m_captionModel->clear();
+        syncLiveCaption(); 
         m_liveOverlay->setLoading();
-        m_liveOverlay->showAtBottomCenter();
+        m_liveOverlay->showOnScreen();
         break;
     case WorkflowState::Recording:
         m_liveOverlay->setListening();
-        m_liveOverlay->showAtBottomCenter();
+        m_liveOverlay->showOnScreen();
         if (ConfigManager::instance().config().continuousMode.load()
             && !m_recorderService->isVoiceActive()) {
             m_liveOverlay->hideTimerStart();
@@ -840,7 +896,7 @@ void MainWin::onStateChanged(WorkflowState state)
     case WorkflowState::Transcribing:
         m_liveOverlay->hideTimerStop();
         m_liveOverlay->setTranscribe();
-        m_liveOverlay->showAtBottomCenter();
+        m_liveOverlay->showOnScreen();
         break;
     case WorkflowState::Processing:
         m_liveOverlay->hideTimerStart();

@@ -1,6 +1,7 @@
 #include "LiveOverlay.h"
 #include "LiveCaptionModel.h"
 #include <QFontMetricsF>
+#include <QCursor>
 #include <QGuiApplication>
 #include <QLinearGradient>
 #include <QMouseEvent>
@@ -15,7 +16,7 @@
 namespace {
 constexpr int kBallSize = 120;
 constexpr qreal kPillHeight = 60.0;
-constexpr qreal kBottomInset = 30.0;   // 胶囊底边距窗口底部，保持原 120x120 窗口里的位置
+constexpr qreal kEdgeInset = 30.0;   // 卡片贴屏幕的那条边与窗口边缘的距离，保持原 120x120 窗口里的位置
 constexpr qreal kPadH = 18.0, kPadTop = 12.0, kPadBottom = 12.0, kTextBarsGap = 8.0;
 constexpr qreal kBarsRowHeight = 14.0;
 constexpr qreal kMinCardWidth = 220.0;
@@ -149,20 +150,49 @@ void LiveOverlay::setTheme(Theme theme)
     update();
 }
 
-void LiveOverlay::positionBottomCenter()
+QScreen *LiveOverlay::targetScreen() const
 {
-    QScreen *screen = QGuiApplication::primaryScreen();
+    return m_screen ? m_screen.data() : QGuiApplication::primaryScreen();
+}
+
+void LiveOverlay::positionOnScreen()
+{
+    QScreen *screen = targetScreen();
     if (!screen) return;
     QRect geo = screen->availableGeometry();
     constexpr int margin = -5;
-    move(geo.center().x() - width() / 2, geo.bottom() - height() - margin);
+    const int y = m_atTop ? geo.top() + margin : geo.bottom() - height() - margin;
+    move(geo.center().x() - width() / 2, y);
 }
 
-void LiveOverlay::showAtBottomCenter()
+void LiveOverlay::setCaptionFontSize(int pt)
 {
-    positionBottomCenter();
+    m_fontPt = pt;
+    relayoutCaption();
+    update();
+}
+
+void LiveOverlay::setAtTop(bool atTop)
+{
+    m_atTop = atTop;
+    if (isVisible()) positionOnScreen();
+    update();
+}
+
+qreal LiveOverlay::cardTop(qreal cardH) const
+{
+    // 贴屏幕的那条边固定：在底部时文字变多向上长，在顶部时向下长，频谱位置都不动
+    return m_atTop ? kEdgeInset : height() - kEdgeInset - cardH;
+}
+
+void LiveOverlay::showOnScreen()
+{
+    if (!isVisible()) {
+        m_screen = QGuiApplication::screenAt(QCursor::pos());
+        relayoutCaption();
+    }
+    positionOnScreen();
     show();
-    // macOS 上 raise() 会抢走用户正在输入的窗口焦点
 #ifndef Q_OS_MACOS
     raise();
 #endif
@@ -176,7 +206,7 @@ void LiveOverlay::onVoiceStarted()
 {
     m_idleFadeTimer->stop();
     setState(Listening);
-    showAtBottomCenter();
+    showOnScreen();
 }
 
 void LiveOverlay::onVoiceStopped()
@@ -199,8 +229,7 @@ void LiveOverlay::hideEvent(QHideEvent *event)
 
 QRectF LiveOverlay::cardRect() const
 {
-    // 底边固定、水平居中：文字变多只向上长，频谱位置不动
-    return QRectF((width() - m_cardW) / 2.0, height() - kBottomInset - m_cardH, m_cardW, m_cardH);
+    return QRectF((width() - m_cardW) / 2.0, cardTop(m_cardH), m_cardW, m_cardH);
 }
 
 bool LiveOverlay::isSettled() const
@@ -235,13 +264,13 @@ void LiveOverlay::relayoutCaption()
         return;
     }
 
-    QScreen *screen = QGuiApplication::primaryScreen();
+    QScreen *screen = targetScreen();
     const qreal screenW = screen ? screen->availableGeometry().width() : 1280;
     const qreal maxCardW = std::clamp(screenW * 0.26, 300.0, 440.0);
     const qreal maxInner = maxCardW - 2 * kPadH;
 
     QFont font = QGuiApplication::font();
-    font.setPointSizeF(font.pointSizeF() + 3);
+    font.setPointSizeF(m_fontPt);
 
     const OverlayStyle &st = styleFor(m_theme);
     QString html;
@@ -278,17 +307,17 @@ void LiveOverlay::syncWindowSize()
     // 动画中窗口取当前和目标的较大者，落定后一次性收缩；按 8 对齐，避免每帧都改窗口大小
     auto quantize = [](qreal v, qreal floorV) { return v <= floorV ? int(floorV) : int(std::ceil((v + 4) / 8.0) * 8); };
     const qreal needW = std::max(m_cardW, m_targetW);
-    const qreal needH = std::max(m_cardH, m_targetH) + kBottomInset + 4;
+    const qreal needH = std::max(m_cardH, m_targetH) + kEdgeInset + 4;
 
     int w = std::max(width(), quantize(needW, kBallSize));
     int h = std::max(height(), quantize(needH, kBallSize));
     if (isSettled()) {
         w = quantize(m_targetW, kBallSize);
-        h = quantize(m_targetH + kBottomInset + 4, kBallSize);
+        h = quantize(m_targetH + kEdgeInset + 4, kBallSize);
     }
     if (w != width() || h != height()) {
         resize(w, h);
-        positionBottomCenter();
+        positionOnScreen();
     }
 }
 
@@ -296,34 +325,43 @@ void LiveOverlay::tick()
 {
     const qreal dt = std::min<qreal>(m_clock.restart() / 1000.0, 0.1);
 
+    // 只有画面上有量在变才重绘：静音、暂停且动画落定时不必每帧重画
+    bool moving = false;
+    auto step = [&moving](qreal &v, qreal next) {
+        if (std::abs(next - v) > 1e-3) moving = true;
+        v = next;
+    };
+
     const qreal levelTarget = (m_state == Paused) ? 0.0 : m_level;
-    m_smoothedLevel = approach(m_smoothedLevel, levelTarget, 0.07, dt);
+    step(m_smoothedLevel, approach(m_smoothedLevel, levelTarget, 0.07, dt));
     const qreal scaleTarget = 0.7 + std::pow(m_smoothedLevel, 1.3) * 0.3;
-    m_scale = approach(m_scale, scaleTarget, 0.025, dt);
+    step(m_scale, approach(m_scale, scaleTarget, 0.025, dt));
 
     for (int i = 0; i < kBarCount; ++i) {
         const qreal target = i < m_levels.size() ? m_levels[i] : 0.0;
-        m_barEnergy[i] = approach(m_barEnergy[i], target, 0.025, dt);
+        step(m_barEnergy[i], approach(m_barEnergy[i], target, 0.025, dt));
     }
 
-    m_loadingOpacity = fade(m_loadingOpacity, m_state == Loading, 0.15, dt);
-    m_transcribeOpacity = fade(m_transcribeOpacity, m_state == Transcribe, 0.10, dt);
-    m_spectrumOpacity = fade(m_spectrumOpacity, m_state == Listening || m_state == Paused, 0.45, dt);
+    step(m_loadingOpacity, fade(m_loadingOpacity, m_state == Loading, 0.15, dt));
+    step(m_transcribeOpacity, fade(m_transcribeOpacity, m_state == Transcribe, 0.10, dt));
+    step(m_spectrumOpacity, fade(m_spectrumOpacity, m_state == Listening || m_state == Paused, 0.45, dt));
 
-    m_cardW = approach(m_cardW, m_targetW, 0.07, dt);
-    m_cardH = approach(m_cardH, m_targetH, 0.07, dt);
-    m_scroll = approach(m_scroll, m_targetScroll, 0.09, dt);
-    m_capT = fade(m_capT, hasCaption(), 0.22, dt);
+    step(m_cardW, approach(m_cardW, m_targetW, 0.07, dt));
+    step(m_cardH, approach(m_cardH, m_targetH, 0.07, dt));
+    step(m_scroll, approach(m_scroll, m_targetScroll, 0.09, dt));
+    step(m_capT, fade(m_capT, hasCaption(), 0.22, dt));
 
+    // 加载 / 转录的三个圆点只在胶囊形态出现，可见时一直在闪
     m_dotsMs = std::fmod(m_dotsMs + dt * 1000.0, kDotCycleMs);
+    if (std::max(m_loadingOpacity, m_transcribeOpacity) * (1.0 - m_capT) > 0.01) moving = true;
 
     if (m_iconHoldSec > 0) {
         m_iconHoldSec -= dt;
     }
-    m_iconOpacity = fade(m_iconOpacity, m_iconHoldSec > 0, 0.3, dt);
+    step(m_iconOpacity, fade(m_iconOpacity, m_iconHoldSec > 0, 0.3, dt));
 
     syncWindowSize();
-    update();
+    if (moving) update();
 }
 
 void LiveOverlay::mousePressEvent(QMouseEvent *event)
@@ -360,7 +398,7 @@ void LiveOverlay::paintEvent(QPaintEvent *)
     }
 
     // 卡片形态下状态由底部圆点行的颜色表达，三个点只在胶囊形态出现
-    const QPointF pillCenter(width() / 2.0, height() - kBottomInset - kPillHeight / 2.0);
+    const QPointF pillCenter(width() / 2.0, cardTop(kPillHeight) + kPillHeight / 2.0);
     paintDots(p, pillCenter, st.barLoading, m_loadingOpacity * (1.0 - t));
     paintDots(p, pillCenter, st.barTranscribe, m_transcribeOpacity * (1.0 - t));
     if (m_iconOpacity > 0.01) {

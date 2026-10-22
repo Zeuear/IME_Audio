@@ -1,162 +1,25 @@
 #ifndef TERMWIDGET_H
 #define TERMWIDGET_H
 
+#include <QPersistentModelIndex>
+#include <QSet>
+#include <QTimer>
 #include <QWidget>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QTableView>
-#include <QLabel>
-#include <QEvent>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QHeaderView>
-#include <QSortFilterProxyModel>
-#include <QAbstractTableModel>
 #include "../TermsLibraryManager.h"
 
-class TermTableModel : public QAbstractTableModel {
-    Q_OBJECT
-public:
-    explicit TermTableModel(TermsLibraryManager* manager, QObject* parent = nullptr)
-        : QAbstractTableModel(parent), m_manager(manager) {
-        connect(m_manager, &TermsLibraryManager::termsReloaded, this, [this]() {
-            beginResetModel();
-            endResetModel();
-         });
-    }
+class QLabel;
+class QLineEdit;
+class TermListView;
+class QPushButton;
+class QSortFilterProxyModel;
+class QStackedWidget;
+class QToolButton;
+class QVariantAnimation;
+class TermCardDelegate;
+class TermListModel;
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override {
-        return m_manager->items().size();
-    }
-
-    int columnCount(const QModelIndex& parent = QModelIndex()) const override {
-        return 7; 
-    }
-
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
-        if (!index.isValid() || index.row() >= m_manager->items().size()) return QVariant();
-
-        const TermItem& item = m_manager->items().at(index.row());
-
-        if (role == Qt::DisplayRole || role == Qt::EditRole) {
-            switch (index.column()) {
-            case 0: return item.enabled ? "1" : "0";
-            case 1: return item.wrong;
-            case 2: return item.correct;
-            case 3: return item.aliases;
-            case 4: return item.mode;
-            case 5: return item.tags;
-            case 6: return item.notes;
-            }
-        }
-        if (role == Qt::CheckStateRole && index.column() == 0) {
-            return item.enabled ? Qt::Checked : Qt::Unchecked;
-        }
-        return QVariant();
-    }
-
-    bool setData(const QModelIndex& index, const QVariant& value, int role) {
-        if (!index.isValid() || role != Qt::EditRole) {
-            return false;
-        }
-
-        int row = index.row();
-        int col = index.column();
-        TermItem item = m_manager->items().at(row);
-        bool changed = false;
-
-        switch (col) {
-        case 0: 
-            item.enabled = value.toBool();
-            changed = true;
-            break;
-        case 1:
-            item.wrong = value.toString();
-            changed = true;
-            break;
-        case 2:
-            item.correct = value.toString();
-            changed = true;
-            break;
-        case 3:
-        {
-            QString modeText = value.toString().trimmed().toLower();
-            if (modeText == "all" || modeText == "replace" ||
-                modeText == "ai" || modeText == "hotword") {
-                item.mode = modeText;
-                changed = true;
-            }
-            else {
-                return false;
-            }
-            break;
-        }
-        case 4:
-            item.aliases = value.toString();
-            changed = true;
-            break;
-        case 5:
-            item.tags = value.toString();
-            changed = true;
-            break;
-        case 6:
-            item.notes = value.toString();
-            changed = true;
-            break;
-        default:
-            return false;
-        }
-
-        if (!changed) return false;
-
-        if (col == 1 || col == 2) {
-            if (col == 1) { 
-                if (m_manager->hasDuplicateWrong(item.wrong, row)) {
-                    emit errorOccurred(tr("Error：Wrong Word [%1] is exist，Can't repeat input！").arg(item.wrong));
-                    return false;
-                }
-            }
-        }
-
-        m_manager->updateItem(row, item);
-        emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
-        return true;
-    }
-
-    Qt::ItemFlags flags(const QModelIndex& index) const override {
-        Qt::ItemFlags f = QAbstractTableModel::flags(index);
-        if (index.column() == 0) f |= Qt::ItemIsUserCheckable; 
-        if (index.column() > 0) f |= Qt::ItemIsEditable;     
-        return f;
-    }
-
-
-    void retranslate() {
-        emit headerDataChanged(Qt::Horizontal, 0, columnCount() - 1);
-    }
-
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override {
-        if (role != Qt::DisplayRole) return QVariant();
-
-        if (orientation == Qt::Horizontal) {
-            const QStringList headers = {
-                tr("Enabled"), tr("Wrong"), tr("Correct"),
-                tr("Aliases"), tr("Mode"), tr("Tags"), tr("Notes")
-            };
-            if (section >= 0 && section < headers.size()) {
-                return headers.at(section);
-            }
-        }
-        return section + 1;
-    }
-
-signals:
-    void errorOccurred(const QString& message);
-
-private:
-    TermsLibraryManager* m_manager;
-};
-
+// @brief 词典页：卡片列表（听成 → 写成），单击一行进入多选，双击就地编辑。
+//        顶部平时是搜索 + 添加，多选时换成全选 / 反选 / 启用 / 禁用 / 删除。
 class TermWidget : public QWidget {
     Q_OBJECT
 
@@ -170,49 +33,58 @@ public:
     void setTermsManager(TermsLibraryManager* termsManager);
 
 protected:
-    virtual void changeEvent(QEvent* event) override;
-    void retranslateUi();
-        
-private slots:
-    void handleSearch();
-    void handleReload();
-    void handleDeleteSelected();
-    void handleSelectAll();
-    void handleAddRow();
-    void handleReverseSelect();
-    void handleBatchEnable();
-    void handleBatchDisable();
-    void handleCheckAction(); 
-    void handleImport();
-    void handleExport();
+    void changeEvent(QEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     void setupUi();
-    QList<int> selectedSourceRows() const;
+    void retranslateUi();
 
-    // UI 组件
-    QLabel* m_labelSearch;
-    QLineEdit* m_searchEdit;
-    QPushButton* m_reloadBtn;
-    QPushButton* m_checkTermsBtn;
+    void onClicked(const QModelIndex& proxyIndex);
+    void onDoubleClicked(const QModelIndex& proxyIndex);
+    void setSelectMode(bool on);
+    void updateSelectBar();
+    QList<int> visibleSourceRows() const;
 
-    QSortFilterProxyModel* m_proxyModel;
-    QTableView* m_termsTableView;
-    TermTableModel* m_termsModel;
-    TermsLibraryManager* m_termsManager;  
+    void handleAdd();
+    void handleSelectAll();
+    void handleReverseSelect();
+    void handleSetEnabled(bool enabled);
+    void handleDelete();
+    void handleReload();
+    void handleCheckConflicts();
+    void handleImport();
+    void handleExport();
 
-    QPushButton* m_deleteSelectedBtn;
-    QPushButton* m_selectAllBtn;
-    QPushButton* m_addRowBtn;
+    TermsLibraryManager* m_termsManager = nullptr;
+    TermListModel* m_model = nullptr;
+    QSortFilterProxyModel* m_proxy = nullptr;
+    TermCardDelegate* m_delegate = nullptr;
+    TermListView* m_list = nullptr;
 
-    QPushButton* m_reverseSelectBtn;
-    QPushButton* m_batchEnableBtn;
-    QPushButton* m_batchDisableBtn;
+    QStackedWidget* m_barStack = nullptr;
+    // 普通工具栏
+    QLineEdit* m_searchEdit = nullptr;
+    QLineEdit* m_heardEdit = nullptr;
+    QLineEdit* m_correctEdit = nullptr;
+    QPushButton* m_addBtn = nullptr;
+    QToolButton* m_moreBtn = nullptr;
+    // 多选工具栏
+    QPushButton* m_selectAllBtn = nullptr;
+    QPushButton* m_reverseBtn = nullptr;
+    QLabel* m_countLabel = nullptr;
+    QPushButton* m_enableBtn = nullptr;
+    QPushButton* m_disableBtn = nullptr;
+    QPushButton* m_deleteBtn = nullptr;
+    QPushButton* m_doneBtn = nullptr;
 
-    QPushButton* m_checkBtn;
-    QPushButton* m_importBtn;
-    QPushButton* m_exportBtn;
+    bool m_selectMode = false;
+    QVariantAnimation* m_selectAnim = nullptr;
 
+    // 平时单击要等过了双击间隔才进入多选，期间来了双击就只编辑，复选框不会先闪一下
+    QTimer* m_clickTimer = nullptr;
+    QPersistentModelIndex m_pendingClick;
+    void toggleChecked(const QModelIndex& proxyIndex);
 };
 
 #endif // TERMWIDGET_H

@@ -14,10 +14,10 @@ TextPolishService::TextPolishService(QNetworkAccessManager* networkManager, QObj
     : QObject(parent), m_manager(networkManager) {
 }
 
-void TextPolishService::polishText(const QString& inputText, const RequestParams& params) {
+void TextPolishService::polishText(const QString& inputText, const RequestParams& params, PolishCallback done) {
     auto provider = createTextPolishProvider(params);
-    provider->polish(inputText, params, m_manager, [this](bool success, QString text, QString error) {
-        emit polishFinished(success, text, error);
+    provider->polish(inputText, params, m_manager, [done = std::move(done)](bool success, QString text, QString error) {
+        done(success, text, error);
     });
 }
 

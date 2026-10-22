@@ -107,7 +107,7 @@ void SpeechSegmenter::reportSpeakingChange()
     m_isSpeaking = speaking;
 }
 
-// VAD 判定句末的整句，前面拼上切段残留后输出
+
 void SpeechSegmenter::emitFinishedSentences()
 {
     while (!m_vad->IsEmpty()) {

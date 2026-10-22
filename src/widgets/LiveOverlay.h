@@ -2,6 +2,7 @@
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QRectF>
+#include <QScreen>
 #include <QTextDocument>
 #include <QTimer>
 #include <QVector>
@@ -22,6 +23,8 @@ public:
 
     State state() const { return m_state; }
     void setTheme(Theme theme);
+    void setCaptionFontSize(int pt);
+    void setAtTop(bool atTop);
 
     void setCaptionModel(LiveCaptionModel *model);
     bool hasCaption() const;
@@ -37,7 +40,7 @@ public slots:
     void setListening();
     void setTranscribe();
     void setPaused();
-    void showAtBottomCenter();
+    void showOnScreen();
     void hideOverlay();
     void hideTimerStart();
     void hideTimerStop();
@@ -60,7 +63,9 @@ private:
     void tick();
     void relayoutCaption();
     void syncWindowSize();
-    void positionBottomCenter();
+    void positionOnScreen();
+    QScreen *targetScreen() const;
+    qreal cardTop(qreal cardH) const;
     void paintCard(QPainter &p, const QPointF &center, qreal opacity) const;
     void paintPillBars(QPainter &p, qreal opacity) const;
     void paintCaptionContent(QPainter &p, const QRectF &card, qreal opacity) const;
@@ -69,6 +74,8 @@ private:
 
     State m_state = Loading;
     Theme m_theme = Theme::Dark;
+    qreal m_fontPt = 12;
+    bool m_atTop = false;
     qreal m_level = 0.0;
     QVector<float> m_levels;
 
@@ -88,6 +95,7 @@ private:
     QElapsedTimer m_clock;
     QTimer *m_idleFadeTimer = nullptr;
 
+    QPointer<QScreen> m_screen;               // 本次显示所在的屏幕，拔掉显示器时自动置空
     QPointer<LiveCaptionModel> m_caption;
     QTextDocument m_doc;
     qreal m_targetW = 120, m_targetH = 60;

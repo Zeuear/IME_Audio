@@ -1197,6 +1197,45 @@ const std::vector<std::pair<QString, ModelDescriptor>>& StreamingCaptionModels()
                 .decoderFile = "decoder-epoch-29-avg-9-with-averaged-model.onnx",
                 .joinerFile = "joiner-epoch-29-avg-9-with-averaged-model.int8.onnx"
             }, "Zipformer 流式 (法)"}},
+        // 以上中/英、英、法三个 2023 版已被下面的模型取代，保留登记：用户已下载的文件仍能被识别和卸载。
+        // 下面按 tools/asr_bench 流式基准（results/streaming_leaderboard.md）选出。
+        // Kroko 社区模型为 CC-BY-SA 许可，原样下载使用，"关于"里注明来源；仓库只提供 fp32。
+        {"csukuangfj/sherpa-onnx-streaming-paraformer-bilingual-zh-en", {
+            ModelArch::ParaformerStreaming,
+            ParaformerStreamingFiles{
+                .encoderFile = "encoder.int8.onnx",
+                .decoderFile = "decoder.int8.onnx"
+            }, "Paraformer 流式 (中/英)"}},
+        {"csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en", {
+            ModelArch::ParaformerStreaming,
+            ParaformerStreamingFiles{
+                .encoderFile = "encoder.int8.onnx",
+                .decoderFile = "decoder.int8.onnx"
+            }, "Paraformer 流式 (粤/中/英)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-en-kroko-2025-08-06", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.onnx" },
+            "Kroko 流式 (英)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-fr-kroko-2025-08-06", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.onnx" },
+            "Kroko 流式 (法)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.onnx" },
+            "Kroko 流式 (德)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.onnx" },
+            "Kroko 流式 (西)"}},
+        {"csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.int8.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.int8.onnx" },
+            "Vosk 流式 (俄)"}},
+        {"csukuangfj2/sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09", {
+            ModelArch::TransducerOnline,
+            TransducerFiles{ .encoderFile = "encoder.onnx", .decoderFile = "decoder.onnx", .joinerFile = "joiner.onnx" },
+            "Vosk 流式 (孟加拉)"}},
     };
     return table;
 }
@@ -1208,14 +1247,20 @@ constexpr auto kMultiLangStreamingRepo =
 QString ModelRegistry::StreamingModelFor(const QString& language)
 {
     static const QHash<QString, QString> byLanguage = {
-        {"Chinese",    "csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"},
-        {"English",    "csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26"},
+        // 中文选 Paraformer 而不是中文分数略高的 2025 CTC：后者完全不认英文，中英夹杂时英文词会丢
+        {"Chinese",    "csukuangfj/sherpa-onnx-streaming-paraformer-bilingual-zh-en"},
+        {"Cantonese",  "csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en"},
+        {"English",    "csukuangfj/sherpa-onnx-streaming-zipformer-en-kroko-2025-08-06"},
+        {"French",     "csukuangfj/sherpa-onnx-streaming-zipformer-fr-kroko-2025-08-06"},
+        {"German",     "csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06"},
+        {"Spanish",    "csukuangfj/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06"},
+        {"Russian",    "csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16"},
+        {"Bengali",    "csukuangfj2/sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09"},
+        // 韩语模型约一半句子识别为空，但没有更好的候选，先保留
         {"Korean",     "k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16"},
-        {"French",     "shaojieli/sherpa-onnx-streaming-zipformer-fr-2023-04-14"},
         {"Arabic",     kMultiLangStreamingRepo},
         {"Indonesian", kMultiLangStreamingRepo},
         {"Japanese",   kMultiLangStreamingRepo},
-        {"Russian",    kMultiLangStreamingRepo},
         {"Thai",       kMultiLangStreamingRepo},
         {"Vietnamese", kMultiLangStreamingRepo},
     };

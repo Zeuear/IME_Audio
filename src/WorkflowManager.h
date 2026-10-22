@@ -50,8 +50,9 @@ public:
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
-    void utteranceAccepted();
-    void utteranceFinished(const QString &finalText);
+    // id 供实时字幕把正式结果对回原来那一句；对不上号的结果 id 为 0
+    void utteranceAccepted(quint64 id);
+    void utteranceFinished(const QString &finalText, quint64 id);
     void errorOccurred(const QString &title, const QString &cause = {});
 
 private slots:
@@ -81,6 +82,9 @@ private:
     const AppConfig& m_config;
     WorkflowState m_currentState = WorkflowState::Idle;
     int m_pending = 0;
+    // 转录结果按提交顺序回来，出队即得到对应句子的 id
+    QQueue<quint64> m_utteranceIds;
+    quint64 m_nextUtteranceId = 0;
     bool m_stopRequested = false;
 
 };
