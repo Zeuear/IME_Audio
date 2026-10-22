@@ -2,7 +2,7 @@
  "dataset": "FLEURS test",
  "utterances": 120,
  "sherpa_onnx": "1.13.4",
- "generated": "2026-10-17",
+ "generated": "2026-10-20",
  "languages": {
   "Chinese": {
    "csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09": {
@@ -83,6 +83,14 @@
     "metric": "cer",
     "cer": 0.3141,
     "wer": 0.965,
+    "n": 96
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 70.2,
+    "rtf": 0.389,
+    "metric": "cer",
+    "cer": 0.2981,
+    "wer": 0.879,
     "n": 96
    }
   },
@@ -190,6 +198,14 @@
     "cer": 0.0495,
     "wer": 0.0984,
     "n": 100
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 91.7,
+    "rtf": 0.227,
+    "metric": "wer",
+    "cer": 0.0609,
+    "wer": 0.0828,
+    "n": 100
    }
   },
   "Georgian": {
@@ -283,6 +299,14 @@
     "metric": "wer",
     "cer": 0.0609,
     "wer": 0.225,
+    "n": 105
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 85.1,
+    "rtf": 0.468,
+    "metric": "wer",
+    "cer": 0.0856,
+    "wer": 0.1487,
     "n": 105
    }
   },
@@ -384,6 +408,14 @@
     "cer": 0.0632,
     "wer": 0.2055,
     "n": 94
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 94.0,
+    "rtf": 0.447,
+    "metric": "wer",
+    "cer": 0.0284,
+    "wer": 0.0599,
+    "n": 94
    }
   },
   "German": {
@@ -441,6 +473,14 @@
     "metric": "wer",
     "cer": 0.0315,
     "wer": 0.148,
+    "n": 95
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 95.3,
+    "rtf": 0.429,
+    "metric": "wer",
+    "cer": 0.0211,
+    "wer": 0.0469,
     "n": 95
    }
   },
@@ -500,6 +540,14 @@
     "cer": 0.203,
     "wer": 1.0856,
     "n": 76
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 87.4,
+    "rtf": 0.414,
+    "metric": "cer",
+    "cer": 0.1263,
+    "wer": 0.6848,
+    "n": 76
    }
   },
   "Korean": {
@@ -549,6 +597,14 @@
     "metric": "cer",
     "cer": 0.1187,
     "wer": 0.3425,
+    "n": 93
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 93.6,
+    "rtf": 0.389,
+    "metric": "cer",
+    "cer": 0.0644,
+    "wer": 0.1701,
     "n": 93
    }
   },
@@ -615,6 +671,14 @@
     "metric": "wer",
     "cer": 0.0421,
     "wer": 0.15,
+    "n": 88
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 95.4,
+    "rtf": 0.446,
+    "metric": "wer",
+    "cer": 0.0186,
+    "wer": 0.0458,
     "n": 88
    }
   },
@@ -757,12 +821,28 @@
     "wer": 0.0484,
     "n": 95
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 95.7,
+    "rtf": 0.512,
+    "metric": "wer",
+    "cer": 0.0115,
+    "wer": 0.0433,
+    "n": 95
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 89.8,
     "rtf": 0.153,
     "metric": "wer",
     "cer": 0.025,
     "wer": 0.1023,
+    "n": 95
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 96.9,
+    "rtf": 0.499,
+    "metric": "wer",
+    "cer": 0.0143,
+    "wer": 0.0314,
     "n": 95
    }
   },
@@ -839,6 +919,14 @@
     "metric": "wer",
     "cer": 0.1157,
     "wer": 0.2532,
+    "n": 101
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 76.3,
+    "rtf": 0.414,
+    "metric": "wer",
+    "cer": 0.2011,
+    "wer": 0.2368,
     "n": 101
    }
   },
@@ -924,6 +1012,14 @@
     "cer": 0.0228,
     "wer": 0.1021,
     "n": 92
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 97.5,
+    "rtf": 0.202,
+    "metric": "wer",
+    "cer": 0.0085,
+    "wer": 0.025,
+    "n": 92
    }
   },
   "Ukrainian": {
@@ -1008,6 +1104,14 @@
     "cer": 0.0488,
     "wer": 0.2424,
     "n": 97
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 74.7,
+    "rtf": 0.297,
+    "metric": "wer",
+    "cer": 0.1853,
+    "wer": 0.2533,
+    "n": 97
    }
   },
   "Dutch": {
@@ -1057,6 +1161,14 @@
     "metric": "wer",
     "cer": 0.0539,
     "wer": 0.2399,
+    "n": 98
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 86.6,
+    "rtf": 0.43,
+    "metric": "wer",
+    "cer": 0.0786,
+    "wer": 0.134,
     "n": 98
    }
   },
@@ -1371,6 +1483,14 @@
     "metric": "wer",
     "cer": 0.4956,
     "wer": 0.7568,
+    "n": 97
+   },
+   "csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01": {
+    "score": 86.8,
+    "rtf": 0.486,
+    "metric": "wer",
+    "cer": 0.0818,
+    "wer": 0.1319,
     "n": 97
    }
   },

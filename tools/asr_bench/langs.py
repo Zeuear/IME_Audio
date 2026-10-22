@@ -17,6 +17,10 @@ class Lang:
     new: bool = False        # 软件里尚未提供的语种
     in_app: bool = True      # False：只测不进软件（不导出到 model_benchmarks.json）
 
+    def __post_init__(self) -> None:
+        # _EU / _WO 等列表被多个语种共用，直接持有会在 append 新模型时串到所有语种
+        self.models = list(self.models)
+
 
 # 与 SherpaConfig.cpp 共用的多语言模型组合
 _WO = ["omnilingual-1b", "omnilingual-300m", "whisper-base"]  # WhisperOmniModels
@@ -343,6 +347,90 @@ COHERE_LANGS: dict[str, str] = {
 }
 
 
+# ---- 实时字幕（流式）候选模型：bench.py --streaming 单独测试，结果另出排行榜 ----
+# 软件里实时字幕的识别器只用 CPU、线程数 min(2, 主模型线程数 / 2)，这里统一按 2 线程测。
+# 只收 C++ 端能加载的流式架构：Transducer / Zipformer CTC / Paraformer / T-one CTC。
+
+MODELS.update({
+    "s-zh-en-2023": Model("csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20", "online_transducer",
+                          _tr("encoder-epoch-99-avg-1.int8.onnx", "decoder-epoch-99-avg-1.onnx",
+                              "joiner-epoch-99-avg-1.int8.onnx"), 2, "Zipformer 流式 zh-en 2023"),
+    "s-zh-2025": Model("csukuangfj/sherpa-onnx-streaming-zipformer-zh-int8-2025-06-30", "online_transducer",
+                       _tr("encoder.int8.onnx", "decoder.onnx", "joiner.int8.onnx"), 2, "Zipformer 流式 zh 2025"),
+    "s-ctc-zh-2025": Model("csukuangfj/sherpa-onnx-streaming-zipformer-ctc-zh-int8-2025-06-30", "online_ctc",
+                           _CTC_INT8, 2, "Zipformer CTC 流式 zh 2025"),
+    "s-small-ctc-zh": Model("csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01", "online_ctc",
+                            _CTC_INT8, 2, "Zipformer CTC 流式 zh small"),
+    "s-paraformer-zh-en": Model("csukuangfj/sherpa-onnx-streaming-paraformer-bilingual-zh-en", "online_paraformer",
+                                {"encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx", "tokens": "tokens.txt"},
+                                2, "Paraformer 流式 zh-en"),
+    "s-paraformer-yue": Model("csukuangfj/sherpa-onnx-streaming-paraformer-trilingual-zh-cantonese-en", "online_paraformer",
+                              {"encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx", "tokens": "tokens.txt"},
+                              2, "Paraformer 流式 zh-yue-en"),
+    "s-en-2023": Model("csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26", "online_transducer",
+                       _tr("encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+                           "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+                           "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx"), 2, "Zipformer 流式 en 2023"),
+    "s-en-kroko": Model("csukuangfj/sherpa-onnx-streaming-zipformer-en-kroko-2025-08-06", "online_transducer",
+                        _TR_FP32, 2, "Kroko 流式 en"),
+    "s-nemo-en-480": Model("csukuangfj/sherpa-onnx-nemo-streaming-fast-conformer-transducer-en-480ms-int8",
+                           "online_transducer", _TR_INT8, 2, "NeMo FastConformer 流式 en 480ms"),
+    "s-nemotron-en": Model("csukuangfj2/sherpa-onnx-nemotron-speech-streaming-en-0.6b-560ms-int8-2026-04-25",
+                           "online_transducer", _TR_INT8, 2, "Nemotron Speech 流式 en 0.6B"),
+    "s-nemotron35": Model("csukuangfj2/sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-560ms-int8-2026-06-11",
+                          "online_transducer", _TR_INT8, 2, "Nemotron 3.5 流式 0.6B (en/ja)"),
+    "s-parakeet-en": Model("csukuangfj2/sherpa-onnx-nemo-parakeet-unified-en-0.6b-int8-streaming-560ms",
+                           "online_transducer", _TR_INT8, 2, "Parakeet Unified 流式 en 0.6B"),
+    "s-fr-2023": Model("shaojieli/sherpa-onnx-streaming-zipformer-fr-2023-04-14", "online_transducer",
+                       _tr("encoder-epoch-29-avg-9-with-averaged-model.int8.onnx",
+                           "decoder-epoch-29-avg-9-with-averaged-model.onnx",
+                           "joiner-epoch-29-avg-9-with-averaged-model.int8.onnx"), 2, "Zipformer 流式 fr 2023"),
+    "s-fr-kroko": Model("csukuangfj/sherpa-onnx-streaming-zipformer-fr-kroko-2025-08-06", "online_transducer",
+                        _TR_FP32, 2, "Kroko 流式 fr"),
+    "s-de-kroko": Model("csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06", "online_transducer",
+                        _TR_FP32, 2, "Kroko 流式 de"),
+    "s-es-kroko": Model("csukuangfj/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06", "online_transducer",
+                        _TR_FP32, 2, "Kroko 流式 es"),
+    "s-ru-vosk": Model("csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16", "online_transducer",
+                       _tr("encoder.int8.onnx", "decoder.onnx", "joiner.int8.onnx"), 2, "Vosk 流式 ru small"),
+    "s-t-one-ru": Model("csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08", "t_one_ctc",
+                        {"model": "model.onnx", "tokens": "tokens.txt"}, 2, "T-one 流式 ru"),
+    "s-ko-2024": Model("k2-fsa/sherpa-onnx-streaming-zipformer-korean-2024-06-16", "online_transducer",
+                       _tr("encoder-epoch-99-avg-1.int8.onnx", "decoder-epoch-99-avg-1.onnx",
+                           "joiner-epoch-99-avg-1.int8.onnx"), 2, "Zipformer 流式 ko"),
+    "s-bn-vosk": Model("csukuangfj2/sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09", "online_transducer",
+                       _TR_FP32, 2, "Vosk 流式 bn"),
+})
+
+_S8 = "zipformer-streaming-8lang"
+# 语言 -> 流式候选，软件当前使用的见 STREAMING_CURRENT
+STREAMING: dict[str, list[str]] = {
+    "Chinese":    ["s-zh-en-2023", "s-zh-2025", "s-ctc-zh-2025", "s-small-ctc-zh", "s-paraformer-zh-en",
+                   "s-paraformer-yue", _S8],
+    "English":    ["s-en-2023", "s-en-kroko", "s-nemo-en-480", "s-nemotron-en", "s-nemotron35", "s-parakeet-en",
+                   "s-zh-en-2023", "s-paraformer-zh-en", "s-ctc-zh-2025", "s-zh-2025", _S8],
+    "Cantonese":  ["s-paraformer-yue"],
+    "French":     ["s-fr-2023", "s-fr-kroko"],
+    "German":     ["s-de-kroko"],
+    "Spanish":    ["s-es-kroko"],
+    "Russian":    [_S8, "s-ru-vosk", "s-t-one-ru"],
+    "Korean":     ["s-ko-2024"],
+    "Japanese":   [_S8, "s-nemotron35"],
+    "Arabic":     [_S8],
+    "Thai":       [_S8],
+    "Vietnamese": [_S8],
+    "Indonesian": [_S8],
+    "Bengali":    ["s-bn-vosk"],
+}
+# 软件当前的伴随模型（对照 ModelRegistry::StreamingModelFor）
+STREAMING_CURRENT: dict[str, str] = {
+    "Chinese": "s-paraformer-zh-en", "Cantonese": "s-paraformer-yue", "English": "s-en-kroko",
+    "French": "s-fr-kroko", "German": "s-de-kroko", "Spanish": "s-es-kroko", "Russian": "s-ru-vosk",
+    "Bengali": "s-bn-vosk", "Korean": "s-ko-2024",
+    "Arabic": _S8, "Indonesian": _S8, "Japanese": _S8, "Thai": _S8, "Vietnamese": _S8,
+}
+
+
 def create_recognizer(key: str, models_root, language: str = ""):
     """按 ModelRegistry::GetConfig 的参数构建识别器（CPU）。返回 (recognizer, is_online)。
     language 只对需要指定语种的模型（Cohere）有效，传软件语言名。"""
@@ -372,6 +460,13 @@ def create_recognizer(key: str, models_root, language: str = ""):
     if m.arch == "online_transducer":
         return so.OnlineRecognizer.from_transducer(tokens=f["tokens"], encoder=f["encoder"], decoder=f["decoder"],
                                                    joiner=f["joiner"], num_threads=t), True
+    if m.arch == "online_ctc":
+        return so.OnlineRecognizer.from_zipformer2_ctc(tokens=f["tokens"], model=f["model"], num_threads=t), True
+    if m.arch == "online_paraformer":
+        return so.OnlineRecognizer.from_paraformer(tokens=f["tokens"], encoder=f["encoder"], decoder=f["decoder"],
+                                                   num_threads=t), True
+    if m.arch == "t_one_ctc":
+        return so.OnlineRecognizer.from_t_one_ctc(tokens=f["tokens"], model=f["model"], num_threads=t), True
     if m.arch == "whisper":
         # C++ 的 OfflineWhisperModelConfig.language 默认空串（自动识别语言），
         # Python 包装默认 "en"，这里必须显式传空串才与软件一致

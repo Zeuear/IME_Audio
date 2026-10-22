@@ -17,11 +17,13 @@ import numpy as np
 import soundfile as sf
 from opencc import OpenCC
 
-from langs import LANGS, MODELS, NOT_IN_APP, create_recognizer
+from langs import LANGS, MODELS, NOT_IN_APP, STREAMING, STREAMING_CURRENT, create_recognizer
 
 HERE = Path(__file__).parent
 DATA = HERE / "data" / "fleurs"
 RAW = HERE / "results" / "raw"
+# 实时字幕（流式）候选单独存放，和整句识别的结果互不混淆
+RAW_STREAMING = HERE / "results" / "raw_streaming"
 # 软件已安装的模型直接用、不删除；其余下载到 CACHE，测完即删，避免占满硬盘
 INSTALLED_ROOTS = [HERE.parents[1] / "app" / c / "sherpa" / "models" for c in ("RelWithDebInfo", "Release")]
 CACHE = HERE / "model_cache"
@@ -101,16 +103,16 @@ def _decode(rec, online: bool, sr: int, samples: np.ndarray) -> str:
     return rec.get_result(s)
 
 
-def run_pair(lang: str, key: str, rec, online: bool, load_s: float) -> Path:
-    out = RAW / f"{lang}__{key}.jsonl"
+def run_pair(lang: str, key: str, rec, online: bool, head: dict, raw: Path = RAW) -> Path:
+    out = raw / f"{lang}__{key}.jsonl"
     code = LANGS[lang].fleurs
     rows = [l.rstrip("\n").split("\t", 1) for l in (DATA / code / "refs.tsv").open(encoding="utf-8")]
     print(f"[{lang} / {key}] {len(rows)} utterances")
 
-    RAW.mkdir(parents=True, exist_ok=True)
+    raw.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".part")
     with tmp.open("w", encoding="utf-8") as f:
-        f.write(json.dumps({"load_s": load_s}) + "\n")
+        f.write(json.dumps(head) + "\n")
         for name, ref in rows:
             samples, sr = sf.read(DATA / code / name, dtype="float32")
             if samples.ndim > 1:
@@ -151,13 +153,13 @@ def score(path: Path, lang: str) -> dict:
         # 取逐句 RTF 中位数：机器休眠/抢占会让个别句子耗时暴涨，总和会被一条拖垮；
         # 有 --rtf-only 的复测值时以复测为准（原测量期间有编译等干扰）
         "rtf": lines[0].get("rtf_remeasured", float(np.median([u["dt"] / u["dur"] for u in utts]))),
-        "load_s": load_s, "worst": worst[:3],
+        "load_s": load_s, "worst": worst[:3], "size_mb": lines[0].get("size_mb"),
     }
 
 
-def remeasure_rtf(lang: str, key: str, rec, online: bool, n: int) -> None:
+def remeasure_rtf(lang: str, key: str, rec, online: bool, n: int, raw: Path = RAW) -> None:
     """只重测速度：解码前 n 句取 RTF 中位数，写回结果文件头，不动识别结果。"""
-    path = RAW / f"{lang}__{key}.jsonl"
+    path = raw / f"{lang}__{key}.jsonl"
     lines = path.read_text(encoding="utf-8").splitlines()
     head = json.loads(lines[0])
     code = LANGS[lang].fleurs
@@ -219,6 +221,35 @@ def write_report(results: list[tuple[str, str, dict]], failures: list) -> Path:
     return out
 
 
+def write_streaming_report(results: list[tuple[str, str, dict]], failures: list) -> Path:
+    pct = lambda x: f"{x * 100:.1f}%"
+    md = ["# 实时字幕（流式）模型基准（FLEURS test 子集）", "",
+          "- 分数、归一化、数字句排除规则与整句识别排行榜相同",
+          "- 整句一次送入流式识别器，尾部补静音后取最终结果；线程数 2，与软件字幕引擎一致",
+          "- RTF 必须远小于 1 才能边说边出字；体积为额外下载量",
+          "- ★ 为软件当前使用的伴随模型", ""]
+    md += ["| 语言 | 模型 | 分数 | CER | WER | RTF | 体积 | 空结果 | 计分条数 |",
+           "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
+    by_lang: dict[str, list] = {}
+    for lang, key, s in results:
+        by_lang.setdefault(lang, []).append((key, s))
+    for lang in STREAMING:
+        metric = LANGS[lang].metric
+        for key, s in sorted(by_lang.get(lang, []), key=lambda r: r[1][metric]):
+            mark = " ★" if STREAMING_CURRENT.get(lang) == key else ""
+            size = f"{s['size_mb']:.0f} MB" if s.get("size_mb") else "-"
+            sc = max(0.0, 100 * (1 - s[metric]))
+            md.append(f"| {lang} | {MODELS[key].display}{mark} | **{sc:.1f}** | {pct(s['cer'])} | {pct(s['wer'])} | "
+                      f"{s['rtf']:.3f} | {size} | {s['empty']} | {s['n']} |")
+    if failures:
+        md += ["", "## 运行失败", ""] + [f"- `{k}`：{w}" for k, w in failures]
+    md += ["", "## 模型来源", ""]
+    md += [f"- {MODELS[k].display}：`{MODELS[k].repo}`" for k in dict.fromkeys(k for v in STREAMING.values() for k in v)]
+    out = HERE / "results" / "streaming_leaderboard.md"
+    out.write_text("\n".join(md) + "\n", encoding="utf-8")
+    return out
+
+
 EXPORT = HERE.parents[1] / "resources" / "model_benchmarks.json"
 
 
@@ -251,11 +282,11 @@ def export_json(results: list[tuple[str, str, dict]]) -> Path:
     return EXPORT
 
 
-def run_model(key: str, pairs: list[str], failures: list, rtf_only: int = 0) -> None:
+def run_model(key: str, pairs: list[str], failures: list, rtf_only: int = 0, raw: Path = RAW) -> None:
     if rtf_only:
-        todo = [l for l in pairs if (RAW / f"{l}__{key}.jsonl").exists()]
+        todo = [l for l in pairs if (raw / f"{l}__{key}.jsonl").exists()]
     else:
-        todo = [l for l in pairs if not (RAW / f"{l}__{key}.jsonl").exists()]
+        todo = [l for l in pairs if not (raw / f"{l}__{key}.jsonl").exists()]
     if not todo:
         return
     try:
@@ -270,6 +301,9 @@ def run_model(key: str, pairs: list[str], failures: list, rtf_only: int = 0) -> 
         rec, online = create_recognizer(key, root, todo[0])
         load_s = time.perf_counter() - t0
         print(f"[{key}] loaded in {load_s:.1f}s")
+        # 下载体积：实时字幕模型是额外下载，体积也是选型依据
+        size_mb = sum((root / MODELS[key].dir / rel).stat().st_size for rel in MODELS[key].files.values()) / 1e6
+        head = {"load_s": load_s, "size_mb": round(size_mb, 1)}
         for lang in todo:
             # Cohere 的语种在构建时固定，换语种要重建（软件里切换语言同样会重载模型）
             if MODELS[key].arch == "cohere" and lang != todo[0]:
@@ -277,9 +311,9 @@ def run_model(key: str, pairs: list[str], failures: list, rtf_only: int = 0) -> 
                 gc.collect()
                 rec, online = create_recognizer(key, root, lang)
             if rtf_only:
-                remeasure_rtf(lang, key, rec, online, rtf_only)
+                remeasure_rtf(lang, key, rec, online, rtf_only, raw)
             else:
-                run_pair(lang, key, rec, online, load_s)
+                run_pair(lang, key, rec, online, head, raw)
     except Exception as e:
         failures.append((key, f"load/decode failed: {e}"))
         print(f"[{key}] FAILED: {e}")
@@ -300,13 +334,16 @@ def main() -> None:
     ap.add_argument("--rtf-only", type=int, default=0, metavar="N",
                     help="只用前 N 句重测速度（需配合 --pairs）")
     ap.add_argument("--pairs", nargs="*", help="Language__model 对，限定运行范围")
+    ap.add_argument("--streaming", action="store_true", help="测实时字幕的流式候选（langs.STREAMING），单独出排行榜")
     args = ap.parse_args()
 
-    langs = [l for l in (args.langs or LANGS) if LANGS[l].fleurs]
+    table = STREAMING if args.streaming else {l: v.models for l, v in LANGS.items()}
+    raw = RAW_STREAMING if args.streaming else RAW
+    langs = [l for l in (args.langs or table) if l in table and LANGS[l].fleurs]
     # 按模型分组：一个模型下载一次、把它负责的语种全跑完再删除
     by_model: dict[str, list[str]] = {}
     for lang in langs:
-        for key in LANGS[lang].models:
+        for key in table[lang]:
             if args.models and key not in args.models:
                 continue
             if args.pairs and f"{lang}__{key}" not in args.pairs:
@@ -316,18 +353,21 @@ def main() -> None:
     failures: list = []
     if not args.score_only:
         for key, pairs in by_model.items():
-            run_model(key, pairs, failures, args.rtf_only)
+            run_model(key, pairs, failures, args.rtf_only, raw)
 
     results = []
     for lang in langs:
-        for key in LANGS[lang].models:
-            path = RAW / f"{lang}__{key}.jsonl"
+        for key in table[lang]:
+            path = raw / f"{lang}__{key}.jsonl"
             if key in by_model and path.exists():
                 s = score(path, lang)
                 results.append((lang, key, s))
                 print(f"[{lang} / {key}] CER {s['cer']:.3f}  WER {s['wer']:.3f}  RTF {s['rtf']:.3f}")
     for key, why in failures:
         print(f"FAILED {key}: {why}")
+    if args.streaming:
+        print("report:", write_streaming_report(results, failures))
+        return
     print("report:", write_report(results, failures))
     # 只有全量打分时才覆盖导出文件，避免 --langs 子集运行把其它语种的数据冲掉
     if not args.langs and not args.models and not args.pairs:
