@@ -10,6 +10,7 @@
 #include <QSystemTrayIcon>
 #include <QTableWidgetItem>
 #include <QNetworkAccessManager>
+#include <QElapsedTimer>
 #include "WorkflowManager.h"
 
 
@@ -26,6 +27,9 @@ class LiveCaptionModel;
 class StreamingCaptionEngine;
 class TextPolishService;
 class CudaInstaller;
+class SettingsBinder;
+class QTimer;
+class DictationHistoryModel;
 
 
 namespace Ui {
@@ -76,9 +80,9 @@ private slots:
     void onUpdateDownloaded(const QString& filePath);
 
     void onLoadConfig();
-    void onSaveConfig();
 
     void onHotkeyPressed();
+    void onHotkeyReleased();
     void onStateChanged(WorkflowState newState);
     void onLocalModelActivated();
 
@@ -93,12 +97,20 @@ private:
     enum class NotifyLevel { Info, Success, Warning, Error };
     void notify(NotifyLevel level, const QString& titleCN, const QString& causeCN = {});
 
-    AppConfig extractConfigFromUI();
+    // 设置项登记表与生效处理
+    void registerSettings();
+    void applySettings(unsigned effects);
     void loadConfigToUI();
+
+    // 开始 / 停止听写
+    bool startDictation();
+    void stopDictation();
+
     void setupLanguageCombo();
     void refreshLanguageComboTexts();
     QString currentLanguageKey() const;
     void initSystemTray();
+    void rebuildTrayMenu();
 
     void syncLiveCaption();
 
@@ -106,15 +118,11 @@ private:
 
     QSystemTrayIcon* trayIcon;
     QMenu* trayMenu;
-    QAction* showAction;
-    QAction* hideAction;
-    QAction* quitAction;
-    QAction* separatorAction;
 
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
     LiveCaptionModel* m_captionModel = nullptr;
-    StreamingCaptionEngine* m_captionEngine = nullptr;   // 自带线程，无 parent，析构里显式删除
+    StreamingCaptionEngine* m_captionEngine = nullptr;  
     bool m_liveCaptionFailNotified = false;
 
     TextPolishService* m_textPolishService = nullptr;
@@ -127,6 +135,14 @@ private:
     TranscriptionService *m_transcriptionService = nullptr;
 
     WorkflowManager *m_workflow = nullptr;
+    SettingsBinder* m_settings = nullptr;
+    QTimer* m_saveTimer = nullptr;   // 设置改动合并后再写文件
+    DictationHistoryModel* m_history = nullptr;   
+    bool m_loadingSettings = false;
+
+    // 按住说话
+    QElapsedTimer m_holdTimer;
+    bool m_holdStarted = false;
     QPropertyAnimation *m_drawerAnimation;
     bool isTriggered = false;
 

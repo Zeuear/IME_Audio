@@ -60,6 +60,7 @@ bool ConfigManager::load() {
     QSettings s(m_configPath, QSettings::IniFormat);
 
     m_config.hotkey = s.value("hotkey", "").toString();
+    m_config.hotkeyHold = s.value("hotkeyHold", false).toBool();
     m_config.backend = static_cast<AsrBackendKind>(s.value("backend").toInt());
     m_config.groqKey = s.value("groqKey").toString();
     m_config.replaceRules = s.value("replaceRules").toString();
@@ -118,6 +119,7 @@ bool ConfigManager::save() {
     QSettings s(m_configPath, QSettings::IniFormat);
 
     s.setValue("hotkey", m_config.hotkey);
+    s.setValue("hotkeyHold", m_config.hotkeyHold);
     s.setValue("backend", static_cast<int>(m_config.backend));
     s.setValue("replaceRules", m_config.replaceRules);
     s.setValue("continuousMode", m_config.continuousMode.load());

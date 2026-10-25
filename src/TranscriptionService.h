@@ -8,6 +8,7 @@
 #include "interfaces/workflow_interfaces.h"
 #include "utils/OrderedResults.h"
 #include <QQueue>
+#include <functional>
 
 // @brief  
 // 统一转录入口：根据 backend 类型分发到 Groq / Sherpa / Gladia / Gemini
@@ -21,6 +22,10 @@ public:
                                   QObject *parent = nullptr);
 
     void transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
+
+    // 用一个只读请求验证云端识别的 Key，不上传音频；cause 为中文失败原因
+    using KeyTestCallback = std::function<void(bool ok, const QString& cause)>;
+    void testKey(AsrBackendKind backend, const QString& key, KeyTestCallback done);
 
     // 文件转录模式
     void setFileMode(bool on) { m_fileMode = on; }

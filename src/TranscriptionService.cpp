@@ -278,6 +278,47 @@ void TranscriptionService::armTimeout(const Ticket& t) {
     });
 }
 
+void TranscriptionService::testKey(AsrBackendKind backend, const QString& key, KeyTestCallback done) {
+    if (key.isEmpty()) {
+        done(false, QStringLiteral("Key 为空"));
+        return;
+    }
+    // 各家都用"列出模型 / 列出任务"这类只读接口，Key 无效时返回 401/403
+    QNetworkRequest req;
+    switch (backend) {
+    case AsrBackendKind::Groq:
+        req.setUrl(QUrl("https://api.groq.com/openai/v1/models"));
+        req.setRawHeader("Authorization", ("Bearer " + key).toUtf8());
+        break;
+    case AsrBackendKind::Gladia:
+        req.setUrl(QUrl("https://api.gladia.io/v2/transcription?limit=1"));
+        req.setRawHeader("x-gladia-key", key.toUtf8());
+        break;
+    case AsrBackendKind::Gemini:
+        req.setUrl(QUrl("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1"));
+        req.setRawHeader("x-goog-api-key", key.toUtf8());
+        break;
+    default:
+        done(false, QStringLiteral("该后端不需要 Key"));
+        return;
+    }
+    req.setTransferTimeout(15000);
+
+    QNetworkReply* reply = m_manager->get(req);
+    connect(reply, &QNetworkReply::finished, this, [reply, done]() {
+        reply->deleteLater();
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (reply->error() == QNetworkReply::NoError) {
+            done(true, {});
+        } else if (status == 400 || status == 401 || status == 403) {
+            done(false, QStringLiteral("Key 无效或没有权限（HTTP %1）").arg(status));
+        } else {
+            LOG_WARN(QString("Key test failed: HTTP %1, %2").arg(status).arg(reply->errorString()));
+            done(false, QStringLiteral("无法连接服务：%1").arg(reply->errorString()));
+        }
+    });
+}
+
 QString TranscriptionService::postProcess(const QString &rawText, bool fileMode) {
 
     m_textProcessor->setReplaceRules(m_config.replaceRules);

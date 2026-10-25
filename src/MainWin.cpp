@@ -2,6 +2,7 @@
 #include "ui_MainWin.h"
 
 #include <QActionGroup>
+#include <QClipboard>
 #include <algorithm>
 #include <QDebug>
 #include <QDir>
@@ -31,6 +32,9 @@
 #include "sherpa/StreamingCaptionEngine.h"
 #include "widgets/LiveOverlay.h"
 #include "widgets/LiveCaptionModel.h"
+#include "widgets/SettingsBinder.h"
+#include "widgets/DictationHistoryModel.h"
+#include "widgets/DictationLogWidget.h"
 #include "widgets/AboutDialog.h"
 #include "widgets/FileTranscribeWidget.h"
 #include "widgets/NavListWidget.h"
@@ -42,7 +46,6 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->setupUi(this);
 
   ui->ai_vocabulary_edit->setReadOnly(true);
-  ui->identification_log_edit->setReadOnly(true);
   ui->config_log_edit->setReadOnly(true);
 
   ui->grop_key_label->setVisible(false);
@@ -51,16 +54,18 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   ui->gladia_key_label->setVisible(false);
   ui->gemini_key_edit->setVisible(false);
   ui->gemini_key_label->setVisible(false);
+  ui->grop_key_test_btn->setVisible(false);
+  ui->gladia_key_test_btn->setVisible(false);
+  ui->gemini_key_test_btn->setVisible(false);
 
   initSystemTray();
   initialize();
   setupUiConnections();
+  registerSettings();
   onLoadConfig();
   alignSettingsCards();
 }
 
-// 设置页每张卡片是独立的网格，标签列各自按内容定宽会参差不齐：
-// 取所有卡片同一列里最宽的标签作为统一宽度，标签和输入框之间只留网格自带的间距
 void MainWin::alignSettingsCards()
 {
     const QList<QGridLayout*> grids{ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout };
@@ -68,7 +73,7 @@ void MainWin::alignSettingsCards()
         int width = 0;
         for (QGridLayout* grid : grids) {
             for (int i = 0; i < grid->count(); ++i) {
-                // 只算正好占这一列的控件：横跨多列的下拉框、输入框也会出现在这一列，不能算进标签宽度
+                // 只算正好占这一列的控件
                 int r, c, rowSpan, colSpan;
                 grid->getItemPosition(i, &r, &c, &rowSpan, &colSpan);
                 if (c == col && colSpan == 1 && grid->itemAt(i)->widget())
@@ -77,8 +82,7 @@ void MainWin::alignSettingsCards()
         }
         for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(col, width);
     }
-    // 第 2 列是左右两组之间的空隔；各卡片其余列宽相同、第 1 / 4 列等分剩余宽度，
-    // 所以右侧输入框和第一张卡片的"测试"按钮左边缘对齐
+    // 第 2 列是左右两组之间的空隔
     for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(2, 24);
 }
     
@@ -162,6 +166,7 @@ void MainWin::initialize() {
     // 声音控件
     m_liveOverlay = new LiveOverlay();
     m_captionModel = new LiveCaptionModel(this);
+    m_history = new DictationHistoryModel(this);
     m_captionEngine = new StreamingCaptionEngine();
     m_liveOverlay->setCaptionModel(m_captionModel);
     m_captionModel->setTextFilter([](const QString& text) {
@@ -197,6 +202,7 @@ void MainWin::setupUiConnections(){
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
+	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyReleased, this, &MainWin::onHotkeyReleased);
 
     // 关掉实时字幕时字号和位置置灰，数值保留
     connect(ui->live_caption_checkbox, &QCheckBox::toggled, this, [this](bool on) {
@@ -205,38 +211,39 @@ void MainWin::setupUiConnections(){
         for (QWidget* w : options) w->setEnabled(on);
     });
 
+    // 只显示当前云端后端的 Key
     connect(ui->identification_backend_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
-        bool gropVisible = false;
-        bool geminiVisible = false;
-        bool gladiaVisible = false;
-        
-        if (index == 0) {
-            gropVisible = false;
-            geminiVisible = false;
-            gladiaVisible = false;
+        const auto backend = static_cast<AsrBackendKind>(index);
+        const struct { AsrBackendKind kind; QList<QWidget*> row; } keyRows[] = {
+            { AsrBackendKind::Groq,   { ui->grop_key_label, ui->grop_key_edit, ui->grop_key_test_btn } },
+            { AsrBackendKind::Gladia, { ui->gladia_key_label, ui->gladia_key_edit, ui->gladia_key_test_btn } },
+            { AsrBackendKind::Gemini, { ui->gemini_key_label, ui->gemini_key_edit, ui->gemini_key_test_btn } },
+        };
+        // 避免出现闪烁的问题
+        QWidget* page = ui->settingsScrollArea;
+        page->setUpdatesEnabled(false);
+        for (const auto& r : keyRows) {
+            for (QWidget* w : r.row) w->setVisible(r.kind == backend);
         }
-        else if (index == 1) {
-            gropVisible = false;
-            geminiVisible = true;
-            gladiaVisible = false;
-        }else if (index == 2) {
-            gropVisible = true;
-            geminiVisible = false;
-            gladiaVisible = false;
-        }
-        else if (index == 3) {
-            gropVisible = false;
-            geminiVisible = false;
-            gladiaVisible = true;
-        }
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::LayoutRequest);
+        page->setUpdatesEnabled(true);
+    });
 
-        ui->grop_key_label->setVisible(gropVisible);
-        ui->grop_key_edit->setVisible(gropVisible);
-        ui->gladia_key_edit->setVisible(gladiaVisible);
-        ui->gladia_key_label->setVisible(gladiaVisible);
-        ui->gemini_key_edit->setVisible(geminiVisible);
-        ui->gemini_key_label->setVisible(geminiVisible);
-      });
+    const struct { QPushButton* btn; QLineEdit* edit; AsrBackendKind kind; } keyTests[] = {
+        { ui->grop_key_test_btn,   ui->grop_key_edit,   AsrBackendKind::Groq },
+        { ui->gladia_key_test_btn, ui->gladia_key_edit, AsrBackendKind::Gladia },
+        { ui->gemini_key_test_btn, ui->gemini_key_edit, AsrBackendKind::Gemini },
+    };
+    for (const auto& t : keyTests) {
+        connect(t.btn, &QPushButton::clicked, this, [this, btn = t.btn, edit = t.edit, kind = t.kind]() {
+            btn->setEnabled(false);
+            m_transcriptionService->testKey(kind, edit->text().trimmed(), [this, btn](bool ok, const QString& cause) {
+                btn->setEnabled(true);
+                if (ok) notify(NotifyLevel::Success, tr("Key 可用"));
+                else notify(NotifyLevel::Error, tr("Key 测试失败"), cause);
+            });
+        });
+    }
 
     // 输出设备测试播放
     connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
@@ -330,13 +337,19 @@ void MainWin::setupUiConnections(){
         }
 
         LOG_INFO("Fetched model list successfully");
-        ui->ai_model_comb->clear();
-        ui->ai_model_comb->addItems(models);
-
-        const AppConfig& config = ConfigManager::instance().config();
-        int index = ui->ai_model_comb->findText(config.polish.model);
-        if (index < 0) index = 0;
-        ui->ai_model_comb->setCurrentIndex(index);
+        // 重建列表时不能让下拉框的改动信号把已保存的模型名冲掉
+        AppConfig& config = ConfigManager::instance().config();
+        {
+            const QSignalBlocker block(ui->ai_model_comb);
+            ui->ai_model_comb->clear();
+            ui->ai_model_comb->addItems(models);
+            ui->ai_model_comb->setCurrentIndex(std::max(0, ui->ai_model_comb->findText(config.polish.model)));
+        }
+        // 已保存的模型不在新列表里（如换了引擎）时，改用列表第一项
+        if (config.polish.model != ui->ai_model_comb->currentText()) {
+            config.polish.model = ui->ai_model_comb->currentText();
+            applySettings(0);
+        }
     });
 
     // 更新检查
@@ -349,11 +362,9 @@ void MainWin::setupUiConnections(){
     connect(&Logger::instance(), &Logger::newLogEntry, this, &MainWin::onNewLogEntry, Qt::QueuedConnection);
 
     // 主要工作流
-    connect(m_workflow, &WorkflowManager::transcriptionResultReady, this, [this](const QString& text) {
-        QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
-        QString result = QString("[%1] %2").arg(timestamp, text);
-        ui->identification_log_edit->append(result);
-    });
+    connect(m_workflow, &WorkflowManager::transcriptionResultReady, m_history, [this](const QString& text) { m_history->add(text); });
+    ui->dictation_log_widget->setModel(m_history);
+    connect(ui->dictation_log_widget, &DictationLogWidget::copied, this, [this]() { notify(NotifyLevel::Success, tr("已复制")); });
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
     connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
@@ -433,15 +444,13 @@ void MainWin::setupUiConnections(){
     connect(ui->file_transcribe_widget, &FileTranscribeWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
 
-    connect(ui->setting_save_btn, &QPushButton::clicked, this, &MainWin::onSaveConfig);
-    connect(ui->setting_cancel_btn, &QPushButton::clicked, this, &MainWin::onLoadConfig);
 }
 
 MainWin::~MainWin() {
-  // 字幕引擎自带线程，先于 UI 收掉；同时避免保存配置时又去装载模型
+  // 字幕引擎自带线程，先于 UI 收掉
   delete m_captionEngine;
   m_captionEngine = nullptr;
-  onSaveConfig();
+  ConfigManager::instance().save();
   delete ui;
 }
 
@@ -537,68 +546,13 @@ void MainWin::fitToScreen()
     }
 }
 
-AppConfig MainWin::extractConfigFromUI() {
-    AppConfig uiConfig;
-    // 基础/全局设置 (Global/Misc)
-    uiConfig.backend = static_cast<AsrBackendKind>(ui->identification_backend_comb->currentIndex());
-    uiConfig.continuousMode = ui->autiomatic_monitoring_checkbox->isChecked();
-    uiConfig.liveCaptionEnabled = ui->live_caption_checkbox->isChecked();
-    uiConfig.liveCaptionFontSize = ui->live_caption_font_spin->value();
-    uiConfig.liveCaptionAtTop = ui->live_caption_position_comb->currentIndex() == 1;
-    uiConfig.hotkey = ui->shortcut_edit->getShortCut();
-    uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();
-
-    // 音频设置 (Audio Group)
-    uiConfig.audio.deviceId = ui->recording_equ_comb->currentIndex();
-    uiConfig.audio.deviceName = ui->recording_equ_comb->currentText();
-    uiConfig.audio.outputDeviceName = ui->source_equipment_comb->currentText();
-    uiConfig.audio.voiceThreshold = ui->volume_threshold_spin->value();
-    uiConfig.audio.silenceTimeoutMs = ui->mute_duration_spin->value();
-    uiConfig.audio.minRecordMs = ui->shortest_recording_spin->value();
-    uiConfig.audio.maxRecordMs = ui->longest_recording_spin->value();
-    uiConfig.audio.sampleRate = 16000; 
-    uiConfig.audio.channels = 1;
-    uiConfig.audio.bitsPerSample = 16;
-
-    // Sherpa 设置 (Sherpa Group)
-    uiConfig.sherpa.useGpu = ui->gpu_backend_widget->currentComputeMode() == GpuBackendWidget::ComputeMode::CUDA;
-    uiConfig.sherpa.threads = ui->cpu_thread_number_spin->value();;
-    uiConfig.sherpa.languageModel = currentLanguageKey();
-	uiConfig.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
-
-    // /AI 设置 (AI Group)
-    uiConfig.polish.aiEngineIndex = ui->ai_engine_comb->currentIndex();
-    uiConfig.polish.enableAiEnhancement = ui->enable_enhancement_checkbox->isChecked();
-    uiConfig.polish.model = ui->ai_model_comb->currentText();
-    uiConfig.polish.aiStyle = ui->ai_style_comb->currentText();
-    uiConfig.polish.apiUrl = ui->api_url_edit->text();
-    uiConfig.polish.apiKey = ui->api_key_edit->text();
-    uiConfig.polish.targetLang = ui->translate_language_comb->currentText();
-    uiConfig.polish.vocab = ui->ai_vocabulary_edit->text();
-    uiConfig.polish.prompt = ui->custom_commands_edit->text();
-
-    // 快捷键 (Hotkey)
-    uiConfig.Language = Language;
-    uiConfig.style = style;
-
-	// 词典设置 (Terms Group)
-    auto rules = m_termsManager->buildAllRules();
-    uiConfig.replaceRules = rules.replaceRules;
-    uiConfig.polish.vocab = rules.aiVocab;
-
-    QString hotwords;
-    for (const QString& w : rules.hotwords) hotwords += w + '\n';
-    uiConfig.sherpa.hotwords = hotwords;
-    return uiConfig;
-}
-
 void MainWin::onLocalModelActivated()
 {
-	AppConfig uiConfig = extractConfigFromUI();
-	ConfigManager::instance().updateConfig(uiConfig);
-	ConfigManager::instance().save();
+	AppConfig& config = ConfigManager::instance().config();
+	config.sherpa.languageModel = currentLanguageKey();
+	config.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
+	applySettings(0);
 
-	const AppConfig& config = ConfigManager::instance().config();
 	QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
 		config.sherpa.localModelRepoId);
 	if (repoId.isEmpty()) {
@@ -615,48 +569,28 @@ void MainWin::onLocalModelActivated()
 	m_sherpaInstaller->installModel(repoId);
 }
 
+// 启动时：配置 → 控件。标准控件由 SettingsBinder 回填，其余是登记表里注明的自定义流程
 void MainWin::loadConfigToUI() {
     ConfigManager::instance().load();
-    const AppConfig& cfg = ConfigManager::instance().config();
+    AppConfig& cfg = ConfigManager::instance().config();
 
-    // 基础/全局
-    ui->autiomatic_monitoring_checkbox->setChecked(cfg.continuousMode);
-    ui->live_caption_checkbox->setChecked(cfg.liveCaptionEnabled);
-    ui->live_caption_font_spin->setValue(cfg.liveCaptionFontSize);
-    ui->live_caption_position_comb->setCurrentIndex(cfg.liveCaptionAtTop ? 1 : 0);
+    m_loadingSettings = true;
+    m_settings->loadAll();
     ui->shortcut_edit->setShortCut(cfg.hotkey);
-	ui->identification_backend_comb->setCurrentIndex(static_cast<int>(cfg.backend));
-    ui->cpu_thread_number_spin->setValue(cfg.sherpa.threads);
-    
-    ui->recording_equ_comb->setCurrentIndex(cfg.audio.deviceId);
-    {
-        int idx = ui->recording_equ_comb->findText(cfg.audio.deviceName);
-        if (idx != -1) ui->recording_equ_comb->setCurrentIndex(idx);
-    }
-    ui->source_equipment_comb->setCurrentIndex(0);
-    {
-        int oidx = ui->source_equipment_comb->findText(cfg.audio.outputDeviceName);
-        if (oidx != -1) ui->source_equipment_comb->setCurrentIndex(oidx);
-    }
-    ui->volume_threshold_spin->setValue(cfg.audio.voiceThreshold);
-    ui->mute_duration_spin->setValue(cfg.audio.silenceTimeoutMs);
-    ui->shortest_recording_spin->setValue(cfg.audio.minRecordMs);
-    ui->longest_recording_spin->setValue(cfg.audio.maxRecordMs);
-
-    // Sherpa
     ui->gpu_backend_widget->setComputeMode(cfg.sherpa.useGpu ? GpuBackendWidget::ComputeMode::CUDA : GpuBackendWidget::ComputeMode::CPU);
-    int index = ui->language_comb->findData(cfg.sherpa.languageModel);
+    const int index = ui->language_comb->findData(cfg.sherpa.languageModel);
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
+    ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
+    m_loadingSettings = false;
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
     if (cfg.sherpa.languageModel.isEmpty() && !currentLanguageKey().isEmpty())
-        ConfigManager::instance().config().sherpa.languageModel = currentLanguageKey();
+        cfg.sherpa.languageModel = currentLanguageKey();
     if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->model_list_widget->currentModel().isEmpty())
-        ConfigManager::instance().config().sherpa.localModelRepoId = ui->model_list_widget->currentModel();
-    
-    if (cfg.backend == AsrBackendKind::Sherpa) {
+        cfg.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
 
+    if (cfg.backend == AsrBackendKind::Sherpa) {
         QString repoId = ModelRegistry::FindByDisplayName(cfg.sherpa.languageModel,
                                                           cfg.sherpa.localModelRepoId);
         if (!repoId.isEmpty()) {
@@ -665,24 +599,11 @@ void MainWin::loadConfigToUI() {
         }
     }
 
-    // AI Enhancement
-    ui->ai_engine_comb->setCurrentIndex(cfg.polish.aiEngineIndex);
-
-    ui->enable_enhancement_checkbox->setChecked(cfg.polish.enableAiEnhancement);
-    ui->api_url_edit->setText(cfg.polish.apiUrl);
-    ui->api_key_edit->setText(cfg.polish.apiKey);
-    ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
-    ui->custom_commands_edit->setText(cfg.polish.prompt);
-    ui->translate_language_comb->setCurrentText(cfg.polish.targetLang);
-    ui->ai_style_comb->setCurrentText(cfg.polish.aiStyle);
-
     TextPolishService::RequestParams params;
     params.aiEngine = cfg.polish.aiEngineIndex;
     params.apiKey = cfg.polish.apiKey;
     params.customUrl = cfg.polish.apiUrl;
-
     m_textPolishService->fetchModels(params);
-
 }
 
 void MainWin::readIni() {
@@ -840,35 +761,67 @@ void MainWin::on_actionExit_triggered() { qApp->exit(0); }
 
 void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
+    const bool idle = m_workflow->state() == WorkflowState::Idle;
+    if (ConfigManager::instance().config().hotkeyHold) {
+        // 按住说话：按下开始，松开时由 onHotkeyReleased 结束
+        if (idle && startDictation()) {
+            m_holdStarted = true;
+            m_holdTimer.start();
+        }
+        return;
+    }
+    if (idle) startDictation();
+    else stopDictation();
+}
+
+void MainWin::onHotkeyReleased() {
+    if (!m_holdStarted) return;
+    m_holdStarted = false;
+    // 按得太短多半是误触，丢弃这段录音，不送去识别
+    constexpr qint64 kMinHoldMs = 300;
+    if (m_holdTimer.elapsed() < kMinHoldMs) {
+        LOG_DEBUG("Hotkey hold too short, recording discarded");
+        m_workflow->cancel();
+        ui->shortcut_edit->setListening(false);
+        return;
+    }
+    stopDictation();
+}
+
+bool MainWin::startDictation() {
     if (ui->file_transcribe_widget->isBusy()) {
         LOG_WARN("File transcription in progress, dictation hotkey ignored");
         m_liveOverlay->hideOverlay();
-        return;
+        return false;
     }
     const auto& config = ConfigManager::instance().config();
 
-    QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
-                                                      config.sherpa.localModelRepoId);
-    if (!m_sherpaInstaller->isInstalled(repoId)) {
-        LOG_ERROR("Current model is not installed, please install it first");
-        m_liveOverlay->hideOverlay();
-        return;
-    }
-    
-    if (m_sherpaInstaller->isInstalling(repoId)){
-        LOG_ERROR("Current model is being installed");
-        m_liveOverlay->hideOverlay();
-        return;
+    // 只有本地识别才需要本地模型；云端后端不受影响
+    if (config.backend == AsrBackendKind::Sherpa) {
+        const QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
+                                                                config.sherpa.localModelRepoId);
+        if (!m_sherpaInstaller->isInstalled(repoId)) {
+            LOG_ERROR("Current model is not installed, please install it first");
+            notify(NotifyLevel::Warning, tr("本地模型未安装"), tr("请先在\"本地识别\"页下载当前语言的模型"));
+            m_liveOverlay->hideOverlay();
+            return false;
+        }
+        if (m_sherpaInstaller->isInstalling(repoId)) {
+            LOG_ERROR("Current model is being installed");
+            notify(NotifyLevel::Info, tr("模型正在下载"), tr("下载完成后即可开始听写"));
+            m_liveOverlay->hideOverlay();
+            return false;
+        }
     }
 
-    if (m_workflow->state() == WorkflowState::Idle) {
-        m_workflow->start();
-        ui->shortcut_edit->setListening(true);  
-    }
-    else {
-        m_workflow->stop();
-        ui->shortcut_edit->setListening(false);  
-    }
+    m_workflow->start();
+    ui->shortcut_edit->setListening(true);
+    return true;
+}
+
+void MainWin::stopDictation() {
+    m_workflow->stop();
+    ui->shortcut_edit->setListening(false);
 }
 
 void MainWin::onStateChanged(WorkflowState state)
@@ -919,11 +872,7 @@ void MainWin::onStateChanged(WorkflowState state)
 
 void MainWin::setSettingsLocked(bool locked)
 {
-    for (int i = 0; i < ui->tabWidget->count(); ++i) {
-        ui->tabWidget->widget(i)->setEnabled(!locked);
-    }
-    ui->setting_save_btn->setEnabled(!locked);
-    ui->setting_cancel_btn->setEnabled(!locked);
+    m_settings->setDictating(locked);
 }
 
 void MainWin::onToggleDrawer(int pageIndex) {
@@ -1062,44 +1011,11 @@ void MainWin::onLoadConfig()
     syncLiveCaption();
 }
 
-void MainWin::onSaveConfig()
-{
-    LOG_DEBUG("Save Configuration");
-    AppConfig uiConfig = extractConfigFromUI();
-    ConfigManager::instance().updateConfig(uiConfig);
-
-    if (ConfigManager::instance().save()) {
-        LOG_INFO("Config saved successfully");
-		LOG_DEBUG("Save Configuration Success");
-        m_workflow->applyRecorderConfig();
-        ui->shortcut_edit->setShortCut(uiConfig.hotkey);
-        if (m_captionEngine) {
-            // 刚勾选实时字幕或换了语言时，缺流式模型就补下载
-            if (uiConfig.liveCaptionEnabled.load()) m_sherpaInstaller->ensureStreamingModel(uiConfig.sherpa.languageModel);
-            syncLiveCaption();
-        }
-    }
-    else {
-        LOG_ERROR("Save Configuration Failed");
-    }
-}
-
 void MainWin::initSystemTray()
 {
-    // 创建托盘菜单
+    // 菜单内容随状态变化
     trayMenu = new QMenu(this);
-
-    // 创建菜单动作
-    showAction = trayMenu->addAction("显示(&S)");
-    connect(showAction, &QAction::triggered, this, &MainWin::onShowWindow);
-
-    hideAction = trayMenu->addAction("隐藏(&H)");
-    connect(hideAction, &QAction::triggered, this, &MainWin::onHideWindow);
-
-    separatorAction = trayMenu->addSeparator();
-
-    quitAction = trayMenu->addAction("退出(&Q)");
-    connect(quitAction, &QAction::triggered, this, &MainWin::onQuitApplication);
+    connect(trayMenu, &QMenu::aboutToShow, this, &MainWin::rebuildTrayMenu);
 
     // 创建托盘图标
     trayIcon = new QSystemTrayIcon(this);
@@ -1114,6 +1030,73 @@ void MainWin::initSystemTray()
     trayIcon->setIcon(icon);
     connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWin::onTrayIconActivated);
     trayIcon->show();
+}
+
+void MainWin::rebuildTrayMenu()
+{
+    trayMenu->clear();
+    const AppConfig& cfg = ConfigManager::instance().config();
+    const bool idle = m_workflow->state() == WorkflowState::Idle;
+
+    if (idle) trayMenu->addAction(tr("开始听写"), this, [this]() { startDictation(); });
+    else trayMenu->addAction(tr("停止听写"), this, &MainWin::stopDictation);
+    trayMenu->addSeparator();
+
+    // 锁定状态，与设置页一致
+    QMenu* langMenu = trayMenu->addMenu(tr("识别语言"));
+    langMenu->setEnabled(idle);
+    
+    // 托盘里只列已下载模型的
+    for (const QString& lang : ModelRegistry::GetLanguages()) {
+        QString installedModel;
+        for (const ModelEntry& e : ModelRegistry::GetModelEntriesByLanguage(lang)) {
+            if (SherpaInstaller::isInstalled(e.repoPath)) { installedModel = e.displayName; break; }
+        }
+        if (installedModel.isEmpty() && lang != cfg.sherpa.languageModel) continue;
+        QAction* a = langMenu->addAction(LanguageCatalog::displayName(lang), this, [this, lang, installedModel]() {
+            ui->language_comb->setCurrentIndex(ui->language_comb->findData(lang));
+            if (!installedModel.isEmpty()) ui->model_list_widget->setCurrentModel(installedModel);
+            ConfigManager::instance().config().sherpa.localModelRepoId = ui->model_list_widget->currentModel();
+            applySettings(SettingsBinder::LiveCaption);
+            m_workflow->preloadModel(ConfigManager::instance().config());
+        });
+        a->setCheckable(true);
+        a->setChecked(lang == cfg.sherpa.languageModel);
+    }
+
+    QMenu* backendMenu = trayMenu->addMenu(tr("识别后端"));
+    backendMenu->setEnabled(idle);
+    for (int i = 0; i < ui->identification_backend_comb->count(); ++i) {
+        QAction* a = backendMenu->addAction(ui->identification_backend_comb->itemText(i), this, [this, i]() {
+            ui->identification_backend_comb->setCurrentIndex(i); 
+        });
+        a->setCheckable(true);
+        a->setChecked(i == int(cfg.backend));
+    }
+
+    QAction* caption = trayMenu->addAction(tr("实时字幕"), this, [this](bool on) {
+        ui->live_caption_checkbox->setChecked(on); 
+    });
+    caption->setCheckable(true);
+    caption->setChecked(cfg.liveCaptionEnabled.load());
+
+    // 最近听写：点一下复制
+    QMenu* recent = trayMenu->addMenu(tr("最近听写"));
+    constexpr int kTrayRecent = 5;
+    for (int i = 0; i < std::min(kTrayRecent, m_history->rowCount()); ++i) {
+        const QString text = m_history->textAt(i);
+        const QString label = QFontMetrics(recent->font()).elidedText(text.simplified(), Qt::ElideRight, 320);
+        recent->addAction(label, this, [this, text]() {
+            QGuiApplication::clipboard()->setText(text);
+            trayIcon->showMessage(tr("已复制"), text.left(80), QSystemTrayIcon::Information, 1500);
+        });
+    }
+    if (recent->isEmpty()) recent->addAction(tr("暂无记录"))->setEnabled(false);
+
+    trayMenu->addSeparator();
+    if (isVisible()) trayMenu->addAction(tr("隐藏主窗口"), this, &MainWin::onHideWindow);
+    else trayMenu->addAction(tr("显示主窗口"), this, &MainWin::onShowWindow);
+    trayMenu->addAction(tr("退出"), this, &MainWin::onQuitApplication);
 }
 
 void MainWin::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
@@ -1156,13 +1139,12 @@ void MainWin::setupLanguageCombo()
     for (const QString& key : ModelRegistry::GetLanguages()) {
         comb->addItem(LanguageCatalog::displayName(key), key);
     }
-    // 语种有上百项：SearchableComboBox 单击弹列表，双击可输入过滤（见 .ui 中的提升）
 }
 
 void MainWin::refreshLanguageComboTexts()
 {
     QComboBox* comb = ui->language_comb;
-    const QSignalBlocker blocker(comb);   // 只改文字，不能触发"切换语种"重置模型选择
+    const QSignalBlocker blocker(comb);  
     for (int i = 0; i < comb->count(); ++i) {
         comb->setItemText(i, LanguageCatalog::displayName(comb->itemData(i).toString()));
     }

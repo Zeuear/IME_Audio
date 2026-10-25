@@ -168,6 +168,11 @@ public:
         layout->addSpacing(75);
         vlayout->addLayout(layout);
 
+        // 用户改了组合键就立即重新注册并通知保存；setShortCut 回填时不通知
+        for (AnimatedCheckBox* box : { chkCtrl, chkShift, chkAlt, chkMeta }) {
+            connect(box, &QCheckBox::toggled, this, &ShortcutEdit::updateGlobalHotkeyFromUi);
+        }
+        connect(txtKey, &QLineEdit::editingFinished, this, &ShortcutEdit::updateGlobalHotkeyFromUi);
     }
 
     ~ShortcutEdit() {
@@ -188,11 +193,13 @@ public:
         unregisterHotkey();
 
         const ShortcutParts parts = parseShortcut(shortcut);
+        m_filling = true;
         chkCtrl->setChecked(parts.ctrl);
         chkShift->setChecked(parts.shift);
         chkAlt->setChecked(parts.alt);
         chkMeta->setChecked(parts.meta);
         txtKey->setText(parts.key);
+        m_filling = false;
 
         // 用规范化后的字符串注册，历史配置里的 "Win" 别名才能被 QKeySequence 认出
         registerGlobalHotkey(formatShortcut(parts));
@@ -222,11 +229,16 @@ protected:
     }
 
 signals:
-    void hotkeyActivated(); 
+    void hotkeyActivated();
+    // 按住说话模式用：快捷键松开
+    void hotkeyReleased();
+    void shortcutChanged(const QString& shortcut);
 
 private slots:
     void updateGlobalHotkeyFromUi() {
+        if (m_filling) return;
         registerGlobalHotkey(getShortCut());
+        emit shortcutChanged(getShortCut());
     }
 
     void updateIndicator(bool listening) {
@@ -253,6 +265,7 @@ private:
         if (globalHotkey->isRegistered()) {
             LOG_DEBUG("Register global hotkey");
             connect(globalHotkey, &QHotkey::activated, this, &ShortcutEdit::hotkeyActivated);
+            connect(globalHotkey, &QHotkey::released, this, &ShortcutEdit::hotkeyReleased);
         }
     }
 
@@ -270,4 +283,5 @@ private:
     QLabel* indicatorLbl;
     QLineEdit *txtKey;
     QHotkey *globalHotkey = nullptr;
+    bool m_filling = false;   // setShortCut 回填控件期间
 };

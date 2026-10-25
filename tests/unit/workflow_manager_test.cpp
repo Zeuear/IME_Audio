@@ -317,6 +317,24 @@ TEST_F(WorkflowManagerTest, ContinuousModeOff_StopThenUtteranceArrives) {
     EXPECT_EQ(wf->state(), WorkflowState::Idle);
 }
 
+// 按住说话按得太短：cancel 停止录音并丢掉最后一段，不送去识别，直接回到 Idle
+TEST_F(WorkflowManagerTest, Cancel_DiscardsFinalUtteranceAndReturnsIdle) {
+    rec->emitUtteranceOnStop = true;
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    ASSERT_EQ(wf->state(), WorkflowState::Recording);
+    wf->cancel();
+    EXPECT_EQ(rec->stopListeningCalls, 1);
+    EXPECT_EQ(trans->transcribeCalls, 0);
+    EXPECT_EQ(wf->state(), WorkflowState::Idle);
+
+    // 之后正常的停止不受影响
+    wf->start();
+    sherpa->emitModelLoadFinished(true);
+    wf->stop();
+    EXPECT_EQ(trans->transcribeCalls, 1);
+}
+
 // T6 停止后多句连续到达（stopListening 出一句 + 仍可能再 buffer 一句）
 TEST_F(WorkflowManagerTest, ContinuousModeOff_StopThenMultipleUtterances) {
     rec->emitUtteranceOnStop = true;

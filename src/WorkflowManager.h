@@ -39,7 +39,9 @@ public:
                     ISherpaModel* sherpManager);
 
     void start();                            
-    void stop();                             
+    void stop();
+    // 停止且丢弃还没送出的录音（按住说话时按得太短，视为误触）
+    void cancel();
     void playTestTone();                      
     void applyRecorderConfig();               
     void preloadModel(const AppConfig& cfg);  
@@ -86,6 +88,7 @@ private:
     QQueue<quint64> m_utteranceIds;
     quint64 m_nextUtteranceId = 0;
     bool m_stopRequested = false;
+    bool m_discarding = false;
 
 };
 

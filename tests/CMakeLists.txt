@@ -48,6 +48,8 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/live_caption_model_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ordered_results_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/settings_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_history_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -83,6 +85,10 @@ set(TEST_DEPS
     # 字幕内容模型是 Q_OBJECT 类，.h 也要交给 AUTOMOC
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/SettingsBinder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/SettingsBinder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/DictationHistoryModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/DictationHistoryModel.h
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用

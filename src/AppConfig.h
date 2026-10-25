@@ -82,14 +82,15 @@ struct AppConfig {
     std::atomic<bool> continuousMode { false };
     std::atomic<bool> autoStopEnabled { true };
     std::atomic<bool> liveCaptionEnabled { true };
-    int liveCaptionFontSize = 12;   // pt
-    bool liveCaptionAtTop = false;  // 字幕悬浮条贴屏幕顶部，默认底部
+    int liveCaptionFontSize = 12;  
+    bool liveCaptionAtTop = false;  
 
     QString hotkey;
+    bool hotkeyHold = false;    
 
     QString style;
     QString Language;
-    bool skipUpdateReminder = false;  // 用户勾选"不再提醒"后为真，停止更新弹窗
+    bool skipUpdateReminder = false;  
 
     AppConfig() = default;
     AppConfig(const AppConfig& other) { *this = other; }
@@ -111,6 +112,7 @@ struct AppConfig {
         liveCaptionFontSize = other.liveCaptionFontSize;
         liveCaptionAtTop = other.liveCaptionAtTop;
         hotkey = other.hotkey;
+        hotkeyHold = other.hotkeyHold;
         style = other.style;
         Language = other.Language;
         skipUpdateReminder = other.skipUpdateReminder;

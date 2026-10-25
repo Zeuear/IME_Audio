@@ -37,6 +37,14 @@ void WorkflowManager::initialize(IRecorder *recorder,
 void WorkflowManager::start() { startRecording(); }
 void WorkflowManager::stop() { stopRecording(); }
 
+// 停止时录音层会同步交出最后一段音频，置标志让 onUtteranceReady 丢掉它
+void WorkflowManager::cancel()
+{
+    m_discarding = true;
+    stopRecording();
+    m_discarding = false;
+}
+
 void WorkflowManager::playTestTone()
 {
     if (m_recorder) m_recorder->playTestTone();
@@ -140,6 +148,10 @@ void WorkflowManager::stopRecording() {
 void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate) {
     if (m_currentState == WorkflowState::Idle || m_currentState == WorkflowState::Error) {
         LOG_WARN(QString("Utterance dropped, not recording (%1 bytes)").arg(pcmData.size()));
+        return;
+    }
+    if (m_discarding) {
+        LOG_DEBUG(QString("Utterance discarded by cancel (%1 bytes)").arg(pcmData.size()));
         return;
     }
     LOG_DEBUG(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
