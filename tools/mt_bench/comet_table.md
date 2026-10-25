@@ -1,0 +1,22 @@
+| 方向 | 引擎 | BLEU | chrF | COMET | 打分耗时 |
+|---|---|---:|---:|---:|---:|
+| en->zh-Hans | Bergamot | 43.1 | 36.9 | 0.8616 | 34.4s |
+| en->zh-Hans | Opus-MT | 26.0 | 23.4 | 0.7337 | 61.9s |
+| zh-Hans->en | Bergamot | 27.5 | 54.9 | 0.8589 | 32.7s |
+| zh-Hans->en | Opus-MT | 22.8 | 50.3 | 0.8367 | 32.3s |
+| en->es | Bergamot | 27.2 | 53.6 | 0.8507 | 35.8s |
+| es->en | Bergamot | 26.8 | 55.7 | 0.8554 | 34.2s |
+| es->en | Opus-MT | 27.6 | 55.9 | 0.8583 | 34.2s |
+| en->fr | Bergamot | 48.7 | 68.7 | 0.8623 | 38.3s |
+| fr->en | Bergamot | 42.8 | 66.3 | 0.8837 | 35.4s |
+| en->de | Bergamot | 39.4 | 63.4 | 0.8623 | 35.4s |
+| de->en | Bergamot | 40.8 | 65.5 | 0.8789 | 38.1s |
+| de->en | Opus-MT | 40.5 | 64.6 | 0.8812 | 33.4s |
+| en->ja | Bergamot | 45.6 | 39.4 | 0.894 | 37.2s |
+| ja->en | Bergamot | 25.2 | 53.5 | 0.8618 | 34.4s |
+| ja->en | Opus-MT | 18.0 | 45.2 | 0.8149 | 33.3s |
+| en->ko | Bergamot | 44.1 | 38.0 | 0.8693 | 38.2s |
+| ko->en | Bergamot | 27.5 | 54.0 | 0.8587 | 34.0s |
+| ko->en | Opus-MT | 18.9 | 46.2 | 0.8143 | 33.4s |
+| en->ru | Bergamot | 30.3 | 55.2 | 0.8599 | 35.7s |
+| ru->en | Bergamot | 31.8 | 58.4 | 0.8468 | 34.5s |
