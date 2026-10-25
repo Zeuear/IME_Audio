@@ -8,6 +8,8 @@
 #include <QListView>
 #include <QPushButton>
 #include <QPlainTextEdit>
+#include <QScrollBar>
+#include <QTextCursor>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QVBoxLayout>
@@ -314,6 +316,7 @@ void FileTranscribeWidget::updatePreview()
     if (!idx.isValid()) {
         m_previewTitle->setText(tr("Transcription"));
         m_preview->clear();
+        m_previewPath.clear();
         m_copyBtn->setEnabled(false);
         return;
     }
@@ -322,7 +325,25 @@ void FileTranscribeWidget::updatePreview()
     m_previewTitle->setText(QFileInfo(t.path).fileName());
     // 预览每行带时间戳便于对照音频；复制与导出 txt 用的是不带时间戳的 t.text
     const QString text = t.state == FileTask::State::Failed ? t.error : buildTimestampedText(t.cues);
-    if (m_preview->toPlainText() != text) m_preview->setPlainText(text);
+    const QString shown = m_preview->toPlainText();
+    if (shown != text) {
+        QScrollBar* bar = m_preview->verticalScrollBar();
+        const bool sameFile = t.path == m_previewPath;
+        const bool atBottom = bar->value() >= bar->maximum() - 4;
+        if (sameFile && !shown.isEmpty() && text.startsWith(shown)) {
+            // 转录结果按提交顺序追加，用户的滚动位置和选区都原样保留
+            QTextCursor cursor(m_preview->document());
+            cursor.movePosition(QTextCursor::End);
+            cursor.insertText(text.mid(shown.size()));
+            if (atBottom) bar->setValue(bar->maximum());
+        } else {
+            // 换文件、失败、重试等内容整体变化时才整篇替换。回到顶部
+            const int pos = bar->value();
+            m_preview->setPlainText(text);
+            if (sameFile) bar->setValue(atBottom ? bar->maximum() : pos);
+        }
+    }
+    m_previewPath = t.path;
     m_copyBtn->setEnabled(!t.text.isEmpty());
 }
 

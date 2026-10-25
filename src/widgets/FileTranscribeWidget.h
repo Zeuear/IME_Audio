@@ -108,6 +108,7 @@ private:
     QLabel* m_hintLabel = nullptr;
     QLabel* m_previewTitle = nullptr;
     QPlainTextEdit* m_preview = nullptr;
+    QString m_previewPath;   // 预览当前显示的文件，用来区分"同一文件内容更新"和"换了文件"
     QLabel* m_statusLabel = nullptr;
     QPushButton* m_addBtn = nullptr;
     QPushButton* m_transcribeBtn = nullptr;
