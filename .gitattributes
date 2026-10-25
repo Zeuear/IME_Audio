@@ -1,0 +1,2 @@
+# shell 脚本必须是 LF：Windows 检出成 CRLF 后，bash 会因行尾的回车符报"找不到命令"
+*.sh text eol=lf
