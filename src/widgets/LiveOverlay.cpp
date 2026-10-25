@@ -137,7 +137,12 @@ void LiveOverlay::setSpectrumLevels(const QVector<float>& bands)
     m_levels = bands;
 }
 
-void LiveOverlay::setState(State s) { m_state = s; }
+void LiveOverlay::setState(State s)
+{
+    if (m_state == s) return;
+    m_state = s;
+    update();   // 暂停 / 转录中的圆点颜色是瞬时切换，不会触发动画量变化
+}
 void LiveOverlay::setLoading()   { setState(Loading); }
 void LiveOverlay::setListening() { setState(Listening); }
 void LiveOverlay::setTranscribe(){ setState(Transcribe); }
@@ -256,6 +261,9 @@ bool LiveOverlay::hasCaption() const
 
 void LiveOverlay::relayoutCaption()
 {
+    // 文字或颜色变了但卡片尺寸没变（长句已到最大宽度和两行高度）时，动画量都不动，
+    // tick 不会重绘，旧字幕会一直留在屏幕上，所以内容一变就主动请求重绘
+    update();
     if (!hasCaption()) {
         // 文档保留不动，收回胶囊的过程中文字还要淡出
         m_targetW = kBallSize;

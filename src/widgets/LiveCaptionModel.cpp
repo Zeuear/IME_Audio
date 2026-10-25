@@ -1,6 +1,7 @@
 #include "LiveCaptionModel.h"
 #include <QDateTime>
 #include <QRegularExpression>
+#include <utility>
 
 namespace {
 bool isCjk(QChar c)
@@ -58,9 +59,18 @@ void LiveCaptionModel::touch()
 void LiveCaptionModel::setSpeaking(bool speaking)
 {
     m_speaking = speaking;
+    if (speaking && !m_held.text.isEmpty()) {
+        const Held held = std::exchange(m_held, {});
+        applyPartial(held.epoch, held.text);
+    }
 }
 
 void LiveCaptionModel::setPartial(quint64 epoch, const QString &text)
+{
+    applyPartial(epoch, text);
+}
+
+void LiveCaptionModel::applyPartial(quint64 epoch, const QString &text)
 {
     QString t = CaptionText::normalizePartial(text);
     if (m_filter && !t.isEmpty()) t = m_filter(t);
@@ -75,7 +85,14 @@ void LiveCaptionModel::setPartial(quint64 epoch, const QString &text)
         touch();
         return;
     }
-    if (epoch != m_epoch || !m_speaking || t.isEmpty()) return;
+    if (epoch != m_epoch || t.isEmpty()) return;
+    // VAD 判定开口比流式识别出字晚，而引擎只在文字变化时才发结果：
+    // 这段时间的结果若直接丢掉，句子短、之后文字不再变化时就永远显示不出来。
+    // 先留着，确认真的在说话（setSpeaking(true)）后再补上；静音噪声始终不会进入字幕
+    if (!m_speaking) {
+        m_held = { epoch, text };   // 存原文：补上时会重新走一遍归一化和术语替换
+        return;
+    }
     m_sentences.append({t, State::Active, resolveNow(-1), epoch});
     while (m_sentences.size() > kMaxSentences) m_sentences.removeFirst();
     touch();
@@ -92,6 +109,7 @@ void LiveCaptionModel::onUtteranceReady(quint64 id, qint64 nowMs)
         m_sentences.append({QString(), State::Pending, now, m_epoch, id});
     }
     ++m_epoch;
+    m_held = {};
     emit epochChanged(m_epoch);
     touch();
 }
@@ -138,6 +156,7 @@ void LiveCaptionModel::clear()
     m_speaking = false;
     // 让还在队列里的上一轮中间结果作废
     ++m_epoch;
+    m_held = {};
     emit epochChanged(m_epoch);
     if (had) touch();
     else m_expireTimer->stop();

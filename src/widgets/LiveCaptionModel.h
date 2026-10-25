@@ -59,10 +59,14 @@ signals:
 private:
     static qint64 resolveNow(qint64 nowMs);
     void touch();
+    void applyPartial(quint64 epoch, const QString &text);
 
     QVector<Sentence> m_sentences;
     quint64 m_epoch = 0;
     bool m_speaking = false;
+    // 尚未开口时收到的最新一条中间结果原文；只保留最新，换句时作废
+    struct Held { quint64 epoch = 0; QString text; };
+    Held m_held;
     std::function<QString(const QString &)> m_filter;
     QTimer *m_expireTimer = nullptr;
 };

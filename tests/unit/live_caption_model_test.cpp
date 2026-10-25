@@ -65,6 +65,32 @@ TEST_F(LiveCaptionModelTest, PartialIgnoredWhenNotSpeaking) {
     EXPECT_TRUE(model.isEmpty());
 }
 
+// VAD 判定"开始说话"比流式识别出字晚（要持续一个最短录音时长）；
+// 引擎只在文字变化时才发中间结果，所以这段时间里收到的文字要先留着，说话开始后补上
+TEST_F(LiveCaptionModelTest, PartialArrivingBeforeVoiceStartsIsShownOnceItDoes) {
+    model.setSpeaking(false);
+    speak("你好");                       // 先于 voiceStarted 到达，且之后文字不再变化
+    EXPECT_TRUE(model.isEmpty());
+    model.setSpeaking(true);
+    EXPECT_EQ(model.plainText(), "你好");
+}
+
+TEST_F(LiveCaptionModelTest, HeldPartialIsReplacedByNewerOne) {
+    model.setSpeaking(false);
+    speak("你");
+    speak("你好");
+    model.setSpeaking(true);
+    EXPECT_EQ(model.plainText(), "你好");
+}
+
+TEST_F(LiveCaptionModelTest, HeldNoiseIsDroppedWhenSentenceIsCutWithoutSpeech) {
+    model.setSpeaking(false);
+    speak("noise");
+    model.clear();                       // 没有真正的说话：清空时丢弃，下一次开口不能冒出旧噪声
+    model.setSpeaking(true);
+    EXPECT_TRUE(model.isEmpty());
+}
+
 TEST_F(LiveCaptionModelTest, ActiveSentenceKeepsUpdatingAfterVoiceStops) {
     speak("hello");
     model.setSpeaking(false);   // VAD 已判定结束，流式解码还在追句尾
