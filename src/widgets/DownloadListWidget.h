@@ -8,6 +8,7 @@ class QVBoxLayout;
 class QScrollArea;
 class SherpaInstaller;
 class CudaInstaller;
+class TranslationModelInstaller;
 
 class ProjectGroupCard : public QWidget
 {
@@ -60,6 +61,7 @@ public:
     explicit DownloadListWidget(QWidget* parent = nullptr);
     void setSherpaInstaller(SherpaInstaller* installer);
     void setCudaInstaller(CudaInstaller* installer);
+    void setTranslationInstaller(TranslationModelInstaller* installer);
 
 
 private slots:

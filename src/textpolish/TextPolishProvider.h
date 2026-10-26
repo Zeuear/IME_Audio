@@ -23,6 +23,9 @@ public:
                         QNetworkAccessManager* mgr,
                         ResultCallback done) = 0;
 
+    virtual bool canPolish() const { return true; }
+    virtual bool canTranslate() const { return true; }
+
     // 是否支持连接测试（默认不支持）
     virtual bool canTest() const { return false; }
     virtual void test(const TextPolishService::RequestParams& /*params*/,

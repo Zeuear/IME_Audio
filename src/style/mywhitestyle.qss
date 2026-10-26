@@ -708,6 +708,13 @@ QWidget#download_list_viewport {
     color: #6e6e73;
     font-size: 11px;
 }
+
+/* AI 页的说明文字：次要信息，比正文小一号、颜色更淡 */
+#pipeline_hint_label,
+#translate_hint_label {
+    color: #6e6e73;
+    font-size: 11px;
+}
 #navItemText[active="true"] {
     color: #000000;
 }

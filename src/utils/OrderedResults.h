@@ -18,6 +18,11 @@ public:
         return true;
     }
 
+    bool isPending(quint64 seq) const
+    {
+        return seq >= m_head && seq < m_next && !m_done.contains(seq);
+    }
+
     QList<T> takeReady()
     {
         QList<T> ready;

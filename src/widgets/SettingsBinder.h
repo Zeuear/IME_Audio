@@ -47,6 +47,8 @@ public:
     void bind(QLineEdit* edit, Getter<QString> get, Setter<QString> set, Options opt);
     void bindIndex(QComboBox* combo, Getter<int> get, Setter<int> set, Options opt);
     void bindText(QComboBox* combo, Getter<QString> get, Setter<QString> set, Options opt);
+    // 按 itemData 存取：显示文字会随界面语言变，配置里保存的是不随语言变的键
+    void bindData(QComboBox* combo, Getter<QString> get, Setter<QString> set, Options opt);
 
     // 只登记听写锁定，读写由调用方负责
     void addLockedWidget(QWidget* widget);

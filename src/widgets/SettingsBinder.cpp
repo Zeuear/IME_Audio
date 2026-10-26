@@ -93,6 +93,23 @@ void SettingsBinder::bindText(QComboBox* combo, Getter<QString> get, Setter<QStr
     });
 }
 
+void SettingsBinder::bindData(QComboBox* combo, Getter<QString> get, Setter<QString> set, Options opt)
+{
+    add(combo, [=]() {
+        const int i = combo->findData(get(m_config));
+        if (i >= 0) combo->setCurrentIndex(i);
+    }, opt);
+    connect(combo, &QComboBox::currentIndexChanged, this, [=](int i) {
+        if (i < 0) return;
+        const QString key = combo->itemData(i).toString();
+        commit(opt, [&]() {
+            if (get(m_config) == key) return false;
+            set(m_config, key);
+            return true;
+        });
+    });
+}
+
 void SettingsBinder::addLockedWidget(QWidget* widget)
 {
     m_bindings.append({ widget, {}, true });

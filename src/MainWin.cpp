@@ -5,6 +5,8 @@
 #include <QClipboard>
 #include <algorithm>
 #include <QDebug>
+#include <QLocale>
+#include <QSet>
 #include <QDir>
 #include <QFile>
 #include <QStyleFactory>
@@ -22,6 +24,11 @@
 #include "RecorderService.h"
 #include "TranscriptionService.h"
 #include "TextPolishService.h"
+#include "TranslationService.h"
+#include "translation/TranslationModelInstaller.h"
+#include "translation/TranslationModelStore.h"
+#include "translation/LanguageRouting.h"
+#include "utils/AppPaths.h"
 #include "ConfigManager.h"
 #include "UpdateManager.h"
 #include "TermsLibraryManager.h"
@@ -99,39 +106,10 @@ void MainWin::initialize() {
     setupLanguageCombo();
     ui->model_list_widget->setLanguage(currentLanguageKey());
 
-    QStringList backend_items;
-    backend_items << "本地识别(Sherpa)";
-    backend_items << "Gemini 语音直输";
-    backend_items << "Groq 语音直输";
-    backend_items << "Gladia 语音直输";
-    ui->identification_backend_comb->addItems(backend_items);
-
-    QStringList ai_engine_items;
-    ai_engine_items << "Google Gemini API";
-    ai_engine_items << "本地/自订 (OpenAI 兼容)";
-    ai_engine_items << "Ollama (本地)";
-    ui->ai_engine_comb->addItems(ai_engine_items);
-
-    QStringList gemini_style_items;
-    gemini_style_items << "智慧预设";
-    gemini_style_items << "商务正式";
-    gemini_style_items << "日常口語";
-    gemini_style_items << "简洁扼要";
-    gemini_style_items << "自订Prompt";
-    ui->ai_style_comb->addItems(gemini_style_items);
-
-    QStringList translate_language_comb;
-    translate_language_comb << "不翻译";
-    translate_language_comb << "英文";
-    translate_language_comb << "日文";
-    translate_language_comb << "韩文";
-    translate_language_comb << "繁体中文";  
-    translate_language_comb << "简体中文";
-    ui->translate_language_comb->addItems(translate_language_comb);
-
-    ui->nav_list_widget->addNavItem("identification", "", "声音识别");
-    ui->nav_list_widget->addNavItem("config", "", "日志配置");
-    ui->nav_list_widget->addNavItem("download", "", "下载列表");
+    ui->nav_list_widget->addNavItem("identification", "", {});
+    ui->nav_list_widget->addNavItem("config", "", {});
+    ui->nav_list_widget->addNavItem("download", "", {});
+    retranslateDynamicItems();
 
     QActionGroup* styleActionGroup = new QActionGroup(this);
     styleActionGroup->addAction(ui->action_light);
@@ -147,12 +125,22 @@ void MainWin::initialize() {
 
     const AppConfig& config = ConfigManager::instance().config();
     m_textPolishService = new TextPolishService(m_networkManager, this);
+    // 本地翻译后端尚未接入，传空时翻译请求直接回退原文
+    m_translationService = new TranslationService(nullptr, this);
+    {
+        QFile manifestFile(QStringLiteral(":/translation_models.json"));
+        manifestFile.open(QIODevice::ReadOnly);
+        m_translationInstaller = new TranslationModelInstaller(
+            m_networkManager, AppPaths::translationModelsDir(),
+            TranslationModelStore::parseBundledManifest(manifestFile.readAll()), this);
+    }
     m_recorderService = new AudioRecorderService(config, this);
     m_sherpaManager = new SherpaManager(this);
     m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
     m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
 
-    m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService, config, this);
+    m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService,
+                                                      m_translationService, config, this);
     m_termsManager = new TermsLibraryManager(this);
     m_updateManager = new UpdateManager(m_networkManager, this);
 
@@ -185,6 +173,7 @@ void MainWin::initialize() {
 
     ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
     ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
+    ui->download_list_widget->setTranslationInstaller(m_translationInstaller);
     // VAD 模型随安装包分发；若缺失(旧安装包/被误删)则自动补下载，避免用户卡在
     // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
     m_sherpaInstaller->ensureVadModel();
@@ -304,16 +293,19 @@ void MainWin::setupUiConnections(){
 
     // gemini
     connect(ui->check_connection_btn, &QPushButton::clicked, this, [this]() {
+        const int engine = ui->ai_engine_comb->currentIndex();
+        if (!m_textPolishService->capabilities(engine).canTest) return;
+
         const AppConfig& config = ConfigManager::instance().config();
         TextPolishService::RequestParams params;
-        params.aiEngine = config.polish.aiEngineIndex;
+        params.aiEngine = engine;
         params.apiKey = config.polish.apiKey;
         params.customUrl = config.polish.apiUrl;
         params.model = config.polish.model;
         params.style = config.polish.aiStyle;
         params.customPrompt = config.polish.prompt;
         params.aiVocab = config.polish.vocab;
-        params.targetLang = config.polish.targetLang;
+        params.targetLang = config.polish.cloudTargetLang();
         m_textPolishService->testConnection(params);
     });
 
@@ -321,7 +313,46 @@ void MainWin::setupUiConnections(){
         onToggleDrawer(ui->nav_list_widget->currentRow());
     });
 
+    connect(ui->enable_enhancement_checkbox, &QCheckBox::toggled, this, [this]() { updateAiEngineUi(); });
+
+    connect(ui->ai_style_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        updateAiEngineUi();
+    });
+    connect(ui->translate_enabled_checkbox, &QCheckBox::toggled, this, [this](bool on) {
+        AppConfig& cfg = ConfigManager::instance().config();
+        // 下拉里没有"不翻译"项：旧配置里的"不翻译"在开启时换成当前显示的语言，否则开关开着却不翻译
+        if (on && !m_loadingSettings && (cfg.polish.targetLang.isEmpty() || cfg.polish.targetLang == QStringLiteral("不翻译"))) {
+            cfg.polish.targetLang = ui->translate_language_comb->currentData().toString();
+            ConfigManager::instance().save();
+        }
+        updateAiEngineUi();
+    });
+    connect(ui->translate_source_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        if (!m_loadingSettings) updateTranslationUi();
+    });
+    connect(ui->translate_language_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        if (!m_loadingSettings) updateTranslationUi();
+    });
+    connect(ui->language_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        if (m_loadingSettings) return;
+        rebuildTranslationLanguages();
+        updateTranslationUi();
+    });
+    connect(ui->translate_model_download_btn, &QPushButton::clicked, this, [this]() {
+        m_translationInstaller->install(currentTranslationRoute());
+        updateTranslationUi();
+    });
+    connect(m_translationInstaller, &TranslationModelInstaller::installGroupStarted, this, [this]() { updateTranslationUi(); });
+    connect(m_translationInstaller, &TranslationModelInstaller::installGroupFinished, this, [this]() { updateTranslationUi(); });
+
     connect(ui->ai_engine_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        // 目标语言列表随引擎变（云端几种常用语言 / 本地按已有模型）；载入设置时由 loadConfigToUI 统一重建
+        if (!m_loadingSettings) rebuildTranslationLanguages();
+        updateAiEngineUi();
+        // 载入设置时由 loadConfigToUI 在末尾统一拉取，避免重复请求
+        if (m_loadingSettings) return;
+        if (!m_textPolishService->capabilities(index).canFetchModels) return;
+
         const AppConfig& config = ConfigManager::instance().config();
         TextPolishService::RequestParams params;
         params.aiEngine = index;
@@ -370,6 +401,20 @@ void MainWin::setupUiConnections(){
     connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
     });
+    connect(m_transcriptionService, &TranscriptionService::enhancementFailed, this,
+            [this](const QString& cause, bool fileMode) {
+                // 文件转录逐段失败会刷屏，只在听写时提示
+                if (fileMode) return;
+                notify(NotifyLevel::Warning, tr("润色失败，已使用原文"), cause);
+            });
+    connect(m_translationInstaller, &TranslationModelInstaller::installFailed, this,
+            [this](const QString&, const QString&, const QString& cause) {
+                notify(NotifyLevel::Error, tr("翻译模型安装失败"), cause);
+            });
+    connect(m_transcriptionService, &TranscriptionService::translationFailed, this,
+            [this](const QString& cause) {
+                notify(NotifyLevel::Warning, tr("翻译失败，已使用原文"), cause);
+            });
 
     // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
     connect(m_recorderService, &AudioRecorderService::levelUpdated, m_liveOverlay, &LiveOverlay::setLevel);
@@ -484,6 +529,8 @@ void MainWin::changeEvent(QEvent* event)
 {
     if (QEvent::LanguageChange == event->type()) {
         ui->retranslateUi(this);
+        // 代码里动态加的下拉项和导航，retranslateUi 不会更新
+        retranslateDynamicItems();
         setDictationIndicator(m_indicatorRecording);   // retranslateUi 会把状态文字重置为默认值
         refreshLanguageComboTexts();
         alignSettingsCards();
@@ -584,6 +631,7 @@ void MainWin::loadConfigToUI() {
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
     ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
+    rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
     m_loadingSettings = false;
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
@@ -601,11 +649,259 @@ void MainWin::loadConfigToUI() {
         }
     }
 
+    updateAiEngineUi();
+
+    const int engine = ui->ai_engine_comb->currentIndex();
+    if (!m_textPolishService->capabilities(engine).canFetchModels) return;
+
     TextPolishService::RequestParams params;
-    params.aiEngine = cfg.polish.aiEngineIndex;
+    params.aiEngine = engine;
     params.apiKey = cfg.polish.apiKey;
     params.customUrl = cfg.polish.apiUrl;
     m_textPolishService->fetchModels(params);
+}
+
+namespace {
+
+// key 为空表示该下拉按序号存取；非空时作为 itemData，配置里存的是它，不随界面语言变。
+// 风格和翻译目标语言的 key 也会写进提示词，所以保持原来的中文值。
+struct ComboEntry {
+    const char* label;
+    const char* key;
+};
+
+const ComboEntry kBackendItems[] = {
+    { QT_TRANSLATE_NOOP("MainWin", "Local (Sherpa)"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Gemini voice input"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Groq voice input"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Gladia voice input"), "" },
+};
+
+const ComboEntry kAiEngineItems[] = {
+    { QT_TRANSLATE_NOOP("MainWin", "Google Gemini API"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Local / custom (OpenAI compatible)"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Ollama (local)"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Local model (offline translation)"), "" },
+};
+
+const ComboEntry kStyleItems[] = {
+    { QT_TRANSLATE_NOOP("MainWin", "Smart default"), "智慧预设" },
+    { QT_TRANSLATE_NOOP("MainWin", "Business formal"), "商务正式" },
+    { QT_TRANSLATE_NOOP("MainWin", "Casual spoken"), "日常口語" },
+    { QT_TRANSLATE_NOOP("MainWin", "Concise"), "简洁扼要" },
+    { QT_TRANSLATE_NOOP("MainWin", "Custom prompt"), "自订Prompt" },
+};
+
+// 云端引擎的目标语言：键是中文名，会写进提示词
+const ComboEntry kTargetLangItems[] = {
+    { QT_TRANSLATE_NOOP("MainWin", "English"), "英文" },
+    { QT_TRANSLATE_NOOP("MainWin", "Japanese"), "日文" },
+    { QT_TRANSLATE_NOOP("MainWin", "Korean"), "韩文" },
+    { QT_TRANSLATE_NOOP("MainWin", "Traditional Chinese"), "繁体中文" },
+    { QT_TRANSLATE_NOOP("MainWin", "Simplified Chinese"), "简体中文" },
+};
+
+// 首次调用添加条目，之后只更新显示文字（setItemText 不会触发 currentIndexChanged，不会误写配置）
+template <size_t N>
+void fillCombo(QComboBox* combo, const ComboEntry (&entries)[N]) {
+    for (size_t i = 0; i < N; ++i) {
+        const QString text = QCoreApplication::translate("MainWin", entries[i].label);
+        if (int(i) < combo->count()) combo->setItemText(int(i), text);
+        else combo->addItem(text, QString::fromUtf8(entries[i].key));
+    }
+}
+
+} // namespace
+
+void MainWin::retranslateDynamicItems() {
+    fillCombo(ui->identification_backend_comb, kBackendItems);
+    fillCombo(ui->ai_engine_comb, kAiEngineItems);
+    fillCombo(ui->ai_style_comb, kStyleItems);
+    rebuildTranslationLanguages();
+
+    ui->nav_list_widget->setNavText("identification", tr("Recognition"));
+    ui->nav_list_widget->setNavText("config", tr("Logs & Config"));
+    ui->nav_list_widget->setNavText("download", tr("Downloads"));
+}
+
+namespace {
+
+QString translationLanguageLabel(const QString& code) {
+    if (code == QLatin1String("zh-Hans")) return QCoreApplication::translate("MainWin", "Simplified Chinese");
+    if (code == QLatin1String("zh-Hant")) return QCoreApplication::translate("MainWin", "Traditional Chinese");
+    const QString key = LanguageCatalog::keyOfCode(code);
+    if (!key.isEmpty()) return LanguageCatalog::displayName(key);
+    return QStringLiteral("%1 (%2)").arg(QLocale::languageToString(QLocale(code).language()), code);
+}
+
+bool isCoreTranslationLanguage(const QString& code) {
+    return !displayNameForLanguageCode(code).isEmpty();
+}
+
+} // namespace
+
+// 识别模型的语言代码，源语言选"自动"时据此推断
+QString MainWin::recognitionLanguageCode() const {
+    return LanguageCatalog::codeOf(currentLanguageKey());
+}
+
+// 目标语言和源语言下拉的内容随翻译引擎变化：云端只有常用几种，本地按已有模型方向生成。
+// 当前值在新列表里找不到时只是界面回退到第一项，不改写配置里保存的值。
+void MainWin::rebuildTranslationLanguages() {
+    if (!m_translationInstaller) return;
+    const AppConfig& cfg = ConfigManager::instance().config();
+    const bool local = ui->ai_engine_comb->currentIndex() == kLocalTranslationEngine;
+
+    QStringList codes;
+    if (local) {
+        QSet<QString> langs;
+        for (const QString& pair : m_translationInstaller->knownPairs()) {
+            for (const QString& code : pair.split(QLatin1Char('>'))) langs.insert(code);
+        }
+        for (const QString& core : QStringList{ "en", "zh-Hans", "zh-Hant", "ja", "ko" }) {
+            if (langs.remove(core)) codes << core;
+        }
+        QStringList rest = langs.values();
+        std::sort(rest.begin(), rest.end(), [](const QString& a, const QString& b) {
+            return translationLanguageLabel(a).localeAwareCompare(translationLanguageLabel(b)) < 0;
+        });
+        codes += rest;
+    }
+
+    {
+        const QSignalBlocker blocker(ui->translate_language_comb);
+        ui->translate_language_comb->clear();
+        if (local) {
+            for (const QString& code : codes) {
+                const QString text = translationLanguageLabel(code);
+                // 核心五种沿用中文名作为键，和云端引擎的配置值通用；其余直接存语言代码
+                const QString core = displayNameForLanguageCode(code);
+                ui->translate_language_comb->addItem(text, core.isEmpty() ? code : core);
+                if (!isCoreTranslationLanguage(code)) {
+                    ui->translate_language_comb->setItemData(ui->translate_language_comb->count() - 1,
+                                                             tr("Quality not evaluated"), Qt::ToolTipRole);
+                }
+            }
+        }
+        else {
+            for (const ComboEntry& e : kTargetLangItems) {
+                ui->translate_language_comb->addItem(QCoreApplication::translate("MainWin", e.label),
+                                                     QString::fromUtf8(e.key));
+            }
+        }
+        const int saved = ui->translate_language_comb->findData(cfg.polish.targetLang);
+        ui->translate_language_comb->setCurrentIndex(saved >= 0 ? saved : 0);
+    }
+
+    {
+        const QSignalBlocker blocker(ui->translate_source_comb);
+        ui->translate_source_comb->clear();
+        ui->translate_source_comb->addItem(tr("Auto"), QStringLiteral("auto"));
+        for (const QString& code : codes) ui->translate_source_comb->addItem(translationLanguageLabel(code), code);
+        const int saved = ui->translate_source_comb->findData(cfg.polish.translateSourceLang);
+        ui->translate_source_comb->setCurrentIndex(saved >= 0 ? saved : 0);
+    }
+}
+
+// 本地翻译模型的状态文字与下载按钮：未安装显示大小，已装显示就绪；不自动下载
+TranslationRoute MainWin::currentTranslationRoute() const {
+    const QString from = resolveSourceCode(ui->translate_source_comb->currentData().toString(), recognitionLanguageCode());
+    const QString to = languageCodeForStored(ui->translate_language_comb->currentData().toString());
+    return planRoute(from, to, m_translationInstaller->knownPairs());
+}
+
+void MainWin::updateTranslationUi() {
+    if (!m_translationInstaller) return;
+    const bool local = ui->ai_engine_comb->currentIndex() == kLocalTranslationEngine;
+    const bool transOn = ui->translate_enabled_checkbox->isChecked();
+
+    const QString from = resolveSourceCode(ui->translate_source_comb->currentData().toString(), recognitionLanguageCode());
+    const TranslationRoute route = currentTranslationRoute();
+
+    QString status;
+    bool canDownload = false;
+    if (route.kind == RouteKind::Same) {
+        status = tr("Source and target are the same language");
+    }
+    else if (route.kind == RouteKind::Unsupported) {
+        status = from.isEmpty() ? tr("Cannot detect the source language; choose one manually")
+                                : tr("This language pair is not supported");
+    }
+    else if (m_translationInstaller->isRouteInstalled(route)) {
+        status = tr("Model ready");
+    }
+    else {
+        bool installing = false;
+        for (const TranslationHop& hop : route.hops) installing |= m_translationInstaller->isInstalling(hop.from, hop.to);
+        if (installing) {
+            status = tr("Downloading model...");
+        }
+        else {
+            const double mb = m_translationInstaller->bytesToDownload(route) / 1048576.0;
+            status = tr("Model download required: %1 MB").arg(mb, 0, 'f', 0);
+            canDownload = true;
+        }
+    }
+
+    ui->translate_model_status_label->setText(status);
+    ui->translate_model_download_btn->setEnabled(transOn && canDownload);
+
+    ui->translate_model_status_label->setVisible(local);
+    ui->translate_model_download_btn->setVisible(local);
+}
+
+// 润色与翻译相关控件只在这里启用/隐藏：开关关闭时灰显并保留值，"不适用"的块直接隐藏。
+// 选本地模型时翻译在本机完成，没有润色，也不需要云端的 Key、地址和模型。
+void MainWin::updateAiEngineUi() {
+    const int engine = ui->ai_engine_comb->currentIndex();
+    const bool local = engine == kLocalTranslationEngine;
+    const bool polishOn = !local && ui->enable_enhancement_checkbox->isChecked();
+    const bool transOn = ui->translate_enabled_checkbox->isChecked();
+    const auto caps = m_textPolishService->capabilities(engine);
+
+    const auto setEnabled = [](const QList<QWidget*>& widgets, bool on) {
+        for (QWidget* w : widgets) w->setEnabled(on);
+    };
+    const auto setVisible = [](const QList<QWidget*>& widgets, bool on) {
+        for (QWidget* w : widgets) w->setVisible(on);
+    };
+
+    // 引擎下拉始终显示；连接信息只对云端引擎有意义
+    setVisible({ ui->label_13, ui->api_key_edit, ui->label_16, ui->api_url_edit,
+                 ui->label_14, ui->ai_model_comb, ui->check_connection_btn }, !local);
+    setEnabled({ ui->ai_model_comb, ui->label_14 }, caps.canFetchModels);
+    ui->check_connection_btn->setEnabled(caps.canTest);
+
+    ui->polish_card->setVisible(!local);
+    // 自订指令只有风格选"自订Prompt"时才会用到，其余风格下显示出来没有作用
+    const bool customStyle = ui->ai_style_comb->currentData().toString() == QStringLiteral("自订Prompt");
+    setVisible({ ui->label_17, ui->custom_commands_edit }, customStyle);
+    setEnabled({ ui->ai_style_comb, ui->custom_commands_edit, ui->ai_vocabulary_edit,
+                 ui->label_18, ui->label_17, ui->label_20 }, polishOn && caps.canPolish);
+
+    // 云端翻译随润色请求一起发出，润色关闭时无法使用
+    const bool cloudBlocked = !local && !polishOn;
+    const bool detailOn = transOn && !cloudBlocked;
+    setEnabled({ ui->translate_source_comb, ui->translate_source_label,
+                 ui->translate_language_comb, ui->label_19 }, detailOn);
+    setVisible({ ui->translate_source_comb, ui->translate_source_label }, local);
+
+    QString hint;
+    if (transOn && cloudBlocked) {
+        hint = tr("Enable polishing first, or switch to the local model");
+    }
+    ui->translate_hint_label->setText(hint);
+    ui->translate_hint_label->setVisible(!hint.isEmpty());
+
+    updateTranslationUi();
+
+    // 只列出实际会执行的步骤；润色和翻译都没开时没有额外处理，不显示这一行
+    QStringList steps{ tr("Recognition") };
+    if (polishOn) steps << tr("Polishing");
+    if (transOn && !cloudBlocked) steps << tr("Translation");
+    steps << tr("Output");
+    ui->pipeline_hint_label->setText(steps.join(QStringLiteral("  →  ")));
+    ui->pipeline_hint_label->setVisible(steps.size() > 2);
 }
 
 void MainWin::readIni() {

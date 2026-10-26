@@ -14,6 +14,9 @@ struct PolishInstructionParts {
     QString customInstruction;
 };
 
+// 是否设置了有效的目标语言（空和"不翻译"都表示没有翻译任务）
+bool hasTranslationTarget(const QString& targetLang);
+
 // 根据 params 计算 style/lang/dict/vocab/custom 五个片段
 PolishInstructionParts buildPolishInstructionParts(const TextPolishService::RequestParams& params);
 

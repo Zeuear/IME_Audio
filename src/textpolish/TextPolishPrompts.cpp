@@ -49,16 +49,21 @@ QString loadSystemPrompt(const QString& filename, const QString& defaultPrompt) 
     return content.isEmpty() ? defaultPrompt : content;
 }
 
+// 界面存的是简体键，旧版本配置里是繁体，两种写法都认
+static bool styleIs(const QString& style, const char* simplified, const char* traditional) {
+    return style == QString::fromUtf8(simplified) || style == QString::fromUtf8(traditional);
+}
+
 QString styleInstruction(const QString& style) {
-    if (style == QStringLiteral("商務正式")) {
+    if (styleIs(style, "商务正式", "商務正式")) {
         return loadSystemPrompt("prompt_style_business.txt",
             "请将文本改写得更加商务、正式、专业，适合职场与商务邮件沟通。");
     }
-    else if (style == QStringLiteral("日常口語")) {
+    else if (styleIs(style, "日常口語", "日常口語")) {
         return loadSystemPrompt("prompt_style_casual.txt",
             "请保持日常口语风格，使语句流畅自然，不要过于死板。");
     }
-    else if (style == QStringLiteral("簡潔扼要")) {
+    else if (styleIs(style, "简洁扼要", "簡潔扼要")) {
         return loadSystemPrompt("prompt_style_concise.txt",
             "请尽可能简洁明了，去掉赘字，保留核心重点。");
     }
@@ -101,11 +106,15 @@ QStringList buildFewshotMessages(const QString& fewshotText) {
     return result;
 }
 
+bool hasTranslationTarget(const QString& targetLang) {
+    return !targetLang.isEmpty() && targetLang != QStringLiteral("不翻译");
+}
+
 PolishInstructionParts buildPolishInstructionParts(const TextPolishService::RequestParams& params) {
     PolishInstructionParts p;
     p.style = styleInstruction(params.style);
 
-    if (params.targetLang != QStringLiteral("不翻译") && !params.targetLang.isEmpty()) {
+    if (hasTranslationTarget(params.targetLang)) {
         p.langInstruction = QStringLiteral("并将最终结果翻译为「%1」（如果是中文请用对应的繁简体）。").arg(params.targetLang);
     }
 
@@ -117,7 +126,7 @@ PolishInstructionParts buildPolishInstructionParts(const TextPolishService::Requ
         p.vocabInstruction = QStringLiteral("\n【专有名词与自订词库（若原始文字中听起来相近，请优先使用且纠正为此处的写法）】:\n%1\n").arg(params.aiVocab);
     }
 
-    if (!params.customPrompt.isEmpty() && params.style == QStringLiteral("自訂 Prompt")) {
+    if (!params.customPrompt.isEmpty() && (params.style == QStringLiteral("自订Prompt") || params.style == QStringLiteral("自訂 Prompt"))) {
         p.customInstruction = QStringLiteral("\n【自订额外要求】:\n%1\n").arg(params.customPrompt);
     }
 

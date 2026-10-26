@@ -45,8 +45,11 @@ struct SherpaConfig {
     float hotscores = 1.5;
 };
 
+// 润色引擎下拉里的最后一项：本地离线翻译。它不润色，只负责翻译
+inline constexpr int kLocalTranslationEngine = 3;
+
 struct PolishConfig {
-    int aiEngineIndex = 0;  // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama(本地)
+    int aiEngineIndex = 0;  // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama(本地), 3 = 本地离线翻译
     bool enableAiEnhancement = false;
     QString apiKey;
     QString apiUrl;
@@ -56,6 +59,18 @@ struct PolishConfig {
     QString vocab;
     QString aiStyle;
     QString targetLang;
+    bool translateEnabled = false;           // 翻译开关；关闭时保留 targetLang，重新打开不丢
+    QString translateSourceLang = "auto";    // auto = 按识别模型语言推断
+
+    // 翻译关闭时目标语言按"不翻译"处理，但 targetLang 本身保留
+    QString activeTargetLang() const {
+        return translateEnabled ? targetLang : QStringLiteral("不翻译");
+    }
+    bool usesLocalTranslation() const { return aiEngineIndex == kLocalTranslationEngine; }
+    // 云端请求的目标语言：选了本地引擎时翻译由本地完成，云端请求里不能再带翻译指令
+    QString cloudTargetLang() const {
+        return usesLocalTranslation() ? QStringLiteral("不翻译") : activeTargetLang();
+    }
 };
 
 struct TermsConfig {

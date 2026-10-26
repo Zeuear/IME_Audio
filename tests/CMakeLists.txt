@@ -42,6 +42,12 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_polish_service_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/enhancement_fallback_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_service_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_routing_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_model_store_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/language_catalog_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
@@ -67,6 +73,19 @@ set(TEST_DEPS
     # generates the moc code and links it. Logger.cpp is needed (LOG_DEBUG usage).
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.h
+    # 本地翻译入口与后端接口；Q_OBJECT 头交给 AUTOMOC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TranslationService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TranslationService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/ITranslationBackend.h
+    # 纯语言路由与模型索引解析
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/LanguageRouting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/LanguageRouting.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/RemoteSettingsIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/RemoteSettingsIndex.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.h
     # TextPolishService delegates to the provider layer; include those TUs so the
     # hermetic test links (parseOllamaTags is static, but factory/fetchModels need them).
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/TextPolishProvider.cpp
@@ -152,6 +171,9 @@ else()
         Qt6::Concurrent
     )
 endif()
+
+target_compile_definitions(imeaudio_tests PRIVATE IME_AUDIO_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+target_compile_definitions(imeaudio_tests PRIVATE IME_AUDIO_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../resources")
 
 # Register with CTest (gtest_discover_tests enumerates each TEST case as a CTest entry)
 include(GoogleTest)

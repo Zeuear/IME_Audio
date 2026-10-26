@@ -740,6 +740,13 @@ QFrame[frameShape="HLine"] {
     color: #a1a1a6;
     font-size: 11px;
 }
+
+/* AI 页的说明文字：次要信息，比正文小一号、颜色更淡 */
+#pipeline_hint_label,
+#translate_hint_label {
+    color: #a1a1a6;
+    font-size: 11px;
+}
 #navItemText[active="true"] {
     color: #f0f0f2;
 }

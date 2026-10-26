@@ -65,6 +65,15 @@ QString sherpaModelsDir()
     return dir;
 }
 
+QString translationModelsDir()
+{
+    const QString dir = QDir(dataDir()).absoluteFilePath("translation/models");
+    if (!QFile::exists(dir)) {
+        QDir().mkpath(dir);
+    }
+    return dir;
+}
+
 QString vadModelFile()
 {
     const QString bundled = QDir(resourceDir()).absoluteFilePath("sherpa/vad/silero_vad.onnx");

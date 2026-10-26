@@ -85,6 +85,8 @@ const QList<Info> kLanguages = {
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Nepali"), "ne"},
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Norwegian Nynorsk"), "nn"},
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Norwegian"), "no"},
+    {QT_TRANSLATE_NOOP("LanguageCatalog", "Norwegian Bokmål"), "nb"},
+    {QT_TRANSLATE_NOOP("LanguageCatalog", "Uyghur"), "ug"},
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Occitan"), "oc"},
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Punjabi"), "pa"},
     {QT_TRANSLATE_NOOP("LanguageCatalog", "Pashto"), "ps"},
@@ -118,6 +120,14 @@ QString LanguageCatalog::codeOf(const QString& key)
 {
     for (const Info& i : kLanguages) {
         if (key == QLatin1String(i.key)) return QString::fromLatin1(i.code);
+    }
+    return {};
+}
+
+QString LanguageCatalog::keyOfCode(const QString& code)
+{
+    for (const Info& info : kLanguages) {
+        if (code == QLatin1String(info.code)) return QString::fromUtf8(info.key);
     }
     return {};
 }

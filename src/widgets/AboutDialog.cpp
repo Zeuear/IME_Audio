@@ -82,7 +82,9 @@ void AboutDialog::setupUi()
            "支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。")
         + QStringLiteral("\n\n")
         + tr("语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。"
-             "英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。"));
+             "英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。")
+        + QStringLiteral("\n\n")
+        + tr("本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。"));
     tabWidget->addTab(m_descriptionText, tr("软件简介"));
 
     m_changelogText = new QTextEdit(this);

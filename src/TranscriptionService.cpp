@@ -10,18 +10,24 @@
 #include <QTimer>
 #include "textpolish/GeminiProvider.h"
 #include "TermsLibraryManager.h"
+#include "sherpa/LanguageCatalog.h"
+#include "TranslationService.h"
+#include "translation/TranslationStage.h"
+#include "utils/EnhancementFallback.h"
 #include "utils/Logger.h"
 
 TranscriptionService::TranscriptionService(
     QNetworkAccessManager* networkManager, 
     SherpaManager* sherpaManager,
     TextPolishService* textPolishService,
+    TranslationService* translationService,
     const AppConfig& config, QObject *parent)
     : ITranscription(parent),
       m_config(config),
       m_manager(networkManager),
       m_sherpaManager(sherpaManager),
       m_textPolishService(textPolishService),
+      m_translationService(translationService),
       m_textProcessor(new TextPostProcessor(this))
 {
     connect(m_textPolishService, &TextPolishService::connectionTested, this,
@@ -72,7 +78,7 @@ void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, con
         return;
     }
     const Ticket t = m_sherpaTickets.dequeue();
-    if (!ok || !m_config.polish.enableAiEnhancement) {
+    if (!ok || !m_config.polish.enableAiEnhancement || m_config.polish.usesLocalTranslation()) {
         finish(t, ok, text, err);
         return;
     }
@@ -85,11 +91,24 @@ void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, con
     params.style = m_config.polish.aiStyle;
     params.customPrompt = m_config.polish.prompt;
     params.aiVocab = m_config.polish.vocab;
-    params.targetLang = m_config.polish.targetLang;
+    params.targetLang = m_config.polish.cloudTargetLang();
 
+    // 记录润色前文字：润色请求超时时用它回退，避免整句被丢弃
+    m_polishOriginals.insert(t.seq, text);
     armTimeout(t);
-    m_textPolishService->polishText(text, params, [this, t](bool success, const QString& polished, const QString& error) {
-        finish(t, success, polished, error);
+    m_textPolishService->polishText(text, params, [this, t, text](bool success, const QString& polished, const QString& error) {
+        // 超时已经按原文完成过，迟到的真实结果直接忽略，避免重复提示
+        if (m_polishOriginals.remove(t.seq) == 0) return;
+
+        if (success) {
+            finish(t, true, polished, {});
+            return;
+        }
+
+        LOG_WARN(QString("Text polish failed: %1").arg(error));
+        const auto outcome = decideEnhancementOutcome(false, text, polished);
+        if (outcome.usedFallback) emit enhancementFailed(error, t.fileMode);
+        finish(t, outcome.success, outcome.text, outcome.success ? QString() : error);
     });
 }
 
@@ -98,7 +117,7 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ti
     p.apiKey = m_config.polish.apiKey;
     p.model = m_config.polish.model;
     p.customUrl = m_config.polish.apiUrl;
-    p.targetLang = m_config.polish.targetLang;
+    p.targetLang = m_config.polish.cloudTargetLang();
     p.style = m_config.polish.aiStyle;
     p.customPrompt = m_config.polish.prompt;
     p.replaceRules = m_config.replaceRules;
@@ -260,8 +279,41 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
 }
 
 void TranscriptionService::finish(const Ticket& t, bool success, const QString& rawText, const QString& errorMsg) {
-    const Result r{ success, rawText, success ? postProcess(rawText, t.fileMode) : QString(), errorMsg, t.fileMode };
-    // 超时兜底后真实结果又回来了：已经按失败放行过，丢弃
+    // 同一序号只处理一次；翻译中的超时交给 TranslationService 自己的超时
+    if (!m_results.isPending(t.seq) || m_translating.contains(t.seq)) return;
+
+    if (!success) {
+        completeResult(t, false, rawText, {}, errorMsg);
+        return;
+    }
+
+    // 翻译必须发生在 postProcess 之后、进入有序放行之前
+    const QString processed = postProcess(rawText, t.fileMode);
+    const auto stage = decideTranslationStage(t.fileMode, m_config.polish.usesLocalTranslation(),
+                                              m_config.polish.translateSourceLang,
+                                              m_config.polish.activeTargetLang(),
+                                              LanguageCatalog::codeOf(m_config.sherpa.languageModel));
+    if (!stage.shouldTranslate || processed.isEmpty() || !m_translationService || !m_translationService->hasBackend()) {
+        completeResult(t, true, rawText, processed, {});
+        return;
+    }
+
+    m_translating.insert(t.seq);
+    m_translationService->translate(processed, stage.from, stage.to,
+        [this, t, rawText, processed](bool ok, const QString& translated, const QString& error) {
+            m_translating.remove(t.seq);
+            const auto outcome = decideTranslationOutcome(ok, translated, processed);
+            if (outcome.usedFallback) {
+                LOG_WARN(QString("Translation failed, fallback to original: %1").arg(error));
+                emit translationFailed(error);
+            }
+            completeResult(t, true, rawText, outcome.text, {});
+        });
+}
+
+void TranscriptionService::completeResult(const Ticket& t, bool success, const QString& rawText,
+                                           const QString& finalText, const QString& errorMsg) {
+    const Result r{ success, rawText, finalText, errorMsg, t.fileMode };
     if (!m_results.complete(t.seq, r)) return;
 
     for (const Result& ready : m_results.takeReady()) {
@@ -274,6 +326,27 @@ void TranscriptionService::finish(const Ticket& t, bool success, const QString& 
 
 void TranscriptionService::armTimeout(const Ticket& t) {
     QTimer::singleShot(kNetworkTimeoutMs, this, [this, t]() {
+        // 翻译阶段由 TranslationService 的独立超时兜底，别被这个更长的识别超时抢先判失败
+        if (m_translating.contains(t.seq)) return;
+
+        // 润色阶段超时：识别原文已经拿到，回退原文继续，不能当成识别失败
+        auto it = m_polishOriginals.find(t.seq);
+        if (it != m_polishOriginals.end()) {
+            const QString original = it.value();
+            m_polishOriginals.erase(it);
+
+            const QString cause = QStringLiteral("请求超时，无响应");
+            LOG_WARN(QString("Text polish timeout, fallback to original: %1").arg(cause));
+            const auto outcome = decideEnhancementOutcome(false, original, {});
+            if (outcome.usedFallback) {
+                emit enhancementFailed(cause, t.fileMode);
+                finish(t, true, outcome.text, {});
+            }
+            else {
+                finish(t, false, {}, cause);
+            }
+            return;
+        }
         finish(t, false, {}, QStringLiteral("请求超时，无响应"));
     });
 }

@@ -1,0 +1,46 @@
+[
+  {
+    "fromLang": "zh-Hans",
+    "toLang": "en",
+    "version": "1.9",
+    "fileType": "model",
+    "name": "model.zh-Hans-en.intgemm.alphas.bin",
+    "hash": "aaaa1111",
+    "attachment": { "location": "translations-models/zh-Hans-en/1.9/model.bin", "size": 1234 }
+  },
+  {
+    "fromLang": "zh-Hans",
+    "toLang": "en",
+    "version": "1.10",
+    "fileType": "model",
+    "name": "model.zh-Hans-en.intgemm.alphas.bin",
+    "hash": "bbbb2222",
+    "attachment": { "location": "translations-models/zh-Hans-en/1.10/model.bin", "size": 5678 }
+  },
+  {
+    "fromLang": "zh-Hans",
+    "toLang": "en",
+    "version": "1.10",
+    "fileType": "lex",
+    "name": "lex.50.50.zh-Hans-en.s2t.bin",
+    "hash": "cccc3333",
+    "attachment": { "location": "translations-models/zh-Hans-en/1.10/lex.bin", "size": 90 }
+  },
+  {
+    "fromLang": "zh-Hans",
+    "toLang": "ja",
+    "version": "1.0",
+    "fileType": "model",
+    "name": "model.zh-Hans-ja.bin",
+    "hash": "dddd4444",
+    "attachment": { "location": "translations-models/zh-Hans-ja/1.0/model.bin", "size": 100 }
+  },
+  {
+    "fromLang": "incomplete",
+    "version": "1.0",
+    "fileType": "model",
+    "name": "should-be-skipped.bin",
+    "hash": "eeee5555",
+    "attachment": { "location": "x.bin", "size": 1 }
+  }
+]

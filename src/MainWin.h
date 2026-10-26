@@ -26,6 +26,9 @@ class LiveOverlay;
 class LiveCaptionModel;
 class StreamingCaptionEngine;
 class TextPolishService;
+class TranslationService;
+class TranslationModelInstaller;
+struct TranslationRoute;
 class CudaInstaller;
 class SettingsBinder;
 class QTimer;
@@ -101,6 +104,12 @@ private:
     void registerSettings();
     void applySettings(unsigned effects);
     void loadConfigToUI();
+    void updateAiEngineUi();
+    void retranslateDynamicItems();
+    void rebuildTranslationLanguages();
+    void updateTranslationUi();
+    TranslationRoute currentTranslationRoute() const;
+    QString recognitionLanguageCode() const;
 
     // 开始 / 停止听写
     bool startDictation();
@@ -127,6 +136,8 @@ private:
     bool m_liveCaptionFailNotified = false;
 
     TextPolishService* m_textPolishService = nullptr;
+    TranslationService* m_translationService = nullptr;
+    TranslationModelInstaller* m_translationInstaller = nullptr;
     SherpaManager* m_sherpaManager = nullptr;
     SherpaInstaller* m_sherpaInstaller = nullptr;
     CudaInstaller* m_cudaInstaller = nullptr;

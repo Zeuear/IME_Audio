@@ -10,6 +10,7 @@
 #include <QPainter>
 #include "../sherpa/SherpaManager.h"
 #include "../cuda/CudaInstaller.h"
+#include "../translation/TranslationModelInstaller.h"
 
 ProjectGroupCard::ProjectGroupCard(const QString& repoId, const QString& displayName, int totalFiles, QWidget* parent)
     : QWidget(parent), m_repoId(repoId), m_totalFiles(totalFiles)
@@ -252,6 +253,15 @@ void DownloadListWidget::setCudaInstaller(CudaInstaller* installer)
     connect(m_cudaInstaller, &CudaInstaller::extractStarted,   this, &DownloadListWidget::onExtractStarted);
     connect(m_cudaInstaller, &CudaInstaller::extractProgress,   this, &DownloadListWidget::onExtractProgress);
     connect(m_cudaInstaller, &CudaInstaller::extractFinished,   this, &DownloadListWidget::onExtractFinished);
+}
+
+void DownloadListWidget::setTranslationInstaller(TranslationModelInstaller* installer)
+{
+    connect(installer, &TranslationModelInstaller::installGroupStarted, this, &DownloadListWidget::onInstallGroupStarted);
+    connect(installer, &TranslationModelInstaller::installFileProgress, this, &DownloadListWidget::onInstallFileProgress);
+    connect(installer, &TranslationModelInstaller::installFileFinished, this, &DownloadListWidget::onInstallFileFinished);
+    connect(installer, &TranslationModelInstaller::installFileError, this, &DownloadListWidget::onInstallFileError);
+    connect(installer, &TranslationModelInstaller::installGroupFinished, this, &DownloadListWidget::onInstallGroupFinished);
 }
 
 ProjectGroupCard* DownloadListWidget::ensureCard(const QString& repoId, const QString& displayName, int totalFiles)

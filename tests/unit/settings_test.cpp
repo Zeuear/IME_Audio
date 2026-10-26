@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QSettings>
 #include <QSpinBox>
 #include <QTemporaryDir>
 
@@ -49,6 +50,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     w.sherpa.useGpu = true; w.sherpa.threads = 7; w.sherpa.languageModel = "Spanish"; w.sherpa.localModelRepoId = "a/b";
     w.polish.aiEngineIndex = 2; w.polish.enableAiEnhancement = true; w.polish.apiKey = "k"; w.polish.apiUrl = "u";
     w.polish.model = "m"; w.polish.prompt = "p"; w.polish.aiStyle = "s"; w.polish.targetLang = "t";
+    w.polish.translateEnabled = true; w.polish.translateSourceLang = "ja";
     ASSERT_TRUE(writer.save());
 
     ConfigManager reader;
@@ -67,6 +69,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_EQ(r.polish.aiEngineIndex, 2); EXPECT_TRUE(r.polish.enableAiEnhancement);
     EXPECT_EQ(r.polish.apiKey, "k"); EXPECT_EQ(r.polish.apiUrl, "u"); EXPECT_EQ(r.polish.model, "m");
     EXPECT_EQ(r.polish.prompt, "p"); EXPECT_EQ(r.polish.aiStyle, "s"); EXPECT_EQ(r.polish.targetLang, "t");
+    EXPECT_TRUE(r.polish.translateEnabled); EXPECT_EQ(r.polish.translateSourceLang, "ja");
 
     // 赋值运算符同样要拷贝全部字段
     AppConfig copy;
@@ -74,6 +77,84 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_EQ(copy.geminiKey, "gemini"); EXPECT_TRUE(copy.hotkeyHold); EXPECT_EQ(copy.liveCaptionFontSize, 21);
 
     ConfigManager::setConfigFilePath(oldPath);
+}
+
+// 关闭润色不能改写已选的引擎，否则重新开启后引擎会丢
+TEST(ConfigRoundTrip, PolishSwitchAndEngineAreIndependent) {
+    QTemporaryDir dir;
+    const QString oldPath = ConfigManager::configFilePath();
+    ConfigManager::setConfigFilePath(dir.filePath("test.ini"));
+
+    for (const bool enabled : { false, true }) {
+        ConfigManager writer;
+        writer.config().polish.enableAiEnhancement = enabled;
+        writer.config().polish.aiEngineIndex = 2;
+        ASSERT_TRUE(writer.save());
+
+        ConfigManager reader;
+        reader.load();
+        EXPECT_EQ(reader.config().polish.enableAiEnhancement, enabled);
+        EXPECT_EQ(reader.config().polish.aiEngineIndex, 2);
+    }
+
+    ConfigManager::setConfigFilePath(oldPath);
+}
+
+// 老配置没有 translateEnabled：选过目标语言的升级后保持翻译开启，没选过的保持关闭
+TEST(ConfigRoundTrip, TranslateEnabledIsInferredFromOldTargetLang) {
+    QTemporaryDir dir;
+    const QString oldPath = ConfigManager::configFilePath();
+    ConfigManager::setConfigFilePath(dir.filePath("test.ini"));
+
+    const struct { const char* target; bool expected; } cases[] = {
+        { "英文", true }, { "简体中文", true }, { "不翻译", false }, { "", false },
+    };
+    for (const auto& c : cases) {
+        {
+            QSettings ini(dir.filePath("test.ini"), QSettings::IniFormat);
+            ini.clear();
+            ini.beginGroup("gemini");
+            ini.setValue("targetLang", c.target);
+            ini.endGroup();
+        }
+        ConfigManager reader;
+        reader.load();
+        EXPECT_EQ(reader.config().polish.translateEnabled, c.expected) << c.target;
+    }
+
+    // 已经有键时以键为准，不再按目标语言推断
+    {
+        QSettings ini(dir.filePath("test.ini"), QSettings::IniFormat);
+        ini.clear();
+        ini.beginGroup("gemini");
+        ini.setValue("targetLang", "英文");
+        ini.setValue("translateEnabled", false);
+        ini.endGroup();
+    }
+    ConfigManager reader;
+    reader.load();
+    EXPECT_FALSE(reader.config().polish.translateEnabled);
+
+    ConfigManager::setConfigFilePath(oldPath);
+}
+
+// 翻译关闭时目标语言按"不翻译"处理但不丢；本地引擎时云端请求里不带翻译
+TEST(PolishConfigTest, ActiveTargetLangFollowsSwitchAndEngine) {
+    PolishConfig c;
+    c.targetLang = "英文";
+
+    c.translateEnabled = false;
+    EXPECT_EQ(c.activeTargetLang(), QString("不翻译"));
+    EXPECT_EQ(c.targetLang, QString("英文"));
+
+    c.translateEnabled = true; c.aiEngineIndex = 0;
+    EXPECT_EQ(c.activeTargetLang(), QString("英文"));
+    EXPECT_EQ(c.cloudTargetLang(), QString("英文"));
+
+    c.aiEngineIndex = kLocalTranslationEngine;
+    EXPECT_TRUE(c.usesLocalTranslation());
+    EXPECT_EQ(c.activeTargetLang(), QString("英文"));
+    EXPECT_EQ(c.cloudTargetLang(), QString("不翻译"));
 }
 
 class SettingsBinderTest : public ::testing::Test {

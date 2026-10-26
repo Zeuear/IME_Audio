@@ -138,13 +138,21 @@ void MainWin::registerSettings()
         [](const AppConfig& c) { return c.polish.model; },
         [](AppConfig& c, const QString& v) { c.polish.model = v; },
         Opt{ Apply::Instant });
-    s->bindText(ui->ai_style_comb,
+    s->bindData(ui->ai_style_comb,
         [](const AppConfig& c) { return c.polish.aiStyle; },
         [](AppConfig& c, const QString& v) { c.polish.aiStyle = v; },
         Opt{ Apply::Instant });
-    s->bindText(ui->translate_language_comb,
+    s->bindData(ui->translate_language_comb,
         [](const AppConfig& c) { return c.polish.targetLang; },
         [](AppConfig& c, const QString& v) { c.polish.targetLang = v; },
+        Opt{ Apply::Instant });
+    s->bind(ui->translate_enabled_checkbox,
+        [](const AppConfig& c) { return c.polish.translateEnabled; },
+        [](AppConfig& c, bool v) { c.polish.translateEnabled = v; },
+        Opt{ Apply::Instant });
+    s->bindData(ui->translate_source_comb,
+        [](const AppConfig& c) { return c.polish.translateSourceLang; },
+        [](AppConfig& c, const QString& v) { c.polish.translateSourceLang = v; },
         Opt{ Apply::Instant });
     s->bind(ui->api_url_edit,
         [](const AppConfig& c) { return c.polish.apiUrl; },

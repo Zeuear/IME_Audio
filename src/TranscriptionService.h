@@ -8,7 +8,11 @@
 #include "interfaces/workflow_interfaces.h"
 #include "utils/OrderedResults.h"
 #include <QQueue>
+#include <QHash>
+#include <QSet>
 #include <functional>
+
+class TranslationService;
 
 // @brief  
 // 统一转录入口：根据 backend 类型分发到 Groq / Sherpa / Gladia / Gemini
@@ -18,6 +22,7 @@ public:
     explicit TranscriptionService(QNetworkAccessManager* networkManager, 
                                   SherpaManager* sherpaManager,
                                   TextPolishService* textPolishService,
+                                  TranslationService* translationService,
                                   const AppConfig& config,
                                   QObject *parent = nullptr);
 
@@ -34,6 +39,10 @@ public:
 signals:
     void fileSegmentFinished(bool success, const QString &rawText,
                              const QString &finalText, const QString &errorMsg);
+    // 润色失败已回退原文
+    void enhancementFailed(const QString& cause, bool fileMode);
+    // 本地翻译失败已回退翻译前文字（听写才会进入翻译）
+    void translationFailed(const QString& cause);
 
 private:
     // 一次转录请求。云端请求是并发的，结果可能乱序回来，按 seq 排好再发出；
@@ -51,6 +60,8 @@ private:
     static constexpr int kNetworkTimeoutMs = 150 * 1000;
 
     void finish(const Ticket& t, bool success, const QString& rawText, const QString& errorMsg);
+    void completeResult(const Ticket& t, bool success, const QString& rawText,
+                        const QString& finalText, const QString& errorMsg);
     void armTimeout(const Ticket& t);
 
     void transcribeGroq(const QByteArray &wavBytes, const Ticket& t);
@@ -67,9 +78,13 @@ private:
     bool m_fileMode = false;
     OrderedResults<Result> m_results;
     QQueue<Ticket> m_sherpaTickets;   // Sherpa 串行转录，结果按提交顺序回来
+    // 序号 → 润色前文字：润色超时时用它回退；回调返回后即删除，迟到的结果不再处理
+    QHash<quint64, QString> m_polishOriginals;
+    QSet<quint64> m_translating;      // 翻译中的序号；翻译服务有自己的超时，别被识别兜底抢先判失败
 
     const AppConfig& m_config;
     QNetworkAccessManager* m_manager;
     TextPolishService* m_textPolishService;
+    TranslationService* m_translationService;
     SherpaManager *m_sherpaManager;
 };

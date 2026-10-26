@@ -33,9 +33,13 @@ NavListItemWidget::NavListItemWidget(const QString& iconText, const QString& tex
     layout->addWidget(m_textLabel, 1);
 }
 
+void NavListItemWidget::setText(const QString& text)
+{
+    m_textLabel->setText(text);
+}
+
 void NavListItemWidget::setActive(bool active)
 {
-    // 样式表按 active 属性切换圆点与文字颜色，属性变化后要重新 polish 才生效
     for (QLabel* label : {m_indicatorDot, m_textLabel}) {
         label->setProperty("active", active);
         label->style()->unpolish(label);
@@ -45,7 +49,6 @@ void NavListItemWidget::setActive(bool active)
 
 int NavListItemWidget::preferredWidth() const
 {
-    // 子控件要单独 polish 才会带上样式表里的字号，否则按默认字体量出来偏窄，文字右侧会被截
     m_textLabel->ensurePolished();
     const QMargins m = layout()->contentsMargins();
     return m.left() + m_indicatorDot->width() + layout()->spacing()
@@ -121,6 +124,34 @@ void NavListWidget::setIndicator(const QString& id, NavListItemWidget::Indicator
     if (auto* w = qobject_cast<NavListItemWidget*>(itemWidget(item))) {
         w->setIndicatorState(state);
     }
+}
+
+void NavListWidget::setNavText(const QString& id, const QString& text)
+{
+    auto it = m_itemsById.find(id);
+    if (it == m_itemsById.end()) return;
+
+    if (auto* w = qobject_cast<NavListItemWidget*>(itemWidget(it.value()))) {
+        w->setText(text);
+        refreshItemSizes();
+    }
+}
+
+void NavListWidget::refreshItemSizes()
+{
+    for (auto it = m_itemsById.cbegin(); it != m_itemsById.cend(); ++it) {
+        if (auto* w = qobject_cast<NavListItemWidget*>(itemWidget(it.value()))) {
+            w->layout()->activate();
+            it.value()->setSizeHint(QSize(w->preferredWidth(), kItemHeight));
+        }
+    }
+    doItemsLayout();
+}
+
+void NavListWidget::showEvent(QShowEvent* event)
+{
+    QListWidget::showEvent(event);
+    refreshItemSizes();
 }
 
 void NavListWidget::selectItem(const QString& id)

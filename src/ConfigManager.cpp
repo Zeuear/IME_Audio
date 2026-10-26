@@ -50,6 +50,8 @@ void ConfigManager::applyDefaults() {
     m_config.polish.aiEngineIndex = 0;
     m_config.polish.aiStyle = "智慧预设";
     m_config.polish.targetLang = "不翻译";
+    m_config.polish.translateEnabled = false;
+    m_config.polish.translateSourceLang = "auto";
 
     m_config.hotkey = kDefaultHotkey;
     m_config.continuousMode = false;
@@ -105,6 +107,12 @@ bool ConfigManager::load() {
     m_config.polish.vocab = s.value("vocab").toString();
     m_config.polish.targetLang = s.value("targetLang").toString();
     m_config.polish.aiStyle = s.value("aiStyle").toString();
+    // 老配置没有这个开关：已经选过目标语言的用户升级后保持翻译开启
+    const QString target = m_config.polish.targetLang;
+    m_config.polish.translateEnabled = s.contains("translateEnabled")
+        ? s.value("translateEnabled").toBool()
+        : (!target.isEmpty() && target != "不翻译");
+    m_config.polish.translateSourceLang = s.value("translateSourceLang", "auto").toString();
     s.endGroup();
 
     s.beginGroup("terms");
@@ -163,6 +171,8 @@ bool ConfigManager::save() {
     s.setValue("vocab", m_config.polish.vocab);
     s.setValue("aiStyle", m_config.polish.aiStyle);
     s.setValue("targetLang", m_config.polish.targetLang);
+    s.setValue("translateEnabled", m_config.polish.translateEnabled);
+    s.setValue("translateSourceLang", m_config.polish.translateSourceLang);
     s.endGroup();
 
     s.beginGroup("terms");

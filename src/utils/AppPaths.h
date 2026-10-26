@@ -21,6 +21,8 @@ QString promptsDir();
 QString sherpaRoot();
 // 目录不存在时会创建
 QString sherpaModelsDir();
+// 本地翻译模型，每个方向一个子目录；目录不存在时会创建
+QString translationModelsDir();
 QString vadModelFile();
 
 }
