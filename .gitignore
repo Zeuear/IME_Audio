@@ -46,3 +46,9 @@ ui_*.h
 # QtCtreator CMake
 CMakeLists.txt.user
 
+
+# Serena 本地数据
+.serena/
+
+# 构建生成的 sherpa-onnx 版本戳
+third_party/sherpa-onnx/.sherpa_onnx_version_*
