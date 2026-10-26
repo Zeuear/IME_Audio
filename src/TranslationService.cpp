@@ -18,6 +18,10 @@ TranslationService::TranslationService(ITranslationBackend* backend, QObject* pa
     });
 }
 
+bool TranslationService::hasBackend() const {
+    return m_backend && m_backend->isUsable();
+}
+
 void TranslationService::translate(const QString& text, const QString& from, const QString& to, ResultCallback cb) {
     if (!m_backend) {
         cb(false, {}, QStringLiteral("翻译后端不可用"));

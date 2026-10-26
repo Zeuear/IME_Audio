@@ -19,7 +19,7 @@ public:
     void translate(const QString& text, const QString& from, const QString& to, ResultCallback cb);
 
     // 没有后端时翻译请求只会失败；调用方据此直接跳过翻译阶段，避免逐句报错
-    bool hasBackend() const { return m_backend != nullptr; }
+    bool hasBackend() const;
 
     // 仅测试使用：缩短超时，避免等 30 秒
     void setRequestTimeoutForTest(int ms) { m_timeoutMs = ms; }

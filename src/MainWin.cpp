@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QLocale>
 #include <QSet>
+#include <QStandardItemModel>
 #include <QDir>
 #include <QFile>
 #include <QStyleFactory>
@@ -25,6 +26,7 @@
 #include "TranscriptionService.h"
 #include "TextPolishService.h"
 #include "TranslationService.h"
+#include "translation/BergamotWorkerClient.h"
 #include "translation/TranslationModelInstaller.h"
 #include "translation/TranslationModelStore.h"
 #include "translation/LanguageRouting.h"
@@ -125,8 +127,6 @@ void MainWin::initialize() {
 
     const AppConfig& config = ConfigManager::instance().config();
     m_textPolishService = new TextPolishService(m_networkManager, this);
-    // 本地翻译后端尚未接入，传空时翻译请求直接回退原文
-    m_translationService = new TranslationService(nullptr, this);
     {
         QFile manifestFile(QStringLiteral(":/translation_models.json"));
         manifestFile.open(QIODevice::ReadOnly);
@@ -134,6 +134,18 @@ void MainWin::initialize() {
             m_networkManager, AppPaths::translationModelsDir(),
             TranslationModelStore::parseBundledManifest(manifestFile.readAll()), this);
     }
+    // 翻译引擎程序目前只提供 Windows 版；其余平台没有后端，翻译管线直接跳过
+    ITranslationBackend* translationBackend = nullptr;
+#ifdef Q_OS_WIN
+    TranslationModelInstaller* installer = m_translationInstaller;
+    translationBackend = new BergamotWorkerClient(
+        BergamotWorkerClient::RouteProvider{
+            [installer](const QString& from, const QString& to) { return planRoute(from, to, installer->knownPairs()); },
+            [installer](const QString& from, const QString& to) { return installer->isInstalled(from, to); },
+            [installer](const QString& from, const QString& to) { return installer->writeConfigFile(from, to); } },
+        QDir(AppPaths::resourceDir()).absoluteFilePath(QStringLiteral("translate_worker.exe")), this);
+#endif
+    m_translationService = new TranslationService(translationBackend, this);
     m_recorderService = new AudioRecorderService(config, this);
     m_sherpaManager = new SherpaManager(this);
     m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
@@ -858,6 +870,15 @@ void MainWin::updateAiEngineUi() {
     const bool polishOn = !local && ui->enable_enhancement_checkbox->isChecked();
     const bool transOn = ui->translate_enabled_checkbox->isChecked();
     const auto caps = m_textPolishService->capabilities(engine);
+
+    // 本地翻译后端接入前，这一项只会跳过翻译；灰显避免用户以为能用
+    if (auto* model = qobject_cast<QStandardItemModel*>(ui->ai_engine_comb->model())) {
+        if (QStandardItem* item = model->item(kLocalTranslationEngine)) {
+            const bool available = m_translationService->hasBackend();
+            item->setEnabled(available);
+            item->setToolTip(available ? QString() : tr("Not available in this version yet"));
+        }
+    }
 
     const auto setEnabled = [](const QList<QWidget*>& widgets, bool on) {
         for (QWidget* w : widgets) w->setEnabled(on);

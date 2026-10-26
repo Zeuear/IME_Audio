@@ -48,6 +48,8 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_routing_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_model_store_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/language_catalog_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/worker_protocol_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/bergamot_worker_client_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/workflow_manager_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/shortcut_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
@@ -84,6 +86,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/RemoteSettingsIndex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.h
     # TextPolishService delegates to the provider layer; include those TUs so the

@@ -367,6 +367,16 @@ else()
     set(_vad_dest_dir "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad")
 endif()
 
+
+set(TRANSLATE_WORKER_PATH "" CACHE FILEPATH "translate_worker.exe 的路径（可选）")
+if(WIN32 AND TRANSLATE_WORKER_PATH AND EXISTS "${TRANSLATE_WORKER_PATH}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${TRANSLATE_WORKER_PATH}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/translate_worker.exe"
+        COMMENT "Copying translate_worker.exe to output directory"
+    )
+endif()
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${_vad_dest_dir}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
