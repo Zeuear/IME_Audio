@@ -17,6 +17,12 @@ class WidgetAppEnvironment : public ::testing::Environment {
 public:
     void SetUp() override {
         if (!qApp) {
+#ifdef Q_OS_LINUX
+            // 无显示器的环境（如 CI）没有 xcb 可连，改用离屏平台，否则每个用例启动即失败
+            if (qEnvironmentVariableIsEmpty("DISPLAY") && qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")) {
+                qputenv("QT_QPA_PLATFORM", "offscreen");
+            }
+#endif
             static int argc = 0;
             static char* argv[] = { nullptr };
             new QApplication(argc, argv);
