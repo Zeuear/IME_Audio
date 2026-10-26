@@ -20,6 +20,16 @@ TEST(DictationHistory, KeepsOnlyMostRecentEntries) {
     EXPECT_EQ(m.textAt(DictationHistoryModel::kMaxEntries - 1), "20");
 }
 
+TEST(DictationHistory, AllTextIsOldestFirstOneLinePerEntry) {
+    DictationHistoryModel m;
+    EXPECT_TRUE(m.allText().isEmpty());
+    m.add("first");
+    m.add("second");
+    m.add("third");
+    // 列表里最新的在上；复制出去按说话顺序，从早到晚
+    EXPECT_EQ(m.allText(), "first\nsecond\nthird");
+}
+
 TEST(DictationHistory, ClearEmptiesTheList) {
     DictationHistoryModel m;
     m.add("x");

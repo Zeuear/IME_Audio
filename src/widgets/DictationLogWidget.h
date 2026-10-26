@@ -28,9 +28,12 @@ private:
     void setupUi();
     void retranslateUi();
     void copyRow(int row);
+    void copyAll();
+    void updateButtons();
 
     DictationHistoryModel* m_model = nullptr;
     QLabel* m_title = nullptr;
+    QPushButton* m_copyAllBtn = nullptr;
     QPushButton* m_clearBtn = nullptr;
     QListView* m_list = nullptr;
 };

@@ -22,6 +22,8 @@ public:
     void add(const QString& text, const QDateTime& time = QDateTime::currentDateTime());
     void clear();
     QString textAt(int row) const;
+    // 全部记录，按时间从早到晚、每条一行（列表里最新的在上，复制出去按说话顺序读更自然）
+    QString allText() const;
 
 private:
     struct Entry {

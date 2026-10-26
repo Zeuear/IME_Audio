@@ -84,11 +84,21 @@ void DictationLogWidget::setupUi()
     m_title->setObjectName(QStringLiteral("identification_log_header"));
     auto* headerLayout = new QHBoxLayout(m_title);
     headerLayout->setContentsMargins(0, 0, 0, 0);
-    m_clearBtn = new QPushButton(m_title);
-    m_clearBtn->setFlat(true);
-    m_clearBtn->setCursor(Qt::PointingHandCursor);
-    m_clearBtn->setStyleSheet(QStringLiteral("QPushButton { border: none; padding: 0 6px; background: transparent; }"));
+    // 表头按钮：复制全部、清空；都是无边框的文字按钮，禁用时变灰
+    const QString flatStyle = QStringLiteral(
+        "QPushButton { border: none; padding: 0 6px; background: transparent; }"
+        "QPushButton:disabled { color: palette(mid); }");
+    auto makeHeaderButton = [&]() {
+        auto* b = new QPushButton(m_title);
+        b->setFlat(true);
+        b->setCursor(Qt::PointingHandCursor);
+        b->setStyleSheet(flatStyle);
+        return b;
+    };
+    m_copyAllBtn = makeHeaderButton();
+    m_clearBtn = makeHeaderButton();
     headerLayout->addStretch();
+    headerLayout->addWidget(m_copyAllBtn);
     headerLayout->addWidget(m_clearBtn);
 
     m_list = new QListView(this);
@@ -104,6 +114,7 @@ void DictationLogWidget::setupUi()
     layout->addWidget(m_title);
     layout->addWidget(m_list, 1);
 
+    connect(m_copyAllBtn, &QPushButton::clicked, this, &DictationLogWidget::copyAll);
     connect(m_clearBtn, &QPushButton::clicked, this, [this]() {
         if (m_model) m_model->clear();
     });
@@ -116,6 +127,27 @@ void DictationLogWidget::setModel(DictationHistoryModel* model)
 {
     m_model = model;
     m_list->setModel(model);
+    // 没有记录时"复制""清空"都没有意义，置灰
+    connect(model, &QAbstractItemModel::rowsInserted, this, &DictationLogWidget::updateButtons);
+    connect(model, &QAbstractItemModel::rowsRemoved, this, &DictationLogWidget::updateButtons);
+    connect(model, &QAbstractItemModel::modelReset, this, &DictationLogWidget::updateButtons);
+    updateButtons();
+}
+
+void DictationLogWidget::updateButtons()
+{
+    const bool has = m_model && m_model->rowCount() > 0;
+    m_copyAllBtn->setEnabled(has);
+    m_clearBtn->setEnabled(has);
+}
+
+void DictationLogWidget::copyAll()
+{
+    if (!m_model) return;
+    const QString text = m_model->allText();
+    if (text.isEmpty()) return;
+    QGuiApplication::clipboard()->setText(text);
+    emit copied();
 }
 
 void DictationLogWidget::copyRow(int row)
@@ -149,5 +181,7 @@ void DictationLogWidget::changeEvent(QEvent* event)
 void DictationLogWidget::retranslateUi()
 {
     m_title->setText(tr("Recognition Log"));
+    m_copyAllBtn->setText(tr("Copy"));
+    m_copyAllBtn->setToolTip(tr("Copy all records to the clipboard"));
     m_clearBtn->setText(tr("Clear"));
 }

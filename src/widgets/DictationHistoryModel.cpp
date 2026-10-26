@@ -1,4 +1,5 @@
 #include "DictationHistoryModel.h"
+#include <QStringList>
 
 DictationHistoryModel::DictationHistoryModel(QObject* parent)
     : QAbstractListModel(parent)
@@ -39,6 +40,14 @@ void DictationHistoryModel::clear()
     beginResetModel();
     m_entries.clear();
     endResetModel();
+}
+
+QString DictationHistoryModel::allText() const
+{
+    QStringList lines;
+    lines.reserve(m_entries.size());
+    for (auto it = m_entries.crbegin(); it != m_entries.crend(); ++it) lines << it->text;
+    return lines.join(QLatin1Char('\n'));
 }
 
 QString DictationHistoryModel::textAt(int row) const
