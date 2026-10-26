@@ -17,7 +17,7 @@
 #include <QStyleOption>
 #include <QPainter>
 #include "../utils/Logger.h"
-#include "../cuda/CudaPlatformSpec.h"
+#include "../cuda/CudaInstaller.h"
 
 GpuBackendWidget::GpuBackendWidget(QWidget *parent)
     : QWidget(parent)

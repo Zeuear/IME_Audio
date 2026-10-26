@@ -6,7 +6,7 @@
 #include <QHash>
 #include <QDebug>
 #include <QtConcurrent> 
-#include "../cuda/CudaPlatformSpec.h"
+#include "../cuda/CudaInstaller.h"
 #include "../utils/AppPaths.h"
 #include "../utils/Logger.h"
 #include "../ConfigManager.h"

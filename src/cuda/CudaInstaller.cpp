@@ -1,5 +1,4 @@
 #include "CudaInstaller.h"
-#include "CudaPlatformSpec.h"
 #include <QLibrary>
 
 
