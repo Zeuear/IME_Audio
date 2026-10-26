@@ -104,6 +104,7 @@ private:
 
     // 开始 / 停止听写
     bool startDictation();
+    void setDictationIndicator(bool recording);
     void stopDictation();
 
     void setupLanguageCombo();
@@ -138,6 +139,7 @@ private:
     SettingsBinder* m_settings = nullptr;
     QTimer* m_saveTimer = nullptr;   // 设置改动合并后再写文件
     DictationHistoryModel* m_history = nullptr;   
+    bool m_indicatorRecording = false;   // 录音状态指示当前显示的状态，换语言后用来恢复文字
     bool m_loadingSettings = false;
 
     // 按住说话

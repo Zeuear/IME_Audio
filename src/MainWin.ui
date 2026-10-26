@@ -480,14 +480,14 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="3">
+               <item row="1" column="3">
                 <widget class="QLabel" name="label_live_caption_font">
                  <property name="text">
                   <string>Caption Font Size</string>
                  </property>
                 </widget>
                </item>
-               <item row="0" column="4">
+               <item row="1" column="4">
                 <widget class="QSpinBox" name="live_caption_font_spin">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -541,20 +541,97 @@
               <property name="card" stdset="0">
                <bool>true</bool>
               </property>
-              <layout class="QVBoxLayout" name="shortcut_card_layout">
+              <layout class="QGridLayout" name="shortcut_card_layout" columnstretch="0,1,0,0,1">
                <property name="leftMargin">
                 <number>15</number>
                </property>
                <property name="topMargin">
-                <number>4</number>
+                <number>12</number>
                </property>
                <property name="rightMargin">
                 <number>15</number>
                </property>
                <property name="bottomMargin">
-                <number>4</number>
+                <number>12</number>
                </property>
-               <item>
+               <property name="horizontalSpacing">
+                <number>15</number>
+               </property>
+               <property name="verticalSpacing">
+                <number>10</number>
+               </property>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_hotkey_status">
+                 <property name="text">
+                  <string>Record Status</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <layout class="QHBoxLayout" name="hotkey_status_layout">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <item>
+                  <widget class="StatusIndicator" name="hotkey_status_dot" native="true"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="hotkey_status_text">
+                   <property name="text">
+                    <string>Idle</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="hotkey_status_spacer">
+                   <property name="orientation">
+                    <enum>Qt::Orientation::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_hotkey_mode">
+                 <property name="text">
+                  <string>Trigger Mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QComboBox" name="hotkey_mode_comb">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Press to start, press again to stop</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Hold to talk, release to stop</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_hotkey">
+                 <property name="text">
+                  <string>Shortcut Key</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1" colspan="4">
                 <widget class="ShortcutEdit" name="shortcut_edit" native="true">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -565,48 +642,10 @@
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
-                   <height>85</height>
+                   <height>30</height>
                   </size>
                  </property>
                 </widget>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="hotkey_mode_layout">
-                 <property name="leftMargin">
-                  <number>10</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>8</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="label_hotkey_mode">
-                   <property name="text">
-                    <string>Trigger Mode</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QComboBox" name="hotkey_mode_comb">
-                   <item>
-                    <property name="text">
-                     <string>Press to start, press again to stop</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>Hold to talk, release to stop</string>
-                    </property>
-                   </item>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="hotkey_mode_spacer">
-                   <property name="orientation">
-                    <enum>Qt::Orientation::Horizontal</enum>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
                </item>
               </layout>
              </widget>
@@ -1375,6 +1414,12 @@
    <class>DownloadListWidget</class>
    <extends>QWidget</extends>
    <header>widgets/DownloadListWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>StatusIndicator</class>
+   <extends>QWidget</extends>
+   <header>widgets/ShortcutEdit.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

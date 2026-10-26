@@ -82,29 +82,7 @@ class ShortcutEdit : public QWidget {
 public:
     explicit ShortcutEdit(QWidget *parent = nullptr) : QWidget(parent) {
         setObjectName("shortcut_edit");
-        QVBoxLayout* vlayout = new QVBoxLayout(this);
-        vlayout->setSpacing(20);
-        vlayout->setContentsMargins(10, 10, 10, 10);
-
-        // 激活状态指示灯（绿=监听中，红=空闲/未激活）
-        QHBoxLayout* statusLayout = new QHBoxLayout();
-        statusLayout->setSpacing(5);
-
-        QLabel* indicatorIconLbl = new QLabel("🎶", this);
-        indicatorIconLbl->setFixedHeight(16);
-        indicatorLbl = new QLabel(tr("Record Status: "), this);
-        indicatorLbl->setFixedHeight(16);
-        indicatorLbl->setObjectName("indicatorLbl");
-        m_indicator = new StatusIndicator(this);
-
-        statusLayout->addWidget(indicatorIconLbl);
-        statusLayout->addWidget(indicatorLbl);
-        statusLayout->addWidget(m_indicator);
-        statusLayout->addStretch();
-        updateIndicator(false);
-        vlayout->addLayout(statusLayout);
-
-        QHBoxLayout *layout = new QHBoxLayout();
+        QHBoxLayout *layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(3);
 
@@ -121,52 +99,27 @@ public:
         const QString altName = QStringLiteral("Alt");
         const QString metaName = QStringLiteral("Win");
 #endif
+        // 每个修饰键一组"名称 + 勾选框"，组与组之间留出间隔
+        auto addModifier = [&](const QString& name, AnimatedCheckBox*& box) {
+            QLabel* label = new QLabel(name, this);
+            label->setFixedHeight(30);
+            box = new AnimatedCheckBox(this);
+            layout->addWidget(label);
+            layout->addWidget(box);
+            layout->addSpacing(22);
+        };
+        addModifier(ctrlName, chkCtrl);
+        addModifier(shiftName, chkShift);
+        addModifier(altName, chkAlt);
+        addModifier(metaName, chkMeta);
 
-        // Ctrl 组合
-        QLabel *lblCtrl = new QLabel(ctrlName, this);
-        lblCtrl->setFixedHeight(30);
-        chkCtrl = new AnimatedCheckBox(this);
-        layout->addWidget(lblCtrl);
-        layout->addWidget(chkCtrl);
-        layout->addSpacing(25);
-
-        // Shift 组合
-        QLabel *lblShift = new QLabel(shiftName, this);
-        lblShift->setFixedHeight(30);
-        chkShift = new AnimatedCheckBox(this);
-        layout->addWidget(lblShift);
-        layout->addWidget(chkShift);
-        layout->addSpacing(25);
-
-        // Alt 组合
-        QLabel *lblAlt = new QLabel(altName, this);
-        lblAlt->setFixedHeight(30);
-        chkAlt = new AnimatedCheckBox(this);
-        layout->addWidget(lblAlt);
-        layout->addWidget(chkAlt);
-        layout->addSpacing(25);
-
-        // Meta 组合（Windows 上是 Win 键，macOS 上是 ⌃ Control）
-        QLabel* lblMeta = new QLabel(metaName, this);
-        lblMeta->setFixedHeight(30);
-        chkMeta = new AnimatedCheckBox(this);
-        layout->addWidget(lblMeta);
-        layout->addWidget(chkMeta);
-        layout->addSpacing(25);
-
-        // 字母输入框
-        QLabel* lblKey = new QLabel("快捷键 ( A-Z/0-9/F1-F24/Space )", this);
-        lblKey->setFixedHeight(30);
+        // 按键输入框：允许的按键写在提示里，不再占一行标签
         txtKey = new SingleCharEdit();
-        txtKey->setFixedWidth(70);
-        txtKey->setFixedHeight(30);
-
-        layout->addWidget(lblKey);
+        txtKey->setFixedSize(70, 30);
+        txtKey->setPlaceholderText(tr("Key"));
+        txtKey->setToolTip(tr("A-Z / 0-9 / F1-F24 / Space (Backspace to clear)"));
         layout->addWidget(txtKey);
-
         layout->addStretch();
-        layout->addSpacing(75);
-        vlayout->addLayout(layout);
 
         // 用户改了组合键就立即重新注册并通知保存；setShortCut 回填时不通知
         for (AnimatedCheckBox* box : { chkCtrl, chkShift, chkAlt, chkMeta }) {
@@ -205,10 +158,6 @@ public:
         registerGlobalHotkey(formatShortcut(parts));
     }
 
-    void setListening(bool listening) {
-        updateIndicator(listening);
-    }
-
 
 protected:
     void paintEvent(QPaintEvent* event)
@@ -221,13 +170,6 @@ protected:
     }
 
 
-    void changeEvent(QEvent* event) override {
-        if (event->type() == QEvent::LanguageChange) {
-            this->retranslateUi();
-        }
-        QWidget::changeEvent(event);
-    }
-
 signals:
     void hotkeyActivated();
     // 按住说话模式用：快捷键松开
@@ -239,10 +181,6 @@ private slots:
         if (m_filling) return;
         registerGlobalHotkey(getShortCut());
         emit shortcutChanged(getShortCut());
-    }
-
-    void updateIndicator(bool listening) {
-        m_indicator->setListening(listening);
     }
 
 private:
@@ -269,18 +207,11 @@ private:
         }
     }
 
-    void retranslateUi()
-    {
-        indicatorLbl->setText(tr("Record Status: "));
-    }
-
 private:
-    StatusIndicator* m_indicator = nullptr;
     AnimatedCheckBox* chkCtrl;
     AnimatedCheckBox*chkShift;
     AnimatedCheckBox* chkAlt;
     AnimatedCheckBox* chkMeta;
-    QLabel* indicatorLbl;
     QLineEdit *txtKey;
     QHotkey *globalHotkey = nullptr;
     bool m_filling = false;   // setShortCut 回填控件期间

@@ -68,7 +68,8 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
 
 void MainWin::alignSettingsCards()
 {
-    const QList<QGridLayout*> grids{ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout };
+    const QList<QGridLayout*> grids{ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
+                                     ui->shortcut_card_layout };
     for (int col : { 0, 3 }) {
         int width = 0;
         for (QGridLayout* grid : grids) {
@@ -483,6 +484,7 @@ void MainWin::changeEvent(QEvent* event)
 {
     if (QEvent::LanguageChange == event->type()) {
         ui->retranslateUi(this);
+        setDictationIndicator(m_indicatorRecording);   // retranslateUi 会把状态文字重置为默认值
         refreshLanguageComboTexts();
         alignSettingsCards();
     }
@@ -782,10 +784,16 @@ void MainWin::onHotkeyReleased() {
     if (m_holdTimer.elapsed() < kMinHoldMs) {
         LOG_DEBUG("Hotkey hold too short, recording discarded");
         m_workflow->cancel();
-        ui->shortcut_edit->setListening(false);
+        setDictationIndicator(false);
         return;
     }
     stopDictation();
+}
+
+void MainWin::setDictationIndicator(bool recording) {
+    m_indicatorRecording = recording;
+    ui->hotkey_status_dot->setListening(recording);
+    ui->hotkey_status_text->setText(recording ? tr("Recording") : tr("Idle"));
 }
 
 bool MainWin::startDictation() {
@@ -815,13 +823,13 @@ bool MainWin::startDictation() {
     }
 
     m_workflow->start();
-    ui->shortcut_edit->setListening(true);
+    setDictationIndicator(true);
     return true;
 }
 
 void MainWin::stopDictation() {
     m_workflow->stop();
-    ui->shortcut_edit->setListening(false);
+    setDictationIndicator(false);
 }
 
 void MainWin::onStateChanged(WorkflowState state)

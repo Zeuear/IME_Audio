@@ -609,13 +609,11 @@ QFrame[card="true"] {
     border: 1px solid #2a2a2a;
     border-radius: 12px;
 }
+/* 卡片里自绘/自带布局的控件不能沿用页面底色，否则会在卡片上露出一块色差 */
 QFrame[card="true"] AnimatedCheckBox,
-QFrame[card="true"] StatusIndicator {
+QFrame[card="true"] StatusIndicator,
+QFrame[card="true"] ShortcutEdit {
     background-color: transparent;
-}
-QFrame[card="true"] #shortcut_edit {
-    background-color: transparent;
-    border: none;
 }
 
 
@@ -764,18 +762,8 @@ QFrame[frameShape="HLine"] {
 
 
 
-#indicatorLbl {
-    color: #f0f0f2;
-    font-size: 13px;
-    font-weight: 600;
-}
 
 
-#shortcut_edit{
-    background-color: #2a2b30;
-    border: 1px solid #2a2b30;
-    border-radius: 12px;
-}
 
 /* ==========================================================================
    ModelListWidget：自绘的圆角卡片（表头 + 行）
