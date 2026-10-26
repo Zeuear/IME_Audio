@@ -2,7 +2,7 @@
  "dataset": "FLEURS test",
  "utterances": 120,
  "sherpa_onnx": "1.13.4",
- "generated": "2026-10-20",
+ "generated": "2026-10-23",
  "languages": {
   "Chinese": {
    "csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09": {
@@ -871,6 +871,14 @@
     "wer": 5.7638,
     "n": 93
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 90.7,
+    "rtf": 0.747,
+    "metric": "cer",
+    "cer": 0.0926,
+    "wer": 0.9571,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 86.5,
     "rtf": 0.178,
@@ -911,6 +919,14 @@
     "metric": "wer",
     "cer": 0.9933,
     "wer": 1.0082,
+    "n": 101
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 83.4,
+    "rtf": 0.676,
+    "metric": "wer",
+    "cer": 0.074,
+    "wer": 0.1664,
     "n": 101
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1005,6 +1021,14 @@
     "wer": 0.2042,
     "n": 92
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 94.6,
+    "rtf": 0.69,
+    "metric": "wer",
+    "cer": 0.0152,
+    "wer": 0.0539,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 89.8,
     "rtf": 0.39,
@@ -1037,6 +1061,14 @@
     "metric": "wer",
     "cer": 0.0628,
     "wer": 0.1469,
+    "n": 102
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.3,
+    "rtf": 0.383,
+    "metric": "wer",
+    "cer": 0.0278,
+    "wer": 0.1269,
     "n": 102
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1097,6 +1129,14 @@
     "wer": 1.3057,
     "n": 97
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 88.0,
+    "rtf": 0.45,
+    "metric": "wer",
+    "cer": 0.0316,
+    "wer": 0.1203,
+    "n": 97
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 75.8,
     "rtf": 0.352,
@@ -1155,6 +1195,14 @@
     "wer": 1.2506,
     "n": 98
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 89.0,
+    "rtf": 0.597,
+    "metric": "wer",
+    "cer": 0.0253,
+    "wer": 0.1099,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 76.0,
     "rtf": 0.306,
@@ -1187,6 +1235,14 @@
     "metric": "wer",
     "cer": 0.0925,
     "wer": 0.3313,
+    "n": 105
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.6,
+    "rtf": 0.709,
+    "metric": "wer",
+    "cer": 0.0207,
+    "wer": 0.1238,
     "n": 105
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1239,6 +1295,14 @@
     "wer": 1.1626,
     "n": 108
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 90.5,
+    "rtf": 0.689,
+    "metric": "wer",
+    "cer": 0.0173,
+    "wer": 0.0954,
+    "n": 108
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 81.7,
     "rtf": 0.142,
@@ -1273,6 +1337,14 @@
     "wer": 1.047,
     "n": 102
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 81.6,
+    "rtf": 0.631,
+    "metric": "wer",
+    "cer": 0.0775,
+    "wer": 0.1843,
+    "n": 102
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 71.9,
     "rtf": 0.2,
@@ -1283,6 +1355,14 @@
    }
   },
   "Persian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 81.2,
+    "rtf": 0.673,
+    "metric": "wer",
+    "cer": 0.044,
+    "wer": 0.1882,
+    "n": 95
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 73.1,
     "rtf": 0.201,
@@ -1343,6 +1423,14 @@
     "wer": 1.5331,
     "n": 92
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 86.1,
+    "rtf": 0.595,
+    "metric": "wer",
+    "cer": 0.0303,
+    "wer": 0.1392,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 71.2,
     "rtf": 0.165,
@@ -1383,6 +1471,14 @@
     "metric": "wer",
     "cer": 0.6808,
     "wer": 1.2266,
+    "n": 97
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 90.6,
+    "rtf": 0.714,
+    "metric": "wer",
+    "cer": 0.0233,
+    "wer": 0.0936,
     "n": 97
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1427,6 +1523,14 @@
     "wer": 1.08,
     "n": 103
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 80.6,
+    "rtf": 0.696,
+    "metric": "wer",
+    "cer": 0.0551,
+    "wer": 0.1939,
+    "n": 103
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 63.2,
     "rtf": 0.229,
@@ -1467,6 +1571,14 @@
     "metric": "wer",
     "cer": 1.0604,
     "wer": 1.1388,
+    "n": 97
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 79.9,
+    "rtf": 0.666,
+    "metric": "wer",
+    "cer": 0.0669,
+    "wer": 0.2007,
     "n": 97
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1519,6 +1631,14 @@
     "wer": 1.1611,
     "n": 93
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.2,
+    "rtf": 0.676,
+    "metric": "wer",
+    "cer": 0.0162,
+    "wer": 0.1275,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 74.6,
     "rtf": 0.292,
@@ -1559,6 +1679,14 @@
     "metric": "wer",
     "cer": 0.5801,
     "wer": 1.67,
+    "n": 91
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.1,
+    "rtf": 0.727,
+    "metric": "wer",
+    "cer": 0.0218,
+    "wer": 0.1294,
     "n": 91
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1603,6 +1731,14 @@
     "wer": 1.697,
     "n": 94
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 79.4,
+    "rtf": 0.712,
+    "metric": "wer",
+    "cer": 0.0394,
+    "wer": 0.2064,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 63.9,
     "rtf": 0.158,
@@ -1643,6 +1779,14 @@
     "metric": "wer",
     "cer": 0.4599,
     "wer": 1.0387,
+    "n": 96
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 77.2,
+    "rtf": 0.677,
+    "metric": "wer",
+    "cer": 0.0522,
+    "wer": 0.228,
     "n": 96
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1687,6 +1831,14 @@
     "wer": 1.1376,
     "n": 97
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 85.0,
+    "rtf": 0.745,
+    "metric": "wer",
+    "cer": 0.0271,
+    "wer": 0.1503,
+    "n": 97
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 72.1,
     "rtf": 0.239,
@@ -1727,6 +1879,14 @@
     "metric": "wer",
     "cer": 0.4828,
     "wer": 1.0748,
+    "n": 102
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 85.7,
+    "rtf": 0.75,
+    "metric": "wer",
+    "cer": 0.0325,
+    "wer": 0.1433,
     "n": 102
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1771,6 +1931,14 @@
     "wer": 1.1057,
     "n": 95
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.9,
+    "rtf": 0.713,
+    "metric": "wer",
+    "cer": 0.0286,
+    "wer": 0.121,
+    "n": 95
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 76.7,
     "rtf": 0.143,
@@ -1811,6 +1979,14 @@
     "metric": "wer",
     "cer": 0.4833,
     "wer": 1.0792,
+    "n": 93
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 90.6,
+    "rtf": 0.701,
+    "metric": "wer",
+    "cer": 0.024,
+    "wer": 0.0941,
     "n": 93
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1855,6 +2031,14 @@
     "wer": 0.9893,
     "n": 94
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 83.4,
+    "rtf": 0.653,
+    "metric": "wer",
+    "cer": 0.0493,
+    "wer": 0.1656,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 67.7,
     "rtf": 0.143,
@@ -1895,6 +2079,14 @@
     "metric": "wer",
     "cer": 0.5595,
     "wer": 1.2793,
+    "n": 96
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 82.1,
+    "rtf": 0.388,
+    "metric": "wer",
+    "cer": 0.0433,
+    "wer": 0.1793,
     "n": 96
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1947,6 +2139,14 @@
     "wer": 1.0481,
     "n": 93
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 68.9,
+    "rtf": 0.502,
+    "metric": "wer",
+    "cer": 0.2617,
+    "wer": 0.311,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 63.2,
     "rtf": 0.173,
@@ -1971,6 +2171,14 @@
     "metric": "wer",
     "cer": 0.0238,
     "wer": 0.084,
+    "n": 91
+   },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.2,
+    "rtf": 0.408,
+    "metric": "wer",
+    "cer": 0.0233,
+    "wer": 0.1282,
     "n": 91
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -2007,6 +2215,14 @@
     "wer": 1.1122,
     "n": 93
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 85.9,
+    "rtf": 0.336,
+    "metric": "wer",
+    "cer": 0.0311,
+    "wer": 0.1405,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 76.6,
     "rtf": 0.16,
@@ -2041,6 +2257,14 @@
     "wer": 1.0445,
     "n": 101
    },
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 37.6,
+    "rtf": 0.346,
+    "metric": "wer",
+    "cer": 0.2735,
+    "wer": 0.6242,
+    "n": 101
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 30.6,
     "rtf": 0.179,
@@ -2051,6 +2275,14 @@
    }
   },
   "Afrikaans": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 83.5,
+    "rtf": 0.551,
+    "metric": "wer",
+    "cer": 0.0626,
+    "wer": 0.1646,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 75.0,
     "rtf": 0.181,
@@ -2069,6 +2301,14 @@
    }
   },
   "Amharic": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 45.2,
+    "rtf": 0.339,
+    "metric": "wer",
+    "cer": 0.0652,
+    "wer": 0.5479,
+    "n": 101
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 69.0,
     "rtf": 0.262,
@@ -2087,6 +2327,14 @@
    }
   },
   "Assamese": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 68.7,
+    "rtf": 0.371,
+    "metric": "wer",
+    "cer": 0.0846,
+    "wer": 0.3125,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 55.3,
     "rtf": 0.155,
@@ -2105,6 +2353,14 @@
    }
   },
   "Azerbaijani": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 80.3,
+    "rtf": 0.477,
+    "metric": "wer",
+    "cer": 0.0397,
+    "wer": 0.1971,
+    "n": 96
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 63.5,
     "rtf": 0.146,
@@ -2123,6 +2379,14 @@
    }
   },
   "Bengali": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 79.0,
+    "rtf": 0.351,
+    "metric": "wer",
+    "cer": 0.0504,
+    "wer": 0.2095,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 69.2,
     "rtf": 0.25,
@@ -2141,6 +2405,14 @@
    }
   },
   "Bosnian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 88.5,
+    "rtf": 0.717,
+    "metric": "wer",
+    "cer": 0.0439,
+    "wer": 0.1155,
+    "n": 97
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 78.0,
     "rtf": 0.2,
@@ -2159,6 +2431,14 @@
    }
   },
   "Catalan": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 91.3,
+    "rtf": 0.716,
+    "metric": "wer",
+    "cer": 0.0218,
+    "wer": 0.0868,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 82.2,
     "rtf": 0.219,
@@ -2177,6 +2457,14 @@
    }
   },
   "Welsh": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 63.6,
+    "rtf": 0.697,
+    "metric": "wer",
+    "cer": 0.101,
+    "wer": 0.3642,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 51.3,
     "rtf": 0.287,
@@ -2195,6 +2483,14 @@
    }
   },
   "Galician": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 89.4,
+    "rtf": 0.305,
+    "metric": "wer",
+    "cer": 0.0243,
+    "wer": 0.1056,
+    "n": 99
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 78.9,
     "rtf": 0.264,
@@ -2213,6 +2509,14 @@
    }
   },
   "Gujarati": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 80.0,
+    "rtf": 0.768,
+    "metric": "wer",
+    "cer": 0.0438,
+    "wer": 0.1996,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 70.0,
     "rtf": 0.263,
@@ -2231,6 +2535,14 @@
    }
   },
   "Hausa": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 75.1,
+    "rtf": 0.451,
+    "metric": "wer",
+    "cer": 0.0663,
+    "wer": 0.2486,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 65.4,
     "rtf": 0.316,
@@ -2249,6 +2561,14 @@
    }
   },
   "Icelandic": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 78.9,
+    "rtf": 0.54,
+    "metric": "wer",
+    "cer": 0.0423,
+    "wer": 0.2106,
+    "n": 35
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 67.6,
     "rtf": 0.316,
@@ -2267,6 +2587,14 @@
    }
   },
   "Javanese": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 84.1,
+    "rtf": 0.296,
+    "metric": "wer",
+    "cer": 0.0347,
+    "wer": 0.1594,
+    "n": 102
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 76.5,
     "rtf": 0.31,
@@ -2285,6 +2613,14 @@
    }
   },
   "Kazakh": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 88.0,
+    "rtf": 0.358,
+    "metric": "wer",
+    "cer": 0.0218,
+    "wer": 0.1195,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 80.5,
     "rtf": 0.294,
@@ -2303,6 +2639,14 @@
    }
   },
   "Khmer": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 85.1,
+    "rtf": 0.449,
+    "metric": "cer",
+    "cer": 0.1493,
+    "wer": 0.9598,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 81.0,
     "rtf": 0.324,
@@ -2321,6 +2665,14 @@
    }
   },
   "Kannada": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 82.0,
+    "rtf": 0.431,
+    "metric": "wer",
+    "cer": 0.0286,
+    "wer": 0.1799,
+    "n": 104
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 73.0,
     "rtf": 0.32,
@@ -2339,6 +2691,14 @@
    }
   },
   "Lingala": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 84.0,
+    "rtf": 0.711,
+    "metric": "wer",
+    "cer": 0.0459,
+    "wer": 0.1598,
+    "n": 106
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 76.6,
     "rtf": 0.333,
@@ -2357,6 +2717,14 @@
    }
   },
   "Lao": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 82.3,
+    "rtf": 0.698,
+    "metric": "cer",
+    "cer": 0.1768,
+    "wer": 0.8615,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 78.2,
     "rtf": 0.308,
@@ -2375,6 +2743,14 @@
    }
   },
   "Maori": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 69.5,
+    "rtf": 0.736,
+    "metric": "wer",
+    "cer": 0.1087,
+    "wer": 0.305,
+    "n": 99
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 60.3,
     "rtf": 0.328,
@@ -2393,6 +2769,14 @@
    }
   },
   "Macedonian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 91.7,
+    "rtf": 0.723,
+    "metric": "wer",
+    "cer": 0.0147,
+    "wer": 0.0825,
+    "n": 87
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 84.1,
     "rtf": 0.317,
@@ -2411,6 +2795,14 @@
    }
   },
   "Malayalam": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 72.3,
+    "rtf": 0.716,
+    "metric": "wer",
+    "cer": 0.0428,
+    "wer": 0.2774,
+    "n": 94
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 62.2,
     "rtf": 0.339,
@@ -2429,6 +2821,14 @@
    }
   },
   "Mongolian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 54.3,
+    "rtf": 0.7,
+    "metric": "wer",
+    "cer": 0.1172,
+    "wer": 0.4571,
+    "n": 97
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 42.1,
     "rtf": 0.28,
@@ -2447,6 +2847,14 @@
    }
   },
   "Marathi": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 71.2,
+    "rtf": 0.796,
+    "metric": "wer",
+    "cer": 0.0609,
+    "wer": 0.288,
+    "n": 90
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 58.4,
     "rtf": 0.337,
@@ -2465,6 +2873,14 @@
    }
   },
   "Burmese": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 91.2,
+    "rtf": 0.722,
+    "metric": "cer",
+    "cer": 0.0876,
+    "wer": 0.7107,
+    "n": 104
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 86.6,
     "rtf": 0.309,
@@ -2483,6 +2899,14 @@
    }
   },
   "Nepali": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 66.7,
+    "rtf": 0.802,
+    "metric": "wer",
+    "cer": 0.0793,
+    "wer": 0.3325,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 54.2,
     "rtf": 0.307,
@@ -2501,6 +2925,14 @@
    }
   },
   "Norwegian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.3,
+    "rtf": 0.518,
+    "metric": "wer",
+    "cer": 0.0292,
+    "wer": 0.127,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 77.9,
     "rtf": 0.363,
@@ -2519,6 +2951,14 @@
    }
   },
   "Occitan": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 57.5,
+    "rtf": 0.601,
+    "metric": "wer",
+    "cer": 0.1253,
+    "wer": 0.425,
+    "n": 97
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 42.9,
     "rtf": 0.347,
@@ -2537,6 +2977,14 @@
    }
   },
   "Punjabi": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 74.6,
+    "rtf": 0.629,
+    "metric": "wer",
+    "cer": 0.0883,
+    "wer": 0.2539,
+    "n": 109
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 62.3,
     "rtf": 0.365,
@@ -2555,6 +3003,14 @@
    }
   },
   "Pashto": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 62.3,
+    "rtf": 0.607,
+    "metric": "wer",
+    "cer": 0.1586,
+    "wer": 0.3769,
+    "n": 103
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 55.9,
     "rtf": 0.348,
@@ -2573,6 +3029,14 @@
    }
   },
   "Sindhi": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 72.4,
+    "rtf": 0.267,
+    "metric": "wer",
+    "cer": 0.0948,
+    "wer": 0.2761,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 58.5,
     "rtf": 0.341,
@@ -2591,6 +3055,14 @@
    }
   },
   "Shona": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 76.4,
+    "rtf": 0.301,
+    "metric": "wer",
+    "cer": 0.0434,
+    "wer": 0.2362,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 58.4,
     "rtf": 0.34,
@@ -2609,6 +3081,14 @@
    }
   },
   "Somali": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 63.1,
+    "rtf": 0.363,
+    "metric": "wer",
+    "cer": 0.117,
+    "wer": 0.3689,
+    "n": 102
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 53.9,
     "rtf": 0.355,
@@ -2627,6 +3107,14 @@
    }
   },
   "Serbian": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 87.9,
+    "rtf": 0.578,
+    "metric": "wer",
+    "cer": 0.0729,
+    "wer": 0.1214,
+    "n": 107
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 79.2,
     "rtf": 0.276,
@@ -2645,6 +3133,14 @@
    }
   },
   "Swahili": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 89.6,
+    "rtf": 0.663,
+    "metric": "wer",
+    "cer": 0.027,
+    "wer": 0.1043,
+    "n": 102
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 81.4,
     "rtf": 0.329,
@@ -2663,6 +3159,14 @@
    }
   },
   "Tamil": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 58.1,
+    "rtf": 0.642,
+    "metric": "wer",
+    "cer": 0.1278,
+    "wer": 0.4186,
+    "n": 96
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 42.6,
     "rtf": 0.33,
@@ -2681,6 +3185,14 @@
    }
   },
   "Telugu": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 73.0,
+    "rtf": 0.558,
+    "metric": "wer",
+    "cer": 0.0588,
+    "wer": 0.2701,
+    "n": 92
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 59.6,
     "rtf": 0.366,
@@ -2699,6 +3211,14 @@
    }
   },
   "Tajik": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 86.2,
+    "rtf": 0.655,
+    "metric": "wer",
+    "cer": 0.0473,
+    "wer": 0.1384,
+    "n": 100
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 82.1,
     "rtf": 0.354,
@@ -2717,6 +3237,14 @@
    }
   },
   "Luxembourgish": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 61.6,
+    "rtf": 0.281,
+    "metric": "wer",
+    "cer": 0.1012,
+    "wer": 0.3838,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 42.9,
     "rtf": 0.378,
@@ -2735,6 +3263,14 @@
    }
   },
   "Urdu": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 21.8,
+    "rtf": 0.279,
+    "metric": "wer",
+    "cer": 0.7408,
+    "wer": 0.7816,
+    "n": 101
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 2.3,
     "rtf": 0.401,
@@ -2753,6 +3289,14 @@
    }
   },
   "Uzbek": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 80.1,
+    "rtf": 0.548,
+    "metric": "wer",
+    "cer": 0.0392,
+    "wer": 0.1987,
+    "n": 95
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 64.8,
     "rtf": 0.4,
@@ -2771,6 +3315,14 @@
    }
   },
   "Yoruba": {
+   "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
+    "score": 45.0,
+    "rtf": 0.605,
+    "metric": "wer",
+    "cer": 0.1961,
+    "wer": 0.55,
+    "n": 101
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 38.5,
     "rtf": 0.389,
