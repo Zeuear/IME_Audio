@@ -55,6 +55,8 @@ def write_config(model_dir, files):
 
 
 def main():
+    # Windows 控制台默认 cp1252，打印中文会抛 UnicodeEncodeError，把测试误判为失败
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
     worker, manifest_path, work_dir = sys.argv[1:4]
     manifest = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
     direction = manifest["directions"][DIRECTION]
