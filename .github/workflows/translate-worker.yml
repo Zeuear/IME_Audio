@@ -171,7 +171,8 @@ jobs:
         # 矩阵乘法核心（intgemm、OpenBLAS）运行时按 CPU 自动选指令集，速度不受影响
         run: |
           cmake -S bergamot -B build -G "Visual Studio 17 2022" -A x64 $BERGAMOT_COMMON_FLAGS \
-            -DBUILD_ARCH=x86-64-v2 -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps"
+            -DBUILD_ARCH=x86-64-v2 -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps" \
+            -DCMAKE_LIBRARY_PATH="$GITHUB_WORKSPACE/deps/lib" -DCMAKE_INCLUDE_PATH="$GITHUB_WORKSPACE/deps/include/openblas"
 
       - name: Configure (Linux)
         if: runner.os == 'Linux'
@@ -180,6 +181,7 @@ jobs:
         run: |
           cmake -S bergamot -B build $BERGAMOT_COMMON_FLAGS -DBUILD_ARCH=x86-64 \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps" -DCMAKE_LIBRARY_PATH="$GITHUB_WORKSPACE/deps/lib" \
+            -DCMAKE_INCLUDE_PATH="$GITHUB_WORKSPACE/deps/include/openblas" \
             -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
 
       - name: Configure (macOS)
@@ -190,6 +192,17 @@ jobs:
           cmake -S bergamot -B build $BERGAMOT_COMMON_FLAGS -DBUILD_ARCH="$ARCH" \
             -DUSE_APPLE_ACCELERATE=ON -DUSE_FBGEMM=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=13.4 \
             -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps"
+
+      # OpenBLAS 把 cblas.h 装在 include/openblas/，marian 的 FindCBLAS 只看 include/，找不到时不报错，
+      # 而是悄悄编出"没有 BLAS"的版本：能启动、能加载模型，第一次翻译就 abort（Windows 上 0xC0000409）。
+      # 上面已用 CMAKE_INCLUDE_PATH 指过去，这里再确认确实找到的是我们自己编的那份
+      - name: Verify CBLAS found
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          grep -E '^cblas_openblas_(INCLUDE|LIBRARY)|^BLAS_openblas_LIBRARY' build/CMakeCache.txt || true
+          grep -E '^cblas_openblas_INCLUDE[^=]*=.*deps/include/openblas' build/CMakeCache.txt \
+            || { echo "cblas.h from deps/ not found; marian would be built without BLAS"; exit 1; }
 
       - name: Build
         shell: bash
@@ -203,11 +216,13 @@ jobs:
           [ -n "$BIN" ] || { echo "translate_worker not found"; find build -name 'translate_worker*'; exit 1; }
           cp "$BIN" out/
           ls -la out
-          # 冒烟测试：启动后应先输出 READY，stdin 关闭即退出
-          if [ "$RUNNER_OS" = "Windows" ]; then W=out/translate_worker.exe; else W=out/translate_worker; fi
-          FIRST=$(echo -n | "$W" | head -n 1 | tr -d '\r')
-          echo "worker said: $FIRST"
-          [ "$FIRST" = "READY" ] || { echo "worker did not report READY"; exit 1; }
+          if [ "$RUNNER_OS" = "Windows" ]; then W=out/translate_worker.exe; PY=python; else W=out/translate_worker; PY=python3; fi
+          # 没有 BLAS 时 marian 会编进这条 abort；带 BLAS 的版本里不存在这个字符串
+          if grep -a -q "Marian must be compiled with a BLAS library" "$W"; then
+            echo "worker was built without BLAS"; exit 1
+          fi
+          # 冒烟测试：下载 zh-Hans>en 模型并真正翻译一句话（只看 READY 发现不了缺 BLAS 之类的问题）
+          "$PY" -I tools/translate_worker/smoke_test.py "$W" resources/translation_models.json "$RUNNER_TEMP/smoke"
           if [ "$RUNNER_OS" = "Linux" ]; then ldd "$W" || true; fi
           if [ "$RUNNER_OS" = "macOS" ]; then otool -L "$W"; fi
           cd out && cmake -E tar cf "../translate_worker-${{ matrix.asset }}.zip" --format=zip -- *
