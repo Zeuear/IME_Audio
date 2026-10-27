@@ -66,7 +66,7 @@ jobs:
             src/3rd_party/sentencepiece src/3rd_party/intgemm src/3rd_party/ruy \
             src/3rd_party/simd_utils src/3rd_party/onnxjs
           # 把 worker 挂到 bergamot 的 app 目录下，才能直接链接 bergamot-translator 及其静态依赖
-          printf '\nadd_subdirectory(%s translate_worker)\n' "$(cd ../tools/translate_worker && pwd -W 2>/dev/null || pwd)" >> src/app/CMakeLists.txt
+          printf '\nadd_subdirectory(%s translate_worker)\n' "$(cd ../tools/translate_worker && pwd -W 2>/dev/null || pwd)" >> app/CMakeLists.txt
 
       # ---------------- Windows：自编 OpenBLAS 静态库 + vcpkg 的 pcre2，静态 CRT（/MT） ----------------
       - name: Setup MSVC
