@@ -48,7 +48,10 @@ void TermWidget::setupUi() {
     normalLayout->addWidget(m_searchEdit, 1);
     normalLayout->addSpacing(12);
     normalLayout->addWidget(m_heardEdit, 1);
-    normalLayout->addWidget(new QLabel(QStringLiteral("→"), normalBar));
+    auto* addArrow = new QLabel(QStringLiteral("→"), normalBar);
+    addArrow->setAlignment(Qt::AlignCenter);
+    addArrow->setFixedWidth(28);
+    normalLayout->addWidget(addArrow);
     normalLayout->addWidget(m_correctEdit, 1);
     normalLayout->addWidget(m_addBtn);
     normalLayout->addWidget(m_moreBtn);
@@ -77,6 +80,9 @@ void TermWidget::setupUi() {
     selectLayout->addWidget(m_doneBtn);
 
     m_barStack = new QStackedWidget(this);
+    // QStackedWidget 本身也会被主题的 QWidget 底色刷一遍，只把两页设透明还不够
+    m_barStack->setObjectName("term_bar_stack");
+    m_barStack->setStyleSheet(QStringLiteral("QStackedWidget#term_bar_stack { background: transparent; }"));
     m_barStack->addWidget(normalBar);
     m_barStack->addWidget(selectBar);
     m_barStack->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);

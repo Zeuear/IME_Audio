@@ -16,6 +16,8 @@ constexpr int kPad = 14;
 constexpr int kBarWidth = 4;
 constexpr int kCheckBox = 18;
 constexpr int kCheckArea = 40;    // 多选模式下右侧给复选框留出的宽度
+constexpr int kArrowW = 64;       // 中间箭头区：两侧各留约 20px，左右两列不会贴着箭头
+constexpr int kArrowLen = 18;
 const QColor kEnabledColor(0x3b, 0x82, 0xf6);
 
 QRect cardRect(const QStyleOptionViewItem& opt)
@@ -29,13 +31,18 @@ TermEditor::TermEditor(QWidget* parent)
 {
     setAutoFillBackground(true);
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(kPad, 4, kPad, 4);
+    // 和卡片绘制用同一套列宽，双击进入编辑时文字位置不跳
+    layout->setContentsMargins(kBarWidth + kPad - 6, 4, kPad, 4);
+    layout->setSpacing(0);
     m_heardEdit = new QLineEdit(this);
     m_heardEdit->setPlaceholderText(tr("Heard as (comma separated, optional)"));
     m_correctEdit = new QLineEdit(this);
     m_correctEdit->setPlaceholderText(tr("Write as"));
+    auto* arrow = new QLabel(QStringLiteral("→"), this);
+    arrow->setAlignment(Qt::AlignCenter);
+    arrow->setFixedWidth(kArrowW);
     layout->addWidget(m_heardEdit, 1);
-    layout->addWidget(new QLabel(QStringLiteral("→"), this));
+    layout->addWidget(arrow);
     layout->addWidget(m_correctEdit, 1);
     setFocusProxy(m_heardEdit);
 
@@ -124,11 +131,11 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     const QColor hintColor = colors.m_hintColor;
     const int left = card.left() + kBarWidth + kPad;
     const int right = card.right() - kPad - checkW;
-    const int arrowW = 30;
-    const int colW = std::max(0, (right - left - arrowW) / 2);
+    // 左右两列等宽，箭头居中占一段固定宽度，两列文字都左对齐，扫读时能对齐成两栏
+    const int colW = std::max(0, (right - left - kArrowW) / 2);
     const QRect heardRect(left, card.top(), colW, card.height());
-    const QRect arrowRect(heardRect.right(), card.top(), arrowW, card.height());
-    const QRect correctRect(arrowRect.right(), card.top(), right - arrowRect.right(), card.height());
+    const QRect arrowRect(heardRect.right() + 1, card.top(), kArrowW, card.height());
+    const QRect correctRect(arrowRect.right() + 1, card.top(), std::max(0, right - arrowRect.right()), card.height());
 
     QFont font = opt.font;
     p->setFont(font);
@@ -145,8 +152,19 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
         p->drawText(heardRect, Qt::AlignLeft | Qt::AlignVCenter,
                     fm.elidedText(heard.join(QStringLiteral(", ")), Qt::ElideRight, heardRect.width()));
     }
-    p->setPen(hintColor);
-    p->drawText(arrowRect, Qt::AlignCenter, QStringLiteral("→"));
+    // 箭头自己画：字体里的 "→" 各平台粗细、基线不一，画出来更细更稳
+    {
+        const QPointF c = QRectF(arrowRect).center();
+        const qreal x0 = c.x() - kArrowLen / 2.0, x1 = c.x() + kArrowLen / 2.0;
+        p->setPen(QPen(hintColor, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p->setBrush(Qt::NoBrush);
+        p->drawLine(QPointF(x0, c.y()), QPointF(x1, c.y()));
+        QPainterPath head;
+        head.moveTo(x1 - 5, c.y() - 4);
+        head.lineTo(x1, c.y());
+        head.lineTo(x1 - 5, c.y() + 4);
+        p->drawPath(head);
+    }
 
     QFont bold = font;
     bold.setBold(true);

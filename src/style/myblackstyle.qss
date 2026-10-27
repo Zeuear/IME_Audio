@@ -785,9 +785,9 @@ ModelListWidget QListView {
 #terms_list {
     background-color: rgb(53, 53, 53);
     border: none;
-    qproperty-cardColor: rgb(68, 68, 68);
-    qproperty-cardBorderColor: rgb(84, 84, 84);
-    qproperty-disabledCardColor: rgb(46, 46, 46);
+    qproperty-cardColor: rgb(54, 54, 54);
+    qproperty-cardBorderColor: rgb(66, 66, 66);
+    qproperty-disabledCardColor: rgb(36, 36, 36);
     qproperty-textColor: rgb(220, 220, 220);
     qproperty-hintColor: rgb(140, 140, 140);
 }
