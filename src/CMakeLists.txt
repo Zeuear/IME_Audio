@@ -372,8 +372,15 @@ endif()
 # 本地翻译 worker：由 .github/workflows/translate-worker.yml 在 CI 上为各平台编好并发布，
 # 这里按版本自动下载，开发者不用自己编 bergamot。下载失败只是没有本地翻译，不影响其它功能。
 # 也可以用 TRANSLATE_WORKER_PATH 指定自己编的 worker（优先于下载）。
+#
+# 下载的文件必须与下面的 SHA256 一致才会使用，不一致直接中止配置：Release 里的文件即使被替换，
+# 也要改这里的代码才会生效，改动会留在提交记录里。哈希值从发布任务的摘要里复制；某个平台的值为空时不下载。
 # ============================================================
 set(TRANSLATE_WORKER_VERSION "v1")
+set(TRANSLATE_WORKER_SHA256_WINDOWS_X64 "")
+set(TRANSLATE_WORKER_SHA256_LINUX_X64 "")
+set(TRANSLATE_WORKER_SHA256_MACOS_ARM64 "")
+set(TRANSLATE_WORKER_SHA256_MACOS_X86_64 "")
 option(DOWNLOAD_TRANSLATE_WORKER "Download the prebuilt local translation worker" ON)
 set(TRANSLATE_WORKER_PATH "" CACHE FILEPATH "Path to a self-built translate_worker (optional)")
 
@@ -396,32 +403,52 @@ set(_worker_file "")
 if(TRANSLATE_WORKER_PATH AND EXISTS "${TRANSLATE_WORKER_PATH}")
     set(_worker_file "${TRANSLATE_WORKER_PATH}")
 elseif(DOWNLOAD_TRANSLATE_WORKER AND _worker_asset)
-    set(_worker_dir "${CMAKE_SOURCE_DIR}/third_party/translate_worker/${_worker_asset}")
-    set(_worker_stamp "${_worker_dir}/.translate_worker_${TRANSLATE_WORKER_VERSION}")
-    if(NOT EXISTS "${_worker_stamp}")
-        set(_worker_zip "${CMAKE_BINARY_DIR}/_downloads/translate_worker-${_worker_asset}-${TRANSLATE_WORKER_VERSION}.zip")
-        set(_worker_url "https://github.com/Zeuear/IME_Audio/releases/download/translate-worker-${TRANSLATE_WORKER_VERSION}/translate_worker-${_worker_asset}.zip")
-        message(STATUS "Downloading translate worker: ${_worker_url}")
-        file(DOWNLOAD "${_worker_url}" "${_worker_zip}" STATUS _worker_status TLS_VERIFY ON)
-        list(GET _worker_status 0 _worker_code)
-        if(_worker_code EQUAL 0)
-            file(REMOVE_RECURSE "${_worker_dir}")
-            file(MAKE_DIRECTORY "${_worker_dir}")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${_worker_zip}"
-                            WORKING_DIRECTORY "${_worker_dir}" RESULT_VARIABLE _worker_extract)
-            if(_worker_extract EQUAL 0 AND EXISTS "${_worker_dir}/${_worker_name}")
-                file(WRITE "${_worker_stamp}" "translate worker ${TRANSLATE_WORKER_VERSION}\n")
+    string(TOUPPER "${_worker_asset}" _worker_var)
+    string(REPLACE "-" "_" _worker_var "${_worker_var}")
+    set(_worker_sha256 "${TRANSLATE_WORKER_SHA256_${_worker_var}}")
+
+    if(NOT _worker_sha256)
+        message(WARNING "No SHA256 recorded for translate worker ${TRANSLATE_WORKER_VERSION} (${_worker_asset}); "
+                        "skipping download, local translation will be unavailable")
+    else()
+        set(_worker_dir "${CMAKE_SOURCE_DIR}/third_party/translate_worker/${_worker_asset}")
+        # 标记文件名带上哈希：换了版本或哈希都会重新下载校验
+        set(_worker_stamp "${_worker_dir}/.translate_worker_${TRANSLATE_WORKER_VERSION}_${_worker_sha256}")
+        if(NOT EXISTS "${_worker_stamp}")
+            set(_worker_zip "${CMAKE_BINARY_DIR}/_downloads/translate_worker-${_worker_asset}-${TRANSLATE_WORKER_VERSION}.zip")
+            set(_worker_url "https://github.com/Zeuear/IME_Audio/releases/download/translate-worker-${TRANSLATE_WORKER_VERSION}/translate_worker-${_worker_asset}.zip")
+            message(STATUS "Downloading translate worker: ${_worker_url}")
+            file(DOWNLOAD "${_worker_url}" "${_worker_zip}" STATUS _worker_status TLS_VERIFY ON)
+            list(GET _worker_status 0 _worker_code)
+            if(_worker_code EQUAL 0)
+                # 哈希不符可能是文件被篡改，直接中止配置而不是悄悄跳过，并删掉这个文件
+                file(SHA256 "${_worker_zip}" _worker_actual)
+                if(NOT _worker_actual STREQUAL _worker_sha256)
+                    file(REMOVE "${_worker_zip}")
+                    message(FATAL_ERROR "Translate worker SHA256 mismatch for ${_worker_url}\n"
+                                        "  expected: ${_worker_sha256}\n  actual:   ${_worker_actual}\n"
+                                        "The file may have been tampered with. Re-run to retry, or configure with "
+                                        "-DDOWNLOAD_TRANSLATE_WORKER=OFF to build without local translation.")
+                endif()
+                file(REMOVE_RECURSE "${_worker_dir}")
+                file(MAKE_DIRECTORY "${_worker_dir}")
+                execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${_worker_zip}"
+                                WORKING_DIRECTORY "${_worker_dir}" RESULT_VARIABLE _worker_extract)
+                if(_worker_extract EQUAL 0 AND EXISTS "${_worker_dir}/${_worker_name}")
+                    file(WRITE "${_worker_stamp}" "translate worker ${TRANSLATE_WORKER_VERSION} sha256 ${_worker_sha256}\n")
+                else()
+                    message(WARNING "Unexpected translate worker archive, local translation will be unavailable")
+                endif()
             else()
-                message(WARNING "Unexpected translate worker archive, local translation will be unavailable")
+                list(GET _worker_status 1 _worker_msg)
+                message(WARNING "Failed to download translate worker (${_worker_msg}), "
+                                "local translation will be unavailable")
             endif()
-        else()
-            list(GET _worker_status 1 _worker_msg)
-            message(WARNING "Failed to download translate worker (${_worker_msg}), local translation will be unavailable")
+            file(REMOVE "${_worker_zip}")   # 失败的残缺文件也删掉，下次重新下载
         endif()
-        file(REMOVE "${_worker_zip}")   # 失败的残缺文件也删掉，下次重新下载
-    endif()
-    if(EXISTS "${_worker_stamp}")
-        set(_worker_file "${_worker_dir}/${_worker_name}")
+        if(EXISTS "${_worker_stamp}")
+            set(_worker_file "${_worker_dir}/${_worker_name}")
+        endif()
     endif()
 endif()
 

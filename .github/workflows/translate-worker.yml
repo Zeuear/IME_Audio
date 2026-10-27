@@ -2,10 +2,17 @@ name: Translate Worker
 
 # 本地翻译 worker（tools/translate_worker）依赖 bergamot-translator，本地编译要装一堆依赖、耗时很长。
 # 这里在 CI 上为各平台编好，打 translate-worker-v* 标签时发布到同名 Release；
-# 主工程 configure 时按 src/CMakeLists.txt 里的 TRANSLATE_WORKER_VERSION 自动下载，开发者不用自己编。
+# 主工程 configure 时按 src/CMakeLists.txt 里的版本号和 SHA256 自动下载并校验，开发者不用自己编。
 #
-# 发布新版本：改完 worker 后推一个标签，例如 git tag translate-worker-v1 && git push origin translate-worker-v1，
-# 然后把 src/CMakeLists.txt 的 TRANSLATE_WORKER_VERSION 改成对应版本号。
+# 发布新版本：
+#   1. 推标签，例如 git tag translate-worker-v1 && git push origin translate-worker-v1
+#   2. 等本工作流跑完，把 Release 任务摘要里打印的 SHA256 填进 src/CMakeLists.txt（同时改版本号）并提交
+#
+# 供应链加固：
+#   - 所有源码（bergamot、OpenBLAS、pcre2）和第三方 Action 都按 commit SHA 固定，标签被改指向也不受影响
+#   - 编译任务只有只读权限，只有最后的发布任务能写仓库
+#   - 发布的 zip 带构建来源证明，可用 gh attestation verify <zip> --repo Zeuear/IME_Audio 验证出自本仓库 CI
+#   - 主工程下载后校验 SHA256，Release 里的文件被替换也不会被使用
 
 on:
   push:
@@ -23,19 +30,26 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
-  # 固定 bergamot-translator 版本，保证各平台、各次构建结果一致
   BERGAMOT_REPO: https://github.com/browsermt/bergamot-translator.git
-  BERGAMOT_REF: 9271618ebbdc5d21ac4dc4df9e72beb7ce644774
+  BERGAMOT_SHA: 9271618ebbdc5d21ac4dc4df9e72beb7ce644774
   # 各平台（macOS 除外）统一用 OpenBLAS（BSD 许可）。不用 MKL：其许可不便随软件再分发。
   # DYNAMIC_ARCH 运行时按 CPU 选核；USE_LOCKING 让单线程版 OpenBLAS 被多个翻译线程同时调用时也安全；
   # TARGET 固定基线：不指定时按构建机 CPU 探测，遇到 OpenBLAS 不认识的新型号会在 getarch 阶段失败，
   # 也让产物随分到的机器而变；各 CPU 的快速核心仍由 DYNAMIC_ARCH 在运行时选择。
   # marian 还用到少量 LAPACK（dsyev、sgeqrf），没有 Fortran 编译器时用 C_LAPACK 编出 C 版 LAPACK。
+  OPENBLAS_REPO: https://github.com/OpenMathLib/OpenBLAS.git
+  OPENBLAS_SHA: 5ef8b1964658f9cb6a6324a06f6a1a022609b0c5   # v0.3.28
+  # ssplit 用 pcre2 分句；自己从源码编，不经过 vcpkg / brew / apt，版本由下面的 commit 决定
+  PCRE2_REPO: https://github.com/PCRE2Project/pcre2.git
+  PCRE2_SHA: 6ae58beca071f13ccfed31d03b3f479ab520639b      # pcre2-10.44
   # 新版 CMake 拒绝 sentencepiece 等子模块过老的 cmake_minimum_required，靠 CMAKE_POLICY_VERSION_MINIMUM 放行
-  OPENBLAS_REF: v0.3.28
+  BERGAMOT_COMMON_FLAGS: >-
+    -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON -DUSE_MKL=OFF
+    -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 jobs:
   build:
@@ -56,15 +70,26 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262   # v4
+        with:
+          persist-credentials: false
 
-      - name: Fetch bergamot-translator
+      - name: Fetch sources (pinned by commit)
         shell: bash
         run: |
-          git clone --filter=blob:none "$BERGAMOT_REPO" bergamot
+          # 按 commit 取源码：commit 由内容哈希决定，上游改不了它对应的代码
+          fetch() {   # fetch <url> <sha> <dir>
+            git init -q "$3"
+            git -C "$3" fetch -q --depth 1 "$1" "$2"
+            git -C "$3" checkout -q FETCH_HEAD
+            test "$(git -C "$3" rev-parse HEAD)" = "$2"
+          }
+          fetch "$BERGAMOT_REPO" "$BERGAMOT_SHA" bergamot
+          fetch "$PCRE2_REPO" "$PCRE2_SHA" pcre2
+          if [ "$RUNNER_OS" != "macOS" ]; then fetch "$OPENBLAS_REPO" "$OPENBLAS_SHA" openblas; fi
+
           cd bergamot
-          git checkout "$BERGAMOT_REF"
-          # 只取编译用得到的子模块；marian 自带的 examples / regression-tests / fbgemm 等很大，用不上
+          # 子模块的版本由 bergamot 这个 commit 锁定；只取编译用得到的，marian 的 examples / fbgemm 等很大，用不上
           git submodule update --init --depth 1 3rd_party/marian-dev 3rd_party/ssplit-cpp
           git -C 3rd_party/marian-dev submodule update --init --recursive --depth 1 \
             src/3rd_party/sentencepiece src/3rd_party/intgemm src/3rd_party/ruy \
@@ -72,96 +97,96 @@ jobs:
           # 把 worker 挂到 bergamot 的 app 目录下，才能直接链接 bergamot-translator 及其静态依赖
           printf '\nadd_subdirectory(%s translate_worker)\n' "$(cd ../tools/translate_worker && pwd -W 2>/dev/null || pwd)" >> app/CMakeLists.txt
 
-      # ---------------- Windows：自编 OpenBLAS 静态库 + vcpkg 的 pcre2，静态 CRT（/MT） ----------------
-      - name: Setup MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        # OpenBLAS 的汇编核心要用 clang-cl 编（MSVC cl 只能编通用 C 核心，且不支持 DYNAMIC_ARCH）；
-        # CRT 与 bergamot 一致用 /MT，否则链接时运行库冲突
-        run: |
-          git clone --depth 1 -b $env:OPENBLAS_REF https://github.com/OpenMathLib/OpenBLAS.git openblas
-          cmake -S openblas -B openblas-build -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl `
-            -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
-            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON `
-            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON -DTARGET=PRESCOTT `
-            -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF `
-            -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE/openblas-install"
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cmake --build openblas-build
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cmake --install openblas-build
-          Get-ChildItem -Recurse "$env:GITHUB_WORKSPACE/openblas-install/lib"
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install pcre2:x64-windows-static
-
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        # BUILD_ARCH=x86-64-v2 对应 /arch:SSE2：不要求 AVX2，老 CPU 也能运行；
-        # 矩阵乘法核心（intgemm、OpenBLAS）运行时按 CPU 自动选指令集，速度不受影响
-        run: |
-          cmake -S bergamot -B build -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON -DBUILD_ARCH=x86-64-v2 -DUSE_MKL=OFF `
-            -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/openblas-install" `
-            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-
-      # ---------------- Linux：自编 OpenBLAS 静态库（DYNAMIC_ARCH 运行时选核，USE_LOCKING 保证多线程调用安全） ----------------
-      - name: Dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libpcre2-dev
-          git clone --depth 1 -b "$OPENBLAS_REF" https://github.com/OpenMathLib/OpenBLAS.git openblas
-          cmake -S openblas -B openblas-build -DCMAKE_BUILD_TYPE=Release \
-            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON \
-            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON -DTARGET=PRESCOTT \
-            -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF \
-            -DCMAKE_INSTALL_PREFIX=/usr/local
-          cmake --build openblas-build -j"$(nproc)"
-          sudo cmake --install openblas-build
-
-      - name: Configure (Linux)
-        if: runner.os == 'Linux'
-        # 不用 BUILD_ARCH=native，否则会带上构建机的 AVX512 等指令，换台机器就崩
-        run: |
-          cmake -S bergamot -B build -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON \
-            -DBUILD_ARCH=x86-64 -DUSE_MKL=OFF -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
-
-      # ---------------- macOS：系统自带 Accelerate 作 BLAS ----------------
-      - name: Dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: brew install pcre2
-
-      - name: Configure (macOS)
-        if: runner.os == 'macOS'
-        # marian 自带 zlib 1.2.11 把 TARGET_OS_MAC 当成经典 Mac OS，把 fdopen 定义成 NULL，
-        # 与 Xcode 16 的 SDK 头文件冲突；按 zlib 1.2.12 的上游修复只认 MACOS
-        run: |
-          sed -i '' 's/#if defined(MACOS) || defined(TARGET_OS_MAC)/#if defined(MACOS)/' \
-            bergamot/3rd_party/marian-dev/src/3rd_party/zlib/zutil.h
-          if [ "$(uname -m)" = "arm64" ]; then ARCH=armv8-a; else ARCH=x86-64; fi
-          cmake -S bergamot -B build -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON \
-            -DBUILD_ARCH="$ARCH" -DUSE_MKL=OFF -DUSE_APPLE_ACCELERATE=ON -DUSE_FBGEMM=OFF \
-            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.4 \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix pcre2)"
-
-      - name: Build
+      - name: Patch bergamot for newer toolchains
         shell: bash
-        # marian 对自身代码开 -Werror；新版 clang 把 ExceptionWithCallStack.cpp 里用非 const 变量
-        # 定长的数组报为变长数组（-Wvla-cxx-extension），改成 constexpr 即可，行为不变
         run: |
+          # marian 自带 zlib 1.2.11 把 TARGET_OS_MAC 当成经典 Mac OS，把 fdopen 定义成 NULL，
+          # 与 Xcode 16 的 SDK 头文件冲突；按 zlib 1.2.12 的上游修复只认 MACOS
+          sed -i.bak 's/#if defined(MACOS) || defined(TARGET_OS_MAC)/#if defined(MACOS)/' \
+            bergamot/3rd_party/marian-dev/src/3rd_party/zlib/zutil.h
+          # marian 对自身代码开 -Werror；新版 clang 把用非 const 变量定长的数组报为变长数组，改成 constexpr，行为不变
           sed -i.bak -e 's/unsigned int MAX_NUM_FRAMES = 1024;/constexpr unsigned int MAX_NUM_FRAMES = 1024;/' \
                      -e 's/unsigned int MAX_FUNCNAME_SIZE = 4096;/constexpr unsigned int MAX_FUNCNAME_SIZE = 4096;/' \
             bergamot/3rd_party/marian-dev/src/3rd_party/ExceptionWithCallStack.cpp
-          cmake --build build --config Release --target translate_worker -j4
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756   # v1
+
+      # ---------------- pcre2：各平台都编静态库，装到 deps/ ----------------
+      - name: Build pcre2
+        shell: bash
+        run: |
+          EXTRA=()
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # 与 bergamot 一致用静态 CRT（/MT）。Git Bash 的 /usr/bin/link 会挡住 MSVC 的 link.exe，显式指定
+            EXTRA=(-G Ninja -DCMAKE_C_COMPILER=cl -DPCRE2_STATIC_RUNTIME=ON "-DCMAKE_LINKER=${VCToolsInstallDir}bin/Hostx64/x64/link.exe")
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            EXTRA=(-DCMAKE_OSX_DEPLOYMENT_TARGET=13.4)
+          fi
+          cmake -S pcre2 -B pcre2-build "${EXTRA[@]}" -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DPCRE2_BUILD_PCRE2GREP=OFF -DPCRE2_BUILD_TESTS=OFF -DPCRE2_SUPPORT_JIT=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/deps"
+          cmake --build pcre2-build --config Release
+          cmake --install pcre2-build --config Release
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # 静态库的头文件要先定义 PCRE2_STATIC，否则按 DLL 导入符号、链接失败；ssplit 不会替我们定义
+            { echo '#define PCRE2_STATIC'; cat deps/include/pcre2.h; } > pcre2.h.tmp && mv pcre2.h.tmp deps/include/pcre2.h
+          fi
+          ls deps/lib
+
+      # ---------------- OpenBLAS（Windows / Linux） ----------------
+      - name: Build OpenBLAS
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          EXTRA=()
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # 汇编核心要用 clang-cl 编（MSVC cl 只能编通用 C 核心，且不支持 DYNAMIC_ARCH）；CRT 用 /MT
+            EXTRA=(-G Ninja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+                   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded "-DCMAKE_LINKER=${VCToolsInstallDir}bin/Hostx64/x64/link.exe")
+          fi
+          cmake -S openblas -B openblas-build "${EXTRA[@]}" -DCMAKE_BUILD_TYPE=Release \
+            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON \
+            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON -DTARGET=PRESCOTT \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/deps"
+          cmake --build openblas-build --config Release -j4
+          cmake --install openblas-build --config Release
+          ls deps/lib
+
+      # ---------------- 配置 bergamot ----------------
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        # BUILD_ARCH=x86-64-v2 对应 /arch:SSE2：不要求 AVX2，老 CPU 也能运行；
+        # 矩阵乘法核心（intgemm、OpenBLAS）运行时按 CPU 自动选指令集，速度不受影响
+        run: |
+          cmake -S bergamot -B build -G "Visual Studio 17 2022" -A x64 $BERGAMOT_COMMON_FLAGS \
+            -DBUILD_ARCH=x86-64-v2 -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps"
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        # 不用 BUILD_ARCH=native，否则会带上构建机的 AVX512 等指令，换台机器就崩。
+        # FindBLAS / FindCBLAS 只在系统目录找库，所以 deps 用 CMAKE_LIBRARY_PATH 显式加进搜索路径
+        run: |
+          cmake -S bergamot -B build $BERGAMOT_COMMON_FLAGS -DBUILD_ARCH=x86-64 \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps" -DCMAKE_LIBRARY_PATH="$GITHUB_WORKSPACE/deps/lib" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        # macOS 用系统自带的 Accelerate 作 BLAS
+        run: |
+          if [ "$(uname -m)" = "arm64" ]; then ARCH=armv8-a; else ARCH=x86-64; fi
+          cmake -S bergamot -B build $BERGAMOT_COMMON_FLAGS -DBUILD_ARCH="$ARCH" \
+            -DUSE_APPLE_ACCELERATE=ON -DUSE_FBGEMM=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=13.4 \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps"
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Release --target translate_worker -j4
 
       - name: Package
         shell: bash
@@ -171,15 +196,18 @@ jobs:
           [ -n "$BIN" ] || { echo "translate_worker not found"; find build -name 'translate_worker*'; exit 1; }
           cp "$BIN" out/
           ls -la out
-          # 冒烟测试：启动后应先输出就绪行，stdin 关闭即退出
+          # 冒烟测试：启动后应先输出 READY，stdin 关闭即退出
           if [ "$RUNNER_OS" = "Windows" ]; then W=out/translate_worker.exe; else W=out/translate_worker; fi
-          echo -n | "$W" | head -n 1
+          FIRST=$(echo -n | "$W" | head -n 1 | tr -d '\r')
+          echo "worker said: $FIRST"
+          [ "$FIRST" = "READY" ] || { echo "worker did not report READY"; exit 1; }
           if [ "$RUNNER_OS" = "Linux" ]; then ldd "$W" || true; fi
           if [ "$RUNNER_OS" = "macOS" ]; then otool -L "$W"; fi
           cd out && cmake -E tar cf "../translate_worker-${{ matrix.asset }}.zip" --format=zip -- *
+          cd .. && cmake -E sha256sum "translate_worker-${{ matrix.asset }}.zip"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4
         with:
           name: translate_worker-${{ matrix.asset }}
           path: translate_worker-${{ matrix.asset }}.zip
@@ -189,14 +217,42 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/translate-worker-v')
     runs-on: ubuntu-latest
+    # 只有发布任务需要写权限：建 Release、写构建来源证明
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4
         with:
           path: dist
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.zip | tee SHA256SUMS
+          {
+            echo '### 填进 src/CMakeLists.txt 的 SHA256'
+            echo '```cmake'
+            while read -r hash file; do
+              asset=${file#translate_worker-}; asset=${asset%.zip}
+              var=$(echo "$asset" | tr 'a-z-' 'A-Z_')
+              echo "set(TRANSLATE_WORKER_SHA256_${var} \"${hash}\")"
+            done < SHA256SUMS
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be   # v2
         with:
-          files: dist/*.zip
+          subject-path: dist/*.zip
+
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65   # v2
+        with:
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS
           name: Translate worker ${{ github.ref_name }}
-          body: 本地翻译 worker 的预编译版本，由 ImeAudio 构建时自动下载，不需要手动安装。
+          body: 本地翻译 worker 的预编译版本，由 ImeAudio 构建时自动下载并校验 SHA256，不需要手动安装。
           prerelease: true
