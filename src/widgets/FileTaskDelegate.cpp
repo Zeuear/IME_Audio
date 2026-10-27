@@ -30,8 +30,11 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
 
     // 卡片底
     const QRect card = opt.rect.adjusted(kTileGap, kTileGap, -kTileGap, -kTileGap - 6);
-    QColor bg = pal.color(QPalette::Base);
-    QColor border = pal.color(QPalette::Mid);
+    // 卡片底比外层明显亮一档，边框用文字色的半透明描边：深色主题是浅色线、浅色主题是深色线，两种都看得清
+    // Base 在深色主题下是纯黑，会显得发黑，所以不用它
+    QColor bg = pal.color(QPalette::Window).lighter(120);
+    QColor border = pal.color(QPalette::Text);
+    border.setAlpha(60);
     if (selected) {
         border = pal.color(QPalette::Highlight);
         bg = border;

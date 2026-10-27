@@ -11,6 +11,7 @@
 #include <QScrollBar>
 #include <QTextCursor>
 #include <QSplitter>
+#include <QFrame>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -75,7 +76,10 @@ void FileTranscribeWidget::setupUi()
     m_hintLabel = new QLabel(this);
     m_hintLabel->setAlignment(Qt::AlignCenter);
     m_hintLabel->setWordWrap(true);
-    m_hintLabel->setStyleSheet(QStringLiteral("QLabel { border: 2px dashed palette(mid); border-radius: 10px; }"));
+    // 虚线细一点、颜色淡一点，和卡片的边框风格保持一致
+    // 底色也画成圆角的，否则外层容器的直角底色会露出来
+    m_hintLabel->setStyleSheet(QStringLiteral(
+        "QLabel { border: 2px dashed rgba(255, 255, 255, 60); border-radius: 10px; background-color: rgba(255, 255, 255, 8); }"));
 
     m_list = new QListView(this);
     m_list->setModel(m_model);
@@ -96,8 +100,15 @@ void FileTranscribeWidget::setupUi()
     m_list->setAcceptDrops(false);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setMouseTracking(true);   // 悬停显示失败原因
+    // 列表底色透明，让外层卡片的颜色透出来，和设置页保持一致
+    m_list->setObjectName("file_task_list");
+    m_list->setStyleSheet(QStringLiteral("QListView#file_task_list { background: transparent; border: none; }"));
+    m_list->viewport()->setAutoFillBackground(false);
 
     m_listStack = new QStackedWidget(this);
+    // 容器透明，圆角只由提示区自己画，避免直角的页面底色盖住圆角
+    m_listStack->setObjectName("file_list_stack");
+    m_listStack->setStyleSheet(QStringLiteral("QStackedWidget#file_list_stack { background: transparent; }"));
     m_listStack->addWidget(m_hintLabel);
     m_listStack->addWidget(m_list);
 
@@ -106,6 +117,10 @@ void FileTranscribeWidget::setupUi()
     m_copyBtn = new QPushButton(this);
     m_preview = new QPlainTextEdit(this);
     m_preview->setReadOnly(true);
+    // 预览区不用硬边框，改成卡片内的柔和底色，和上方的列表区视觉上统一
+    m_preview->setObjectName("preview_text");
+    m_preview->setStyleSheet(QStringLiteral(
+        "QPlainTextEdit#preview_text { border: none; border-radius: 8px; background-color: rgba(0, 0, 0, 40); padding: 8px; }"));
 
     // 标题加粗作为下半区的分组标题；导出跟着结果放在这里
     QFont titleFont = m_previewTitle->font();
@@ -121,23 +136,44 @@ void FileTranscribeWidget::setupUi()
     previewHeader->addWidget(m_exportBtn);
 
     auto* previewPanel = new QWidget(this);
+    // 底色透明，否则页面底色会在卡片里露出一条比卡片亮的横带（标题行尤其明显）
+    previewPanel->setObjectName("preview_panel");
+    previewPanel->setStyleSheet(QStringLiteral("QWidget#preview_panel { background: transparent; }"));
     auto* previewLayout = new QVBoxLayout(previewPanel);
-    // 上边距把预览区和上面的文件区隔开，不再紧贴
-    previewLayout->setContentsMargins(0, 14, 0, 0);
+    // 预览区的留白交给外层卡片的内边距，这里不再额外留空
+    previewLayout->setContentsMargins(0, 0, 0, 0);
     previewLayout->setSpacing(8);
     previewLayout->addLayout(previewHeader);
     previewLayout->addWidget(m_preview, 1);
 
     const int previewMaxHeight = m_preview->fontMetrics().lineSpacing() * 10
-                               + m_previewTitle->sizeHint().height() + 24 + 14;
+                               + m_previewTitle->sizeHint().height() + 24;
     previewPanel->setMaximumHeight(previewMaxHeight);
     
     const int tileHeight = m_list->itemDelegate()->sizeHint(QStyleOptionViewItem(), QModelIndex()).height();
     m_listStack->setMaximumHeight(tileHeight * 2);
 
+    // 上下两块各放进一张卡片（设置页同款的 card 属性），中间留出间距，不再是挤在一起的裸控件
+    auto* topCard = new QFrame(this);
+    topCard->setProperty("card", true);
+    auto* topLayout = new QVBoxLayout(topCard);
+    topLayout->setContentsMargins(14, 12, 14, 12);
+    topLayout->setSpacing(10);
+    topLayout->addLayout(toolbar);
+    topLayout->addWidget(m_listStack, 1);
+
+    auto* previewCard = new QFrame(this);
+    previewCard->setProperty("card", true);
+    auto* previewCardLayout = new QVBoxLayout(previewCard);
+    previewCardLayout->setContentsMargins(14, 12, 14, 12);
+    previewCardLayout->addWidget(previewPanel);
+
     auto* splitter = new QSplitter(Qt::Vertical, this);
-    splitter->addWidget(m_listStack);
-    splitter->addWidget(previewPanel);
+    splitter->setHandleWidth(10);
+    // 分隔条用透明底，露出页面底色；默认的深色条会被看成一条黑线
+    splitter->setStyleSheet(QStringLiteral("QSplitter::handle { background: transparent; }"));
+    splitter->addWidget(topCard);
+    splitter->addWidget(previewCard);
     splitter->setChildrenCollapsible(false);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 0);
@@ -151,7 +187,6 @@ void FileTranscribeWidget::setupUi()
     statusRow->addWidget(m_openFolderBtn);
 
     auto* layout = new QVBoxLayout(this);
-    layout->addLayout(toolbar);
     layout->addWidget(splitter);
     layout->addLayout(statusRow);
     layout->addStretch(0);

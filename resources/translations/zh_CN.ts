@@ -2130,6 +2130,16 @@
         <translation>已选 %1 项</translation>
     </message>
     <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="200"/>
+        <source>No terms yet. Add one above, e.g. heard as → write as.</source>
+        <translation>还没有词条。在上方添加一条，例如 听成 → 写成。</translation>
+    </message>
+    <message>
+        <location filename="../../src/widgets/TermWidget.cpp" line="202"/>
+        <source>%1 terms · %2 enabled</source>
+        <translation>共 %1 条词条 · 已启用 %2 条</translation>
+    </message>
+    <message>
         <location filename="../../src/widgets/TermWidget.cpp" line="233"/>
         <source>术语库加载失败</source>
         <translation>术语库加载失败</translation>

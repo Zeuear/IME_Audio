@@ -3,6 +3,7 @@
 #include "TermListModel.h"
 #include <QApplication>
 #include <QFileDialog>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
@@ -28,7 +29,10 @@ void TermWidget::setupUi() {
     mainLayout->setSpacing(8);
 
     // 普通工具栏：搜索 + 添加
+    // 两个工具栏页都要透明底，否则页面底色会在卡片里露出一条色带
     auto* normalBar = new QWidget(this);
+    normalBar->setObjectName("term_normal_bar");
+    normalBar->setStyleSheet(QStringLiteral("QWidget#term_normal_bar { background: transparent; }"));
     auto* normalLayout = new QHBoxLayout(normalBar);
     normalLayout->setContentsMargins(0, 0, 0, 0);
     m_searchEdit = new QLineEdit(normalBar);
@@ -51,6 +55,8 @@ void TermWidget::setupUi() {
 
     // 多选工具栏：左边选择，右边操作
     auto* selectBar = new QWidget(this);
+    selectBar->setObjectName("term_select_bar");
+    selectBar->setStyleSheet(QStringLiteral("QWidget#term_select_bar { background: transparent; }"));
     auto* selectLayout = new QHBoxLayout(selectBar);
     selectLayout->setContentsMargins(0, 0, 0, 0);
     m_selectAllBtn = new QPushButton(selectBar);
@@ -78,6 +84,9 @@ void TermWidget::setupUi() {
     m_list = new TermListView(this);
     m_list->setObjectName("terms_list");
     m_list->setFrameShape(QFrame::NoFrame);
+    // 列表底色透明，让卡片的颜色透出来，和设置页的分组卡片保持一致
+    m_list->setStyleSheet(QStringLiteral("QListView#terms_list { background: transparent; border: none; }"));
+    m_list->viewport()->setAutoFillBackground(false);
     m_list->setSelectionMode(QAbstractItemView::NoSelection);
     m_list->setEditTriggers(QAbstractItemView::NoEditTriggers);   // 双击编辑由 onDoubleClicked 自己处理
     m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
@@ -86,8 +95,26 @@ void TermWidget::setupUi() {
     m_delegate = new TermCardDelegate(m_list);
     m_list->setItemDelegate(m_delegate);
 
-    mainLayout->addWidget(m_barStack);
-    mainLayout->addWidget(m_list, 1);
+    // 工具栏和列表各放进一张卡片（QSS 的 card 属性），与设置页的分组卡片同款
+    auto* toolCard = new QFrame(this);
+    toolCard->setProperty("card", true);
+    auto* toolLayout = new QVBoxLayout(toolCard);
+    toolLayout->setContentsMargins(14, 12, 14, 12);
+    toolLayout->addWidget(m_barStack);
+
+    // 列表上方的统计行：没有词条时直接给出提示，免得整页空着不知道怎么开始
+    m_statsLabel = new QLabel(this);
+
+    auto* listCard = new QFrame(this);
+    listCard->setProperty("card", true);
+    auto* listLayout = new QVBoxLayout(listCard);
+    listLayout->setContentsMargins(14, 12, 14, 8);
+    listLayout->setSpacing(8);
+    listLayout->addWidget(m_statsLabel);
+    listLayout->addWidget(m_list, 1);
+
+    mainLayout->addWidget(toolCard);
+    mainLayout->addWidget(listCard, 1);
 
     m_selectAnim = new QVariantAnimation(this);
     m_selectAnim->setDuration(180);
@@ -125,6 +152,11 @@ void TermWidget::setTermsManager(TermsLibraryManager* termsManager) {
         emit errorOccurred(tr("输入有误"), cause);
     });
     connect(m_model, &TermListModel::checkedChanged, this, &TermWidget::updateSelectBar);
+    connect(m_model, &QAbstractItemModel::rowsInserted, this, &TermWidget::updateStats);
+    connect(m_model, &QAbstractItemModel::rowsRemoved, this, &TermWidget::updateStats);
+    connect(m_model, &QAbstractItemModel::modelReset, this, &TermWidget::updateStats);
+    connect(m_model, &QAbstractItemModel::dataChanged, this, &TermWidget::updateStats);
+    updateStats();
 
     m_proxy = new QSortFilterProxyModel(this);
     m_proxy->setSourceModel(m_model);
@@ -181,6 +213,18 @@ void TermWidget::updateSelectBar() {
     const int n = m_model->checkedRows().size();
     m_countLabel->setText(tr("%1 selected").arg(n));
     for (QPushButton* b : { m_enableBtn, m_disableBtn, m_deleteBtn }) b->setEnabled(n > 0);
+}
+
+void TermWidget::updateStats() {
+    // 还没连上词库时 m_model 为空，此时什么都不做
+    if (!m_model || !m_statsLabel) return;
+    const int total = m_model->rowCount();
+    int enabled = 0;
+    for (int i = 0; i < total; ++i) {
+        if (m_model->data(m_model->index(i, 0), TermListModel::EnabledRole).toBool()) ++enabled;
+    }
+    if (total == 0) m_statsLabel->setText(tr("No terms yet. Add one above, e.g. heard as → write as."));
+    else m_statsLabel->setText(tr("%1 terms · %2 enabled").arg(total).arg(enabled));
 }
 
 QList<int> TermWidget::visibleSourceRows() const {
@@ -307,4 +351,5 @@ void TermWidget::retranslateUi()
     m_deleteBtn->setText(tr("Delete"));
     m_doneBtn->setText(tr("Done"));
     if (m_model) updateSelectBar();
+    updateStats();   // 统计文字也要跟着语言切换刷新
 }

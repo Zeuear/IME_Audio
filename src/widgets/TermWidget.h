@@ -44,6 +44,7 @@ private:
     void onDoubleClicked(const QModelIndex& proxyIndex);
     void setSelectMode(bool on);
     void updateSelectBar();
+    void updateStats();
     QList<int> visibleSourceRows() const;
 
     void handleAdd();
@@ -77,6 +78,8 @@ private:
     QPushButton* m_disableBtn = nullptr;
     QPushButton* m_deleteBtn = nullptr;
     QPushButton* m_doneBtn = nullptr;
+    // 列表上方的统计行（词条数、启用数，或空时的提示）
+    QLabel* m_statsLabel = nullptr;
 
     bool m_selectMode = false;
     QVariantAnimation* m_selectAnim = nullptr;
