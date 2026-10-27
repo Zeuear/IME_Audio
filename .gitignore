@@ -52,3 +52,6 @@ CMakeLists.txt.user
 
 # 构建生成的 sherpa-onnx 版本戳
 third_party/sherpa-onnx/.sherpa_onnx_version_*
+
+# CMake 自动下载的本地翻译 worker
+third_party/translate_worker/

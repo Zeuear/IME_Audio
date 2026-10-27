@@ -134,17 +134,19 @@ void MainWin::initialize() {
             m_networkManager, AppPaths::translationModelsDir(),
             TranslationModelStore::parseBundledManifest(manifestFile.readAll()), this);
     }
-    // 翻译引擎程序目前只提供 Windows 版；其余平台没有后端，翻译管线直接跳过
-    ITranslationBackend* translationBackend = nullptr;
+    // worker 由构建时下载并放在主程序同级目录（macOS 为 Contents/MacOS）；不存在时该项灰显，翻译管线直接跳过
 #ifdef Q_OS_WIN
+    const QString workerName = QStringLiteral("translate_worker.exe");
+#else
+    const QString workerName = QStringLiteral("translate_worker");
+#endif
     TranslationModelInstaller* installer = m_translationInstaller;
-    translationBackend = new BergamotWorkerClient(
+    ITranslationBackend* translationBackend = new BergamotWorkerClient(
         BergamotWorkerClient::RouteProvider{
             [installer](const QString& from, const QString& to) { return planRoute(from, to, installer->knownPairs()); },
             [installer](const QString& from, const QString& to) { return installer->isInstalled(from, to); },
             [installer](const QString& from, const QString& to) { return installer->writeConfigFile(from, to); } },
-        QDir(AppPaths::resourceDir()).absoluteFilePath(QStringLiteral("translate_worker.exe")), this);
-#endif
+        QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(workerName), this);
     m_translationService = new TranslationService(translationBackend, this);
     m_recorderService = new AudioRecorderService(config, this);
     m_sherpaManager = new SherpaManager(this);

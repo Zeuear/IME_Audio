@@ -368,12 +368,70 @@ else()
 endif()
 
 
-set(TRANSLATE_WORKER_PATH "" CACHE FILEPATH "translate_worker.exe 的路径（可选）")
-if(WIN32 AND TRANSLATE_WORKER_PATH AND EXISTS "${TRANSLATE_WORKER_PATH}")
+# ============================================================
+# 本地翻译 worker：由 .github/workflows/translate-worker.yml 在 CI 上为各平台编好并发布，
+# 这里按版本自动下载，开发者不用自己编 bergamot。下载失败只是没有本地翻译，不影响其它功能。
+# 也可以用 TRANSLATE_WORKER_PATH 指定自己编的 worker（优先于下载）。
+# ============================================================
+set(TRANSLATE_WORKER_VERSION "v1")
+option(DOWNLOAD_TRANSLATE_WORKER "Download the prebuilt local translation worker" ON)
+set(TRANSLATE_WORKER_PATH "" CACHE FILEPATH "Path to a self-built translate_worker (optional)")
+
+if(WIN32)
+    set(_worker_asset "windows-x64")
+    set(_worker_name "translate_worker.exe")
+elseif(APPLE)
+    if(_sherpa_osx_arch MATCHES "arm64|aarch64")
+        set(_worker_asset "macos-arm64")
+    else()
+        set(_worker_asset "macos-x86_64")
+    endif()
+    set(_worker_name "translate_worker")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
+    set(_worker_asset "linux-x64")
+    set(_worker_name "translate_worker")
+endif()
+
+set(_worker_file "")
+if(TRANSLATE_WORKER_PATH AND EXISTS "${TRANSLATE_WORKER_PATH}")
+    set(_worker_file "${TRANSLATE_WORKER_PATH}")
+elseif(DOWNLOAD_TRANSLATE_WORKER AND _worker_asset)
+    set(_worker_dir "${CMAKE_SOURCE_DIR}/third_party/translate_worker/${_worker_asset}")
+    set(_worker_stamp "${_worker_dir}/.translate_worker_${TRANSLATE_WORKER_VERSION}")
+    if(NOT EXISTS "${_worker_stamp}")
+        set(_worker_zip "${CMAKE_BINARY_DIR}/_downloads/translate_worker-${_worker_asset}-${TRANSLATE_WORKER_VERSION}.zip")
+        set(_worker_url "https://github.com/Zeuear/IME_Audio/releases/download/translate-worker-${TRANSLATE_WORKER_VERSION}/translate_worker-${_worker_asset}.zip")
+        message(STATUS "Downloading translate worker: ${_worker_url}")
+        file(DOWNLOAD "${_worker_url}" "${_worker_zip}" STATUS _worker_status TLS_VERIFY ON)
+        list(GET _worker_status 0 _worker_code)
+        if(_worker_code EQUAL 0)
+            file(REMOVE_RECURSE "${_worker_dir}")
+            file(MAKE_DIRECTORY "${_worker_dir}")
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${_worker_zip}"
+                            WORKING_DIRECTORY "${_worker_dir}" RESULT_VARIABLE _worker_extract)
+            if(_worker_extract EQUAL 0 AND EXISTS "${_worker_dir}/${_worker_name}")
+                file(WRITE "${_worker_stamp}" "translate worker ${TRANSLATE_WORKER_VERSION}\n")
+            else()
+                message(WARNING "Unexpected translate worker archive, local translation will be unavailable")
+            endif()
+        else()
+            list(GET _worker_status 1 _worker_msg)
+            message(WARNING "Failed to download translate worker (${_worker_msg}), local translation will be unavailable")
+        endif()
+        file(REMOVE "${_worker_zip}")   # 失败的残缺文件也删掉，下次重新下载
+    endif()
+    if(EXISTS "${_worker_stamp}")
+        set(_worker_file "${_worker_dir}/${_worker_name}")
+    endif()
+endif()
+
+# 放在主程序同级目录（macOS 为 Contents/MacOS），与 MainWin 里的查找路径一致；
+# macOS 放进 MacOS 目录才会被 codesign 当作 bundle 内的可执行文件签名
+if(_worker_file)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${TRANSLATE_WORKER_PATH}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/translate_worker.exe"
-        COMMENT "Copying translate_worker.exe to output directory"
+            "${_worker_file}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${_worker_name}"
+        COMMENT "Copying ${_worker_name} to output directory"
     )
 endif()
 

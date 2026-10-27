@@ -103,6 +103,10 @@ jobs:
           # macdeployqt 改写了二进制，链接器给的签名随之失效；不重签的话 TCC 无法稳定
           # 识别本应用，辅助功能勾选了也不生效。ad-hoc 签名按 cdhash 识别，同一版本内稳定，
           # 升级后仍需重新授权（彻底解决要 Developer ID）。
+          # 本地翻译 worker 是 Contents/MacOS 里单独的可执行文件，先单独签名再签整个 bundle
+          if [ -f "$APP_BUNDLE/Contents/MacOS/translate_worker" ]; then
+            codesign --force --sign - "$APP_BUNDLE/Contents/MacOS/translate_worker"
+          fi
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
 
@@ -148,6 +152,7 @@ jobs:
           ./linuxdeploy-x86_64.AppImage \
             --appdir=appdir \
             --executable="$IME_AUDIO_BIN" \
+            $( [ -f app/translate_worker ] && echo --executable=app/translate_worker ) \
             --desktop-file=resources/deployment/linux/ImeAudio.desktop \
             --icon-file=resources/ImeAudio.png \
             --plugin qt \
