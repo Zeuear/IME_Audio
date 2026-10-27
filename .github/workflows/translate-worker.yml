@@ -31,6 +31,8 @@ env:
   BERGAMOT_REF: 9271618ebbdc5d21ac4dc4df9e72beb7ce644774
   # 各平台（macOS 除外）统一用 OpenBLAS（BSD 许可）。不用 MKL：其许可不便随软件再分发。
   # DYNAMIC_ARCH 运行时按 CPU 选核；USE_LOCKING 让单线程版 OpenBLAS 被多个翻译线程同时调用时也安全；
+  # TARGET 固定基线：不指定时按构建机 CPU 探测，遇到 OpenBLAS 不认识的新型号会在 getarch 阶段失败，
+  # 也让产物随分到的机器而变；各 CPU 的快速核心仍由 DYNAMIC_ARCH 在运行时选择。
   # marian 还用到少量 LAPACK（dsyev、sgeqrf），没有 Fortran 编译器时用 C_LAPACK 编出 C 版 LAPACK。
   # 新版 CMake 拒绝 sentencepiece 等子模块过老的 cmake_minimum_required，靠 CMAKE_POLICY_VERSION_MINIMUM 放行
   OPENBLAS_REF: v0.3.28
@@ -86,7 +88,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl `
             -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
             -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON `
-            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON `
+            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON -DTARGET=PRESCOTT `
             -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF `
             -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE/openblas-install"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -118,7 +120,7 @@ jobs:
           git clone --depth 1 -b "$OPENBLAS_REF" https://github.com/OpenMathLib/OpenBLAS.git openblas
           cmake -S openblas -B openblas-build -DCMAKE_BUILD_TYPE=Release \
             -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON \
-            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON \
+            -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON -DTARGET=PRESCOTT \
             -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF \
             -DCMAKE_INSTALL_PREFIX=/usr/local
           cmake --build openblas-build -j"$(nproc)"
@@ -153,7 +155,13 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build build --config Release --target translate_worker -j4
+        # marian 对自身代码开 -Werror；新版 clang 把 ExceptionWithCallStack.cpp 里用非 const 变量
+        # 定长的数组报为变长数组（-Wvla-cxx-extension），改成 constexpr 即可，行为不变
+        run: |
+          sed -i.bak -e 's/unsigned int MAX_NUM_FRAMES = 1024;/constexpr unsigned int MAX_NUM_FRAMES = 1024;/' \
+                     -e 's/unsigned int MAX_FUNCNAME_SIZE = 4096;/constexpr unsigned int MAX_FUNCNAME_SIZE = 4096;/' \
+            bergamot/3rd_party/marian-dev/src/3rd_party/ExceptionWithCallStack.cpp
+          cmake --build build --config Release --target translate_worker -j4
 
       - name: Package
         shell: bash
