@@ -139,7 +139,11 @@ jobs:
 
       - name: Configure (macOS)
         if: runner.os == 'macOS'
+        # marian 自带 zlib 1.2.11 把 TARGET_OS_MAC 当成经典 Mac OS，把 fdopen 定义成 NULL，
+        # 与 Xcode 16 的 SDK 头文件冲突；按 zlib 1.2.12 的上游修复只认 MACOS
         run: |
+          sed -i '' 's/#if defined(MACOS) || defined(TARGET_OS_MAC)/#if defined(MACOS)/' \
+            bergamot/3rd_party/marian-dev/src/3rd_party/zlib/zutil.h
           if [ "$(uname -m)" = "arm64" ]; then ARCH=armv8-a; else ARCH=x86-64; fi
           cmake -S bergamot -B build -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON \
             -DBUILD_ARCH="$ARCH" -DUSE_MKL=OFF -DUSE_APPLE_ACCELERATE=ON -DUSE_FBGEMM=OFF \
