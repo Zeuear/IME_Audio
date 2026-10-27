@@ -30,7 +30,9 @@ env:
   BERGAMOT_REPO: https://github.com/browsermt/bergamot-translator.git
   BERGAMOT_REF: 9271618ebbdc5d21ac4dc4df9e72beb7ce644774
   # 各平台（macOS 除外）统一用 OpenBLAS（BSD 许可）。不用 MKL：其许可不便随软件再分发。
-  # DYNAMIC_ARCH 运行时按 CPU 选核；USE_LOCKING 让单线程版 OpenBLAS 被多个翻译线程同时调用时也安全
+  # DYNAMIC_ARCH 运行时按 CPU 选核；USE_LOCKING 让单线程版 OpenBLAS 被多个翻译线程同时调用时也安全；
+  # marian 还用到少量 LAPACK（dsyev、sgeqrf），没有 Fortran 编译器时用 C_LAPACK 编出 C 版 LAPACK。
+  # 新版 CMake 拒绝 sentencepiece 等子模块过老的 cmake_minimum_required，靠 CMAKE_POLICY_VERSION_MINIMUM 放行
   OPENBLAS_REF: v0.3.28
 
 jobs:
@@ -83,7 +85,7 @@ jobs:
           cmake -S openblas -B openblas-build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-cl `
             -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
-            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=ON -DC_LAPACK=OFF `
+            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON `
             -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON `
             -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF `
             -DCMAKE_INSTALL_PREFIX="$env:GITHUB_WORKSPACE/openblas-install"
@@ -103,7 +105,7 @@ jobs:
           cmake -S bergamot -B build -G "Visual Studio 17 2022" -A x64 `
             -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON -DBUILD_ARCH=x86-64-v2 -DUSE_MKL=OFF `
             -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE/openblas-install" `
-            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF `
+            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
 
@@ -115,7 +117,7 @@ jobs:
           sudo apt-get install -y libpcre2-dev
           git clone --depth 1 -b "$OPENBLAS_REF" https://github.com/OpenMathLib/OpenBLAS.git openblas
           cmake -S openblas -B openblas-build -DCMAKE_BUILD_TYPE=Release \
-            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=ON -DC_LAPACK=OFF \
+            -DNOFORTRAN=ON -DBUILD_WITHOUT_LAPACK=OFF -DC_LAPACK=ON \
             -DUSE_THREAD=OFF -DUSE_OPENMP=OFF -DUSE_LOCKING=ON -DDYNAMIC_ARCH=ON \
             -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF \
             -DCMAKE_INSTALL_PREFIX=/usr/local
@@ -127,7 +129,7 @@ jobs:
         # 不用 BUILD_ARCH=native，否则会带上构建机的 AVX512 等指令，换台机器就崩
         run: |
           cmake -S bergamot -B build -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON \
-            -DBUILD_ARCH=x86-64 -DUSE_MKL=OFF -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF \
+            -DBUILD_ARCH=x86-64 -DUSE_MKL=OFF -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
 
       # ---------------- macOS：系统自带 Accelerate 作 BLAS ----------------
@@ -141,7 +143,7 @@ jobs:
           if [ "$(uname -m)" = "arm64" ]; then ARCH=armv8-a; else ARCH=x86-64; fi
           cmake -S bergamot -B build -DCMAKE_BUILD_TYPE=Release -DUSE_STATIC_LIBS=ON \
             -DBUILD_ARCH="$ARCH" -DUSE_MKL=OFF -DUSE_APPLE_ACCELERATE=ON -DUSE_FBGEMM=OFF \
-            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF \
+            -DCOMPILE_TESTS=OFF -DCOMPILE_UNIT_TESTS=OFF -DGIT_SUBMODULE=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=13.4 \
             -DCMAKE_PREFIX_PATH="$(brew --prefix pcre2)"
 
