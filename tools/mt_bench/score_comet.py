@@ -9,11 +9,12 @@ import sys
 import time
 from pathlib import Path
 
-os.environ.setdefault("HF_HOME", "/work/hf_cache")   # 评分模型约 2.3 GB，缓存在挂载目录，重复运行不用再下载
+# MT_BENCH_WORK 未设置时是容器里的挂载目录 /work；在 Windows 主机上直接跑时设成本目录
+WORK = Path(os.environ.get("MT_BENCH_WORK", "/work"))
+os.environ.setdefault("HF_HOME", str(WORK / "hf_cache"))   # 评分模型约 2.3 GB，缓存在挂载目录，重复运行不用再下载
 import torch
 from comet import download_model, load_from_checkpoint
 
-WORK = Path("/work")
 RES = WORK / "results"
 BATCH = int(sys.argv[1]) if len(sys.argv) > 1 else 64
 
