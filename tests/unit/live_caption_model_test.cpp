@@ -102,9 +102,17 @@ TEST_F(LiveCaptionModelTest, LatePartialOfCutSentenceUpdatesThatSentence) {
     speak("first");
     const quint64 old = model.epoch();
     cut();
-    speak("second");
     model.setPartial(old, "first tail");   // 切句后才解出来的句尾
-    EXPECT_EQ(model.plainText(), "first tail second");
+    EXPECT_EQ(model.plainText(), "first tail");
+}
+
+TEST_F(LiveCaptionModelTest, LatePartialOfClearedSentenceIsIgnored) {
+    speak("first");
+    const quint64 old = model.epoch();
+    cut();
+    speak("second");                       // 下一句开口，上一句已清掉
+    model.setPartial(old, "first tail");
+    EXPECT_EQ(model.plainText(), "second");
 }
 
 TEST_F(LiveCaptionModelTest, LatePartialFillsPlaceholderWithoutText) {
@@ -161,23 +169,26 @@ TEST_F(LiveCaptionModelTest, FinalReplacesPendingAndTurnsFinal) {
 
 TEST_F(LiveCaptionModelTest, FinalsMatchPendingById) {
     speak("one");  const quint64 one = cut(1000);
-    speak("two");  const quint64 two = cut(1001);
-    speak("three");
+    const quint64 two = cut(1001);           // 第二句切出时流式还没出字，第一句仍在等结果
     model.onTranscribed(one, "ONE-final", 2000);
-    // 第一句已最终、第二句仍待定、第三句仍在说
     auto segs = model.segments();
-    ASSERT_EQ(segs.size(), 2);
+    ASSERT_EQ(segs.size(), 1);
     EXPECT_TRUE(segs[0].isFinal);
     EXPECT_EQ(segs[0].text, "ONE-final");
-    EXPECT_FALSE(segs[1].isFinal);
-    EXPECT_EQ(segs[1].text, " two three");
 
-    model.onTranscribed(two, "TWO-final", 2001);
+    model.onTranscribed(two, "TWO-final", 2001);   // 后一句出结果，前一句随之清掉
     segs = model.segments();
-    ASSERT_EQ(segs.size(), 2);
-    EXPECT_EQ(segs[0].text, "ONE-final TWO-final");
+    ASSERT_EQ(segs.size(), 1);
+    EXPECT_EQ(segs[0].text, "TWO-final");
     EXPECT_TRUE(segs[0].isFinal);
-    EXPECT_EQ(segs[1].text, " three");
+}
+
+TEST_F(LiveCaptionModelTest, StartingNextSentenceClearsPendingPrevious) {
+    speak("one"); const quint64 one = cut(1000);
+    speak("two");                            // 第一句还在等正式结果，第二句已开口
+    EXPECT_EQ(model.plainText(), "two");
+    model.onTranscribed(one, "ONE-final", 2000);   // 迟到的结果不再显示
+    EXPECT_EQ(model.plainText(), "two");
 }
 
 TEST_F(LiveCaptionModelTest, EmptyFinalRemovesThePendingSentence) {
@@ -192,8 +203,9 @@ TEST_F(LiveCaptionModelTest, CutWithoutAnyPartialStillOccupiesASlot) {
     const quint64 a = cut(1000);
     const quint64 b = cut(1001);
     model.onTranscribed(a, "A.", 2000);
+    EXPECT_EQ(model.plainText(), "A.");
     model.onTranscribed(b, "B.", 2001);
-    EXPECT_EQ(model.plainText(), "A. B.");
+    EXPECT_EQ(model.plainText(), "B.");
     EXPECT_TRUE(model.segments()[0].isFinal);
 }
 
@@ -213,13 +225,14 @@ TEST_F(LiveCaptionModelTest, ExpiredPendingDoesNotShiftLaterFinals) {
     EXPECT_EQ(model.plainText(), "NEXT-final");
 }
 
-TEST_F(LiveCaptionModelTest, NewSentenceAfterFinalStartsFreshLine) {
+TEST_F(LiveCaptionModelTest, NewSentenceClearsLingeringFinal) {
     speak("first"); const quint64 id = cut(); model.onTranscribed(id, "First.", 1000);
-    speak("second");
+    EXPECT_EQ(model.plainText(), "First.");   // 还在停留期内
+    speak("second");                          // 开始说下一句，上一句立即清掉
     const auto segs = model.segments();
-    ASSERT_EQ(segs.size(), 2);
-    EXPECT_EQ(segs[0].text, "First.");
-    EXPECT_EQ(segs[1].text, " second");
+    ASSERT_EQ(segs.size(), 1);
+    EXPECT_EQ(segs[0].text, "second");
+    EXPECT_FALSE(segs[0].isFinal);
 }
 
 
@@ -255,15 +268,13 @@ TEST_F(LiveCaptionModelTest, ClearEmitsEpochChangedEvenWhenEmpty) {
     EXPECT_EQ(spy.count(), 1);   // 流式引擎靠它重置，空内容也不能漏
 }
 
-TEST_F(LiveCaptionModelTest, KeepsOnlyMostRecentSentences) {
-    for (int i = 0; i < LiveCaptionModel::kMaxSentences + 4; ++i) {
+TEST_F(LiveCaptionModelTest, KeepsOnlyCurrentSentence) {
+    for (int i = 0; i < 10; ++i) {
         speak(QString("s%1").arg(i));
         const quint64 id = cut(1000 + i);
         model.onTranscribed(id, QString("F%1").arg(i), 2000 + i);
     }
-    const QString text = model.plainText();
-    EXPECT_FALSE(text.contains("F0"));
-    EXPECT_TRUE(text.contains(QString("F%1").arg(LiveCaptionModel::kMaxSentences + 3)));
+    EXPECT_EQ(model.plainText(), "F9");
 }
 
 

@@ -93,8 +93,9 @@ void LiveCaptionModel::applyPartial(quint64 epoch, const QString &text)
         m_held = { epoch, text };   // 存原文：补上时会重新走一遍归一化和术语替换
         return;
     }
+    // 开始说新的一句：之前的句子（含还在等正式结果的）立即清掉，字幕只显示当前这一句
+    m_sentences.clear();
     m_sentences.append({t, State::Active, resolveNow(-1), epoch});
-    while (m_sentences.size() > kMaxSentences) m_sentences.removeFirst();
     touch();
 }
 
@@ -127,6 +128,8 @@ void LiveCaptionModel::onTranscribed(quint64 id, const QString &finalText, qint6
             m_sentences[i].text = t;
             m_sentences[i].state = State::Final;
             m_sentences[i].stamp = now;
+            // 没有流式模型时句子只在出正式结果时出现：新一句出结果，更早的句子随之清掉
+            m_sentences.remove(0, i);
         }
         touch();
         return;

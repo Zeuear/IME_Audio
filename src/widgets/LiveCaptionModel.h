@@ -8,6 +8,8 @@
 // @brief 实时字幕的内容模型
 //
 // 一句话的生命周期：Active（正在说）→ Pending（已切出送去转录，仍显示中间文本）→ Final（正式结果替换文本）。
+// 同一时间只显示当前这一句：开始说下一句（或下一句先出正式结果）时，之前的句子立即清掉；
+// 最后一句出正式结果后再停留 kFinalLingerMs。
 class LiveCaptionModel : public QObject
 {
     Q_OBJECT
@@ -27,7 +29,6 @@ public:
         bool isFinal = false;
     };
 
-    static constexpr int kMaxSentences = 6;
     static constexpr qint64 kFinalLingerMs = 4000;
     static constexpr qint64 kPendingTimeoutMs = 60000;
 
