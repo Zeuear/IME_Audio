@@ -1,4 +1,4 @@
-#include "../../InputInjector.h"
+#include "services/InputInjector.h"
 
 // Linux 文本注入尚未实现（X11 下可走 XTestFakeKeyEvent，Wayland 需另寻方案）。
 InputInjector::Mode InputInjector::defaultMode() { return Mode::UnicodeTypeOnly; }

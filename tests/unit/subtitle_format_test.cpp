@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "widgets/SubtitleFormat.h"
+#include "ui/format/SubtitleFormat.h"
 
 TEST(SubtitleFormat, FormatsTimestamp) {
     EXPECT_EQ(formatSrtTime(0), QString("00:00:00,000"));

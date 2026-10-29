@@ -6,10 +6,10 @@
 #include <QHash>
 #include <QDebug>
 #include <QtConcurrent> 
-#include "../cuda/CudaInstaller.h"
-#include "../utils/AppPaths.h"
-#include "../utils/Logger.h"
-#include "../ConfigManager.h"
+#include "installers/CudaInstaller.h"
+#include "utils/AppPaths.h"
+#include "utils/Logger.h"
+#include "config/ConfigManager.h"
 
 
 QString ModelConfigFactory::getSherpaRoot()

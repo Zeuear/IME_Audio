@@ -1,5 +1,5 @@
-#include "../../utils/ProcessManager.h"
-#include "../../utils/Logger.h"
+#include "utils/ProcessManager.h"
+#include "utils/Logger.h"
 
 #define NOMINMAX
 #include <Windows.h>

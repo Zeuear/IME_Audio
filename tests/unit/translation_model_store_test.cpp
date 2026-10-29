@@ -6,7 +6,7 @@
 #include <QRegularExpression>
 #include <QTemporaryDir>
 
-#include "translation/TranslationModelStore.h"
+#include "installers/TranslationModelStore.h"
 
 using namespace TranslationModelStore;
 

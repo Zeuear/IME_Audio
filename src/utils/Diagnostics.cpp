@@ -25,7 +25,7 @@
 #include "AppPaths.h"
 #include "Logger.h"
 #include "PlatformPermissions.h"
-#include "version.h"
+#include "app/version.h"
 
 namespace {
 

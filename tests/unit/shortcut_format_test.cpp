@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "widgets/ShortcutFormat.h"
+#include "ui/format/ShortcutFormat.h"
 
 TEST(ShortcutFormat, ParsesMultiCharacterKeyName) {
     // 回归：旧实现只接受长度为 1 的按键段，"Space" 这类具名按键被静默丢弃，

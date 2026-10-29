@@ -4,7 +4,7 @@
 #include <QPair>
 #include <QTemporaryDir>
 
-#include "TermsLibraryManager.h"
+#include "services/TermsLibraryManager.h"
 
 // ---------- D1 regression tests: ordering & malformed-rule safety ----------
 //

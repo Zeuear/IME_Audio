@@ -6,7 +6,7 @@
 #include <QFileInfo>
 #include <QMutexLocker>
 #include "c-api.h"
-#include "../utils/Logger.h"
+#include "utils/Logger.h"
 
 SherpaPunctuator::SherpaPunctuator(QObject* parent)
     : QObject(parent)

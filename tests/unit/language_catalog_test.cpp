@@ -4,7 +4,7 @@
 #include <QSet>
 
 #include "sherpa/LanguageCatalog.h"
-#include "translation/TranslationModelStore.h"
+#include "installers/TranslationModelStore.h"
 
 // 目标语言列表按语言代码到目录里查名称，查不到会退回显示英文名；
 // 清单里新增语言而目录没跟上时，这里会提前失败

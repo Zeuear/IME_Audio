@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <QObject>
 
-#include "WorkflowManager.h"
-#include "interfaces/workflow_interfaces.h"
+#include "services/WorkflowManager.h"
+#include "services/interfaces/workflow_interfaces.h"
 
 class FakeRecorder : public IRecorder {
 public:

@@ -1,4 +1,4 @@
-#include "../../utils/ProcessManager.h"
+#include "utils/ProcessManager.h"
 
 // macOS 不提供提权安装
 void ElevatedProcessTask::runElevatedBlocking() {

@@ -1,5 +1,5 @@
-#include "../../InputInjector.h"
-#include "../../utils/Logger.h"
+#include "services/InputInjector.h"
+#include "utils/Logger.h"
 #include <QVector>
 #include <QClipboard>
 #include <QApplication>

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "TranslationService.h"
+#include "services/TranslationService.h"
 #include "translation/ITranslationBackend.h"
 #include "translation/TranslationStage.h"
 

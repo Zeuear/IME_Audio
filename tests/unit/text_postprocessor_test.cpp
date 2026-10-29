@@ -3,7 +3,7 @@
 
 // RED PHASE: This test will not compile until TextPostProcessor is extracted
 // from TranscriptionService::postProcess into a testable public interface.
-#include "TextPostProcessor.h"
+#include "services/TextPostProcessor.h"
 
 class TextPostProcessorTest : public ::testing::Test {};
 

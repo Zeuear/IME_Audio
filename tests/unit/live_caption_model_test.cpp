@@ -2,7 +2,7 @@
 #include <QCoreApplication>
 #include <QObject>
 
-#include "widgets/LiveCaptionModel.h"
+#include "ui/models/LiveCaptionModel.h"
 
 namespace {
 // 不依赖 Qt Test 的信号计数器
@@ -279,22 +279,22 @@ TEST_F(LiveCaptionModelTest, KeepsOnlyCurrentSentence) {
 
 
 TEST(CaptionText, AllCapsEnglishBecomesSentenceCase) {
-    EXPECT_EQ(CaptionText::normalizePartial("HELLO WORLD"), "Hello world");
-    EXPECT_EQ(CaptionText::normalizePartial("I THINK I CAN"), "I think I can");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("HELLO WORLD"), "Hello world");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("I THINK I CAN"), "I think I can");
 }
 
 TEST(CaptionText, MixedCaseIsLeftAlone) {
-    EXPECT_EQ(CaptionText::normalizePartial("Hello World"), "Hello World");
-    EXPECT_EQ(CaptionText::normalizePartial("iPhone"), "iPhone");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("Hello World"), "Hello World");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("iPhone"), "iPhone");
 }
 
 TEST(CaptionText, UpperCaseInsideCjkIsKept) {
-    EXPECT_EQ(CaptionText::normalizePartial("我用 API 调用"), "我用 API 调用");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("我用 API 调用"), "我用 API 调用");
 }
 
 TEST(CaptionText, ChineseIsLeftAloneAndWhitespaceCollapsed) {
-    EXPECT_EQ(CaptionText::normalizePartial("  你好   世界 "), "你好 世界");
-    EXPECT_EQ(CaptionText::normalizePartial(""), "");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial("  你好   世界 "), "你好 世界");
+    EXPECT_EQ(LiveCaptionModel::normalizePartial(""), "");
 }
 
 TEST(CaptionText, SeparatorNoSpaceAroundCjk) {

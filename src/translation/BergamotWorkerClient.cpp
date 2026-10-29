@@ -1,5 +1,5 @@
 #include "BergamotWorkerClient.h"
-#include "../utils/Logger.h"
+#include "utils/Logger.h"
 #include "../../tools/translate_worker/WorkerProtocol.h"
 
 #include <QFileInfo>

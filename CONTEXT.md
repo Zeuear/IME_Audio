@@ -37,7 +37,7 @@
   影响 API 端点和请求体构造。不是 ASR 后端，是后处理 LLM。`2 = Ollama` 复用 OpenAI-compatible
   的 `/v1/chat/completions` 路径（`isOllama` 标志），仅 base URL 指向本地 Ollama（默认
   `http://localhost:11434`），无需 API key。
-- **TextPolishProvider** — 润色后端抽象接口（`src/textpolish/`）：`GeminiProvider` 走 Gemini
+- **TextPolishProvider** — 润色后端抽象接口（`src/services/textpolish/`）：`GeminiProvider` 走 Gemini
   `generateContent`，`OpenAiProvider` 走 OpenAI 兼容（含本地 Ollama）。`TextPolishService` 通过
   `createTextPolishProvider(params)` 工厂按 `aiEngine`/`isOllama` 选择实现，共享 prompt 逻辑在
   `TextPolishPrompts`。

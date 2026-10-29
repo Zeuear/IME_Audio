@@ -1,5 +1,5 @@
-#include "../../utils/PlatformPermissions.h"
-#include "../../utils/Logger.h"
+#include "utils/PlatformPermissions.h"
+#include "utils/Logger.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <AppKit/AppKit.h>

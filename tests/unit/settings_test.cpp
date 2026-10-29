@@ -7,8 +7,8 @@
 #include <QSpinBox>
 #include <QTemporaryDir>
 
-#include "ConfigManager.h"
-#include "widgets/SettingsBinder.h"
+#include "config/ConfigManager.h"
+#include "ui/controls/SettingsBinder.h"
 
 namespace {
 // 控件需要 QApplication；其它测试文件按需创建的是 QCoreApplication，

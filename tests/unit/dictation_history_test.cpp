@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "widgets/DictationHistoryModel.h"
+#include "ui/models/DictationHistoryModel.h"
 
 TEST(DictationHistory, NewestFirstAndBlankIgnored) {
     DictationHistoryModel m;

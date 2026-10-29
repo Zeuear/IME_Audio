@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>style/mywhitestyle.qss</file>
-        <file>style/myblackstyle.qss</file>
-        <file>style/mygraystyle.qss</file>
+        <file alias="style/mywhitestyle.qss">../resources/style/mywhitestyle.qss</file>
+        <file alias="style/myblackstyle.qss">../resources/style/myblackstyle.qss</file>
+        <file alias="style/mygraystyle.qss">../resources/style/mygraystyle.qss</file>
     </qresource>    
 </RCC>

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.14)
 
 set(TARGET_NAME ImeAudio)
 configure_file(
-    "${CMAKE_SOURCE_DIR}/src/version.h.in"
-    "${CMAKE_SOURCE_DIR}/src/version.h"
+    "${CMAKE_SOURCE_DIR}/src/app/version.h.in"
+    "${CMAKE_SOURCE_DIR}/src/app/version.h"
 )
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp" "utils/*.cpp" "sherpa/*.cpp" "widget/*.cpp" "cuda/*.cpp")
@@ -234,6 +234,7 @@ endif()
 
 set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
 target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
+target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
 # ============================================================

@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "AppConfig.h"
-#include "TextPolishService.h"
-#include "textpolish/TextPolishProvider.h"
-#include "textpolish/TextPolishPrompts.h"
+#include "config/AppConfig.h"
+#include "services/TextPolishService.h"
+#include "services/textpolish/TextPolishProvider.h"
+#include "services/textpolish/TextPolishPrompts.h"
 
 // TextPolishService 的能力判断和"不支持就跳过"逻辑用假 provider 覆盖，
 // 不联网、不加载真实模型，避免测试依赖外部服务。

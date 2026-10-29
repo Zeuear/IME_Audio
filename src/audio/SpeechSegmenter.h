@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "cxx-api.h"
-#include "AppConfig.h"
+#include "config/AppConfig.h"
 
 // @brief 连续模式的断句器：把源源不断的麦克风音频切成一句一句，交给识别。
 //

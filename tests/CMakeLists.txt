@@ -63,8 +63,8 @@ set(TEST_SOURCES
 # Production translation units needed by the hermetic tests (logic decoupling:
 # we link only the seams under test, not the whole app).
 set(TEST_DEPS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TermsLibraryManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPostProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TermsLibraryManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/AppPaths.cpp
     # SingleInstanceGuard 是 Q_OBJECT，.h 也要交给 AUTOMOC
@@ -73,45 +73,45 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
     # TextPolishService is a Q_OBJECT class; include its .cpp + header so AUTOMOC
     # generates the moc code and links it. Logger.cpp is needed (LOG_DEBUG usage).
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TextPolishService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPolishService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPolishService.h
     # 本地翻译入口与后端接口；Q_OBJECT 头交给 AUTOMOC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TranslationService.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TranslationService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TranslationService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TranslationService.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/ITranslationBackend.h
     # 纯语言路由与模型索引解析
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/LanguageRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/LanguageRouting.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/RemoteSettingsIndex.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/RemoteSettingsIndex.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/TranslationModelStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/installers/RemoteSettingsIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/installers/RemoteSettingsIndex.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/installers/TranslationModelStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/installers/TranslationModelStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.h
     # TextPolishService delegates to the provider layer; include those TUs so the
     # hermetic test links (parseOllamaTags is static, but factory/fetchModels need them).
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/TextPolishProvider.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/TextPolishPrompts.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/GeminiProvider.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/textpolish/OpenAiProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/TextPolishProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/TextPolishPrompts.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/GeminiProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/OpenAiProvider.cpp
     # ProcessManager.h holds Q_OBJECT classes (BaseTask / TaskQueueManager /
     # ExtractTask) and must be fed to AUTOMOC so the moc code is generated + linked.
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ProcessManager.h
     # 平台解耦的系统音频端点控制器（纯 C++，Win 下用 Core Audio COM）
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkflowManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/WorkflowManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Logger.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/interfaces/workflow_interfaces.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/interfaces/workflow_interfaces.h
     # 神经标点：SherpaPunctuator 封装 + SherpaConfig 的 shouldUseNeuralPunct 判定
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/config/ConfigManager.cpp
     # 字幕内容模型是 Q_OBJECT 类，.h 也要交给 AUTOMOC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/LiveCaptionModel.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/SettingsBinder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/SettingsBinder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/DictationHistoryModel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/widgets/DictationHistoryModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/LiveCaptionModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/LiveCaptionModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/SettingsBinder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/SettingsBinder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.h
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用

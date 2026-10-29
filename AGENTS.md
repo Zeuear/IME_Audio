@@ -5,13 +5,13 @@ Qt6 桌面语音输入法（Windows / macOS / Linux）。领域术语见 [CONTEX
 
 ## 界面（UI）
 
-- **标签页/页面写在 [src/MainWin.ui](src/MainWin.ui) 里**，不要在 C++ 里 `addTab` 或手工拼主窗口页面。
+- **标签页/页面写在 [src/app/MainWin.ui](src/app/MainWin.ui) 里**，不要在 C++ 里 `addTab` 或手工拼主窗口页面。
 - 自定义控件在 .ui 中**提升（`<customwidget>`）**，参照 `TermWidget`、`NavListWidget`：
   - 控件提供 `explicit X(QWidget* parent = nullptr)` 默认构造，内部 `setupUi()` 用代码搭内部布局。
   - 依赖（服务、配置）由 `MainWin` 通过 setter 注入，例如 `ui->terms_widget->setTermsManager(...)`、
     `ui->file_transcribe_widget->setServices(...)`，写在 `MainWin::setupUiConnections()` 里。
 - 控件对象名用 `snake_case`（`terms_widget`、`identification_log_edit`）。
-- 自定义控件放 [src/widgets/](src/widgets/)。
+- 自定义控件放 [src/ui/controls/](src/ui/controls/)。
 - 列表类界面用 **Model + Delegate**：状态放 `QAbstractListModel`（如 `FileTaskModel`），
   卡片绘制放 `QStyledItemDelegate`（如 `FileTaskDelegate`），控件只负责编排。
   颜色取 `palette`，保证 light / gray / dark 主题都可读；只有成功/失败使用固定语义色。
@@ -35,7 +35,7 @@ Qt6 桌面语音输入法（Windows / macOS / Linux）。领域术语见 [CONTEX
 ## 架构分层
 
 - 依赖方向：`MainWin` → `WorkflowManager` → `IRecorder` / `ITranscription` / `ISherpaModel`
-  （[src/interfaces/workflow_interfaces.h](src/interfaces/workflow_interfaces.h)）。
+  （[src/services/interfaces/workflow_interfaces.h](src/services/interfaces/workflow_interfaces.h)）。
   工作流只依赖接口，便于测试注入假实现。
 - 音频内部统一 **16-bit / 16 kHz / mono PCM**，云端后端才封装 WAV（`buildWavBytes`）。
 - `TranscriptionService` 是统一转录入口，按 `AsrBackendKind` 分发（Sherpa / Groq / Gladia / Gemini）。

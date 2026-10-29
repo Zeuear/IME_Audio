@@ -6,12 +6,12 @@
 #include <QDebug>
 #include <QTimer>
 #include <QtConcurrent> 
-#include "../utils/Logger.h"
-#include "../utils/Diagnostics.h"
-#include "../utils/AppPaths.h"
+#include "utils/Logger.h"
+#include "utils/Diagnostics.h"
+#include "utils/AppPaths.h"
 #include <QElapsedTimer>
-#include "../utils/ExtractTool.h"
-#include "../ConfigManager.h"
+#include "utils/ExtractTool.h"
+#include "config/ConfigManager.h"
 
 
 

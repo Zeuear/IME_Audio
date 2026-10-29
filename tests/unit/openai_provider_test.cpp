@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "textpolish/OpenAiProvider.h"
+#include "services/textpolish/OpenAiProvider.h"
 
 // OpenAiProvider::test 的 OpenAI 兼容路径用 isValidModelsResponse 判定
 // /v1/models 响应是否合法。这里做无网络的纯函数测试。

@@ -13,10 +13,10 @@
 #include <functional>
 #include <variant>
 
-#include "../AppConfig.h"
+#include "config/AppConfig.h"
 #include "utils/DownloadManager.h"
 #include "utils/ProcessManager.h"
-#include "interfaces/workflow_interfaces.h"
+#include "services/interfaces/workflow_interfaces.h"
 #include "SherpaPunctuator.h"
 #include "SherpaConfig.h"
 

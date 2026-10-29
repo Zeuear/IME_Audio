@@ -2,7 +2,7 @@
 #include <QMetaObject>
 #include <QThread>
 #include <vector>
-#include "../utils/Logger.h"
+#include "utils/Logger.h"
 
 StreamingCaptionEngine::StreamingCaptionEngine()
 {

@@ -1,4 +1,4 @@
-#include "../../utils/PlatformPermissions.h"
+#include "utils/PlatformPermissions.h"
 
 PlatformPermissions::Status PlatformPermissions::microphoneStatus() {
     return Status::NotRequired;

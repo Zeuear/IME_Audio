@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "TextPolishService.h"
-#include "../../src/textpolish//OpenAiProvider.h"
+#include "services/TextPolishService.h"
+#include "services/textpolish/OpenAiProvider.h"
 
 // Ollama 模型列表解析（纯函数，无网络依赖）
 TEST(OllamaTest, ParseTagsExtractsModelNames) {

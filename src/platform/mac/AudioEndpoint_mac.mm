@@ -1,4 +1,4 @@
-#include "../../utils/SystemAudioEndpointController.h"
+#include "utils/SystemAudioEndpointController.h"
 
 // macOS 不切换系统默认音频端点。
 //

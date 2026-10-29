@@ -7,7 +7,7 @@
 #include <QSet>
 
 #include "translation/LanguageRouting.h"
-#include "translation/RemoteSettingsIndex.h"
+#include "installers/RemoteSettingsIndex.h"
 
 #if !defined(IME_AUDIO_TEST_DATA_DIR)
 #define IME_AUDIO_TEST_DATA_DIR "tests/data"

@@ -1,5 +1,5 @@
-#include "../../utils/SystemAudioEndpointController.h"
-#include "../../utils/Logger.h"
+#include "utils/SystemAudioEndpointController.h"
+#include "utils/Logger.h"
 
 // Windows：通过 Core Audio COM API 切换系统默认音频端点。
 #define NOMINMAX
