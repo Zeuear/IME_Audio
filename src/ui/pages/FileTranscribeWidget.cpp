@@ -187,6 +187,7 @@ void FileTranscribeWidget::setupUi()
     statusRow->addWidget(m_openFolderBtn);
 
     auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(10, 10, 10, 10);   // 和 TermWidget、基本设置页的页边距一致
     layout->addWidget(splitter);
     layout->addLayout(statusRow);
     layout->addStretch(0);

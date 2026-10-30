@@ -25,6 +25,7 @@ public:
     void setTheme(Theme theme);
     void setCaptionFontSize(int pt);
     void setAtTop(bool atTop);
+    bool atTop() const { return m_atTop; }
 
     void setCaptionModel(LiveCaptionModel *model);
     bool hasCaption() const;

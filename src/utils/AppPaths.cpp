@@ -45,6 +45,11 @@ QString termsFile()
     return QDir(dataDir()).absoluteFilePath("terms.tsv");
 }
 
+QString snippetsFile()
+{
+    return QDir(dataDir()).absoluteFilePath("snippets/data/snippets.json");
+}
+
 QString promptsDir()
 {
     // 提示词首次运行时会写入默认内容，属可写数据

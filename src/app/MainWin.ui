@@ -824,6 +824,18 @@
             <property name="spacing">
              <number>10</number>
             </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
             <item>
              <widget class="QFrame" name="ai_service_card">
               <property name="card" stdset="0">
@@ -1103,6 +1115,16 @@
            <widget class="TermWidget" name="terms_widget" native="true">
             <layout class="QVBoxLayout" name="verticalLayout_3"/>
            </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="snippets">
+         <attribute name="title">
+          <string>Command Settings</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_snippets">
+          <item>
+           <widget class="SnippetWidget" name="snippet_widget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -1505,6 +1527,12 @@
    <class>DictationLogWidget</class>
    <extends>QWidget</extends>
    <header>ui/pages/DictationLogWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SnippetWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/pages/SnippetWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

@@ -378,6 +378,14 @@ bool InputInjector::sendCtrlV() {
         hwnd = gti.hwndFocus;
     }
 
+    // Chromium / Electron / 微信等不处理 WM_PASTE，先发真实的 Ctrl+V，失败再退回消息方式
+    INPUT keys[4] = {};
+    keys[0].type = INPUT_KEYBOARD; keys[0].ki.wVk = VK_CONTROL;
+    keys[1].type = INPUT_KEYBOARD; keys[1].ki.wVk = 'V';
+    keys[2] = keys[1]; keys[2].ki.dwFlags = KEYEVENTF_KEYUP;
+    keys[3] = keys[0]; keys[3].ki.dwFlags = KEYEVENTF_KEYUP;
+    if (SendInput(4, keys, sizeof(INPUT)) == 4) return true;
+
     PostMessage(hwnd, WM_PASTE, 0, 0);
     return true;
 }

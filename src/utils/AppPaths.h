@@ -16,6 +16,8 @@ QString resourceDir();
 QString logFile();
 QString configFile();
 QString termsFile();
+// SnippetStore 约定文件位于 <base>/data/snippets.json
+QString snippetsFile();
 QString promptsDir();
 
 QString sherpaRoot();

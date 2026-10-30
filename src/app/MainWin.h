@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPropertyAnimation>
 #include <QMessageBox>
+#include <QSet>
 #include <QSettings>
 #include <QTranslator>
 #include <qprocess.h>
@@ -24,6 +25,10 @@ class SherpaInstaller;
 class SherpaManager;
 class LiveOverlay;
 class LiveCaptionModel;
+class SnippetStore;
+class SnippetPaster;
+class SnippetSuggestBar;
+class SnippetSearchPopup;
 class StreamingCaptionEngine;
 class TextPolishService;
 class TranslationService;
@@ -123,6 +128,7 @@ private:
     void rebuildTrayMenu();
 
     void syncLiveCaption();
+    void updateSnippetSuggestions(const QString& spokenText);
 
     Ui::MainWin *ui;
 
@@ -132,6 +138,11 @@ private:
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
     LiveCaptionModel* m_captionModel = nullptr;
+    SnippetStore* m_snippetStore = nullptr;
+    SnippetPaster* m_snippetPaster = nullptr;
+    SnippetSuggestBar* m_suggestBar = nullptr;
+    QSet<QString> m_handledSnippetIds;   // 这句话里已点击/已超时的话术，下一句开始前不再提示
+    SnippetSearchPopup* m_searchPopup = nullptr;
     StreamingCaptionEngine* m_captionEngine = nullptr;  
     bool m_liveCaptionFailNotified = false;
 

@@ -17,6 +17,16 @@
         <file alias="info_close">../resources/icons/info_close.svg</file>    
         <file alias="info_error">../resources/icons/info_error.svg</file>        
         <file alias="info_success">../resources/icons/info_success.svg</file>    
-        <file alias="info_warning">../resources/icons/info_warning.svg</file>        
+        <file alias="info_warning">../resources/icons/info_warning.svg</file>
+        <file alias="snippet_add">../resources/icons/snippet_add.svg</file>
+        <file alias="snippet_cloud">../resources/icons/snippet_cloud.svg</file>
+        <file alias="snippet_refresh">../resources/icons/snippet_refresh.svg</file>
+        <file alias="snippet_expand">../resources/icons/snippet_expand.svg</file>
+        <file alias="snippet_collapse">../resources/icons/snippet_collapse.svg</file>
+        <file alias="snippet_multiline">../resources/icons/snippet_multiline.svg</file>
+        <file alias="snippet_options">../resources/icons/snippet_options.svg</file>
+        <file alias="snippet_more">../resources/icons/snippet_more.svg</file>
+        <file alias="snippet_search">../resources/icons/snippet_search.svg</file>
+        <file alias="snippet_trash">../resources/icons/snippet_trash.svg</file>
     </qresource>
 </RCC>

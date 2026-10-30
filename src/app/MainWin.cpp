@@ -40,6 +40,11 @@
 
 #include "sherpa/StreamingCaptionEngine.h"
 #include "ui/controls/LiveOverlay.h"
+#include "ui/controls/SnippetSuggestBar.h"
+#include "ui/controls/SnippetSearchPopup.h"
+#include "ui/pages/SnippetWidget.h"
+#include "snippets/SnippetStore.h"
+#include "services/SnippetPaster.h"
 #include "ui/models/LiveCaptionModel.h"
 #include "ui/controls/SettingsBinder.h"
 #include "ui/models/DictationHistoryModel.h"
@@ -193,6 +198,14 @@ void MainWin::initialize() {
     m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->terms_widget->setTermsManager(m_termsManager);
+    m_snippetStore = new SnippetStore(AppPaths::snippetsFile());
+    if (!m_snippetStore->load()) {
+        LOG_WARN("Snippet library is damaged, falling back to defaults in memory");
+    }
+    m_snippetPaster = new SnippetPaster(m_snippetStore, m_networkManager, this);
+    m_suggestBar = new SnippetSuggestBar();
+    m_searchPopup = new SnippetSearchPopup(m_snippetStore, m_snippetPaster);
+    ui->snippet_widget->setSnippetStore(m_snippetStore);
     ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
 }  
 
@@ -501,17 +514,58 @@ void MainWin::setupUiConnections(){
         notify(level, title, cause);
     });
 
+    // 指令设置：说到话术的快捷码 → 悬浮窗旁出现按钮 → 点击粘贴到前台窗口
+    connect(ui->snippet_widget, &SnippetWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
+        notify(title.contains(tr("成功")) ? NotifyLevel::Success : NotifyLevel::Error, title, cause);
+    });
+    connect(m_snippetPaster, &SnippetPaster::errorOccurred, this,
+            [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
+    connect(m_suggestBar, &SnippetSuggestBar::snippetClicked, m_snippetPaster, &SnippetPaster::paste);
+    connect(ui->snippet_widget, &SnippetWidget::storeChanged, m_suggestBar, &SnippetSuggestBar::dismiss);
+    connect(ui->snippet_widget, &SnippetWidget::searchPopupRequested, m_searchPopup, &SnippetSearchPopup::showPopup);
+    connect(m_suggestBar, &SnippetSuggestBar::closed, this,
+            [this](const QStringList& ids) { m_handledSnippetIds.unite(QSet<QString>(ids.begin(), ids.end())); });
+    connect(m_captionModel, &LiveCaptionModel::changed, this, [this]() {
+        const QString text = m_captionModel->plainText();
+        if (text.isEmpty()) m_handledSnippetIds.clear();   // 字幕被清空 = 下一句开始
+        updateSnippetSuggestions(text);
+    });
+    connect(m_workflow, &WorkflowManager::transcriptionResultReady, this,
+            [this](const QString& text) { updateSnippetSuggestions(text); });
+
     connect(ui->file_transcribe_widget, &FileTranscribeWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
 
 }
 
 MainWin::~MainWin() {
-  // 字幕引擎自带线程，先于 UI 收掉
   delete m_captionEngine;
   m_captionEngine = nullptr;
+  delete m_suggestBar;
+  delete m_searchPopup;
+  delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;
+}
+
+// 听写文本里出现话术快捷码时，在悬浮窗旁列出可点击的条目。
+// 没命中时不主动收起：字幕被下一句清掉后，用户可能正要点按钮，由指令条自己的计时器收起。
+void MainWin::updateSnippetSuggestions(const QString& spokenText) {
+    if (!m_snippetStore->settings().voiceTrigger || !m_liveOverlay->isVisible()) return;
+
+    QVector<SnippetSuggestBar::Suggestion> suggestions;
+    for (const SnippetItem* item : m_snippetStore->matchKeywords(spokenText)) {
+        if (m_handledSnippetIds.contains(QString::fromStdString(item->id))) continue;
+        const QString title = QString::fromStdString(item->title);
+        const QString text = QString::fromStdString(item->text);
+        suggestions.push_back({ QString::fromStdString(item->id), title.isEmpty() ? text : title, text });
+    }
+    if (suggestions.isEmpty()) return;
+
+    m_suggestBar->setSuggestions(suggestions);
+    const QRectF card = m_liveOverlay->cardRect();
+    const QPoint topLeft = m_liveOverlay->mapToGlobal(card.topLeft().toPoint());
+    m_suggestBar->placeNear(QRect(topLeft, card.size().toSize()), m_liveOverlay->atTop());
 }
 
 void MainWin::syncLiveCaption()
@@ -1157,6 +1211,9 @@ void MainWin::onStateChanged(WorkflowState state)
 
     switch (state) {
     case WorkflowState::Loading:
+        // 新一轮录音：旧按钮对应的是上一句话，留着容易误点
+        m_suggestBar->dismiss();
+        m_handledSnippetIds.clear();
         m_captionModel->clear();
         syncLiveCaption(); 
         m_liveOverlay->setLoading();
