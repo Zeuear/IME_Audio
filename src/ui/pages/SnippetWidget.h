@@ -6,6 +6,7 @@
 
 #include "ui/delegates/SnippetTreeDelegate.h"
 
+class GoogleSheetsService;
 class QAction;
 class QCheckBox;
 class QLabel;
@@ -75,6 +76,8 @@ private:
     SnippetTreeDelegate* m_delegate = nullptr;
     bool m_applyingExpand = false;
     QTimer m_relayoutTimer;   // 缩放窗口时合并行高重算
+    GoogleSheetsService* m_sheetsService = nullptr; 
+    bool m_refreshing = false;
 
     QTreeView* m_treeView = nullptr;
     QLineEdit* m_searchEdit = nullptr;

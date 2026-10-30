@@ -2510,6 +2510,16 @@
         <source>+ Image</source>
         <translation>+ Image</translation>
     </message>
+    <message>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="240"/>
+        <source>CN</source>
+        <translation>CN</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="252"/>
+        <source>FL</source>
+        <translation>FL</translation>
+    </message>
 </context>
 <context>
     <name>SnippetTreeModel</name>

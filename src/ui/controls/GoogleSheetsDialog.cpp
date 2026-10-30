@@ -166,30 +166,24 @@ void GoogleSheetsDialog::onFetchSheets() {
     m_statusLabel->setText(tr("Reading the sheet list..."));
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    bool ok = false;
-    QString docTitle, error;
-    QStringList names;
-    GoogleSheetsService service;
-    service.listSheetNames(url, [&](bool o, QString title, QString, QVector<QPair<QString, QString>> sheets, QString err) {
-        ok = o;
-        docTitle = title;
-        error = err;
+    m_service.listSheetNames(url, [this, previouslyChecked](bool ok, QString docTitle, QString,
+                                                            QVector<QPair<QString, QString>> sheets, QString error) {
+        QApplication::restoreOverrideCursor();
+        setEnabled(true);
+
+        if (!ok) {
+            m_statusLabel->setText(tr("Read failed: %1").arg(error));
+            emit errorOccurred(tr("读取 Google 表格失败"), error);
+            return;
+        }
+
+        QStringList names;
         for (const auto& p : sheets) names << p.second;
+        // 已有保存勾选的表（m_activeTreeId 非空）保留原勾选，新表默认全选
+        fillSheetList(names, previouslyChecked, m_activeTreeId.isEmpty() || previouslyChecked.isEmpty());
+        if (m_aliasEdit->text().trimmed().isEmpty()) m_aliasEdit->setText(docTitle);
+        m_statusLabel->setText(tr("Found %1 sheets. Check the ones you need, then click \"Import Checked Sheets\".").arg(names.size()));
     });
-
-    QApplication::restoreOverrideCursor();
-    setEnabled(true);
-
-    if (!ok) {
-        m_statusLabel->setText(tr("Read failed: %1").arg(error));
-        emit errorOccurred(tr("读取 Google 表格失败"), error);
-        return;
-    }
-
-    // 已有保存勾选的表（m_activeTreeId 非空）保留原勾选，新表默认全选
-    fillSheetList(names, previouslyChecked, m_activeTreeId.isEmpty() || previouslyChecked.isEmpty());
-    if (m_aliasEdit->text().trimmed().isEmpty()) m_aliasEdit->setText(docTitle);
-    m_statusLabel->setText(tr("Found %1 sheets. Check the ones you need, then click \"Import Checked Sheets\".").arg(names.size()));
 }
 
 void GoogleSheetsDialog::onImportChecked() {
@@ -208,25 +202,24 @@ void GoogleSheetsDialog::onImportChecked() {
     m_statusLabel->setText(tr("Importing %1 sheets, please wait...").arg(names.size()));
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    GoogleSheetsService service;
-    QString error;
-    const QString treeId = m_store->importGoogleSheet(&service, url, m_aliasEdit->text().trimmed(), m_activeTreeId, names, &error);
+    m_store->importGoogleSheet(&m_service, url, m_aliasEdit->text().trimmed(), m_activeTreeId, names,
+        [this, count = names.size()](const QString& treeId, const QString& error) {
+            QApplication::restoreOverrideCursor();
+            setEnabled(true);
 
-    QApplication::restoreOverrideCursor();
-    setEnabled(true);
+            if (treeId.isEmpty()) {
+                m_statusLabel->setText(tr("Import failed: %1").arg(error));
+                emit errorOccurred(tr("导入 Google 表格失败"), error);
+                return;
+            }
 
-    if (treeId.isEmpty()) {
-        m_statusLabel->setText(tr("Import failed: %1").arg(error));
-        emit errorOccurred(tr("导入 Google 表格失败"), error);
-        return;
-    }
-
-    m_activeTreeId = treeId;
-    FolderNode* root = m_store->findFolderById(treeId);
-    const int count = root ? m_store->countItemsInFolder(*root) : 0;
-    reloadSavedList();
-    selectTree(treeId);
-    m_statusLabel->setText(tr("Imported %1 sheets, %2 snippets in total.").arg(names.size()).arg(count));
+            m_activeTreeId = treeId;
+            FolderNode* root = m_store->findFolderById(treeId);
+            const int items = root ? m_store->countItemsInFolder(*root) : 0;
+            reloadSavedList();
+            selectTree(treeId);
+            m_statusLabel->setText(tr("Imported %1 sheets, %2 snippets in total.").arg(count).arg(items));
+        });
 }
 
 void GoogleSheetsDialog::onSetAllChecked(bool checked) {
@@ -272,18 +265,18 @@ void GoogleSheetsDialog::onRefreshSaved() {
     setEnabled(false);
     m_statusLabel->setText(tr("Refreshing with the saved selection..."));
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    GoogleSheetsService service;
-    QString error;
-    const QString id = m_store->importGoogleSheet(&service, url, title, treeId, selected, &error);
-    QApplication::restoreOverrideCursor();
-    setEnabled(true);
+    m_store->importGoogleSheet(&m_service, url, title, treeId, selected,
+        [this](const QString& id, const QString& error) {
+            QApplication::restoreOverrideCursor();
+            setEnabled(true);
 
-    if (id.isEmpty()) {
-        m_statusLabel->setText(tr("Refresh failed: %1").arg(error));
-        emit errorOccurred(tr("刷新 Google 表格失败"), error);
-        return;
-    }
-    reloadSavedList();
-    selectTree(id);
-    m_statusLabel->setText(tr("Refreshed."));
+            if (id.isEmpty()) {
+                m_statusLabel->setText(tr("Refresh failed: %1").arg(error));
+                emit errorOccurred(tr("刷新 Google 表格失败"), error);
+                return;
+            }
+            reloadSavedList();
+            selectTree(id);
+            m_statusLabel->setText(tr("Refreshed."));
+        });
 }

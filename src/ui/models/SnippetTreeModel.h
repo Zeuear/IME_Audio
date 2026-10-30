@@ -12,7 +12,7 @@
 
 // Qt 多级树形模型（对应原 ManagerApp 的多级彩色卡片树）
 // L1 主表（蓝）/ L2 Sheet（绿）/ L3 @@分组（橙）。每个文件夹的子节点顺序：先子文件夹，后条目。
-// 修改 SnippetStore 后必须调用 refresh()，模型内部缓存的指针此时才会重建。
+// 增删移动节点后必须调用 refresh()，模型内部缓存的指针此时才会重建；只改文字用 nodeChanged()。
 class SnippetTreeModel : public QAbstractItemModel {
     Q_OBJECT
 public:
@@ -40,6 +40,8 @@ public:
 
     SnippetStore* store() const { return m_store; }
     void refresh();
+    // 只改了某个节点的文字/配图（树结构、指针都没变）：发 dataChanged，保留视图的展开、选中和滚动位置
+    void nodeChanged(const QString& nodeId);
 
     QModelIndex indexByNodeId(const QString& nodeId) const;
     QString nodeIdFromIndex(const QModelIndex& index) const;

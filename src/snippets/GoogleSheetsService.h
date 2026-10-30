@@ -13,7 +13,7 @@
 #include <functional>
 
 // 对应原 google_sheets_sync.py。
-// 注意：当前实现用嵌套 QEventLoop 阻塞等待网络，回调在函数返回前同步触发（UI 不冻结但会重入事件循环）。
+// 注意：请求全部异步，回调在事件循环里触发；服务销毁时未完成的请求连同回调一起作废。
 // 仅走 gviz CSV 路径；XLSX 导出解析与嵌入图片提取未移植。
 class GoogleSheetsService : public QObject {
     Q_OBJECT
@@ -43,6 +43,8 @@ public:
 private:
     QNetworkAccessManager* m_nam;
 
-    bool blockingGet(const QUrl& url, int timeoutMs, QByteArray* body, QString* error, int* status = nullptr);
+    // callback: ok, body, error
+    using GetCallback = std::function<void(bool, QByteArray, QString)>;
+    void httpGet(const QUrl& url, int timeoutMs, GetCallback callback);
     QString buildCsvUrl(const QString& spreadsheetId, const QString& gid) const;
 };

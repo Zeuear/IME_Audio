@@ -40,8 +40,8 @@ void SnippetPaster::paste(const QString& itemId) {
     SnippetItem* item = m_store->findItemById(itemId);
     if (!item) return;
 
-    const QString text = QString::fromStdString(item->text);
-    const QString imagePath = QString::fromStdString(item->imagePath).trimmed();
+    const QString text = item->text;
+    const QString imagePath = item->imagePath.trimmed();
     const bool imageFirst = m_store->settings().comboImageFirst;
     m_store->incrementUseCount(itemId);
 

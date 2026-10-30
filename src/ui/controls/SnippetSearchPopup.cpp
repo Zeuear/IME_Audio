@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListView>
+#include <QImageReader>
 #include <QPixmap>
 #include <QScreen>
 #include <QStandardItemModel>
@@ -22,6 +23,8 @@ namespace {
 
 constexpr int kPreviewImageW = 230;
 constexpr int kPreviewImageH = 150;
+// 列表最多展示条数：QStandardItem 逐条创建，话术上千时每次按键都全量重建会卡；超出的靠继续输入收窄
+constexpr int kMaxResults = 200;
 // 还完焦点后等目标窗口真正拿到前台，再发 Ctrl+V
 constexpr int kPasteDelayMs = 150;
 // 失焦后稍等再关，避免点击列表时的瞬时失焦把窗口关掉
@@ -152,11 +155,13 @@ void SnippetSearchPopup::refreshList() {
         });
     }
 
+    if (hits.size() > kMaxResults) hits.resize(kMaxResults);
+
     for (const auto& hit : hits) {
-        const QString title = QString::fromStdString(hit.item->title);
-        const QString keyword = QString::fromStdString(hit.item->keyword);
+        const QString title = hit.item->title;
+        const QString keyword = hit.item->keyword;
         auto* row = new QStandardItem(keyword.isEmpty() ? title : QStringLiteral("%1   [%2]").arg(title, keyword));
-        row->setData(QString::fromStdString(hit.item->id), IdRole);
+        row->setData(hit.item->id, IdRole);
         row->setData(hit.trail, TrailRole);
         row->setToolTip(hit.trail);
         row->setEditable(false);
@@ -188,8 +193,8 @@ void SnippetSearchPopup::updatePreview(const QModelIndex& index) {
         return;
     }
 
-    const QString text = QString::fromStdString(item->text);
-    const QString imagePath = m_store->resolveImagePath(QString::fromStdString(item->imagePath));
+    const QString text = item->text;
+    const QString imagePath = m_store->resolveImagePath(item->imagePath);
     const bool remote = imagePath.startsWith("http://") || imagePath.startsWith("https://");
     const bool hasImage = !imagePath.isEmpty() && (remote || QFileInfo::exists(imagePath));
     const bool hasText = !text.trimmed().isEmpty();
@@ -199,15 +204,26 @@ void SnippetSearchPopup::updatePreview(const QModelIndex& index) {
     else m_previewBadge->setText(tr("Text"));
 
     m_previewPath->setText(index.data(TrailRole).toString());
-    m_previewTitle->setText(QString::fromStdString(item->title));
+    m_previewTitle->setText(item->title);
 
     if (hasImage) {
         if (remote) {
             m_previewImage->setText(tr("Remote image, downloaded when pasted"));
         } else {
-            const QPixmap pixmap(imagePath);
-            if (pixmap.isNull()) m_previewImage->setText(tr("Failed to load image"));
-            else m_previewImage->setPixmap(pixmap.scaled(kPreviewImageW, kPreviewImageH, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            // 解码时直接缩到预览框大小，方向键连按时不必每次载入整张大图
+            const qreal dpr = devicePixelRatioF();
+            QImageReader reader(imagePath);
+            reader.setAutoTransform(true);
+            const QSize src = reader.size();
+            if (src.isValid()) reader.setScaledSize(src.scaled(QSize(kPreviewImageW, kPreviewImageH) * dpr, Qt::KeepAspectRatio));
+            const QImage image = reader.read();
+            if (image.isNull()) {
+                m_previewImage->setText(tr("Failed to load image"));
+            } else {
+                QPixmap pixmap = QPixmap::fromImage(image);
+                pixmap.setDevicePixelRatio(dpr);
+                m_previewImage->setPixmap(pixmap);
+            }
         }
     }
     m_previewText->setText(text.left(380));

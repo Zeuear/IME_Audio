@@ -1,27 +1,28 @@
 #pragma once
 
-#include <string>
+#include <QString>
+#include <QStringList>
 #include <vector>
 #include <memory>
 #include <cstdint>
 
 struct SnippetItem {
-    std::string id;
-    std::string keyword;      // 快捷码
-    std::string title;        // A列：中文（显示用）
-    std::string text;         // B列：外文（粘贴目标）
-    std::string imagePath;    // 相对路径 data/images/xxx，或 http(s) 链接
-    std::string type;         // text / image / combo
+    QString id;
+    QString keyword;      // 快捷码
+    QString title;        // A列：中文（显示用）
+    QString text;         // B列：外文（粘贴目标）
+    QString imagePath;    // 相对路径 data/images/xxx，或 http(s) 链接
+    QString type;         // text / image / combo
     int32_t useCount = 0;
 };
 
 struct FolderNode {
-    std::string id;
+    QString id;
     int32_t level = 1;        // 1=主表, 2=Sheet, 3=@@分组
-    std::string title;
+    QString title;
     bool collapsed = false;
-    std::string sourceUrl;    // 仅 L1
-    std::string spreadsheetId; // 仅 L1
+    QString sourceUrl;    // 仅 L1
+    QString spreadsheetId; // 仅 L1
     std::vector<std::unique_ptr<FolderNode>> children;
     std::vector<SnippetItem> items;
 };
@@ -29,8 +30,8 @@ struct FolderNode {
 using FolderList = std::vector<std::unique_ptr<FolderNode>>;
 
 struct AppSettings {
-    std::string hotkey;   // 默认留空：Alt+Space 会和系统窗口菜单冲突，由用户自己设置
-    std::vector<std::string> triggerPrefixes = { "//", ";;" };
+    QString hotkey;   // 默认留空：Alt+Space 会和系统窗口菜单冲突，由用户自己设置
+    QStringList triggerPrefixes = { "//", ";;" };
     bool enablePrefixTrigger = true;
     bool autoDeletePrefix = true;
     bool comboImageFirst = false;

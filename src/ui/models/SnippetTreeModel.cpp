@@ -18,15 +18,15 @@ SnippetTreeModel::~SnippetTreeModel() = default;
 void SnippetTreeModel::rebuild() {
     m_info.clear();
     m_idToPtr.clear();
-    if (m_thumbCache.size() > 500) m_thumbCache.clear();   // 缓存按路径+mtime 命中，只防无限增长
+    if (m_thumbCache.size() > 500) m_thumbCache.clear();   
     if (!m_store) return;
     const FolderList& roots = m_store->roots();
     for (int i = 0; i < static_cast<int>(roots.size()); ++i) {
         const FolderNode* f = roots[i].get();
         m_info[f] = { true, nullptr, i };
-        m_idToPtr[QString::fromStdString(f->id)] = f;
+        m_idToPtr[f->id] = f;
         m_info[f].count = rebuildFolder(f);
-        m_info[f].search = QString::fromStdString(f->title).toLower();
+        m_info[f].search = f->title.toLower();
     }
 }
 
@@ -36,18 +36,18 @@ int SnippetTreeModel::rebuildFolder(const FolderNode* f) {
     int total = static_cast<int>(f->items.size());
     for (const auto& c : f->children) {
         m_info[c.get()] = { true, f, row++ };
-        m_idToPtr[QString::fromStdString(c->id)] = c.get();
+        m_idToPtr[c->id] = c.get();
         const int n = rebuildFolder(c.get());
         Info& ci = m_info[c.get()];
         ci.count = n;
-        ci.search = QString::fromStdString(c->title).toLower();
+        ci.search = c->title.toLower();
         total += n;
     }
     for (const auto& it : f->items) {
         m_info[&it] = { false, f, row++ };
-        m_idToPtr[QString::fromStdString(it.id)] = &it;
-        m_info[&it].search = (QString::fromStdString(it.title) + ' ' + QString::fromStdString(it.text) + ' ' +
-                              QString::fromStdString(it.keyword)).toLower();
+        m_idToPtr[it.id] = &it;
+        m_info[&it].search = (it.title + ' ' + it.text + ' ' +
+                              it.keyword).toLower();
     }
     return total;
 }
@@ -105,20 +105,19 @@ int SnippetTreeModel::columnCount(const QModelIndex& /*parent*/) const {
 }
 
 namespace {
-constexpr int kThumbW = 56;   // 逻辑像素；配图多是宽幅图，框做成横向才看得清
+constexpr int kThumbW = 56;  
 constexpr int kThumbH = 34;
 }
 
 // 条目配图在磁盘上的位置；远程图只认已下载的缓存（列表里不发网络请求）。无配图返回空串。
 QString SnippetTreeModel::imageFileFor(const SnippetItem& item) const {
-    const QString imagePath = QString::fromStdString(item.imagePath).trimmed();
+    const QString imagePath = item.imagePath.trimmed();
     if (imagePath.isEmpty()) return QString();
     const QString file = m_store->resolveImagePath(imagePath);
     if (file.startsWith("http://") || file.startsWith("https://")) return m_store->remoteImageCachePath(file);
     return file;
 }
 
-// 条目配图的缩略图；没有配图、图片读不出来（或远程图尚未缓存）时返回空 QPixmap，由委托画占位。
 QPixmap SnippetTreeModel::thumbnailFor(const SnippetItem& item) const {
     const QString file = imageFileFor(item);
     if (file.isEmpty()) return QPixmap();
@@ -159,12 +158,12 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
 
     switch (role) {
     case Qt::DisplayRole:
-        if (col == 0) return QString::fromStdString(isFol ? folder->title : item->title);
+        if (col == 0) return isFol ? folder->title : item->title;
         if (col == 1) {
             if (isFol) return QString::number(info->count);   // 只放数字，表头已去掉，不再写“条话术”
-            return QString::fromStdString(item->text).simplified().left(60);
+            return item->text.simplified().left(60);
         }
-        if (col == 2 && !isFol) return QString::fromStdString(item->keyword);
+        if (col == 2 && !isFol) return item->keyword;
         return QVariant();
     case Qt::DecorationRole:
         if (!isFol && col == 0) {
@@ -175,9 +174,9 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
     case Qt::ToolTipRole: {
         if (isFol) return QVariant();
         // 悬停预览：快捷码 + 标题 + 配图大图 + 完整内容
-        auto html = [](const std::string& s) { return QString::fromStdString(s).toHtmlEscaped().replace('\n', "<br>"); };
+        auto html = [](const QString& s) { return s.toHtmlEscaped().replace('\n', "<br>"); };
         QString tip;
-        if (!item->keyword.empty()) tip += "<b>[" + html(item->keyword) + "]</b> ";
+        if (!item->keyword.isEmpty()) tip += "<b>[" + html(item->keyword) + "]</b> ";
         tip += "<b>" + html(item->title) + "</b>";
         const QString file = imageFileFor(*item);
         if (!file.isEmpty() && QFileInfo::exists(file)) tip += "<br><img src=\"" + file.toHtmlEscaped() + "\" width=\"260\">";
@@ -185,15 +184,15 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
         return tip;
     }
     case TextRole:
-        return isFol ? QVariant() : QVariant(QString::fromStdString(item->text));
+        return isFol ? QVariant() : QVariant(item->text);
     case KeywordRole:
-        return isFol ? QVariant() : QVariant(QString::fromStdString(item->keyword));
+        return isFol ? QVariant() : QVariant(item->keyword);
     case CountRole:
         return isFol ? QVariant(info->count) : QVariant();
     case HasImageRole:
-        return !isFol && !item->imagePath.empty();
+        return !isFol && !item->imagePath.isEmpty();
     case NodeIdRole:
-        return QString::fromStdString(isFol ? folder->id : item->id);
+        return isFol ? folder->id : item->id;
     case IsFolderRole:
         return isFol;
     case LevelRole:
@@ -297,4 +296,22 @@ QString SnippetTreeModel::levelBadge(int level) {
         case 3: return QCoreApplication::translate("SnippetTreeModel", "Level 3 · @@ Group");
         default: return QCoreApplication::translate("SnippetTreeModel", "Folder");
     }
+}
+
+void SnippetTreeModel::nodeChanged(const QString& nodeId) {
+    auto it = m_idToPtr.find(nodeId);
+    auto info = it == m_idToPtr.end() ? m_info.end() : m_info.find(it.value());
+    if (info == m_info.end()) {
+        refresh();   // 不认识的节点，退回整体重建
+        return;
+    }
+    const void* ptr = it.value();
+    if (info->second.isFolder) {
+        info->second.search = static_cast<const FolderNode*>(ptr)->title.toLower();
+    } else {
+        const auto* item = static_cast<const SnippetItem*>(ptr);
+        info->second.search = (item->title + ' ' + item->text + ' ' + item->keyword).toLower();
+    }
+    const QModelIndex first = createIndex(info->second.row, 0, const_cast<void*>(ptr));
+    emit dataChanged(first, first.siblingAtColumn(columnCount() - 1));
 }

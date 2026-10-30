@@ -1,5 +1,5 @@
 #include "snippets/SnippetStore.h"
-#include "snippets/GoogleSheetsService.h"
+#include "snippets/SnippetSearchIndex.h"
 #include <QFile>
 #include <QDir>
 #include <QSaveFile>
@@ -19,17 +19,13 @@
 
 namespace {
 
-QString nowString() {
-    return QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
-}
-
 QString typeFor(const SnippetItem& it) {
-    bool hasText = !QString::fromStdString(it.text).trimmed().isEmpty();
-    bool hasImg = !QString::fromStdString(it.imagePath).trimmed().isEmpty();
+    bool hasText = !it.text.trimmed().isEmpty();
+    bool hasImg = !it.imagePath.trimmed().isEmpty();
     return (hasText && hasImg) ? "combo" : (hasImg ? "image" : "text");
 }
 
-bool findFolderRec(const std::string& id, FolderList& list, FolderNode* parent,
+bool findFolderRec(const QString& id, FolderList& list, FolderNode* parent,
                    FolderNode** n, FolderNode** p, FolderList** l, int* idx) {
     for (int i = 0; i < static_cast<int>(list.size()); ++i) {
         FolderNode* f = list[i].get();
@@ -45,7 +41,7 @@ bool findFolderRec(const std::string& id, FolderList& list, FolderNode* parent,
     return false;
 }
 
-bool findItemRec(const std::string& id, FolderNode& f,
+bool findItemRec(const QString& id, FolderNode& f,
                  SnippetItem** it, FolderNode** folder, int* idx) {
     for (int i = 0; i < static_cast<int>(f.items.size()); ++i) {
         if (f.items[i].id == id) {
@@ -64,14 +60,14 @@ bool findItemRec(const std::string& id, FolderNode& f,
 int pruneRec(FolderList& list, const QSet<QString>& ids) {
     int count = 0;
     for (size_t i = 0; i < list.size();) {
-        if (ids.contains(QString::fromStdString(list[i]->id))) {
+        if (ids.contains(list[i]->id)) {
             list.erase(list.begin() + i);
             ++count;
             continue;
         }
         FolderNode& f = *list[i];
         for (size_t j = 0; j < f.items.size();) {
-            if (ids.contains(QString::fromStdString(f.items[j].id))) {
+            if (ids.contains(f.items[j].id)) {
                 f.items.erase(f.items.begin() + j);
                 ++count;
             } else {
@@ -84,14 +80,14 @@ int pruneRec(FolderList& list, const QSet<QString>& ids) {
     return count;
 }
 
-bool trailRec(const FolderList& list, const std::string& id, QStringList cur, QStringList& result) {
+bool trailRec(const FolderList& list, const QString& id, QStringList cur, QStringList& result) {
     for (const auto& f : list) {
         for (const auto& it : f->items) {
-            if (it.id == id) { result = cur << QString::fromStdString(f->title); return true; }
+            if (it.id == id) { result = cur << f->title; return true; }
         }
         if (f->id == id) { result = cur; return true; }
         QStringList next = cur;
-        next << QString::fromStdString(f->title);
+        next << f->title;
         if (trailRec(f->children, id, next, result)) return true;
     }
     return false;
@@ -160,15 +156,15 @@ QString SnippetStore::savePixmapToStore(const QPixmap& pixmap) {
 // ------------------------------------------------------------------
 QJsonObject SnippetStore::folderToJson(const FolderNode* folder) const {
     QJsonObject obj;
-    obj["id"] = QString::fromStdString(folder->id);
+    obj["id"] = folder->id;
     obj["node_type"] = "folder";
     obj["level"] = folder->level;
-    obj["title"] = QString::fromStdString(folder->title);
+    obj["title"] = folder->title;
     obj["collapsed"] = folder->collapsed;
-    if (folder->level == 1 || !folder->sourceUrl.empty())
-        obj["source_url"] = QString::fromStdString(folder->sourceUrl);
-    if (!folder->spreadsheetId.empty())
-        obj["spreadsheet_id"] = QString::fromStdString(folder->spreadsheetId);
+    if (folder->level == 1 || !folder->sourceUrl.isEmpty())
+        obj["source_url"] = folder->sourceUrl;
+    if (!folder->spreadsheetId.isEmpty())
+        obj["spreadsheet_id"] = folder->spreadsheetId;
 
     QJsonArray childrenArr;
     for (const auto& child : folder->children)
@@ -181,25 +177,25 @@ QJsonObject SnippetStore::folderToJson(const FolderNode* folder) const {
 
 QJsonObject SnippetStore::itemToJson(const SnippetItem* item) const {
     QJsonObject obj;
-    obj["id"] = QString::fromStdString(item->id);
+    obj["id"] = item->id;
     obj["node_type"] = "item";
-    obj["keyword"] = QString::fromStdString(item->keyword);
-    obj["title"] = QString::fromStdString(item->title);
-    obj["text"] = QString::fromStdString(item->text);
-    obj["image_path"] = QString::fromStdString(item->imagePath);
-    obj["type"] = QString::fromStdString(item->type);
+    obj["keyword"] = item->keyword;
+    obj["title"] = item->title;
+    obj["text"] = item->text;
+    obj["image_path"] = item->imagePath;
+    obj["type"] = item->type;
     obj["use_count"] = item->useCount;
     return obj;
 }
 
 std::unique_ptr<FolderNode> SnippetStore::jsonToFolder(const QJsonObject& obj, int level) const {
     auto folder = std::make_unique<FolderNode>();
-    folder->id = obj["id"].toString(newUuid()).toStdString();
+    folder->id = obj["id"].toString(newUuid());
     folder->level = obj["level"].toInt(level);
-    folder->title = obj["title"].toString().toStdString();
+    folder->title = obj["title"].toString();
     folder->collapsed = obj["collapsed"].toBool(false);
-    folder->sourceUrl = obj["source_url"].toString().toStdString();
-    folder->spreadsheetId = obj["spreadsheet_id"].toString().toStdString();
+    folder->sourceUrl = obj["source_url"].toString();
+    folder->spreadsheetId = obj["spreadsheet_id"].toString();
 
     const QJsonArray children = obj["children"].toArray();
     for (const QJsonValue& val : children) {
@@ -214,12 +210,12 @@ std::unique_ptr<FolderNode> SnippetStore::jsonToFolder(const QJsonObject& obj, i
 
 SnippetItem SnippetStore::jsonToItem(const QJsonObject& obj) const {
     SnippetItem item;
-    item.id = obj["id"].toString(newUuid()).toStdString();
-    item.keyword = obj["keyword"].toString().toStdString();
-    item.title = obj["title"].toString().toStdString();
-    item.text = obj["text"].toString().toStdString();
-    item.imagePath = obj["image_path"].toString().toStdString();
-    item.type = obj["type"].toString("text").toStdString();
+    item.id = obj["id"].toString(newUuid());
+    item.keyword = obj["keyword"].toString();
+    item.title = obj["title"].toString();
+    item.text = obj["text"].toString();
+    item.imagePath = obj["image_path"].toString();
+    item.type = obj["type"].toString("text");
     item.useCount = obj["use_count"].toInt(0);
     return item;
 }
@@ -234,11 +230,11 @@ bool SnippetStore::loadFromObject(QJsonObject root) {
     // settings（缺失的键保留默认值）
     m_settings = AppSettings();
     const QJsonObject s = root["settings"].toObject();
-    if (s.contains("hotkey")) m_settings.hotkey = s["hotkey"].toString("").toStdString();
+    if (s.contains("hotkey")) m_settings.hotkey = s["hotkey"].toString("");
     if (s.contains("trigger_prefixes")) {
         m_settings.triggerPrefixes.clear();
         for (const QJsonValue& v : s["trigger_prefixes"].toArray())
-            m_settings.triggerPrefixes.push_back(v.toString().toStdString());
+            m_settings.triggerPrefixes.push_back(v.toString());
     }
     m_settings.enablePrefixTrigger = s["enable_prefix_trigger"].toBool(true);
     m_settings.autoDeletePrefix = s["auto_delete_prefix"].toBool(true);
@@ -307,7 +303,7 @@ bool SnippetStore::load() {
     if (!file.exists()) {
         loadFromObject(getDefaultData());
         m_dirty = true;
-        m_indexValid = false;
+        m_searchIndex.invalidate();
         return flush();
     }
 
@@ -324,13 +320,13 @@ bool SnippetStore::load() {
         loadFromObject(getDefaultData());
         return false;
     }
-    m_indexValid = false;
+    m_searchIndex.invalidate();
     if (loadFromObject(doc.object())) { m_dirty = true; flush(); }
     return true;
 }
 
 bool SnippetStore::save() {
-    m_indexValid = false;
+    m_searchIndex.invalidate();
     m_dirty = true;
     m_saveTimer.start();
     return true;
@@ -344,10 +340,10 @@ bool SnippetStore::flush() {
     QJsonObject root;
 
     QJsonObject settingsObj;
-    settingsObj["hotkey"] = QString::fromStdString(m_settings.hotkey);
+    settingsObj["hotkey"] = m_settings.hotkey;
     QJsonArray prefixes;
     for (const auto& p : m_settings.triggerPrefixes)
-        prefixes.append(QString::fromStdString(p));
+        prefixes.append(p);
     settingsObj["trigger_prefixes"] = prefixes;
     settingsObj["enable_prefix_trigger"] = m_settings.enablePrefixTrigger;
     settingsObj["auto_delete_prefix"] = m_settings.autoDeletePrefix;
@@ -503,13 +499,12 @@ QJsonObject SnippetStore::getDefaultData() const {
 // ------------------------------------------------------------------
 bool SnippetStore::findFolder(const QString& id, FolderNode** outNode, FolderNode** outParent,
                               FolderList** outList, int* outIndex) {
-    return findFolderRec(id.toStdString(), m_roots, nullptr, outNode, outParent, outList, outIndex);
+    return findFolderRec(id, m_roots, nullptr, outNode, outParent, outList, outIndex);
 }
 
 bool SnippetStore::findItem(const QString& id, SnippetItem** outItem, FolderNode** outFolder, int* outIndex) {
-    std::string sid = id.toStdString();
     for (auto& r : m_roots) {
-        if (findItemRec(sid, *r, outItem, outFolder, outIndex)) return true;
+        if (findItemRec(id, *r, outItem, outFolder, outIndex)) return true;
     }
     return false;
 }
@@ -532,8 +527,8 @@ FolderNode* SnippetStore::addFolder(const QString& parentId, const QString& titl
     if (t.isEmpty()) t = QString::fromUtf8("新建目录");
 
     auto folder = std::make_unique<FolderNode>();
-    folder->id = newUuid().toStdString();
-    folder->title = t.toStdString();
+    folder->id = newUuid();
+    folder->title = t;
     folder->collapsed = false;
 
     if (parentId.isEmpty()) {
@@ -588,14 +583,14 @@ SnippetItem* SnippetStore::addItem(const QString& parentFolderId, const SnippetI
     }
 
     SnippetItem item;
-    item.id = newUuid().toStdString();
-    item.keyword = QString::fromStdString(itemData.keyword).trimmed().toStdString();
-    QString title = QString::fromStdString(itemData.title).trimmed();
-    item.title = (title.isEmpty() ? QString::fromUtf8("未命名中文标签") : title).toStdString();
-    item.text = QString::fromStdString(itemData.text).trimmed().toStdString();
-    item.imagePath = QString::fromStdString(itemData.imagePath).trimmed().toStdString();
+    item.id = newUuid();
+    item.keyword = itemData.keyword.trimmed();
+    QString title = itemData.title.trimmed();
+    item.title = (title.isEmpty() ? QString::fromUtf8("未命名中文标签") : title);
+    item.text = itemData.text.trimmed();
+    item.imagePath = itemData.imagePath.trimmed();
     item.useCount = 0;
-    item.type = typeFor(item).toStdString();
+    item.type = typeFor(item);
 
     parent->items.push_back(item);
     parent->collapsed = false;
@@ -606,21 +601,21 @@ SnippetItem* SnippetStore::addItem(const QString& parentFolderId, const SnippetI
 bool SnippetStore::updateNode(const QString& nodeId, const QString& field, const QString& value) {
     if (FolderNode* f = findFolderById(nodeId)) {
         if (field != "title") return false;
-        f->title = value.toStdString();
+        f->title = value;
         return save();
     }
 
     SnippetItem* it = findItemById(nodeId);
     if (!it) return false;
 
-    std::string v = value.toStdString();
+    const QString& v = value;
     if (field == "title") it->title = v;
     else if (field == "text") it->text = v;
     else if (field == "keyword") it->keyword = v;
     else if (field == "image_path") it->imagePath = v;
     else return false;
 
-    it->type = typeFor(*it).toStdString();
+    it->type = typeFor(*it);
     return save();
 }
 
@@ -668,240 +663,10 @@ bool SnippetStore::incrementUseCount(const QString& itemId) {
 }
 
 // ------------------------------------------------------------------
-// Google Sheets config
-// ------------------------------------------------------------------
-bool SnippetStore::addGoogleSheet(const GoogleSheetConfig& gs) {
-    m_googleSheets.push_back(gs);
-    return save();
-}
-
-bool SnippetStore::updateGoogleSheet(const QString& treeId, const GoogleSheetConfig& gs) {
-    if (GoogleSheetConfig* g = findGoogleSheetByTreeId(treeId)) {
-        *g = gs;
-        return save();
-    }
-    return addGoogleSheet(gs);
-}
-
-bool SnippetStore::removeGoogleSheet(const QString& treeId) {
-    for (int i = 0; i < m_googleSheets.size(); ++i) {
-        if (m_googleSheets[i].treeId == treeId) {
-            m_googleSheets.removeAt(i);
-            return save();
-        }
-    }
-    return false;
-}
-
-SnippetStore::GoogleSheetConfig* SnippetStore::findGoogleSheetByTreeId(const QString& treeId) {
-    for (auto& g : m_googleSheets)
-        if (g.treeId == treeId) return &g;
-    return nullptr;
-}
-
-SnippetStore::GoogleSheetConfig* SnippetStore::findGoogleSheetByUrl(const QString& url) {
-    for (auto& g : m_googleSheets)
-        if (g.url == url) return &g;
-    return nullptr;
-}
-
-QString SnippetStore::syncGoogleSheet(const QString& url,
-                                      const QString& customAlias,
-                                      const QString& existingTreeId,
-                                      const QStringList& selectedSheets,
-                                      const QStringList& allSheetNames,
-                                      const QString& fetchedDocTitle,
-                                      FolderList newSheets) {
-    QString sheetId = GoogleSheetsService::extractSpreadsheetId(url);
-
-    GoogleSheetConfig* gsEntry = nullptr;
-    for (auto& g : m_googleSheets) {
-        if ((!existingTreeId.isEmpty() && g.treeId == existingTreeId) ||
-            (!sheetId.isEmpty() && g.spreadsheetId == sheetId)) {
-            gsEntry = &g;
-            break;
-        }
-    }
-
-    QStringList sel = selectedSheets;
-    if (sel.isEmpty() && gsEntry) sel = gsEntry->selectedSheets;
-
-    QStringList allNames = allSheetNames;
-    if (allNames.isEmpty()) {
-        for (const auto& s : newSheets) allNames << QString::fromStdString(s->title);
-    }
-    if (sel.isEmpty()) sel = allNames;
-
-    QString docTitle = customAlias.trimmed();
-    if (docTitle.isEmpty() && gsEntry) docTitle = gsEntry->title;
-    if (docTitle.isEmpty()) docTitle = fetchedDocTitle;
-    if (docTitle.isEmpty()) docTitle = QString("Google表格 (%1)").arg(sheetId.left(6));
-
-    QString targetTreeId = gsEntry ? gsEntry->treeId
-                                   : (!existingTreeId.isEmpty() ? existingTreeId : newUuid());
-
-    auto newRoot = std::make_unique<FolderNode>();
-    newRoot->id = targetTreeId.toStdString();
-    newRoot->level = 1;
-    newRoot->title = docTitle.toStdString();
-    newRoot->sourceUrl = url.trimmed().toStdString();
-    newRoot->spreadsheetId = sheetId.toStdString();
-    newRoot->collapsed = false;
-    for (auto& s : newSheets) newRoot->children.push_back(std::move(s));
-
-    bool replaced = false;
-    for (auto& r : m_roots) {
-        bool match = (r->id == newRoot->id) ||
-                     (!newRoot->spreadsheetId.empty() && r->spreadsheetId == newRoot->spreadsheetId);
-        if (match) {
-            newRoot->id = r->id;
-            targetTreeId = QString::fromStdString(r->id);
-            r = std::move(newRoot);
-            replaced = true;
-            break;
-        }
-    }
-    if (!replaced) m_roots.push_back(std::move(newRoot));
-
-    QString now = nowString();
-    if (gsEntry) {
-        gsEntry->url = url.trimmed();
-        gsEntry->title = docTitle;
-        gsEntry->spreadsheetId = sheetId;
-        gsEntry->treeId = targetTreeId;
-        gsEntry->selectedSheets = sel;
-        gsEntry->allSheets = allNames;
-        gsEntry->lastSync = now;
-    } else {
-        GoogleSheetConfig g;
-        g.id = newUuid();
-        g.treeId = targetTreeId;
-        g.spreadsheetId = sheetId;
-        g.title = docTitle;
-        g.url = url.trimmed();
-        g.selectedSheets = sel;
-        g.allSheets = allNames;
-        g.lastSync = now;
-        m_googleSheets.push_back(g);
-    }
-
-    save();
-    return targetTreeId;
-}
-
-QString SnippetStore::importGoogleSheet(GoogleSheetsService* service,
-                                        const QString& url,
-                                        const QString& customAlias,
-                                        const QString& existingTreeId,
-                                        const QStringList& selectedNames,
-                                        QString* error) {
-    auto fail = [&](const QString& msg) {
-        if (error) *error = msg;
-        return QString();
-    };
-    if (!service) return fail("内部错误：未提供网络服务");
-
-    QString sheetId = GoogleSheetsService::extractSpreadsheetId(url);
-    if (sheetId.isEmpty()) return fail(QString::fromUtf8("无效的 Google 表格链接，请检查是否包含 /spreadsheets/d/..."));
-
-    QStringList sel = selectedNames;
-    if (sel.isEmpty()) {
-        for (const auto& g : m_googleSheets) {
-            if ((!existingTreeId.isEmpty() && g.treeId == existingTreeId) || g.spreadsheetId == sheetId) {
-                sel = g.selectedSheets;
-                break;
-            }
-        }
-    }
-
-    bool listOk = false;
-    QString docTitle, listError;
-    QVector<QPair<QString, QString>> sheets;
-    service->listSheetNames(url, [&](bool ok, QString title, QString, QVector<QPair<QString, QString>> s, QString err) {
-        listOk = ok;
-        docTitle = title;
-        sheets = s;
-        listError = err;
-    });
-    if (!listOk) return fail(listError);
-
-    QStringList allNames;
-    for (const auto& p : sheets) allNames << p.second;
-    if (sel.isEmpty()) sel = allNames;
-
-    FolderList fetched;
-    for (const auto& p : sheets) {
-        if (!sel.contains(p.second)) continue;
-        bool ok = false;
-        QString err;
-        service->fetchSheetItems(sheetId, p.first, p.second, m_imagesDir,
-            [&](bool o, FolderList list, QString e) {
-                ok = o;
-                err = e;
-                for (auto& f : list) fetched.push_back(std::move(f));
-            });
-        if (!ok) return fail(QString::fromUtf8("读取 Sheet「%1」失败：%2").arg(p.second, err));
-    }
-
-    return syncGoogleSheet(url, customAlias, existingTreeId, sel, allNames, docTitle, std::move(fetched));
-}
-
-int SnippetStore::refreshAllGoogleSheets(GoogleSheetsService* service, QStringList* errors) {
-    int okCount = 0;
-    const QVector<GoogleSheetConfig> snapshot = m_googleSheets;
-    for (const auto& gs : snapshot) {
-        QString err;
-        QString id = importGoogleSheet(service, gs.url, gs.title, gs.treeId, gs.selectedSheets, &err);
-        if (id.isEmpty()) {
-            if (errors) *errors << QString("%1: %2").arg(gs.title.isEmpty() ? gs.url : gs.title, err);
-        } else {
-            ++okCount;
-        }
-    }
-    return okCount;
-}
-
-// ------------------------------------------------------------------
 // Search / helpers
 // ------------------------------------------------------------------
 QVector<SnippetStore::SearchHit> SnippetStore::search(const QString& query, bool allWhenEmpty) {
-    QVector<SearchHit> results;
-    const QString q = query.trimmed().toLower();
-    if (q.isEmpty() && !allWhenEmpty) return results;
-    for (const IndexEntry& e : index()) {
-        if (q.isEmpty() || e.haystack.contains(q)) results.push_back({ e.item, e.trail });
-    }
-    return results;
-}
-
-// 遍历顺序与树一致：先本文件夹的条目，再子文件夹
-void SnippetStore::buildIndex(FolderList& list, const QStringList& trail) {
-    for (auto& folder : list) {
-        QStringList next = trail;
-        next << QString::fromStdString(folder->title);
-        const QString trailStr = next.join(" / ");
-        const QString trailLower = trailStr.toLower();
-        for (auto& item : folder->items) {
-            IndexEntry e;
-            e.item = &item;
-            e.keyword = QString::fromStdString(item.keyword).trimmed();
-            e.trail = trailStr;
-            // 用换行隔开各字段，避免查询词横跨两个字段误命中
-            e.haystack = (QString::fromStdString(item.keyword) + '\n' + QString::fromStdString(item.title) + '\n' +
-                          QString::fromStdString(item.text) + '\n' + trailLower).toLower();
-            m_index.push_back(std::move(e));
-        }
-        buildIndex(folder->children, next);
-    }
-}
-
-const QVector<SnippetStore::IndexEntry>& SnippetStore::index() {
-    if (!m_indexValid) {
-        m_index.clear();
-        buildIndex(m_roots, QStringList());
-        m_indexValid = true;
-    }
-    return m_index;
+    return m_searchIndex.search(m_roots, query, allWhenEmpty);
 }
 
 int SnippetStore::countItemsInFolder(const FolderNode& folder) const {
@@ -913,38 +678,10 @@ int SnippetStore::countItemsInFolder(const FolderNode& folder) const {
 
 QStringList SnippetStore::getNodePath(const QString& targetId) const {
     QStringList result;
-    trailRec(m_roots, targetId.toStdString(), QStringList(), result);
+    trailRec(m_roots, targetId, QStringList(), result);
     return result;
 }
 
-namespace {
-
-// 英文快捷码要按整词匹配（"hi" 不应命中 "this"）；中日韩文字之间没有空格，仍按子串匹配
-bool containsKeyword(const QString& text, const QString& keyword) {
-    int from = 0;
-    while (true) {
-        const int pos = text.indexOf(keyword, from, Qt::CaseInsensitive);
-        if (pos < 0) return false;
-        auto isWordChar = [](QChar c) { return c.unicode() < 128 && c.isLetterOrNumber(); };
-        const bool leftOk = pos == 0 || !isWordChar(keyword.front()) || !isWordChar(text[pos - 1]);
-        const int end = pos + keyword.size();
-        const bool rightOk = end >= text.size() || !isWordChar(keyword.back()) || !isWordChar(text[end]);
-        if (leftOk && rightOk) return true;
-        from = pos + 1;
-    }
-}
-
-
-} // namespace
-
 QVector<SnippetItem*> SnippetStore::matchKeywords(const QString& spokenText, int limit) {
-    QVector<SnippetItem*> hits;
-    if (spokenText.trimmed().isEmpty()) return hits;
-    for (const IndexEntry& e : index()) {
-        if (!e.keyword.isEmpty() && containsKeyword(spokenText, e.keyword)) hits.push_back(e.item);
-    }
-    std::stable_sort(hits.begin(), hits.end(),
-                     [](const SnippetItem* a, const SnippetItem* b) { return a->useCount > b->useCount; });
-    if (hits.size() > limit) hits.resize(limit);
-    return hits;
+    return m_searchIndex.matchKeywords(m_roots, spokenText, limit);
 }

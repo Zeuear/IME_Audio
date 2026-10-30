@@ -254,10 +254,10 @@ void SnippetWidget::setSnippetStore(SnippetStore* store) {
         emit storeChanged();
     });
 
-    m_hotkeyEdit->setShortCut(QString::fromStdString(settings.hotkey));
+    m_hotkeyEdit->setShortCut(settings.hotkey);
     connect(m_hotkeyEdit, &ShortcutEdit::hotkeyActivated, this, &SnippetWidget::searchPopupRequested);
     connect(m_hotkeyEdit, &ShortcutEdit::shortcutChanged, this, [this](const QString& shortcut) {
-        m_store->settings().hotkey = shortcut.toStdString();
+        m_store->settings().hotkey = shortcut;
         m_store->save();
     });
 
@@ -354,18 +354,25 @@ void SnippetWidget::onRefreshAllSheets() {
         emit errorOccurred(tr("没有已保存的 Google 表格"), tr("请先导入一个 Google 表格"));
         return;
     }
-    GoogleSheetsService service;
-    QStringList errors;
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    const int okCount = m_store->refreshAllGoogleSheets(&service, &errors);
-    QApplication::restoreOverrideCursor();
-    refreshTree();
+    if (m_refreshing) return;
+    if (!m_sheetsService) m_sheetsService = new GoogleSheetsService(this);
 
-    if (!errors.isEmpty()) {
-        emit errorOccurred(tr("部分 Google 表格刷新失败"), errors.join('\n'));
-    } else {
-        emit errorOccurred(tr("刷新成功"), tr("已刷新 %1 个 Google 表格").arg(okCount));
-    }
+    // 网络请求是异步的，期间界面仍在响应；整个控件置灰，防止刷新中途编辑或再次触发
+    m_refreshing = true;
+    setEnabled(false);
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    m_store->refreshAllGoogleSheets(m_sheetsService, [this](int okCount, const QStringList& errors) {
+        QApplication::restoreOverrideCursor();
+        setEnabled(true);
+        m_refreshing = false;
+        refreshTree();
+
+        if (!errors.isEmpty()) {
+            emit errorOccurred(tr("部分 Google 表格刷新失败"), errors.join('\n'));
+        } else {
+            emit errorOccurred(tr("刷新成功"), tr("已刷新 %1 个 Google 表格").arg(okCount));
+        }
+    });
 }
 
 void SnippetWidget::onExpandCollapseAll(bool expand) {
@@ -468,10 +475,11 @@ void SnippetWidget::onItemDoubleClicked(const QModelIndex& proxyIndex) {
         FolderNode* f = m_store->findFolderById(nodeId);
         if (!f) return;
         const QString v = QInputDialog::getText(this, tr("Rename Folder"), tr("New name:"),
-                                                QLineEdit::Normal, QString::fromStdString(f->title), &ok);
+                                                QLineEdit::Normal, f->title, &ok);
         if (ok && !v.trimmed().isEmpty()) {
             m_store->updateNode(nodeId, "title", v.trimmed());
-            refreshTree();
+            m_model->nodeChanged(nodeId);
+            emit storeChanged();
         }
         return;
     }
@@ -480,24 +488,27 @@ void SnippetWidget::onItemDoubleClicked(const QModelIndex& proxyIndex) {
     if (!it) return;
     if (col == 0) {
         const QString v = QInputDialog::getText(this, tr("Edit Title"), tr("New title:"),
-                                                QLineEdit::Normal, QString::fromStdString(it->title), &ok);
+                                                QLineEdit::Normal, it->title, &ok);
         if (ok && !v.trimmed().isEmpty()) {
             m_store->updateNode(nodeId, "title", v.trimmed());
-            refreshTree();
+            m_model->nodeChanged(nodeId);
+            emit storeChanged();
         }
     } else if (col == 1) {
         const QString v = QInputDialog::getMultiLineText(this, tr("Edit Text"), tr("Text to paste:"),
-                                                         QString::fromStdString(it->text), &ok);
+                                                         it->text, &ok);
         if (ok) {
             m_store->updateNode(nodeId, "text", v);
-            refreshTree();
+            m_model->nodeChanged(nodeId);
+            emit storeChanged();
         }
     } else {
         const QString v = QInputDialog::getText(this, tr("Edit Keyword"), tr("Spoken keyword, e.g. quote:"),
-                                                QLineEdit::Normal, QString::fromStdString(it->keyword), &ok);
+                                                QLineEdit::Normal, it->keyword, &ok);
         if (ok) {
             m_store->updateNode(nodeId, "keyword", v.trimmed());
-            refreshTree();
+            m_model->nodeChanged(nodeId);
+            emit storeChanged();
         }
     }
 }

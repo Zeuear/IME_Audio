@@ -555,10 +555,10 @@ void MainWin::updateSnippetSuggestions(const QString& spokenText) {
 
     QVector<SnippetSuggestBar::Suggestion> suggestions;
     for (const SnippetItem* item : m_snippetStore->matchKeywords(spokenText)) {
-        if (m_handledSnippetIds.contains(QString::fromStdString(item->id))) continue;
-        const QString title = QString::fromStdString(item->title);
-        const QString text = QString::fromStdString(item->text);
-        suggestions.push_back({ QString::fromStdString(item->id), title.isEmpty() ? text : title, text });
+        if (m_handledSnippetIds.contains(item->id)) continue;
+        const QString title = item->title;
+        const QString text = item->text;
+        suggestions.push_back({ item->id, title.isEmpty() ? text : title, text });
     }
     if (suggestions.isEmpty()) return;
 

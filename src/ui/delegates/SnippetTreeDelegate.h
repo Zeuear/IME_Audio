@@ -1,5 +1,6 @@
 #pragma once
 #include <QRect>
+#include <QHash>
 #include <QStyledItemDelegate>
 
 class SnippetStore;
@@ -13,7 +14,6 @@ class SnippetStore;
 class SnippetTreeDelegate : public QStyledItemDelegate {
     Q_OBJECT
 public:
-    // 行内可点击/双击的区域，SnippetWidget 据此决定编辑哪个字段
     enum class Zone { None, Title, Text, Keyword, Image };
 
     explicit SnippetTreeDelegate(SnippetStore* store, QObject* parent = nullptr);
@@ -21,7 +21,6 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
-    // option.rect 必须是该行的完整矩形（QTreeView::visualRect）
     Zone zoneAt(const QStyleOptionViewItem& option, const QModelIndex& index, const QPoint& pos) const;
 
 private:
@@ -33,6 +32,13 @@ private:
     ItemLayout layoutFor(const QRect& row, const QFont& font, const QModelIndex& index) const;
     void paintFolder(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
     void paintItem(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
+
+    struct MeasureCache {
+        QString title, text, fontKey;
+        int titleW = 0, textW = 0, titleLines = 0, textLines = 0;
+        int titleH = 0, textH = 0;
+    };
+    mutable QHash<quintptr, MeasureCache> m_measureCache;
 
     SnippetStore* m_store;
 };

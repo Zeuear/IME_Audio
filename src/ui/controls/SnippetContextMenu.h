@@ -42,7 +42,8 @@ private:
     void onMoveNode(const QString& nodeId, int direction);
     void onDeleteNode(const QString& nodeId);
 
-    void finish();   // refresh + emit changed
+    // 结构变化（增删移动）整体 refresh；传入 editedNodeId 表示只改了该节点内容，走增量更新。最后都发 changed
+    void finish(const QString& editedNodeId = QString());
 
     SnippetStore* m_store;
     SnippetTreeModel* m_model;

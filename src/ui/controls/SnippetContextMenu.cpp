@@ -24,8 +24,9 @@ QAction* SnippetContextMenu::add(const QString& text, std::function<void()> fn) 
     return act;
 }
 
-void SnippetContextMenu::finish() {
-    m_model->refresh();
+void SnippetContextMenu::finish(const QString& editedNodeId) {
+    if (editedNodeId.isEmpty()) m_model->refresh();
+    else m_model->nodeChanged(editedNodeId);
     emit changed();
 }
 
@@ -55,12 +56,12 @@ void SnippetContextMenu::buildEmptyMenu() {
 void SnippetContextMenu::buildFolderMenu() {
     const QString id = m_currentNodeId;
     FolderNode* folder = m_store->findFolderById(id);
-    const QString title = folder ? QString::fromStdString(folder->title) : id;
+    const QString title = folder ? folder->title : id;
 
     if (m_currentLevel == 1) {
         add(tr("Add Sheet Folder (level 2)"), [this, id]() { onAddSubfolder(id, 2); });
         add(tr("Add Snippet"), [this, id]() { onAddItem(id); });
-        if (folder && !folder->sourceUrl.empty()) {
+        if (folder && !folder->sourceUrl.isEmpty()) {
             addSeparator();
             add(tr("Choose Sheets to Sync..."), [this, id]() { emit requestGoogleSheetsDialog(id); });
         }
@@ -85,8 +86,8 @@ void SnippetContextMenu::buildFolderMenu() {
 void SnippetContextMenu::buildItemMenu() {
     const QString id = m_currentNodeId;
     SnippetItem* item = m_store->findItemById(id);
-    const QString title = item ? QString::fromStdString(item->title) : id;
-    const bool hasImage = item && !item->imagePath.empty();
+    const QString title = item ? item->title : id;
+    const bool hasImage = item && !item->imagePath.isEmpty();
 
     add(tr("Edit Title"), [this, id]() { onEditTitle(id); });
     add(tr("Edit Text"), [this, id]() { onEditText(id); });
@@ -132,21 +133,21 @@ void SnippetContextMenu::onAddSubfolder(const QString& parentId, int targetLevel
 
 void SnippetContextMenu::onAddItem(const QString& parentId) {
     SnippetItem item;
-    item.title = tr("New snippet (double-click to edit)").toStdString();
-    item.text = tr("Double-click to edit the text").toStdString();
+    item.title = tr("New snippet (double-click to edit)");
+    item.text = tr("Double-click to edit the text");
     if (m_store->addItem(parentId, item)) finish();
 }
 
 void SnippetContextMenu::onEditTitle(const QString& nodeId) {
     QString cur;
-    if (FolderNode* f = m_store->findFolderById(nodeId)) cur = QString::fromStdString(f->title);
-    else if (SnippetItem* it = m_store->findItemById(nodeId)) cur = QString::fromStdString(it->title);
+    if (FolderNode* f = m_store->findFolderById(nodeId)) cur = f->title;
+    else if (SnippetItem* it = m_store->findItemById(nodeId)) cur = it->title;
 
     bool ok = false;
     const QString v = QInputDialog::getText(m_dialogParent, tr("Rename"), tr("New name:"), QLineEdit::Normal, cur, &ok);
     if (ok && !v.trimmed().isEmpty()) {
         m_store->updateNode(nodeId, "title", v.trimmed());
-        finish();
+        finish(nodeId);
     }
 }
 
@@ -155,10 +156,10 @@ void SnippetContextMenu::onEditText(const QString& nodeId) {
     if (!it) return;
     bool ok = false;
     const QString v = QInputDialog::getMultiLineText(m_dialogParent, tr("Edit Text"), tr("Text to paste:"),
-                                                     QString::fromStdString(it->text), &ok);
+                                                     it->text, &ok);
     if (ok) {
         m_store->updateNode(nodeId, "text", v);
-        finish();
+        finish(nodeId);
     }
 }
 
@@ -167,10 +168,10 @@ void SnippetContextMenu::onEditKeyword(const QString& nodeId) {
     if (!it) return;
     bool ok = false;
     const QString v = QInputDialog::getText(m_dialogParent, tr("Set Keyword"), tr("Spoken keyword, e.g. quote:"),
-                                            QLineEdit::Normal, QString::fromStdString(it->keyword), &ok);
+                                            QLineEdit::Normal, it->keyword, &ok);
     if (ok) {
         m_store->updateNode(nodeId, "keyword", v.trimmed());
-        finish();
+        finish(nodeId);
     }
 }
 
@@ -184,7 +185,7 @@ void SnippetContextMenu::onChooseImage(const QString& itemId) {
         return;
     }
     m_store->updateNode(itemId, "image_path", rel);
-    finish();
+    finish(itemId);
 }
 
 void SnippetContextMenu::onPasteClipboardImage(const QString& itemId) {
@@ -208,12 +209,12 @@ void SnippetContextMenu::onPasteClipboardImage(const QString& itemId) {
     const QString rel = m_store->savePixmapToStore(QPixmap::fromImage(img));
     if (rel.isEmpty()) return;
     m_store->updateNode(itemId, "image_path", rel);
-    finish();
+    finish(itemId);
 }
 
 void SnippetContextMenu::onClearImage(const QString& itemId) {
     m_store->updateNode(itemId, "image_path", QString());
-    finish();
+    finish(itemId);
 }
 
 void SnippetContextMenu::onMoveNode(const QString& nodeId, int direction) {

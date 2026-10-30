@@ -2,6 +2,7 @@
 
 #include "snippets/SnippetTypes.h"
 #include "snippets/SnippetStore.h"
+#include "snippets/GoogleSheetsService.h"
 #include <QDialog>
 #include <QLineEdit>
 #include <QListWidget>
@@ -38,6 +39,7 @@ private:
     QStringList checkedNames() const;
 
     SnippetStore* m_store;
+    GoogleSheetsService m_service;  
     QLineEdit* m_urlEdit = nullptr;
     QLineEdit* m_aliasEdit = nullptr;
     QListWidget* m_savedList = nullptr;

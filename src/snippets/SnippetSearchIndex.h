@@ -1,0 +1,40 @@
+#pragma once
+
+#include "snippets/SnippetTypes.h"
+#include <QString>
+#include <QStringList>
+#include <QVector>
+
+// @brief
+// 话术的搜索 / 快捷码索引。
+// 把 QString 小写化、目录路径拼接的开销放在树变动后的首次查询里，而不是每次按键都重算。
+// 索引里存的是树内指针：树增删节点后必须调用 invalidate()（SnippetStore::save 会做）。
+class SnippetSearchIndex {
+public:
+    struct Hit {
+        SnippetItem* item = nullptr;
+        QString trail;   // 所在目录路径 "A / B / C"
+    };
+
+    void invalidate() { m_valid = false; }
+
+    // 匹配 关键字/中文/外文/目录路径；query 为空时 allWhenEmpty 决定返回全部或空
+    QVector<Hit> search(FolderList& roots, const QString& query, bool allWhenEmpty);
+
+    // 听写文本里出现了哪些条目的快捷码；按使用次数降序，最多 limit 条
+    QVector<SnippetItem*> matchKeywords(FolderList& roots, const QString& spokenText, int limit);
+
+private:
+    struct Entry {
+        SnippetItem* item = nullptr;
+        QString keyword;     // 已 trimmed；空则不参与快捷码匹配
+        QString haystack;    // 快捷码/标题/内容/目录路径，小写
+        QString trail;
+    };
+
+    const QVector<Entry>& entries(FolderList& roots);
+    void build(FolderList& list, const QStringList& trail);
+
+    QVector<Entry> m_entries;
+    bool m_valid = false;
+};

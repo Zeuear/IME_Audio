@@ -1,6 +1,7 @@
 #pragma once
 
 #include "snippets/SnippetTypes.h"
+#include "snippets/SnippetSearchIndex.h"
 #include <QString>
 #include <QStringList>
 #include <QJsonObject>
@@ -11,12 +12,10 @@
 #include <memory>
 #include <QObject>
 #include <QTimer>
+#include <functional>
 
 class GoogleSheetsService;
 
-// 对应原 storage.py StorageManager，使用 QJsonObject/QJsonDocument 读写 snippets.json
-// 目录约定与原版一致：<base>/data/snippets.json，图片在 <base>/data/images，
-// JSON 中的图片相对路径形如 "data/images/xxx.png"（相对 <base>）。
 class SnippetStore : public QObject {
 public:
     struct GoogleSheetConfig {
@@ -30,19 +29,13 @@ public:
         QString lastSync;
     };
 
-    struct SearchHit {
-        SnippetItem* item = nullptr;
-        QString trail;   // 所在目录路径 "A / B / C"
-    };
+    using SearchHit = SnippetSearchIndex::Hit;
 
     explicit SnippetStore(const QString& dataFilePath);
     ~SnippetStore() override;
 
-    // 加载失败（JSON 损坏）时内存回退到默认数据，返回 false，不覆盖磁盘文件
     bool load();
-    // 延迟写盘（合并 500ms 内的多次修改），同时让搜索/快捷码索引失效。写盘失败只记日志
     bool save();
-    // 立即写盘（退出、首次建库时用）
     bool flush();
 
     FolderList& roots() { return m_roots; }
@@ -123,16 +116,20 @@ public:
                             const QString& fetchedDocTitle,
                             FolderList newSheets);
 
-    // 联网拉取（同步阻塞）并合并。selectedNames 为空沿用记住的勾选。失败返回空串并写 error
-    QString importGoogleSheet(GoogleSheetsService* service,
-                              const QString& url,
-                              const QString& customAlias,
-                              const QString& existingTreeId,
-                              const QStringList& selectedNames,
-                              QString* error = nullptr);
+    // 联网拉取并合并（异步，不嵌套事件循环）。selectedNames 为空沿用记住的勾选。
+    // done(treeId, error)：失败时 treeId 为空。拉取阶段不动树，全部拉完才在同一个调用栈里替换并回调，
+    // 所以回调里立刻刷新模型即可，期间界面不会拿着旧指针重绘
+    using ImportCallback = std::function<void(const QString& treeId, const QString& error)>;
+    void importGoogleSheet(GoogleSheetsService* service,
+                           const QString& url,
+                           const QString& customAlias,
+                           const QString& existingTreeId,
+                           const QStringList& selectedNames,
+                           ImportCallback done);
 
-    // 刷新全部已保存表，返回成功个数，失败信息写入 errors
-    int refreshAllGoogleSheets(GoogleSheetsService* service, QStringList* errors = nullptr);
+    // 刷新全部已保存表（逐个拉取，最后一次性合并）。done(成功个数, 失败信息)
+    using RefreshCallback = std::function<void(int okCount, const QStringList& errors)>;
+    void refreshAllGoogleSheets(GoogleSheetsService* service, RefreshCallback done);
 
     // ------------------------------------------------------------------
     // 搜索 / 工具
@@ -148,17 +145,16 @@ public:
     QStringList getNodePath(const QString& targetId) const;
 
 private:
-    // 搜索/快捷码索引：把 std::string 转 QString、转小写的开销放在 save() 之后的首次查询里，而不是每次按键
-    struct IndexEntry {
-        SnippetItem* item = nullptr;
-        QString keyword;     // 已 trimmed；空则不参与快捷码匹配
-        QString haystack;    // 快捷码/标题/内容/目录路径，小写
-        QString trail;
-    };
-    const QVector<IndexEntry>& index();
-    void buildIndex(FolderList& list, const QStringList& trail);
-    QVector<IndexEntry> m_index;
-    bool m_indexValid = false;
+    // 一张 Google 表格的拉取任务（异步链路里用 shared_ptr 传递）
+    struct SheetFetch;
+    struct RefreshJob;
+    using FetchDone = std::function<void(std::shared_ptr<SheetFetch>)>;
+    void fetchGoogleSheet(GoogleSheetsService* service, std::shared_ptr<SheetFetch> job, FetchDone done);
+    void fetchNextSheet(GoogleSheetsService* service, std::shared_ptr<SheetFetch> job, FetchDone done);
+    void refreshNext(GoogleSheetsService* service, std::shared_ptr<RefreshJob> job);
+    QString applyFetched(SheetFetch& job);
+
+    SnippetSearchIndex m_searchIndex;
     bool m_dirty = false;
     QTimer m_saveTimer;
 

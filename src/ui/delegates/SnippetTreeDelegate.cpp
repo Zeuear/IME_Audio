@@ -18,7 +18,7 @@ constexpr int kItemMinHeight = 46;
 constexpr int kPad = 10;           // 行内左右留白
 constexpr int kVPad = 8;           // 条目上下留白
 constexpr int kGap = 10;
-constexpr int kBadge = 20;         // 中/外 徽章边长
+constexpr int kBadge = 20;         // 标题/内容徽章边长
 constexpr int kKeywordW = 84;
 constexpr int kChipH = 24;
 constexpr int kImageW = 58;
@@ -98,10 +98,31 @@ SnippetTreeDelegate::ItemLayout SnippetTreeDelegate::layoutFor(const QRect& row,
 
     const QString title = index.data(Qt::DisplayRole).toString();
     const QString text = index.data(SnippetTreeModel::TextRole).toString();
-    const int titleH = qMin(fmBold.boundingRect(QRect(0, 0, l.title.width(), 10000), kWrapFlags, title).height(),
-                            fm.lineSpacing() * titleLines);
-    const int textH = qMin(fm.boundingRect(QRect(0, 0, l.text.width(), 10000), kWrapFlags, text).height(),
-                           fm.lineSpacing() * textLines);
+    const quintptr key = reinterpret_cast<quintptr>(index.internalPointer());
+    const QString fontKey = font.key();
+    MeasureCache& mc = m_measureCache[key];
+    if (mc.title != title || mc.text != text || mc.fontKey != fontKey || mc.titleW != l.title.width() ||
+        mc.textW != l.text.width() || mc.titleLines != titleLines || mc.textLines != textLines) {
+        if (m_measureCache.size() > 4000) {   // 节点被删后残留的条目，超量时整体丢弃
+            m_measureCache.clear();
+            m_measureCache[key] = MeasureCache();
+        }
+        MeasureCache& e = m_measureCache[key];
+        e.title = title;
+        e.text = text;
+        e.fontKey = fontKey;
+        e.titleW = l.title.width();
+        e.textW = l.text.width();
+        e.titleLines = titleLines;
+        e.textLines = textLines;
+        e.titleH = qMin(fmBold.boundingRect(QRect(0, 0, l.title.width(), 10000), kWrapFlags, title).height(),
+                        fm.lineSpacing() * titleLines);
+        e.textH = qMin(fm.boundingRect(QRect(0, 0, l.text.width(), 10000), kWrapFlags, text).height(),
+                       fm.lineSpacing() * textLines);
+    }
+    const MeasureCache& cached = m_measureCache[key];
+    const int titleH = cached.titleH;
+    const int textH = cached.textH;
 
     l.height = qMax(kItemMinHeight, qMax(titleH, textH) + 2 * kVPad);
 
@@ -237,7 +258,7 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
     }
 
     // 标题
-    drawBadge(painter, l.badgeTitle, QStringLiteral("中"), SnippetTreeModel::levelColor(1));
+    drawBadge(painter, l.badgeTitle, QCoreApplication::translate("SnippetTreeDelegate", "CN"), SnippetTreeModel::levelColor(1));
     QFont bold = option.font;
     bold.setBold(true);
     painter->setFont(bold);
@@ -249,7 +270,7 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
 
     // 内容
     painter->setFont(option.font);
-    drawBadge(painter, l.badgeText, QStringLiteral("外"), SnippetTreeModel::levelColor(2));
+    drawBadge(painter, l.badgeText, QCoreApplication::translate("SnippetTreeDelegate", "FL"), SnippetTreeModel::levelColor(2));
     painter->setFont(option.font);
     painter->setPen(text);
     painter->save();
