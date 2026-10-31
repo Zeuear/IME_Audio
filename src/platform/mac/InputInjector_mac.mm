@@ -173,11 +173,14 @@ bool InputInjector::sendCtrlV() {
     return true;
 }
 
+// 按 Finder 复制文件的方式写：NSPasteboard 放 NSURL，聊天软件和 Finder 都按“文件”识别，
+// 比 Qt 的 text/uri-list 更稳（后者在部分应用里会被当成文本路径）
 bool InputInjector::setClipboardFile(const QString& path) {
-    auto* mime = new QMimeData;   // 所有权交给剪贴板
-    mime->setUrls({ QUrl::fromLocalFile(path) });
-    QGuiApplication::clipboard()->setMimeData(mime);
-    return true;
+    NSURL* url = [NSURL fileURLWithPath:path.toNSString()];
+    if (!url) return false;
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+    return [pasteboard writeObjects:@[ url ]] == YES;
 }
 
 bool InputInjector::pasteViaClipboard(const QString& text) {

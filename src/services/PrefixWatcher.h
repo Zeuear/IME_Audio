@@ -6,7 +6,7 @@
 // @brief 在任意软件里监听“打字前缀”（如 // 或 ;;），命中后发出 prefixTyped，用来呼出话术搜索框。
 //        需要全局键盘钩子，所以默认关闭：setEnabled(true) 才会安装钩子和后台线程，关闭即全部释放。
 //        只认键盘按下的物理按键（输入法开着也能识别），不读取、不保存按键内容，缓冲只留最近 12 个字符且 2.5 秒后清空。
-//        各平台实现在 platform/<os>/PrefixWatcher_<os>.*；目前只有 Windows 有实现，其它平台 isSupported() 为 false。
+//        各平台实现在 platform/<os>/PrefixWatcher_<os>.*；Windows（低级键盘钩子）和 macOS（CGEventTap，需辅助功能权限）有实现，Linux 的 isSupported() 为 false。
 class PrefixWatcher : public QObject {
     Q_OBJECT
 

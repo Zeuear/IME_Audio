@@ -84,7 +84,7 @@ void SnippetWidget::setupUi() {
     panelLayout->setSpacing(8);
     panelLayout->addWidget(m_voiceTriggerChk);
     panelLayout->addWidget(m_imageFirstChk);
-    // 打字前缀触发要全局键盘钩子，目前只有 Windows 实现；不支持的平台整块不显示
+    // 打字前缀触发要全局键盘钩子，目前 Windows、macOS 有实现；不支持的平台整块不显示
     if (PrefixWatcher::isSupported()) {
         panelLayout->addWidget(m_prefixTriggerChk);
         panelLayout->addWidget(m_prefixDeleteChk);
