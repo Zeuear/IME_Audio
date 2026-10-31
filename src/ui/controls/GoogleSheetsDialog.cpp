@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QTimer>
 
 GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     : QDialog(parent), m_store(store) {
@@ -21,6 +22,13 @@ GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     topLayout->addWidget(new QLabel(tr("URL:"), topBox));
     m_urlEdit = new QLineEdit(topBox);
     m_urlEdit->setPlaceholderText("https://docs.google.com/spreadsheets/d/...");
+    // 粘贴链接后直接读取标签列表，不必再点按钮；逐字输入时 ID 还不完整，提取不到就不触发
+    connect(m_urlEdit, &QLineEdit::textEdited, this, [this](const QString& text) {
+        const QString id = GoogleSheetsService::extractSpreadsheetId(text);
+        if (id.isEmpty() || id == m_lastFetchedId || !isEnabled()) return;
+        m_lastFetchedId = id;
+        QTimer::singleShot(0, this, &GoogleSheetsDialog::onFetchSheets);
+    });
     topLayout->addWidget(m_urlEdit, 1);
     topLayout->addWidget(new QLabel(tr("Name (optional):"), topBox));
     m_aliasEdit = new QLineEdit(topBox);
@@ -135,6 +143,7 @@ void GoogleSheetsDialog::onNewSheet() {
     m_aliasEdit->clear();
     m_sheetList->clear();
     m_activeTreeId.clear();
+    m_lastFetchedId.clear();
     m_savedList->clearSelection();
     m_savedList->setCurrentRow(-1);
     m_statusLabel->setText(tr("Paste the link of a new Google Sheet."));
@@ -172,6 +181,7 @@ void GoogleSheetsDialog::onFetchSheets() {
         setEnabled(true);
 
         if (!ok) {
+            m_lastFetchedId.clear();   // 失败后再次粘贴要能重试
             m_statusLabel->setText(tr("Read failed: %1").arg(error));
             emit errorOccurred(tr("读取 Google 表格失败"), error);
             return;

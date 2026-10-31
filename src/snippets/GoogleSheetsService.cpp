@@ -3,6 +3,13 @@
 #include <QTimer>
 #include <QUuid>
 #include <QSet>
+#include <QBuffer>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QXmlStreamReader>
+#include <private/qzipreader_p.h>
 #include <memory>
 
 namespace {
@@ -30,6 +37,253 @@ QString htmlUnescape(QString s) {
     out += s.mid(last);
     out.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
        .replace("&#39;", "'").replace("&nbsp;", " ").replace("&amp;", "&");
+    return out;
+}
+
+// ---------------------------------------------------------------------------
+// XLSX 解析：只取 A、B 两列和嵌入的图片。CSV 导出拿不到直接插入单元格的图片，所以优先走 XLSX
+// ---------------------------------------------------------------------------
+
+const QString kRelNs = QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships");
+
+struct XlsxRel {
+    QString id;
+    QString type;
+    QString target;   // 已换算成压缩包内的绝对路径
+};
+
+// 关系文件里的 Target 相对于“被描述文件所在目录”，或以 / 开头表示从包根算起
+QVector<XlsxRel> parseRels(const QByteArray& data, const QString& baseDir) {
+    QVector<XlsxRel> rels;
+    QXmlStreamReader xml(data);
+    while (!xml.atEnd()) {
+        if (xml.readNext() != QXmlStreamReader::StartElement || xml.name() != QLatin1String("Relationship")) continue;
+        XlsxRel r;
+        r.id = xml.attributes().value("Id").toString();
+        r.type = xml.attributes().value("Type").toString();
+        const QString t = xml.attributes().value("Target").toString();
+        r.target = t.startsWith('/') ? t.mid(1) : QDir::cleanPath(baseDir + "/" + t);
+        rels.push_back(r);
+    }
+    return rels;
+}
+
+QString relTarget(const QVector<XlsxRel>& rels, const QString& id) {
+    for (const XlsxRel& r : rels) if (r.id == id) return r.target;
+    return QString();
+}
+
+int colLettersToIndex(const QString& ref) {
+    int idx = 0;
+    for (const QChar c : ref) {
+        if (c < 'A' || c > 'Z') break;
+        idx = idx * 26 + (c.unicode() - 'A' + 1);
+    }
+    return idx - 1;
+}
+
+QStringList parseSharedStrings(const QByteArray& data) {
+    QStringList out;
+    QXmlStreamReader xml(data);
+    QString cur;
+    bool inSi = false;
+    while (!xml.atEnd()) {
+        const auto tok = xml.readNext();
+        if (tok == QXmlStreamReader::StartElement) {
+            if (xml.name() == QLatin1String("si")) { inSi = true; cur.clear(); }
+            else if (inSi && xml.name() == QLatin1String("t")) cur += xml.readElementText();
+        } else if (tok == QXmlStreamReader::EndElement && xml.name() == QLatin1String("si")) {
+            inSi = false;
+            out << cur;
+        }
+    }
+    return out;
+}
+
+// 工作表里的 A、B 列，行号从 0 开始，缺的行补空串
+QVector<QStringList> parseSheetRows(const QByteArray& data, const QStringList& shared, int minRows) {
+    QHash<int, QStringList> rows;
+    int maxRow = -1;
+    int curRow = -1;
+    int col = 0;
+    QString type, val;
+    bool inCell = false, inInline = false;
+
+    QXmlStreamReader xml(data);
+    while (!xml.atEnd()) {
+        const auto tok = xml.readNext();
+        if (tok == QXmlStreamReader::StartElement) {
+            const auto name = xml.name();
+            if (name == QLatin1String("row")) {
+                const QString r = xml.attributes().value("r").toString();
+                curRow = r.isEmpty() ? curRow + 1 : r.toInt() - 1;
+                maxRow = qMax(maxRow, curRow);
+            } else if (name == QLatin1String("c")) {
+                col = colLettersToIndex(xml.attributes().value("r").toString());
+                type = xml.attributes().value("t").toString();
+                val.clear();
+                inCell = true;
+            } else if (inCell && name == QLatin1String("is")) {
+                inInline = true;
+            } else if (inCell && inInline && name == QLatin1String("t")) {
+                val += xml.readElementText();
+            } else if (inCell && !inInline && name == QLatin1String("v")) {
+                val = xml.readElementText();
+                if (type == QLatin1String("s")) {
+                    const int i = val.toInt();
+                    val = (i >= 0 && i < shared.size()) ? shared[i] : QString();
+                }
+            }
+        } else if (tok == QXmlStreamReader::EndElement) {
+            if (xml.name() == QLatin1String("is")) {
+                inInline = false;
+            } else if (xml.name() == QLatin1String("c")) {
+                if (inCell && curRow >= 0 && col >= 0 && col < 2) {
+                    QStringList& row = rows[curRow];
+                    if (row.isEmpty()) row = QStringList{ QString(), QString() };
+                    row[col] = val;
+                }
+                inCell = false;
+            }
+        }
+    }
+
+    const int total = qMax(maxRow + 1, minRows);
+    QVector<QStringList> out;
+    out.reserve(total);
+    for (int i = 0; i < total; ++i) {
+        QStringList row = rows.value(i);
+        if (row.isEmpty()) row = QStringList{ QString(), QString() };
+        out.push_back(row);
+    }
+    return out;
+}
+
+// 把工作表绘图里的图片抽成文件，返回 (行, 列) -> 相对路径。路径写成 <数据目录名>/images/<文件>，
+// 和手动添加的图片一样相对于话术库根目录，换电脑也能找到
+GoogleSheetsService::CellImages extractSheetImages(QZipReader& zip, const QString& sheetPath, const QString& imagesDir) {
+    GoogleSheetsService::CellImages result;
+    if (imagesDir.isEmpty()) return result;
+
+    const QString sheetDir = QFileInfo(sheetPath).path();
+    const QByteArray sheetRelsData = zip.fileData(sheetDir + "/_rels/" + QFileInfo(sheetPath).fileName() + ".rels");
+    if (sheetRelsData.isEmpty()) return result;
+
+    const QFileInfo imgInfo(imagesDir);
+    const QString relPrefix = imgInfo.dir().dirName() + "/" + imgInfo.fileName() + "/";
+
+    for (const XlsxRel& rel : parseRels(sheetRelsData, sheetDir)) {
+        if (!rel.type.contains("drawing")) continue;
+        const QByteArray drawing = zip.fileData(rel.target);
+        if (drawing.isEmpty()) continue;
+
+        const QString drawDir = QFileInfo(rel.target).path();
+        const QVector<XlsxRel> drawRels =
+            parseRels(zip.fileData(drawDir + "/_rels/" + QFileInfo(rel.target).fileName() + ".rels"), drawDir);
+
+        QXmlStreamReader xml(drawing);
+        bool inAnchor = false, inFrom = false;
+        int row = -1, col = -1;
+        QString embed;
+        while (!xml.atEnd()) {
+            const auto tok = xml.readNext();
+            if (tok == QXmlStreamReader::StartElement) {
+                const auto name = xml.name();
+                if (name == QLatin1String("twoCellAnchor") || name == QLatin1String("oneCellAnchor")) {
+                    inAnchor = true; row = col = -1; embed.clear();
+                } else if (inAnchor && name == QLatin1String("from")) {
+                    inFrom = true;
+                } else if (inAnchor && inFrom && name == QLatin1String("col")) {
+                    col = xml.readElementText().toInt();
+                } else if (inAnchor && inFrom && name == QLatin1String("row")) {
+                    row = xml.readElementText().toInt();
+                } else if (inAnchor && name == QLatin1String("blip") && embed.isEmpty()) {
+                    embed = xml.attributes().value(kRelNs, "embed").toString();
+                }
+            } else if (tok == QXmlStreamReader::EndElement) {
+                if (xml.name() == QLatin1String("from")) {
+                    inFrom = false;
+                } else if (inAnchor && (xml.name() == QLatin1String("twoCellAnchor") || xml.name() == QLatin1String("oneCellAnchor"))) {
+                    inAnchor = false;
+                    const QString media = relTarget(drawRels, embed);
+                    const QByteArray bytes = (row >= 0 && col >= 0 && !media.isEmpty()) ? zip.fileData(media) : QByteArray();
+                    if (bytes.isEmpty()) continue;
+                    QString ext = QFileInfo(media).suffix().toLower();
+                    if (ext.isEmpty()) ext = "png";
+                    const QString fname = "gsheet_" + newId().remove('-').left(10) + "." + ext;
+                    QDir().mkpath(imagesDir);
+                    QFile f(imagesDir + "/" + fname);
+                    if (f.open(QIODevice::WriteOnly) && f.write(bytes) == bytes.size())
+                        result.insert({ row, col }, relPrefix + fname);
+                }
+            }
+        }
+    }
+    return result;
+}
+
+// 解析整本 XLSX 里名为 sheetName 的工作表；压缩包不可读或找不到该表返回 false
+bool parseXlsxSheet(const QByteArray& xlsx, const QString& sheetName, const QString& imagesDir,
+                    QVector<QStringList>& rowsOut, GoogleSheetsService::CellImages& imagesOut) {
+    QBuffer buffer;
+    buffer.setData(xlsx);
+    buffer.open(QIODevice::ReadOnly);
+    QZipReader zip(&buffer);
+    if (!zip.isReadable()) return false;
+
+    const QByteArray workbook = zip.fileData("xl/workbook.xml");
+    if (workbook.isEmpty()) return false;
+    const QVector<XlsxRel> wbRels = parseRels(zip.fileData("xl/_rels/workbook.xml.rels"), "xl");
+
+    QString sheetPath;
+    QXmlStreamReader xml(workbook);
+    while (!xml.atEnd()) {
+        if (xml.readNext() != QXmlStreamReader::StartElement || xml.name() != QLatin1String("sheet")) continue;
+        if (xml.attributes().value("name").toString() == sheetName) {
+            sheetPath = relTarget(wbRels, xml.attributes().value(kRelNs, "id").toString());
+            break;
+        }
+    }
+    if (sheetPath.isEmpty()) return false;
+    const QByteArray sheetData = zip.fileData(sheetPath);
+    if (sheetData.isEmpty()) return false;
+
+    imagesOut = extractSheetImages(zip, sheetPath, imagesDir);
+    int minRows = 0;
+    for (auto it = imagesOut.cbegin(); it != imagesOut.cend(); ++it) minRows = qMax(minRows, it.key().first + 1);
+    rowsOut = parseSheetRows(sheetData, parseSharedStrings(zip.fileData("xl/sharedStrings.xml")), minRows);
+    return true;
+}
+
+FolderList buildSheetFolder(const QString& sheetName, const QVector<QStringList>& rows,
+                            const GoogleSheetsService::CellImages& images) {
+    auto l2 = std::make_unique<FolderNode>();
+    l2->id = newId();
+    l2->level = 2;
+    l2->title = sheetName;
+    l2->collapsed = false;
+    GoogleSheetsService::parseRowsIntoFolder(l2.get(), rows, images);
+
+    FolderList result;
+    result.push_back(std::move(l2));
+    return result;
+}
+
+// 从 xlsx 的 workbook.xml 读全部标签名。未"发布到网络"的表格拿不到 pubhtml，这是唯一可靠的来源
+QVector<QPair<QString, QString>> parseWorkbookSheets(const QByteArray& xlsx) {
+    QVector<QPair<QString, QString>> out;
+    QBuffer buffer;
+    buffer.setData(xlsx);
+    buffer.open(QIODevice::ReadOnly);
+    QZipReader zip(&buffer);
+    if (!zip.isReadable()) return out;
+
+    QXmlStreamReader xml(zip.fileData("xl/workbook.xml"));
+    while (!xml.atEnd()) {
+        if (xml.readNext() != QXmlStreamReader::StartElement || xml.name() != QLatin1String("sheet")) continue;
+        // xlsx 里的 sheetId 不是 Google 的 gid；这里的 gid 只在 CSV 兜底时用，xlsx 路径按名称匹配
+        out.append({ xml.attributes().value("sheetId").toString(), xml.attributes().value("name").toString() });
+    }
     return out;
 }
 
@@ -117,7 +371,7 @@ void GoogleSheetsService::listSheetNames(const QString& url, ListSheetsCallback 
 
             // 2) pubhtml：干净的 Sheet 标签列表
             httpGet(QUrl(QString("https://docs.google.com/spreadsheets/d/%1/pubhtml").arg(sheetId)), timeoutMs,
-                [sheetId, callback, editOk, err1, docTitle, htmlText](bool pubOk, QByteArray pubBody, QString err2) {
+                [this, sheetId, timeoutMs, callback, editOk, err1, docTitle, htmlText](bool pubOk, QByteArray pubBody, QString err2) {
                     QVector<QPair<QString, QString>> sheets;
                     if (pubOk) {
                         const QString pubHtml = QString::fromUtf8(pubBody);
@@ -148,9 +402,19 @@ void GoogleSheetsService::listSheetNames(const QString& url, ListSheetsCallback 
                         callback(false, QString(), sheetId, {}, err1.isEmpty() ? err2 : err1);
                         return;
                     }
-                    if (sheets.isEmpty()) sheets.append(qMakePair(QString("0"), QString("Sheet1")));
-                    callback(true, docTitle.isEmpty() ? QString("Google表格 (%1)").arg(sheetId.left(6)) : docTitle,
-                             sheetId, sheets, QString());
+                    const QString title = docTitle.isEmpty() ? QString("Google表格 (%1)").arg(sheetId.left(6)) : docTitle;
+
+                    // 4) 前三步只认到 0/1 张时（未发布到网络的表格常见），再用整本 xlsx 的标签名核对
+                    if (sheets.size() <= 1) {
+                        loadXlsx(sheetId, timeoutMs, [sheets, title, sheetId, callback](const QByteArray& xlsx) mutable {
+                            const auto names = parseWorkbookSheets(xlsx);
+                            if (names.size() > sheets.size()) sheets = names;
+                            if (sheets.isEmpty()) sheets.append(qMakePair(QString("0"), QString("Sheet1")));
+                            callback(true, title, sheetId, sheets, QString());
+                        });
+                        return;
+                    }
+                    callback(true, title, sheetId, sheets, QString());
                 });
         });
 }
@@ -160,12 +424,45 @@ QString GoogleSheetsService::buildCsvUrl(const QString& spreadsheetId, const QSt
         .arg(spreadsheetId, gid);
 }
 
+void GoogleSheetsService::loadXlsx(const QString& spreadsheetId, int timeoutMs, XlsxCallback callback) {
+    constexpr qint64 kCacheMs = 120 * 1000;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    auto it = m_xlsxCache.constFind(spreadsheetId);
+    if (it != m_xlsxCache.cend() && now - it->savedAt < kCacheMs) {
+        callback(it->data);
+        return;
+    }
+    const QUrl url(QString("https://docs.google.com/spreadsheets/d/%1/export?format=xlsx").arg(spreadsheetId));
+    // 整本文件比单张 CSV 大得多，超时放宽
+    httpGet(url, timeoutMs * 3, [this, spreadsheetId, callback = std::move(callback)](bool ok, QByteArray data, QString) {
+        // 无权限时 Google 返回登录页 HTML，不是 zip（以 PK 开头）
+        if (!ok || !data.startsWith("PK")) data.clear();
+        m_xlsxCache.insert(spreadsheetId, { QDateTime::currentMSecsSinceEpoch(), data });
+        callback(data);
+    });
+}
+
+// 先试 XLSX（能带出直接插入单元格的图片），任何一步失败都退回 CSV
 void GoogleSheetsService::fetchSheetItems(const QString& spreadsheetId,
                                           const QString& sheetGid,
                                           const QString& sheetName,
-                                          const QString& /*imagesDir*/,
+                                          const QString& imagesDir,
                                           FetchSheetCallback callback,
                                           int timeoutMs) {
+    loadXlsx(spreadsheetId, timeoutMs,
+        [=, this, callback = std::move(callback)](const QByteArray& xlsx) mutable {
+            QVector<QStringList> rows;
+            CellImages images;
+            if (!xlsx.isEmpty() && parseXlsxSheet(xlsx, sheetName, imagesDir, rows, images)) {
+                callback(true, buildSheetFolder(sheetName, rows, images), QString());
+                return;
+            }
+            fetchSheetCsv(spreadsheetId, sheetGid, sheetName, std::move(callback), timeoutMs);
+        });
+}
+
+void GoogleSheetsService::fetchSheetCsv(const QString& spreadsheetId, const QString& sheetGid,
+                                        const QString& sheetName, FetchSheetCallback callback, int timeoutMs) {
     httpGet(QUrl(buildCsvUrl(spreadsheetId, sheetGid)), timeoutMs,
         [sheetName, callback = std::move(callback)](bool ok, QByteArray data, QString err) {
             if (!callback) return;
@@ -181,17 +478,7 @@ void GoogleSheetsService::fetchSheetItems(const QString& spreadsheetId,
                     QString::fromUtf8("无法读取该表格内容，请确认共享权限已设为「知道链接的任何人均可查看」"));
                 return;
             }
-
-            auto l2 = std::make_unique<FolderNode>();
-            l2->id = newId();
-            l2->level = 2;
-            l2->title = sheetName;
-            l2->collapsed = false;
-            parseRowsIntoFolder(l2.get(), parseCsv(csvText));
-
-            FolderList result;
-            result.push_back(std::move(l2));
-            callback(true, std::move(result), QString());
+            callback(true, buildSheetFolder(sheetName, parseCsv(csvText), {}), QString());
         });
 }
 
@@ -233,7 +520,8 @@ QVector<QStringList> GoogleSheetsService::parseCsv(const QString& text) {
     return rows;
 }
 
-void GoogleSheetsService::parseRowsIntoFolder(FolderNode* l2Folder, const QVector<QStringList>& rows) {
+void GoogleSheetsService::parseRowsIntoFolder(FolderNode* l2Folder, const QVector<QStringList>& rows,
+                                              const CellImages& cellImages) {
     FolderNode* currentL3 = nullptr;   // 所有权在 l2Folder->children
     static const QRegularExpression imgRe(R"(^=IMAGE\(["']([^"']+)["'])", QRegularExpression::CaseInsensitiveOption);
 
@@ -241,9 +529,10 @@ void GoogleSheetsService::parseRowsIntoFolder(FolderNode* l2Folder, const QVecto
         const QStringList& cells = rows[r];
         QString colA = cells.size() > 0 ? cells[0].trimmed() : QString();
         QString colB = cells.size() > 1 ? cells[1].trimmed() : QString();
-        QString imgPath;
+        QString imgPath = cellImages.value({ r, 1 });
+        if (imgPath.isEmpty()) imgPath = cellImages.value({ r, 0 });
 
-        if (!colB.isEmpty()) {
+        if (imgPath.isEmpty() && !colB.isEmpty()) {
             auto m = imgRe.match(colB);
             if (m.hasMatch()) {
                 imgPath = m.captured(1);

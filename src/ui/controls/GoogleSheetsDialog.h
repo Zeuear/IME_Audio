@@ -48,4 +48,5 @@ private:
     QPushButton* m_importBtn = nullptr;
 
     QString m_activeTreeId;
+    QString m_lastFetchedId;   // 粘贴自动读取去重：同一张表不重复触发
 };
