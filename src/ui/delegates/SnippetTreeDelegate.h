@@ -29,6 +29,13 @@ private:
         int height = 0;
     };
 
+    struct FolderGeom {
+        QFont badgeFont;
+        QString badgeText, countText;
+        QRect badge, count, title;
+    };
+
+    FolderGeom folderGeometry(const QStyleOptionViewItem& option, const QModelIndex& index) const;
     ItemLayout layoutFor(const QRect& row, const QFont& font, const QModelIndex& index) const;
     void paintFolder(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
     void paintItem(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;

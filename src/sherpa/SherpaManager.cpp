@@ -70,6 +70,9 @@ void SherpaManager::unloadModel()
     if (m_idleTimer) m_idleTimer->stop();
     {
         QMutexLocker queueLocker(&m_queueMutex);
+        for (const PendingTask& t : std::as_const(m_queue)) {
+            if (t.type == TaskType::Load) --m_loadsInFlight;
+        }
         m_queue.clear();
     }
     emit queueSizeChanged(0);
@@ -101,14 +104,26 @@ bool SherpaManager::reloadModel(const AppConfig& config) {
         return false;
     }
 
-    bool sameConfig = m_configCopy.sherpa.threads == config.sherpa.threads
-        && m_configCopy.sherpa.useGpu == config.sherpa.useGpu
-        && m_configCopy.sherpa.languageModel == config.sherpa.languageModel
-        && m_configCopy.sherpa.localModelRepoId == config.sherpa.localModelRepoId;
+    auto sameModel = [&config](const AppConfig& other) {
+        return other.sherpa.threads == config.sherpa.threads
+            && other.sherpa.useGpu == config.sherpa.useGpu
+            && other.sherpa.languageModel == config.sherpa.languageModel
+            && other.sherpa.localModelRepoId == config.sherpa.localModelRepoId;
+    };
 
-    if (m_isLoaded && sameConfig) {
+    if (m_isLoaded && sameModel(m_configCopy)) {
         LOG_DEBUG("The model has been loaded.");
         return false;
+    }
+
+    // 启动预加载还没跑完时就开始录音：再排一个加载会把已加载好的识别器清掉重来，
+    // 让 Loading 态的判断和第一句的转录都撞上重载窗口，直接等在途的那次加载完成即可
+    {
+        QMutexLocker locker(&m_queueMutex);
+        if (m_loadsInFlight > 0 && sameModel(m_lastLoadRequest)) {
+            LOG_DEBUG("Model load already in flight, waiting for it.");
+            return true;
+        }
     }
 
     loadModelAsync(config, true);
@@ -119,6 +134,8 @@ void SherpaManager::loadModelAsync(const AppConfig& config, bool isReload)
 {
     {
         QMutexLocker locker(&m_queueMutex);
+        ++m_loadsInFlight;
+        m_lastLoadRequest = config;
         m_queue.enqueue({ TaskType::Load, {}, 0, config, isReload });
         m_queueNotEmpty.wakeOne();
     }
@@ -381,6 +398,10 @@ void SherpaManager::workerLoop()
         switch (task.type) {
         case TaskType::Load:
             loadModel(task.config, task.isReload);
+            {
+                QMutexLocker locker(&m_queueMutex);
+                --m_loadsInFlight;
+            }
             if (m_isLoaded) armIdleTimer();
             emit modelLoadFinished(m_isLoaded);
             break;

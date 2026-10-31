@@ -13,6 +13,7 @@
 #include <QPainter>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSortFilterProxyModel>
 #include <QSpinBox>
 
@@ -21,6 +22,7 @@
 #include <QWidgetAction>
 #include <functional>
 
+#include "services/PrefixWatcher.h"
 #include "snippets/GoogleSheetsService.h"
 #include "snippets/SnippetStore.h"
 #include "ui/controls/GoogleSheetsDialog.h"
@@ -66,6 +68,10 @@ void SnippetWidget::setupUi() {
     // ShortcutEdit 常驻在面板里，全局热键的注册不依赖面板是否显示
     m_voiceTriggerChk = new AnimatedCheckBox(this);
     m_imageFirstChk = new AnimatedCheckBox(this);
+    m_prefixTriggerChk = new AnimatedCheckBox(this);
+    m_prefixDeleteChk = new AnimatedCheckBox(this);
+    m_prefixLabel = new QLabel(this);
+    m_prefixEdit = new QLineEdit(this);
     m_linesLabel = new QLabel(this);
     m_maxLinesSpin = new QSpinBox(this);
     m_maxLinesSpin->setRange(1, 12);
@@ -78,6 +84,18 @@ void SnippetWidget::setupUi() {
     panelLayout->setSpacing(8);
     panelLayout->addWidget(m_voiceTriggerChk);
     panelLayout->addWidget(m_imageFirstChk);
+    // 打字前缀触发要全局键盘钩子，目前只有 Windows 实现；不支持的平台整块不显示
+    if (PrefixWatcher::isSupported()) {
+        panelLayout->addWidget(m_prefixTriggerChk);
+        panelLayout->addWidget(m_prefixDeleteChk);
+        panelLayout->addWidget(m_prefixLabel);
+        panelLayout->addWidget(m_prefixEdit);
+    } else {
+        m_prefixTriggerChk->hide();
+        m_prefixDeleteChk->hide();
+        m_prefixLabel->hide();
+        m_prefixEdit->hide();
+    }
     auto* linesRow = new QHBoxLayout();
     linesRow->addWidget(m_linesLabel);
     linesRow->addWidget(m_maxLinesSpin);
@@ -164,6 +182,10 @@ void SnippetWidget::retranslateUi() {
     m_voiceTriggerChk->setLabelText(tr("Suggest when keyword is spoken"));
     m_voiceTriggerChk->setToolTip(tr("When a snippet's keyword appears in your dictation, the floating box shows a button to paste it. If the whole sentence is just the keyword, it is not typed."));
     m_imageFirstChk->setLabelText(tr("Image before text"));
+    m_prefixTriggerChk->setLabelText(tr("Open search by typing a prefix"));
+    m_prefixTriggerChk->setToolTip(tr("Typing a prefix such as // in any app opens the snippet search. This installs a global keyboard hook, which uses extra memory, so it is off by default."));
+    m_prefixDeleteChk->setLabelText(tr("Delete the prefix after choosing"));
+    m_prefixLabel->setText(tr("Prefixes (comma separated)"));
     m_searchEdit->setPlaceholderText(tr("Search title / text / keyword / folder..."));
     m_expandBtn->setToolTip(tr("Expand All"));
     m_collapseBtn->setToolTip(tr("Collapse All"));
@@ -232,6 +254,11 @@ void SnippetWidget::setSnippetStore(SnippetStore* store) {
     m_maxLinesSpin->setValue(settings.maxDisplayLines);
     m_voiceTriggerChk->setChecked(settings.voiceTrigger);
     m_imageFirstChk->setChecked(settings.comboImageFirst);
+    m_prefixTriggerChk->setChecked(settings.enablePrefixTrigger);
+    m_prefixDeleteChk->setChecked(settings.autoDeletePrefix);
+    m_prefixEdit->setText(settings.triggerPrefixes.join(", "));
+    m_prefixEdit->setEnabled(settings.enablePrefixTrigger);
+    m_prefixDeleteChk->setEnabled(settings.enablePrefixTrigger);
 
     connect(m_multilineBtn, &QAbstractButton::toggled, this, [this](bool on) {
         m_store->settings().multilineEnabled = on;
@@ -252,6 +279,29 @@ void SnippetWidget::setSnippetStore(SnippetStore* store) {
         m_store->settings().comboImageFirst = on;
         m_store->save();
         emit storeChanged();
+    });
+    connect(m_prefixTriggerChk, &QCheckBox::toggled, this, [this](bool on) {
+        m_store->settings().enablePrefixTrigger = on;
+        m_prefixEdit->setEnabled(on);
+        m_prefixDeleteChk->setEnabled(on);
+        m_store->save();
+        emit prefixTriggerChanged();
+    });
+    connect(m_prefixDeleteChk, &QCheckBox::toggled, this, [this](bool on) {
+        m_store->settings().autoDeletePrefix = on;
+        m_store->save();
+    });
+    connect(m_prefixEdit, &QLineEdit::editingFinished, this, [this]() {
+        QStringList prefixes;
+        for (const QString& p : m_prefixEdit->text().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts)) {
+            const QString t = p.trimmed();
+            if (!t.isEmpty() && !prefixes.contains(t)) prefixes << t;
+        }
+        if (prefixes.isEmpty()) prefixes = AppSettings().triggerPrefixes;   // 清空时回到默认，避免开着却永远触发不了
+        m_prefixEdit->setText(prefixes.join(", "));
+        m_store->settings().triggerPrefixes = prefixes;
+        m_store->save();
+        emit prefixTriggerChanged();
     });
 
     m_hotkeyEdit->setShortCut(settings.hotkey);
@@ -467,6 +517,7 @@ void SnippetWidget::onItemDoubleClicked(const QModelIndex& proxyIndex) {
     case SnippetTreeDelegate::Zone::Text:    col = 1; break;
     case SnippetTreeDelegate::Zone::Keyword: col = 2; break;
     case SnippetTreeDelegate::Zone::Image:   return;   // 单击已弹出配图菜单
+    case SnippetTreeDelegate::Zone::None:    return;   // 目录行的箭头、图标、徽章：单击已负责展开收起，不重命名
     default: break;
     }
     bool ok = false;

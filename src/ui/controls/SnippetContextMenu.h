@@ -7,8 +7,6 @@
 #include <QTreeView>
 #include <functional>
 
-// 对应原 ModernContextMenu。clickedIndex 必须是 SnippetTreeModel（源模型）的索引。
-// 所有改动完成后会调用 model->refresh() 并发出 changed()，由窗口恢复展开状态。
 class SnippetContextMenu : public QMenu {
     Q_OBJECT
 public:

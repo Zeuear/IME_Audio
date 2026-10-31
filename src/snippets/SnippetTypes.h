@@ -33,7 +33,7 @@ using FolderList = std::vector<std::unique_ptr<FolderNode>>;
 struct AppSettings {
     QString hotkey;   // 默认留空：Alt+Space 会和系统窗口菜单冲突，由用户自己设置
     QStringList triggerPrefixes = { "//", ";;" };
-    bool enablePrefixTrigger = true;
+    bool enablePrefixTrigger = false;   // 需要全局键盘钩子，默认关闭，用户在指令设置里勾选才启用
     bool autoDeletePrefix = true;
     bool comboImageFirst = false;
     bool multilineEnabled = true;

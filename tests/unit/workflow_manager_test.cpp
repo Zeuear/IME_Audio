@@ -389,6 +389,44 @@ TEST_F(WorkflowManagerContinuousTest, MultipleUtterancesStayRecording) {
     EXPECT_EQ(wf->state(), WorkflowState::Recording);
 }
 
+// 刚启动软件就录音：模型还在加载时说的第一句要收下并送去转录，加载完成后进入 Recording，
+// 转完仍回 Recording 常驻，之后的句子照常处理（回归“第一句没识别后再说话没反应”）
+TEST_F(WorkflowManagerContinuousTest, UtteranceDuringLoadingIsQueuedAndLaterOnesStillWork) {
+    wf->start();
+    ASSERT_EQ(wf->state(), WorkflowState::Loading);
+
+    rec->emitUtteranceReady();                       // 加载中说的第一句
+    EXPECT_EQ(trans->transcribeCalls, 1);
+    EXPECT_EQ(wf->pendingCount(), 1);
+
+    sherpa->emitModelLoadFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+    trans->emitFinished(true);                        // 第一句结果回来
+    EXPECT_EQ(wf->pendingCount(), 0);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+
+    rec->emitUtteranceReady();                        // 之后再说话仍然有反应
+    EXPECT_EQ(trans->transcribeCalls, 2);
+    EXPECT_EQ(wf->state(), WorkflowState::Transcribing);
+    trans->emitFinished(true);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+}
+
+// 第一句识别失败（或空文本）也不能让工作流卡住
+TEST_F(WorkflowManagerContinuousTest, FirstUtteranceFailureDoesNotWedge) {
+    wf->start();
+    rec->emitUtteranceReady();
+    sherpa->emitModelLoadFinished(true);
+    trans->emitFinished(false);
+    EXPECT_EQ(wf->pendingCount(), 0);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+
+    rec->emitUtteranceReady();
+    trans->emitFinished(true, "");                    // 空文本
+    EXPECT_EQ(wf->pendingCount(), 0);
+    EXPECT_EQ(wf->state(), WorkflowState::Recording);
+}
+
 // 连续模式：用户显式 stop 仍应真正关窗（forceStop 路径）
 TEST_F(WorkflowManagerContinuousTest, ExplicitStopClosesWindow) {
     wf->start();

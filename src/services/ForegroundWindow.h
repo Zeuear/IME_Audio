@@ -18,4 +18,8 @@ bool restore(Handle handle);
 // 光 activateWindow 常被系统的前台锁定拦下
 bool bringToFront(quintptr winId);
 
+// 鼠标左/右键此刻是否按着（全局，不限本应用窗口）。不拿焦点的弹窗收不到点击事件，
+// 靠轮询它判断用户是否点了弹窗外面；平台不支持时恒为 false
+bool isMouseButtonDown();
+
 }

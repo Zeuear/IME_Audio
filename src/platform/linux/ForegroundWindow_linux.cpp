@@ -7,5 +7,6 @@ namespace ForegroundWindow {
 Handle current() { return 0; }
 bool restore(Handle) { return false; }
 bool bringToFront(quintptr) { return false; }
+bool isMouseButtonDown() { return false; }
 
 }

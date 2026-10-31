@@ -25,25 +25,48 @@
 #include <QVBoxLayout>
 #include <algorithm>
 
+#include "services/PrefixWatcher.h"
 #include "services/SnippetPaster.h"
 #include "snippets/SnippetStore.h"
 
 namespace {
 
-constexpr int kShadowMargin = 24;   // 阴影的绘制空间，也是 blur 半径的一半
+constexpr int kShadowMargin = 24;   
 constexpr int kKeywordRole = Qt::UserRole + 7;
+constexpr int kDepthRole = Qt::UserRole + 8;    // 目录层级
+constexpr int kHeaderRole = Qt::UserRole + 9;   // bool 目录行
+constexpr int kIndentPx = 14;
 
-// 结果行：左边标题，右边快捷码；选中/悬停用高亮色圆角底。颜色全取 palette
+// 结果按目录树排列
 class ResultDelegate : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
 
-    QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override { return QSize(0, 36); }
+    QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex& index) const override {
+        return QSize(0, index.data(kHeaderRole).toBool() ? 24 : 32);
+    }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
-        const QRect row = option.rect.adjusted(2, 2, -2, -2);
+        const int indent = index.data(kDepthRole).toInt() * kIndentPx;
+
+        if (index.data(kHeaderRole).toBool()) {
+            QFont bold = option.font;
+            bold.setBold(true);
+            bold.setPointSizeF(qMax(7.0, option.font.pointSizeF() - 1));
+            painter->setFont(bold);
+            QColor muted = option.palette.color(QPalette::Text);
+            muted.setAlpha(150);
+            painter->setPen(muted);
+            const QRect r = option.rect.adjusted(12 + indent, 0, -12, 0);
+            painter->drawText(r, Qt::AlignVCenter | Qt::AlignLeft,
+                              painter->fontMetrics().elidedText(index.data(Qt::DisplayRole).toString(), Qt::ElideRight, r.width()));
+            painter->restore();
+            return;
+        }
+
+        const QRect row = option.rect.adjusted(2 + indent, 2, -2, -2);
         const bool selectable = index.flags() & Qt::ItemIsSelectable;
         const bool selected = selectable && (option.state & QStyle::State_Selected);
 
@@ -77,12 +100,16 @@ public:
     }
 };
 
-constexpr int kPreviewImageW = 250;
-constexpr int kPreviewImageH = 160;
-// 列表最多展示条数：QStandardItem 逐条创建，话术上千时每次按键都全量重建会卡；超出的靠继续输入收窄
+constexpr int kPreviewImageW = 190;
+constexpr int kPreviewImageH = 110;
+constexpr int kPopupW = 560;
+constexpr int kPopupH = 320;
+constexpr int kOutsideClickPollMs = 40;
+// 列表最多展示条数
 constexpr int kMaxResults = 200;
 // 还完焦点后等目标窗口真正拿到前台，再发 Ctrl+V
 constexpr int kPasteDelayMs = 150;
+constexpr int kIdleHideMs = 15000;
 // 失焦后稍等再关，避免点击列表时的瞬时失焦把窗口关掉
 constexpr int kBlurHideDelayMs = 150;
 
@@ -94,9 +121,25 @@ SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paste
     setupUi();
     retranslateUi();
 
+    // 打字前缀模式下弹窗拿不到焦点、也收不到失焦事件；用户转去做别的事时靠闲置超时收起
+    m_idleTimer.setSingleShot(true);
+    m_idleTimer.setInterval(kIdleHideMs);
+    connect(&m_idleTimer, &QTimer::timeout, this, [this]() {
+        if (isVisible() && m_queryMode && !underMouse() && !m_dragging) hidePopup();
+    });
+    // 打字前缀模式下收不到失焦，也收不到弹窗外的点击；轮询全局鼠标，点到卡片外面就收起，和热键呼出的表现一致
+    m_outsideClickTimer.setInterval(kOutsideClickPollMs);
+    connect(&m_outsideClickTimer, &QTimer::timeout, this, [this]() {
+        const bool down = ForegroundWindow::isMouseButtonDown();
+        const bool pressed = down && !m_mouseWasDown;
+        m_mouseWasDown = down;
+        if (!pressed || !isVisible() || !m_queryMode || m_dragging) return;
+        const QRect card = geometry().adjusted(kShadowMargin, kShadowMargin, -kShadowMargin, -kShadowMargin);
+        if (!card.contains(QCursor::pos())) hidePopup();
+    });
     m_hideTimer.setSingleShot(true);
     connect(&m_hideTimer, &QTimer::timeout, this, [this]() {
-        if (isVisible() && !isActiveWindow() && !m_dragging) hidePopup();   // 拖动时焦点在系统的拖放循环里
+        if (isVisible() && !isActiveWindow() && !m_dragging && !m_queryMode) hidePopup();   // 拖动时焦点在系统的拖放循环里
     });
     connect(m_searchEdit, &QLineEdit::textChanged, this, [this]() { refreshList(); });
     connect(m_listView, &QListView::clicked, this, [this](const QModelIndex& index) {
@@ -115,14 +158,13 @@ SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paste
 }
 
 void SnippetSearchPopup::setupUi() {
-    // 外层窗口透明，只用来给卡片的阴影留出绘制空间
     setAttribute(Qt::WA_TranslucentBackground);
-    resize(720 + 2 * kShadowMargin, 440 + 2 * kShadowMargin);
+    resize(kPopupW + 2 * kShadowMargin, kPopupH + 2 * kShadowMargin);
 
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin, kShadowMargin);
 
-    // 卡片：颜色全取 palette，light / gray / dark 主题下都可读
+    // 卡片
     auto* card = new QFrame(this);
     card->setObjectName("snippetCard");
     card->setStyleSheet("#snippetCard { background: palette(window); border: 1px solid palette(midlight);"
@@ -160,9 +202,9 @@ void SnippetSearchPopup::setupUi() {
     m_listView->setItemDelegate(new ResultDelegate(m_listView));
     m_listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_listView->setFrameShape(QFrame::NoFrame);
-    m_listView->setStyleSheet("QListView { background: transparent; outline: none; }");
-    m_listView->setUniformItemSizes(true);
-    // 鼠标悬停即预览（见 entered 连接），所以必须开鼠标跟踪
+    m_listView->setStyleSheet("QListView { background: palette(base); outline: none; border: 1px solid palette(midlight); border-radius: 10px; }");
+    m_listView->setUniformItemSizes(false);  
+    // 鼠标悬停即预览
     m_listView->setMouseTracking(true);
     m_listView->viewport()->setMouseTracking(true);
     midLayout->addWidget(m_listView, 5);
@@ -215,7 +257,24 @@ void SnippetSearchPopup::changeEvent(QEvent* event) {
         m_hideTimer.start(kBlurHideDelayMs);
 }
 
+void SnippetSearchPopup::showPopupAfterPrefix(int prefixLength) {
+    open(true);
+    m_erasePrefixChars = prefixLength;
+}
+
 void SnippetSearchPopup::showPopup() {
+    open(false);
+}
+
+void SnippetSearchPopup::open(bool followTyping) {
+    m_erasePrefixChars = 0;
+    m_queryLength = 0;
+    m_queryMode = followTyping;
+    setWindowFlag(Qt::WindowDoesNotAcceptFocus, followTyping);
+    setAttribute(Qt::WA_ShowWithoutActivating, followTyping);
+    m_searchEdit->setReadOnly(followTyping);
+    m_searchEdit->setFocusPolicy(followTyping ? Qt::NoFocus : Qt::StrongFocus);
+
     // 本窗口已在前台时（用户在软件内按热键）不能把自己当成粘贴目标
     const ForegroundWindow::Handle foreground = ForegroundWindow::current();
     if (foreground && !isVisible()) m_target = foreground;
@@ -233,49 +292,89 @@ void SnippetSearchPopup::showPopup() {
     refreshList();
 
     show();
+    if (followTyping) {
+        m_idleTimer.start();
+        m_mouseWasDown = ForegroundWindow::isMouseButtonDown();
+        m_outsideClickTimer.start();
+        return;
+    }
+    m_idleTimer.stop();
+    m_outsideClickTimer.stop();
     raise();
     activateWindow();
     ForegroundWindow::bringToFront(winId());
     m_searchEdit->setFocus();
 }
 
+void SnippetSearchPopup::setQuery(const QString& query) {
+    if (!m_queryMode || !isVisible()) return;
+    m_queryLength = query.size();
+    m_searchEdit->setText(query);
+    m_idleTimer.start();
+}
+
+void SnippetSearchPopup::navigate(int key) {
+    if (!m_queryMode || !isVisible()) return;
+    m_idleTimer.start();
+    switch (key) {
+    case Qt::Key_Down:   moveSelection(1); break;
+    case Qt::Key_Up:     moveSelection(-1); break;
+    case Qt::Key_Return: triggerPaste(m_listView->currentIndex()); break;
+    default:             hidePopup(); break;   // Esc、退格删到前缀、光标移动等：放弃
+    }
+}
+
 void SnippetSearchPopup::hidePopup() {
+    m_idleTimer.stop();
     m_hideTimer.stop();
+    m_outsideClickTimer.stop();
+    const bool wasVisible = isVisible();
     hide();
+    if (wasVisible) emit closed();
 }
 
 void SnippetSearchPopup::refreshList() {
     m_model->clear();
 
+    // 命中顺序与树一致（先本目录条目，再子目录），按目录路径变化插入各级目录行，列表就是一棵缩进的树
     auto hits = m_store->search(m_searchEdit->text(), true);
-    if (m_searchEdit->text().trimmed().isEmpty()) {
-        // 没有关键词时常用的排前面
-        std::stable_sort(hits.begin(), hits.end(), [](const SnippetStore::SearchHit& a, const SnippetStore::SearchHit& b) {
-            return a.item->useCount > b.item->useCount;
-        });
-    }
-
     if (hits.size() > kMaxResults) hits.resize(kMaxResults);
 
+    QStringList shown;   // 已经输出的目录链
     for (const auto& hit : hits) {
-        const QString title = hit.item->title;
-        const QString keyword = hit.item->keyword;
-        auto* row = new QStandardItem(title);
-        row->setData(keyword, kKeywordRole);
+        const QStringList parts = hit.trail.split(QStringLiteral(" / "));
+        int common = 0;
+        while (common < shown.size() && common < parts.size() && shown[common] == parts[common]) ++common;
+        for (int depth = common; depth < parts.size(); ++depth) {
+            auto* header = new QStandardItem(parts[depth]);
+            header->setEditable(false);
+            header->setSelectable(false);
+            header->setData(true, kHeaderRole);
+            header->setData(depth, kDepthRole);
+            m_model->appendRow(header);
+        }
+        shown = parts;
+
+        auto* row = new QStandardItem(hit.item->title);
+        row->setData(hit.item->keyword, kKeywordRole);
         row->setData(hit.item->id, IdRole);
         row->setData(hit.trail, TrailRole);
+        row->setData(static_cast<int>(parts.size()), kDepthRole);
         row->setEditable(false);
         m_model->appendRow(row);
     }
 
-    if (m_model->rowCount() == 0) {
+    if (hits.isEmpty()) {
         auto* empty = new QStandardItem(tr("No matching snippets"));
         empty->setEditable(false);
         empty->setSelectable(false);
         m_model->appendRow(empty);
     }
 
-    const QModelIndex first = m_model->index(0, 0);
+    QModelIndex first;
+    for (int r = 0; r < m_model->rowCount(); ++r) {
+        if (m_model->index(r, 0).flags() & Qt::ItemIsSelectable) { first = m_model->index(r, 0); break; }
+    }
     m_listView->setCurrentIndex(first);
     updatePreview(first);
 }
@@ -337,10 +436,16 @@ void SnippetSearchPopup::updatePreview(const QModelIndex& index) {
 void SnippetSearchPopup::moveSelection(int delta) {
     const int rows = m_model->rowCount();
     if (rows == 0) return;
-    const int current = m_listView->currentIndex().isValid() ? m_listView->currentIndex().row() : 0;
-    const QModelIndex next = m_model->index((current + delta + rows) % rows, 0);
-    m_listView->setCurrentIndex(next);
-    m_listView->scrollTo(next);
+    int row = m_listView->currentIndex().isValid() ? m_listView->currentIndex().row() : (delta > 0 ? -1 : 0);
+    // 目录行不可选，跳过；最多走一圈
+    for (int i = 0; i < rows; ++i) {
+        row = (row + delta + rows) % rows;
+        const QModelIndex next = m_model->index(row, 0);
+        if (!(next.flags() & Qt::ItemIsSelectable)) continue;
+        m_listView->setCurrentIndex(next);
+        m_listView->scrollTo(next);
+        return;
+    }
 }
 
 void SnippetSearchPopup::triggerPaste(const QModelIndex& index) {
@@ -348,9 +453,14 @@ void SnippetSearchPopup::triggerPaste(const QModelIndex& index) {
     const QString id = index.data(IdRole).toString();
     if (id.isEmpty()) return;
 
+    const int erase = m_erasePrefixChars + m_queryLength;
     hidePopup();
     ForegroundWindow::restore(m_target);
-    QTimer::singleShot(kPasteDelayMs, m_paster, [paster = m_paster, id]() { paster->paste(id); });
+    // 前缀已经打进目标窗口，焦点还回去之后先删掉再粘贴
+    QTimer::singleShot(kPasteDelayMs, m_paster, [paster = m_paster, id, erase]() {
+        PrefixWatcher::eraseTyped(erase);
+        paster->paste(id);
+    });
 }
 
 void SnippetSearchPopup::startDrag(const QModelIndex& index) {

@@ -46,4 +46,8 @@ bool bringToFront(quintptr winId) {
     return restore(static_cast<Handle>(winId));
 }
 
+bool isMouseButtonDown() {
+    return (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) || (::GetAsyncKeyState(VK_RBUTTON) & 0x8000);
+}
+
 }

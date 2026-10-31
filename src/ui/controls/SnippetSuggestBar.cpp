@@ -25,7 +25,7 @@ constexpr int kMarginY = 8;
 constexpr int kButtonH = 28;
 constexpr int kButtonPadX = 12;
 constexpr int kSpacing = 6;
-constexpr qreal kClickableProgress = 0.85;   // 展开到这个进度之后按钮才响应点击
+constexpr qreal kClickableProgress = 0.85;   
 
 qreal lerp(qreal a, qreal b, qreal t) { return a + (b - a) * t; }
 
@@ -37,7 +37,6 @@ QRectF lerpRect(const QRectF& a, const QRectF& b, qreal t) {
 } // namespace
 
 SnippetSuggestBar::SnippetSuggestBar(QWidget *parent) : QWidget(parent) {
-    // 和 LiveOverlay 一样：不能成为焦点窗口，否则目标应用失去前台，粘贴就落空
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint
                    | Qt::WindowDoesNotAcceptFocus);
     setAttribute(Qt::WA_TranslucentBackground);

@@ -59,6 +59,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/settings_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_history_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/snippet_search_index_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/google_sheets_parse_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -114,6 +115,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/SettingsBinder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.h
+    # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
@@ -148,6 +152,7 @@ if(WIN32)
         Qt6::Network 
         Qt6::Multimedia 
         Qt6::Concurrent
+        Qt6::CorePrivate
         imm32
     )
 elseif(APPLE)
@@ -160,6 +165,7 @@ elseif(APPLE)
         Qt6::Network 
         Qt6::Multimedia 
         Qt6::Concurrent
+        Qt6::CorePrivate
         "-framework ApplicationServices"
         "-framework AVFoundation"
         "-framework AppKit"
@@ -175,6 +181,7 @@ else()
         Qt6::Network 
         Qt6::Multimedia 
         Qt6::Concurrent
+        Qt6::CorePrivate
     )
 endif()
 

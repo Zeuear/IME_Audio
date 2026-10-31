@@ -240,7 +240,7 @@ bool SnippetStore::loadFromObject(QJsonObject root) {
         for (const QJsonValue& v : s["trigger_prefixes"].toArray())
             m_settings.triggerPrefixes.push_back(v.toString());
     }
-    m_settings.enablePrefixTrigger = s["enable_prefix_trigger"].toBool(true);
+    m_settings.enablePrefixTrigger = s["enable_prefix_trigger"].toBool(false);
     m_settings.autoDeletePrefix = s["auto_delete_prefix"].toBool(true);
     m_settings.comboImageFirst = s["combo_image_first"].toBool(false);
     m_settings.multilineEnabled = s["multiline_enabled"].toBool(true);
@@ -463,7 +463,7 @@ QJsonObject SnippetStore::getDefaultData() const {
     QJsonObject settingsObj;
     settingsObj["hotkey"] = "";
     settingsObj["trigger_prefixes"] = QJsonArray{ "//", ";;" };
-    settingsObj["enable_prefix_trigger"] = true;
+    settingsObj["enable_prefix_trigger"] = false;
     settingsObj["auto_delete_prefix"] = true;
     settingsObj["combo_image_first"] = false;
     settingsObj["multiline_enabled"] = true;

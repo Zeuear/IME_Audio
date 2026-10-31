@@ -51,6 +51,9 @@ find_package(QT NAMES Qt6 COMPONENTS
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS 
             Core 
+            Gui
+            GuiPrivate
+            CorePrivate
             Widgets 
             Network 
             Multimedia 
@@ -63,6 +66,9 @@ set(QtModules
       Qt${QT_VERSION_MAJOR}::Network 
       Qt${QT_VERSION_MAJOR}::Concurrent 
       Qt${QT_VERSION_MAJOR}::Multimedia
+      # QZipReader：读 Google 表格导出的 XLSX。它是私有头，所在模块随 Qt 版本变过（6.11 在 Core，更早在 Gui），两个都链上
+      Qt${QT_VERSION_MAJOR}::CorePrivate
+      Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 
 # 3rdparty

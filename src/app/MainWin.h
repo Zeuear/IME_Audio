@@ -29,6 +29,7 @@ class SnippetStore;
 class SnippetPaster;
 class SnippetSuggestBar;
 class SnippetSearchPopup;
+class PrefixWatcher;
 class StreamingCaptionEngine;
 class TextPolishService;
 class TranslationService;
@@ -143,6 +144,7 @@ private:
     SnippetSuggestBar* m_suggestBar = nullptr;
     QSet<QString> m_handledSnippetIds;   // 这句话里已点击/已超时的话术，下一句开始前不再提示
     SnippetSearchPopup* m_searchPopup = nullptr;
+    PrefixWatcher* m_prefixWatcher = nullptr;   // 打字前缀呼出搜索框；用户不勾选就不安装钩子
     StreamingCaptionEngine* m_captionEngine = nullptr;  
     bool m_liveCaptionFailNotified = false;
 

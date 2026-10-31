@@ -12,9 +12,7 @@
 
 class QVariantAnimation;
 
-// @brief 悬浮窗旁的指令入口：听写里出现话术快捷码时，先显示一个小圆形箭头（多条时带条数角标），
-//        鼠标移上去才展开成可点击的条目按钮，移开后延迟收起。
-//        置顶且不抢焦点，点击后焦点仍在目标应用里，粘贴才会落到用户正在输入的位置。
+// @brief 悬浮窗旁的指令入口
 class SnippetSuggestBar : public QWidget {
     Q_OBJECT
 

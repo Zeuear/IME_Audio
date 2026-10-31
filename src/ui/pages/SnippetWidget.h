@@ -32,6 +32,8 @@ signals:
     void storeChanged();
     // 全局热键被按下，请求呼出话术搜索框
     void searchPopupRequested();
+    // 打字前缀监听的开关或前缀列表变了，请求主窗口按最新设置重新配置监听
+    void prefixTriggerChanged();
 
 public:
     explicit SnippetWidget(QWidget *parent = nullptr);
@@ -85,6 +87,10 @@ private:
     QLabel* m_linesLabel = nullptr;
     AnimatedCheckBox* m_voiceTriggerChk = nullptr;
     AnimatedCheckBox* m_imageFirstChk = nullptr;
+    AnimatedCheckBox* m_prefixTriggerChk = nullptr;
+    AnimatedCheckBox* m_prefixDeleteChk = nullptr;
+    QLabel* m_prefixLabel = nullptr;
+    QLineEdit* m_prefixEdit = nullptr;
     QSpinBox* m_maxLinesSpin = nullptr;
     QLabel* m_hotkeyLabel = nullptr;
     ShortcutEdit* m_hotkeyEdit = nullptr;

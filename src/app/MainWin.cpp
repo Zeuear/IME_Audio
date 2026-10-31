@@ -44,6 +44,7 @@
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
 #include "snippets/SnippetStore.h"
+#include "services/PrefixWatcher.h"
 #include "services/SnippetPaster.h"
 #include "ui/models/LiveCaptionModel.h"
 #include "ui/controls/SettingsBinder.h"
@@ -205,6 +206,7 @@ void MainWin::initialize() {
     m_snippetPaster = new SnippetPaster(m_snippetStore, m_networkManager, this);
     m_suggestBar = new SnippetSuggestBar();
     m_searchPopup = new SnippetSearchPopup(m_snippetStore, m_snippetPaster);
+    m_prefixWatcher = new PrefixWatcher(this);
     ui->snippet_widget->setSnippetStore(m_snippetStore);
     ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
 }  
@@ -534,6 +536,28 @@ void MainWin::setupUiConnections(){
     });
     connect(ui->snippet_widget, &SnippetWidget::storeChanged, m_suggestBar, &SnippetSuggestBar::dismiss);
     connect(ui->snippet_widget, &SnippetWidget::searchPopupRequested, m_searchPopup, &SnippetSearchPopup::showPopup);
+
+    // 打字前缀：勾选后才安装全局键盘钩子，取消勾选立即卸载
+    auto applyPrefixTrigger = [this]() {
+        const AppSettings& s = m_snippetStore->settings();
+        m_prefixWatcher->setPrefixes(s.triggerPrefixes);
+        m_prefixWatcher->setEnabled(s.enablePrefixTrigger);
+    };
+    applyPrefixTrigger();
+    connect(ui->snippet_widget, &SnippetWidget::prefixTriggerChanged, this, applyPrefixTrigger);
+    connect(m_prefixWatcher, &PrefixWatcher::prefixTyped, this, [this](const QString& prefix) {
+        // 在本软件自己的窗口里打字（比如搜索框）不呼出，否则弹窗会盖在自己上面
+        if (QApplication::activeWindow()) {
+            m_prefixWatcher->endQuery();
+            return;
+        }
+        const bool erase = m_snippetStore->settings().autoDeletePrefix;
+        m_searchPopup->showPopupAfterPrefix(erase ? static_cast<int>(prefix.size()) : 0);
+    });
+    // 弹窗不拿焦点，搜索词和导航键都由全局钩子转发
+    connect(m_prefixWatcher, &PrefixWatcher::queryChanged, m_searchPopup, &SnippetSearchPopup::setQuery);
+    connect(m_prefixWatcher, &PrefixWatcher::navKey, m_searchPopup, &SnippetSearchPopup::navigate);
+    connect(m_searchPopup, &SnippetSearchPopup::closed, m_prefixWatcher, [this]() { m_prefixWatcher->endQuery(); });
     connect(m_suggestBar, &SnippetSuggestBar::closed, this,
             [this](const QStringList& ids) { m_handledSnippetIds.unite(QSet<QString>(ids.begin(), ids.end())); });
     connect(m_captionModel, &LiveCaptionModel::changed, this, [this]() {

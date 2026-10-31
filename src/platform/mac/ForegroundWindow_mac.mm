@@ -22,4 +22,8 @@ bool bringToFront(quintptr) {
     return true;
 }
 
+bool isMouseButtonDown() {
+    return ([NSEvent pressedMouseButtons] & 0x3) != 0;   // bit0 左键，bit1 右键
+}
+
 }

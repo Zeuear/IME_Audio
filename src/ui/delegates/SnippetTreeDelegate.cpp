@@ -14,15 +14,15 @@
 namespace {
 
 constexpr int kFolderHeight = 40;
-constexpr int kItemMinHeight = 46;
+constexpr int kItemMinHeight = 48;
 constexpr int kPad = 10;           // 行内左右留白
 constexpr int kVPad = 8;           // 条目上下留白
 constexpr int kGap = 10;
 constexpr int kBadge = 20;         // 标题/内容徽章边长
 constexpr int kKeywordW = 84;
-constexpr int kChipH = 24;
 constexpr int kImageW = 58;
 constexpr int kImageH = 36;
+constexpr int kChipH = kImageH;    // 快捷码芯片与配图同高，右侧两块才齐整
 constexpr int kRadius = 6;
 constexpr int kWrapFlags = Qt::TextWordWrap | Qt::TextWrapAnywhere;   // 中文没有空格，也要能断行
 
@@ -64,6 +64,30 @@ int depthOf(QModelIndex index) {
 }
 
 } // namespace
+
+// 目录行各块的位置：绘制和点击命中共用，保证“看到的标题区”就是“能触发重命名的区域”
+SnippetTreeDelegate::FolderGeom SnippetTreeDelegate::folderGeometry(const QStyleOptionViewItem& option,
+                                                                    const QModelIndex& index) const {
+    FolderGeom g;
+    const int level = index.data(SnippetTreeModel::LevelRole).toInt();
+    const QRect row = option.rect.adjusted(0, 1, 0, -1);
+    const int cy = row.center().y();
+    int x = row.left() + kPad + 16 + 26;   // 箭头 + 文件夹图标
+
+    g.badgeFont = option.font;
+    g.badgeFont.setBold(true);
+    g.badgeFont.setPointSizeF(qMax(7.0, option.font.pointSizeF() - 1));
+    g.badgeText = SnippetTreeModel::levelBadge(level);
+    g.badge = QRect(x, cy - 10, QFontMetrics(g.badgeFont).horizontalAdvance(g.badgeText) + 16, 20);
+    x = g.badge.right() + 10;
+
+    g.countText = QCoreApplication::translate("SnippetTreeDelegate", "%1 snippets")
+                      .arg(index.data(SnippetTreeModel::CountRole).toInt());
+    const int countW = QFontMetrics(option.font).horizontalAdvance(g.countText);
+    g.count = QRect(row.right() - kPad - countW, row.top(), countW, row.height());
+    g.title = QRect(x, row.top(), qMax(20, g.count.left() - kGap - x), row.height());
+    return g;
+}
 
 SnippetTreeDelegate::SnippetTreeDelegate(SnippetStore* store, QObject* parent)
     : QStyledItemDelegate(parent), m_store(store) {}
@@ -126,12 +150,16 @@ SnippetTreeDelegate::ItemLayout SnippetTreeDelegate::layoutFor(const QRect& row,
 
     l.height = qMax(kItemMinHeight, qMax(titleH, textH) + 2 * kVPad);
 
+    // 文字块在行内垂直居中；徽章与首行文字等高居中对齐
     const int top = row.top();
-    l.badgeTitle.moveTop(top + kVPad);
-    l.badgeText.moveTop(top + kVPad);
-    l.title.setTop(top + kVPad);
+    const int blockH = qMax(qMax(titleH, textH), fm.lineSpacing());
+    const int contentTop = top + (l.height - blockH) / 2;
+    const int badgeTop = contentTop + (fm.lineSpacing() - kBadge) / 2;
+    l.badgeTitle.moveTop(badgeTop);
+    l.badgeText.moveTop(badgeTop);
+    l.title.setTop(contentTop);
     l.title.setHeight(qMax(titleH, fm.lineSpacing()));
-    l.text.setTop(top + kVPad);
+    l.text.setTop(contentTop);
     l.text.setHeight(qMax(textH, fm.lineSpacing()));
     l.keyword.moveTop(top + (l.height - kChipH) / 2);
     l.image.moveTop(top + (l.height - kImageH) / 2);
@@ -152,7 +180,10 @@ QSize SnippetTreeDelegate::sizeHint(const QStyleOptionViewItem& option, const QM
 
 SnippetTreeDelegate::Zone SnippetTreeDelegate::zoneAt(const QStyleOptionViewItem& option, const QModelIndex& index,
                                                       const QPoint& pos) const {
-    if (index.data(SnippetTreeModel::IsFolderRole).toBool()) return Zone::Title;
+    if (index.data(SnippetTreeModel::IsFolderRole).toBool()) {
+        // 箭头、图标、徽章、话术数都不是重命名区，只有标题文字所在的区域算
+        return folderGeometry(option, index).title.contains(pos) ? Zone::Title : Zone::None;
+    }
     const ItemLayout l = layoutFor(option.rect, option.font, index);
     if (l.image.adjusted(-4, -4, 4, 4).contains(pos)) return Zone::Image;
     if (l.keyword.adjusted(-4, -4, 4, 4).contains(pos)) return Zone::Keyword;
@@ -187,6 +218,7 @@ void SnippetTreeDelegate::paintFolder(QPainter* painter, const QStyleOptionViewI
 
     int x = row.left() + kPad;
     const int cy = row.center().y();
+    const FolderGeom g = folderGeometry(option, index);
 
     // 展开箭头：根级没有视图自带的分支列，所以自己画
     painter->setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
@@ -202,35 +234,24 @@ void SnippetTreeDelegate::paintFolder(QPainter* painter, const QStyleOptionViewI
     const QIcon folderIcon = style->standardIcon((option.state & QStyle::State_Open) ? QStyle::SP_DirOpenIcon
                                                                                      : QStyle::SP_DirIcon);
     folderIcon.paint(painter, QRect(x, cy - 9, 18, 18));
-    x += 26;
 
-    QFont badgeFont = option.font;
-    badgeFont.setBold(true);
-    badgeFont.setPointSizeF(qMax(7.0, option.font.pointSizeF() - 1));
-    painter->setFont(badgeFont);
-    const QString badgeText = SnippetTreeModel::levelBadge(level);
-    const QRect badge(x, cy - 10, QFontMetrics(badgeFont).horizontalAdvance(badgeText) + 16, 20);
+    painter->setFont(g.badgeFont);
     painter->setPen(Qt::NoPen);
     painter->setBrush(color);
-    painter->drawRoundedRect(badge, 4, 4);
+    painter->drawRoundedRect(g.badge, 4, 4);
     painter->setPen(Qt::white);
-    painter->drawText(badge, Qt::AlignCenter, badgeText);
-    x = badge.right() + 10;
+    painter->drawText(g.badge, Qt::AlignCenter, g.badgeText);
 
     // 右侧话术数
     QFont titleFont = option.font;
     titleFont.setBold(true);
     painter->setFont(option.font);
-    const QString count = QCoreApplication::translate("SnippetTreeDelegate", "%1 snippets")
-                              .arg(index.data(SnippetTreeModel::CountRole).toInt());
-    const int countW = painter->fontMetrics().horizontalAdvance(count);
-    const QRect countRect(row.right() - kPad - countW, row.top(), countW, row.height());
     painter->setPen(mix(option.palette.color(QPalette::Text), option.palette.color(QPalette::Base), 40));
-    painter->drawText(countRect, Qt::AlignVCenter | Qt::AlignRight, count);
+    painter->drawText(g.count, Qt::AlignVCenter | Qt::AlignRight, g.countText);
 
     painter->setFont(titleFont);
     painter->setPen(color);
-    const QRect titleRect(x, row.top(), qMax(20, countRect.left() - kGap - x), row.height());
+    const QRect titleRect = g.title;
     painter->drawText(titleRect, Qt::AlignVCenter | Qt::AlignLeft,
                       painter->fontMetrics().elidedText(index.data(Qt::DisplayRole).toString(), Qt::ElideRight,
                                                         titleRect.width()));

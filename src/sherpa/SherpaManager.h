@@ -92,6 +92,8 @@ private:
 
     // 任务队列相关
     QQueue<PendingTask> m_queue;
+    int m_loadsInFlight = 0;     
+    AppConfig m_lastLoadRequest; 
     mutable QMutex m_queueMutex;
     QWaitCondition m_queueNotEmpty;
 
@@ -127,7 +129,7 @@ signals:
     void installFileFinished(const QString& repoId, const QString& filename);
     void installFileError(const QString& repoId, const QString& filename, const QString& error);
 
-    // 解压进度（仅真正走解压的组才发；纯文件下载组不发）
+    // 解压进度
     void extractStarted(const QString& repoId, int totalLines);
     void extractProgress(const QString& repoId, int current, int total);
     void extractFinished(const QString& repoId, bool success);
