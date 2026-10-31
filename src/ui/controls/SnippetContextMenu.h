@@ -42,6 +42,7 @@ private:
     void onChooseFile(const QString& itemId);
     void onPasteClipboardFile(const QString& itemId);
     void onClearFile(const QString& itemId);
+    void attachFile(const QString& itemId, const QString& path);
     void onMoveNode(const QString& nodeId, int direction);
     void onDeleteNode(const QString& nodeId);
 

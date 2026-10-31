@@ -67,7 +67,7 @@ struct PolishConfig {
         return translateEnabled ? targetLang : QStringLiteral("不翻译");
     }
     bool usesLocalTranslation() const { return aiEngineIndex == kLocalTranslationEngine; }
-    // 云端请求的目标语言：选了本地引擎时翻译由本地完成，云端请求里不能再带翻译指令
+    // 云端请求的目标语言
     QString cloudTargetLang() const {
         return usesLocalTranslation() ? QStringLiteral("不翻译") : activeTargetLang();
     }

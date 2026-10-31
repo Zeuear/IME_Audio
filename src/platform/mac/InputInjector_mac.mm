@@ -7,6 +7,7 @@
 #include <QMimeData>
 #include <QThread>
 #include <QTimer>
+#include <QUrl>
 
 #include <algorithm>
 #include <vector>
@@ -169,6 +170,13 @@ bool InputInjector::sendCtrlV() {
         CGEventPost(kCGHIDEventTap, event);
         CFRelease(event);
     }
+    return true;
+}
+
+bool InputInjector::setClipboardFile(const QString& path) {
+    auto* mime = new QMimeData;   // 所有权交给剪贴板
+    mime->setUrls({ QUrl::fromLocalFile(path) });
+    QGuiApplication::clipboard()->setMimeData(mime);
     return true;
 }
 

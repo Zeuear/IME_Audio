@@ -180,16 +180,17 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
         tip += "<b>" + html(item->title) + "</b>";
         const QString file = imageFileFor(*item);
         if (!file.isEmpty() && QFileInfo::exists(file)) tip += "<br><img src=\"" + file.toHtmlEscaped() + "\" width=\"260\">";
+        if (!item->filePath.isEmpty()) tip += "<br>" + html(item->filePath);
         tip += "<br>" + html(item->text);
         return tip;
     }
     case TextRole: {
         if (isFol) return QVariant();
         if (item->filePath.isEmpty()) return item->text;
-        // 委托只画这段文字，附件名拼在后面才看得出条目带了文件
+        // 委托只画这段文字。附件名放第一行：单行显示或内容很长时，后面的行会被截掉
         const QString attachment = QCoreApplication::translate("SnippetTreeModel", "File: %1")
                                        .arg(QFileInfo(item->filePath).fileName());
-        return item->text.isEmpty() ? attachment : item->text + '\n' + attachment;
+        return item->text.isEmpty() ? attachment : attachment + '\n' + item->text;
     }
     case KeywordRole:
         return isFol ? QVariant() : QVariant(item->keyword);

@@ -993,6 +993,60 @@ void MainWin::updateAiEngineUi() {
     ui->pipeline_hint_label->setVisible(steps.size() > 2);
 }
 
+// qss 只管写了规则的控件；自绘控件和 qss 里的 palette(...) 跟的是应用调色板。
+// Fusion 的默认调色板随系统深浅色，不设的话系统为深色时，白色主题的弹窗会是深底深字
+static QPalette themePalette(LiveOverlay::Theme theme) {
+    struct Colors { QColor window, base, text, button, midlight, mid, highlight, disabledText; };
+    Colors c;
+    switch (theme) {
+    case LiveOverlay::Theme::Dark:
+        c = { QColor(53, 53, 53), QColor(42, 42, 42), QColor(220, 220, 220), QColor(42, 42, 42),
+              QColor(80, 80, 80), QColor(90, 90, 90), QColor(0, 122, 204), QColor(120, 120, 120) };
+        break;
+    case LiveOverlay::Theme::Gray:
+        c = { QColor(200, 200, 200), QColor(160, 160, 160), QColor(0, 0, 0), QColor(130, 130, 130),
+              QColor(140, 140, 140), QColor(120, 120, 120), QColor(0, 120, 215), QColor(110, 110, 110) };
+        break;
+    default:
+        c = { QColor(245, 245, 245), QColor(255, 255, 255), QColor(30, 30, 30), QColor(240, 240, 240),
+              QColor(215, 215, 215), QColor(200, 200, 200), QColor(0, 120, 215), QColor(170, 170, 170) };
+        break;
+    }
+
+    QPalette pal;
+    pal.setColor(QPalette::Window, c.window);
+    pal.setColor(QPalette::WindowText, c.text);
+    pal.setColor(QPalette::Base, c.base);
+    pal.setColor(QPalette::AlternateBase, c.window);
+    pal.setColor(QPalette::Text, c.text);
+    pal.setColor(QPalette::Button, c.button);
+    pal.setColor(QPalette::ButtonText, c.text);
+    pal.setColor(QPalette::ToolTipBase, c.base);
+    pal.setColor(QPalette::ToolTipText, c.text);
+    pal.setColor(QPalette::PlaceholderText, c.disabledText);
+    pal.setColor(QPalette::Midlight, c.midlight);
+    pal.setColor(QPalette::Mid, c.mid);
+    pal.setColor(QPalette::Highlight, c.highlight);
+    pal.setColor(QPalette::HighlightedText, Qt::white);
+    for (QPalette::ColorRole role : { QPalette::WindowText, QPalette::Text, QPalette::ButtonText })
+        pal.setColor(QPalette::Disabled, role, c.disabledText);
+    return pal;
+}
+
+static void applyAppTheme(LiveOverlay::Theme theme) {
+    const QString qss = theme == LiveOverlay::Theme::Dark ? QStringLiteral(":/style/myblackstyle.qss")
+                      : theme == LiveOverlay::Theme::Gray ? QStringLiteral(":/style/mygraystyle.qss")
+                                                          : QStringLiteral(":/style/mywhitestyle.qss");
+    qApp->setStyle(QStyleFactory::create("Fusion"));
+    // 先设调色板：setStyleSheet 重新抛光控件时，palette(...) 才会取到新颜色
+    qApp->setPalette(themePalette(theme));
+    QFile styleFile(qss);
+    styleFile.open(QFile::ReadOnly | QFile::Text);
+    QTextStream ts(&styleFile);
+    qApp->setStyleSheet(ts.readAll());
+    styleFile.close();
+}
+
 void MainWin::readIni() {
   QString inifile = ConfigManager::configFilePath();
   if (!QFile::exists(inifile)) return;
@@ -1001,35 +1055,17 @@ void MainWin::readIni() {
   style = settings.value("style", "dark").toString();
 
   if (style == "dark") {
-    QString style = "Fusion";
-    qApp->setStyle(QStyleFactory::create(style));
-    QFile styleFile(":/style/myblackstyle.qss");
-    styleFile.open(QFile::ReadOnly | QFile::Text);
-    QTextStream ts(&styleFile);
-    qApp->setStyleSheet(ts.readAll());
-    styleFile.close();
+    applyAppTheme(LiveOverlay::Theme::Dark);
 
     ui->action_dark->setChecked(true);
     m_liveOverlay->setTheme(LiveOverlay::Theme::Dark);
   } else if (style == "gray") {
-    QString style = "Fusion";
-    qApp->setStyle(QStyleFactory::create(style));
-    QFile styleFile(":/style/mygraystyle.qss");
-    styleFile.open(QFile::ReadOnly | QFile::Text);
-    QTextStream ts(&styleFile);
-    qApp->setStyleSheet(ts.readAll());
-    styleFile.close();
+    applyAppTheme(LiveOverlay::Theme::Gray);
 
     ui->action_gray->setChecked(true);
     m_liveOverlay->setTheme(LiveOverlay::Theme::Gray);
   } else {
-    QString style = "Fusion";
-    qApp->setStyle(QStyleFactory::create(style));
-    QFile styleFile(":/style/mywhitestyle.qss");
-    styleFile.open(QFile::ReadOnly | QFile::Text);
-    QTextStream ts(&styleFile);
-    qApp->setStyleSheet(ts.readAll());
-    styleFile.close();
+    applyAppTheme(LiveOverlay::Theme::Light);
 
     ui->action_light->setChecked(true);
     m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
@@ -1057,13 +1093,7 @@ void MainWin::on_actionAbout_Qt_triggered() {
 }
 
 void MainWin::on_action_light_triggered() {
-    QString style = "Fusion";
-    qApp->setStyle(QStyleFactory::create(style));
-    QFile styleFile(":/style/mywhitestyle.qss");
-    styleFile.open(QFile::ReadOnly | QFile::Text);
-    QTextStream ts(&styleFile);
-    qApp->setStyleSheet(ts.readAll());
-    styleFile.close();
+    applyAppTheme(LiveOverlay::Theme::Light);
 
     ui->action_light->setChecked(true);
     m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
@@ -1074,13 +1104,7 @@ void MainWin::on_action_light_triggered() {
 }
 
 void MainWin::on_action_gray_triggered() {
-  QString style = "Fusion";
-  qApp->setStyle(QStyleFactory::create(style));
-  QFile styleFile(":/style/mygraystyle.qss");
-  styleFile.open(QFile::ReadOnly | QFile::Text);
-  QTextStream ts(&styleFile);
-  qApp->setStyleSheet(ts.readAll());
-  styleFile.close();
+  applyAppTheme(LiveOverlay::Theme::Gray);
   qApp->setFont(QFont("Arial", 9));
 
   ui->action_gray->setChecked(true);
@@ -1092,13 +1116,7 @@ void MainWin::on_action_gray_triggered() {
 }
 
 void MainWin::on_action_dark_triggered() {
-  QString style = "Fusion";
-  qApp->setStyle(QStyleFactory::create(style));
-  QFile styleFile(":/style/myblackstyle.qss");
-  styleFile.open(QFile::ReadOnly | QFile::Text);
-  QTextStream ts(&styleFile);
-  qApp->setStyleSheet(ts.readAll());
-  styleFile.close();
+  applyAppTheme(LiveOverlay::Theme::Dark);
   qApp->setFont(QFont("Arial", 9));
 
   ui->action_dark->setChecked(true);

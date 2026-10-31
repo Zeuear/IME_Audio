@@ -934,41 +934,24 @@
                <property name="verticalSpacing">
                 <number>10</number>
                </property>
-               <item row="0" column="0" colspan="4">
-                <layout class="QHBoxLayout" name="polish_title_layout">
-                 <item>
-                  <widget class="QLabel" name="label_24">
-                   <property name="text">
-                    <string>Polishing</string>
-                   </property>
-                   <property name="font">
-                    <font>
-                     <bold>true</bold>
-                    </font>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="AnimatedCheckBox" name="enable_enhancement_checkbox">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="polish_title_spacer">
-                   <property name="orientation">
-                    <enum>Qt::Orientation::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_24">
+                 <property name="text">
+                  <string>Polishing</string>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1" alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter">
+                <widget class="AnimatedCheckBox" name="enable_enhancement_checkbox">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_18">
@@ -1027,41 +1010,24 @@
                <property name="verticalSpacing">
                 <number>10</number>
                </property>
-               <item row="0" column="0" colspan="4">
-                <layout class="QHBoxLayout" name="translate_title_layout">
-                 <item>
-                  <widget class="QLabel" name="translate_title_label">
-                   <property name="text">
-                    <string>Translation</string>
-                   </property>
-                   <property name="font">
-                    <font>
-                     <bold>true</bold>
-                    </font>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="AnimatedCheckBox" name="translate_enabled_checkbox">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="translate_title_spacer">
-                   <property name="orientation">
-                    <enum>Qt::Orientation::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
+               <item row="0" column="0">
+                <widget class="QLabel" name="translate_title_label">
+                 <property name="text">
+                  <string>Translation</string>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1" alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter">
+                <widget class="AnimatedCheckBox" name="translate_enabled_checkbox">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_19">

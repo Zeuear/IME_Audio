@@ -4,14 +4,17 @@
 #include <QCryptographicHash>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QMimeData>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPainter>
 #include <QPointer>
 #include <QTimer>
+#include <QUrl>
 #include <QVector>
 #include <functional>
+#include <memory>
 
 #include "services/InputInjector.h"
 #include "snippets/SnippetStore.h"
@@ -66,6 +69,36 @@ void SnippetPaster::paste(const QString& itemId) {
         }
         pasteLoaded(text, flattenOnWhite(image), filePath, imageFirst);
     });
+}
+
+// 一次拖放只能落下一种内容，目标应用看到文字和文件并存时常常只取文字，
+// 所以带附件的条目只拖附件；文字要和附件一起发时用点击粘贴
+QMimeData* SnippetPaster::createDragMime(const QString& itemId) const {
+    const SnippetItem* item = m_store->findItemById(itemId);
+    if (!item) return nullptr;
+
+    const QString imagePath = item->imagePath.trimmed();
+    const bool remote = imagePath.startsWith(QLatin1String("http://")) || imagePath.startsWith(QLatin1String("https://"));
+    const QString imageFile = imagePath.isEmpty() ? QString()
+                            : remote ? m_store->remoteImageCachePath(imagePath)
+                                     : m_store->resolveImagePath(imagePath);
+    const bool hasImage = !imageFile.isEmpty() && QFileInfo::exists(imageFile);
+    const QString filePath = item->filePath.trimmed();
+    const bool hasFile = !filePath.isEmpty() && QFileInfo::exists(filePath);
+
+    auto mime = std::make_unique<QMimeData>();
+    QList<QUrl> urls;
+    if (hasImage) urls << QUrl::fromLocalFile(imageFile);
+    if (hasFile) urls << QUrl::fromLocalFile(filePath);
+    if (!urls.isEmpty()) {
+        mime->setUrls(urls);
+        if (hasImage && !hasFile) mime->setImageData(flattenOnWhite(QImage(imageFile)));
+    } else if (!item->text.trimmed().isEmpty()) {
+        mime->setText(item->text);
+    } else {
+        return nullptr;
+    }
+    return mime.release();
 }
 
 void SnippetPaster::pasteLoaded(const QString& text, const QImage& image, const QString& filePath, bool imageFirst) {

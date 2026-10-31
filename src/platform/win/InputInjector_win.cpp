@@ -4,11 +4,13 @@
 #include <QClipboard>
 #include <QApplication>
 #include <QThread>
+#include <QDir>
 #include <QMimeData>
 
 #define NOMINMAX
 #include <windows.h>
 #include <imm.h>
+#include <shlobj.h>
 
 #include <uiautomation.h>
 #include <atlbase.h>
@@ -388,6 +390,47 @@ bool InputInjector::sendCtrlV() {
 
     PostMessage(hwnd, WM_PASTE, 0, 0);
     return true;
+}
+
+// 按资源管理器复制文件的格式写：CF_HDROP + Preferred DropEffect。
+// Qt 的 setMimeData 走 OLE 延迟渲染且不带 DropEffect，部分聊天软件的输入框不认
+bool InputInjector::setClipboardFile(const QString& path) {
+    const std::wstring wide = QDir::toNativeSeparators(path).toStdWString();
+    const SIZE_T dropSize = sizeof(DROPFILES) + (wide.size() + 2) * sizeof(wchar_t);   // 文件列表以两个 0 结尾
+
+    HGLOBAL drop = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, dropSize);
+    HGLOBAL effect = GlobalAlloc(GMEM_MOVEABLE, sizeof(DWORD));
+    auto* dropFiles = drop ? static_cast<DROPFILES*>(GlobalLock(drop)) : nullptr;
+    auto* dropEffect = effect ? static_cast<DWORD*>(GlobalLock(effect)) : nullptr;
+    if (dropFiles && dropEffect) {
+        dropFiles->pFiles = sizeof(DROPFILES);
+        dropFiles->fWide = TRUE;
+        memcpy(reinterpret_cast<char*>(dropFiles) + sizeof(DROPFILES), wide.c_str(), wide.size() * sizeof(wchar_t));
+        *dropEffect = DROPEFFECT_COPY;
+    }
+    if (dropFiles) GlobalUnlock(drop);
+    if (dropEffect) GlobalUnlock(effect);
+
+    // 剪贴板可能正被别的程序占用，稍等重试
+    bool opened = false;
+    for (int i = 0; dropFiles && dropEffect && !opened && i < 5; ++i) {
+        opened = OpenClipboard(nullptr);
+        if (!opened) QThread::msleep(20);
+    }
+    if (!opened) {
+        LOG_WARN(QString("setClipboardFile: cannot open clipboard, GetLastError=%1").arg(GetLastError()));
+        if (drop) GlobalFree(drop);
+        if (effect) GlobalFree(effect);
+        return false;
+    }
+
+    EmptyClipboard();
+    // SetClipboardData 成功后内存归系统所有
+    const bool ok = SetClipboardData(CF_HDROP, drop) != nullptr;
+    if (!ok) GlobalFree(drop);
+    if (!SetClipboardData(RegisterClipboardFormatW(CFSTR_PREFERREDDROPEFFECT), effect)) GlobalFree(effect);
+    CloseClipboard();
+    return ok;
 }
 
 bool InputInjector::pasteViaClipboard(const QString& text) {

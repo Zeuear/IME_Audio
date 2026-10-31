@@ -20,6 +20,7 @@ public:
 
 private:
     static bool sendCtrlV();
+    static bool setClipboardFile(const QString& path);
     static bool pasteViaClipboard(const QString& text);
     static bool pasteViaUnicodeTyping(const QString& text);
 };

@@ -1,6 +1,8 @@
 #include "SnippetSearchPopup.h"
 
+#include <QApplication>
 #include <QCursor>
+#include <QDrag>
 #include <QEvent>
 #include <QFileInfo>
 #include <QFontDatabase>
@@ -14,6 +16,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListView>
+#include <QMimeData>
+#include <QMouseEvent>
 #include <QImageReader>
 #include <QPixmap>
 #include <QScreen>
@@ -92,10 +96,12 @@ SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paste
 
     m_hideTimer.setSingleShot(true);
     connect(&m_hideTimer, &QTimer::timeout, this, [this]() {
-        if (isVisible() && !isActiveWindow()) hidePopup();
+        if (isVisible() && !isActiveWindow() && !m_dragging) hidePopup();   // 拖动时焦点在系统的拖放循环里
     });
     connect(m_searchEdit, &QLineEdit::textChanged, this, [this]() { refreshList(); });
-    connect(m_listView, &QListView::clicked, this, &SnippetSearchPopup::triggerPaste);
+    connect(m_listView, &QListView::clicked, this, [this](const QModelIndex& index) {
+        if (!m_dragged) triggerPaste(index);
+    });
     // 鼠标悬停切换选中项，预览随之更新（和方向键共用同一条路径）
     connect(m_listView, &QListView::entered, this, [this](const QModelIndex& index) {
         if (index.flags() & Qt::ItemIsSelectable) m_listView->setCurrentIndex(index);
@@ -105,6 +111,7 @@ SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paste
 
     m_searchEdit->installEventFilter(this);
     m_listView->installEventFilter(this);
+    m_listView->viewport()->installEventFilter(this);
 }
 
 void SnippetSearchPopup::setupUi() {
@@ -198,7 +205,7 @@ void SnippetSearchPopup::setupUi() {
 
 void SnippetSearchPopup::retranslateUi() {
     m_searchEdit->setPlaceholderText(tr("Search snippets (title / text / keyword / folder)"));
-    m_hintLabel->setText(tr("↑↓ / Hover to preview  ·  Enter / Click to paste  ·  Esc to close"));
+    m_hintLabel->setText(tr("↑↓ / Hover to preview  ·  Enter / Click to paste  ·  Drag to another window  ·  Esc to close"));
 }
 
 void SnippetSearchPopup::changeEvent(QEvent* event) {
@@ -320,10 +327,11 @@ void SnippetSearchPopup::updatePreview(const QModelIndex& index) {
     }
     QString preview = item->text.left(380);
     if (!item->filePath.isEmpty()) {
-        if (!preview.isEmpty()) preview += '\n';
-        preview += tr("File: %1").arg(QFileInfo(item->filePath).fileName());
+        const QString attachment = tr("File: %1").arg(QFileInfo(item->filePath).fileName());
+        preview = preview.isEmpty() ? attachment : attachment + '\n' + preview;
     }
     m_previewText->setText(preview);
+    m_previewText->setToolTip(item->filePath);
 }
 
 void SnippetSearchPopup::moveSelection(int delta) {
@@ -345,7 +353,57 @@ void SnippetSearchPopup::triggerPaste(const QModelIndex& index) {
     QTimer::singleShot(kPasteDelayMs, m_paster, [paster = m_paster, id]() { paster->paste(id); });
 }
 
+void SnippetSearchPopup::startDrag(const QModelIndex& index) {
+    const QString id = index.data(IdRole).toString();
+    if (id.isEmpty()) return;
+    QMimeData* mime = m_paster->createDragMime(id);
+    if (!mime) return;
+
+    auto* drag = new QDrag(this);
+    drag->setMimeData(mime);
+    const QRect rowRect = m_listView->visualRect(index);
+    drag->setPixmap(m_listView->viewport()->grab(rowRect));
+    drag->setHotSpot(m_dragStartPos - rowRect.topLeft());
+    m_dragged = true;
+
+    // 拖动期间不能 hide：源窗口被隐藏后拖动可能当场结束，用户只看到弹窗消失。
+    // 弹窗又大又置顶会盖住放置目标，所以只留 1 像素可见（空区域等于清除遮罩，不能用）
+    m_dragging = true;
+    setMask(QRegion(0, 0, 1, 1));
+    const Qt::DropAction result = drag->exec(Qt::CopyAction);
+    m_dragging = false;
+    clearMask();
+
+    if (result == Qt::IgnoreAction) {
+        // 没放到任何地方（Esc 或放在不接受的区域）：弹窗留着，用户可以接着选
+        activateWindow();
+        m_searchEdit->setFocus();
+        return;
+    }
+    m_store->incrementUseCount(id);
+    hidePopup();
+}
+
 bool SnippetSearchPopup::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_listView->viewport()) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            auto* mouse = static_cast<QMouseEvent*>(event);
+            m_dragged = false;
+            m_dragStartPos = mouse->position().toPoint();
+            m_dragIndex = mouse->button() == Qt::LeftButton ? QPersistentModelIndex(m_listView->indexAt(m_dragStartPos))
+                                                            : QPersistentModelIndex();
+        } else if (event->type() == QEvent::MouseMove && m_dragIndex.isValid()) {
+            auto* mouse = static_cast<QMouseEvent*>(event);
+            if ((mouse->buttons() & Qt::LeftButton)
+                && (mouse->position().toPoint() - m_dragStartPos).manhattanLength() >= QApplication::startDragDistance()) {
+                const QModelIndex index = m_dragIndex;
+                m_dragIndex = QPersistentModelIndex();
+                startDrag(index);
+                return true;
+            }
+        }
+        return QWidget::eventFilter(watched, event);
+    }
     if ((watched == m_searchEdit || watched == m_listView) && event->type() == QEvent::KeyPress) {
         auto* keyEvent = static_cast<QKeyEvent*>(event);
         switch (keyEvent->key()) {

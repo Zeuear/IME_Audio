@@ -226,7 +226,13 @@ void SnippetContextMenu::onClearImage(const QString& itemId) {
 
 void SnippetContextMenu::onChooseFile(const QString& itemId) {
     const QString path = QFileDialog::getOpenFileName(m_dialogParent, tr("Choose File"), QString(), tr("All files (*.*)"));
-    if (path.isEmpty()) return;
+    if (!path.isEmpty()) attachFile(itemId, path);
+}
+
+void SnippetContextMenu::attachFile(const QString& itemId, const QString& path) {
+    // 新建条目自带的占位文字不能留着，否则粘贴时会先把它发出去
+    SnippetItem* item = m_store->findItemById(itemId);
+    if (item && item->text == tr("Double-click to edit the text")) m_store->updateNode(itemId, "text", QString());
     m_store->updateNode(itemId, "file_path", path);
     finish(itemId);
 }
@@ -246,8 +252,7 @@ void SnippetContextMenu::onPasteClipboardFile(const QString& itemId) {
         emit errorOccurred(tr("剪贴板里没有文件"), tr("请先在文件管理器里复制一个文件"));
         return;
     }
-    m_store->updateNode(itemId, "file_path", path);
-    finish(itemId);
+    attachFile(itemId, path);
 }
 
 void SnippetContextMenu::onClearFile(const QString& itemId) {
