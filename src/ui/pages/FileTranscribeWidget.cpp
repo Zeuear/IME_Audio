@@ -129,11 +129,10 @@ void FileTranscribeWidget::setupUi()
 
     auto* previewHeader = new QHBoxLayout;
     previewHeader->addWidget(m_previewTitle, 1);
-    previewHeader->addWidget(m_copyBtn);
-    previewHeader->addSpacing(12);
     previewHeader->addWidget(m_exportTxtCheck);
     previewHeader->addWidget(m_exportSrtCheck);
     previewHeader->addWidget(m_exportBtn);
+    previewHeader->addWidget(m_copyBtn);
 
     auto* previewPanel = new QWidget(this);
     // 底色透明，否则页面底色会在卡片里露出一条比卡片亮的横带（标题行尤其明显）

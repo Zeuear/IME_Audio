@@ -16,6 +16,7 @@ public:
     // 话术库用：多行文本和图片不适合逐字键入，放进剪贴板后向前台窗口发 Ctrl+V
     static bool pasteText(const QString& text);
     static bool pasteImage(const QImage& image);
+    static bool pasteFile(const QString& path);
 
 private:
     static bool sendCtrlV();

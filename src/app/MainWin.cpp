@@ -521,6 +521,17 @@ void MainWin::setupUiConnections(){
     connect(m_snippetPaster, &SnippetPaster::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
     connect(m_suggestBar, &SnippetSuggestBar::snippetClicked, m_snippetPaster, &SnippetPaster::paste);
+    connect(m_suggestBar, &SnippetSuggestBar::visibilityChanged, m_liveOverlay, &LiveOverlay::setHideHeld);
+    // 整句就是快捷码时，用户要的是指令按钮，不把它打进目标应用。
+    // 条件与 updateSnippetSuggestions 一致：按钮出不来时仍要注入，否则这句话就丢了
+    m_workflow->setInjectFilter([this](const QString& text) {
+        if (!m_snippetStore->settings().voiceTrigger || !m_liveOverlay->isVisible()) return false;
+        for (const SnippetItem* item : m_snippetStore->matchKeywords(text)) {
+            if (!m_handledSnippetIds.contains(item->id) && SnippetSearchIndex::isExactKeyword(text, item->keyword))
+                return true;
+        }
+        return false;
+    });
     connect(ui->snippet_widget, &SnippetWidget::storeChanged, m_suggestBar, &SnippetSuggestBar::dismiss);
     connect(ui->snippet_widget, &SnippetWidget::searchPopupRequested, m_searchPopup, &SnippetSearchPopup::showPopup);
     connect(m_suggestBar, &SnippetSuggestBar::closed, this,
@@ -562,10 +573,11 @@ void MainWin::updateSnippetSuggestions(const QString& spokenText) {
     }
     if (suggestions.isEmpty()) return;
 
-    m_suggestBar->setSuggestions(suggestions);
+    // 先定位再设内容：setSuggestions 里会 show，反过来第一帧会出现在上一次的位置
     const QRectF card = m_liveOverlay->cardRect();
     const QPoint topLeft = m_liveOverlay->mapToGlobal(card.topLeft().toPoint());
     m_suggestBar->placeNear(QRect(topLeft, card.size().toSize()), m_liveOverlay->atTop());
+    m_suggestBar->setSuggestions(suggestions);
 }
 
 void MainWin::syncLiveCaption()
@@ -1241,7 +1253,10 @@ void MainWin::onStateChanged(WorkflowState state)
     case WorkflowState::Idle:
         // 有字幕时多留一会儿，让用户看清最终结果；期间若又开始了新一轮录音就不能再隐藏
         QTimer::singleShot(m_liveOverlay->hasCaption() ? 1800 : 200, this, [this]() {
-            if (m_workflow->state() == WorkflowState::Idle) m_liveOverlay->hideOverlay();
+            if (m_workflow->state() != WorkflowState::Idle) return;
+            // 还要陪指令条留一会儿，转录已结束，不能继续闪"转录中"的圆点
+            if (m_suggestBar->isVisible()) m_liveOverlay->setPaused();
+            m_liveOverlay->hideOverlay();
         });
         break;
     case WorkflowState::Error:

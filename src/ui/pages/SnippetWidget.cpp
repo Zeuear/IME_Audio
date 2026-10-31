@@ -1,7 +1,7 @@
 #include "SnippetWidget.h"
 
 #include <QApplication>
-#include <QCheckBox>
+#include "ui/controls/AnimatedCheckbox.h"
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -64,8 +64,8 @@ void SnippetWidget::setupUi() {
 
     // 选项面板：勾选项、最多行数、搜索框热键。
     // ShortcutEdit 常驻在面板里，全局热键的注册不依赖面板是否显示
-    m_voiceTriggerChk = new QCheckBox(this);
-    m_imageFirstChk = new QCheckBox(this);
+    m_voiceTriggerChk = new AnimatedCheckBox(this);
+    m_imageFirstChk = new AnimatedCheckBox(this);
     m_linesLabel = new QLabel(this);
     m_maxLinesSpin = new QSpinBox(this);
     m_maxLinesSpin->setRange(1, 12);
@@ -161,9 +161,9 @@ void SnippetWidget::retranslateUi() {
     m_googleBtn->setText(tr("Google Sheets Import"));
     m_refreshBtn->setToolTip(tr("Refresh Google Sheets"));
     m_optionsBtn->setToolTip(tr("Options"));
-    m_voiceTriggerChk->setText(tr("Suggest when keyword is spoken"));
-    m_voiceTriggerChk->setToolTip(tr("When a snippet's keyword appears in your dictation, the floating box shows a button to paste it."));
-    m_imageFirstChk->setText(tr("Image before text"));
+    m_voiceTriggerChk->setLabelText(tr("Suggest when keyword is spoken"));
+    m_voiceTriggerChk->setToolTip(tr("When a snippet's keyword appears in your dictation, the floating box shows a button to paste it. If the whole sentence is just the keyword, it is not typed."));
+    m_imageFirstChk->setLabelText(tr("Image before text"));
     m_searchEdit->setPlaceholderText(tr("Search title / text / keyword / folder..."));
     m_expandBtn->setToolTip(tr("Expand All"));
     m_collapseBtn->setToolTip(tr("Collapse All"));

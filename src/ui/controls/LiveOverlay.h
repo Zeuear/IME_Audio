@@ -43,6 +43,8 @@ public slots:
     void setPaused();
     void showOnScreen();
     void hideOverlay();
+    // 留住悬浮窗：期间的隐藏请求先记下，放开时才执行。指令条显示时用，两者一起消失
+    void setHideHeld(bool held);
     void hideTimerStart();
     void hideTimerStop();
     void onVoiceStarted();
@@ -95,6 +97,8 @@ private:
     QTimer *m_animTimer = nullptr;
     QElapsedTimer m_clock;
     QTimer *m_idleFadeTimer = nullptr;
+    bool m_hideHeld = false;
+    bool m_hideDeferred = false;
 
     QPointer<QScreen> m_screen;               // 本次显示所在的屏幕，拔掉显示器时自动置空
     QPointer<LiveCaptionModel> m_caption;

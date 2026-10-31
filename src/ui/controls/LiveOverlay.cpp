@@ -192,6 +192,7 @@ qreal LiveOverlay::cardTop(qreal cardH) const
 
 void LiveOverlay::showOnScreen()
 {
+    m_hideDeferred = false;
     if (!isVisible()) {
         m_screen = QGuiApplication::screenAt(QCursor::pos());
         relayoutCaption();
@@ -203,7 +204,26 @@ void LiveOverlay::showOnScreen()
 #endif
 }
 
-void LiveOverlay::hideOverlay() { hide(); }
+void LiveOverlay::hideOverlay()
+{
+    if (m_hideHeld) {
+        m_hideDeferred = true;
+        return;
+    }
+    m_hideDeferred = false;
+    hide();
+}
+
+void LiveOverlay::setHideHeld(bool held)
+{
+    m_hideHeld = held;
+    if (held || !m_hideDeferred) return;
+    // 排到下一轮再隐藏：新一轮录音会先收起指令条、紧接着 showOnScreen，不能在中间闪一下
+    QTimer::singleShot(0, this, [this]() {
+        if (!m_hideHeld && m_hideDeferred) hideOverlay();
+    });
+}
+
 void LiveOverlay::hideTimerStart() { m_idleFadeTimer->start(); }
 void LiveOverlay::hideTimerStop() { m_idleFadeTimer->stop(); }
 

@@ -12,7 +12,8 @@ struct SnippetItem {
     QString title;        // A列：中文（显示用）
     QString text;         // B列：外文（粘贴目标）
     QString imagePath;    // 相对路径 data/images/xxx，或 http(s) 链接
-    QString type;         // text / image / combo
+    QString filePath;     // 附件的绝对路径。只记路径不复制：视频、音频可能很大，复制进话术库会卡住界面
+    QString type;         // text / image / file / combo
     int32_t useCount = 0;
 };
 

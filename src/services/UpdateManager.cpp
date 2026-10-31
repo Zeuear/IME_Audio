@@ -226,12 +226,26 @@ bool UpdateManager::launchUpdaterMacOS(const QString& downloadedFilePath, QStrin
     const qint64 pid = QCoreApplication::applicationPid();
     QString targetApp = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../../..");
 
+    // 下载的是 dmg，要挂载后取出里面的 .app。
+    // 先复制到旁边的临时路径，全部成功才替换，任何一步失败都保留旧版本并重新打开
     QString script = QString(
         "#!/bin/bash\n"
         "while kill -0 %1 2>/dev/null; do sleep 0.5; done\n"
-        "rm -rf \"%3\"\n"
-        "cp -R \"%2\" \"%3\"\n"
-        "open \"%3\"\n"
+        "DMG=\"%2\"\n"
+        "TARGET=\"%3\"\n"
+        "NEW=\"$TARGET.new\"\n"
+        "MOUNT=$(mktemp -d /tmp/voice_ime_update.XXXXXX)\n"
+        "rm -rf \"$NEW\"\n"
+        "if hdiutil attach \"$DMG\" -nobrowse -readonly -noautoopen -mountpoint \"$MOUNT\" >/dev/null; then\n"
+        "    SRC=$(find \"$MOUNT\" -maxdepth 1 -name '*.app' -print -quit)\n"
+        "    if [ -n \"$SRC\" ] && ditto \"$SRC\" \"$NEW\"; then\n"
+        "        rm -rf \"$TARGET\" && mv \"$NEW\" \"$TARGET\" && rm -f \"$DMG\"\n"
+        "    fi\n"
+        "    hdiutil detach \"$MOUNT\" -quiet || hdiutil detach \"$MOUNT\" -force -quiet\n"
+        "fi\n"
+        "rm -rf \"$NEW\"\n"
+        "rmdir \"$MOUNT\" 2>/dev/null\n"
+        "open \"$TARGET\"\n"
         "rm -- \"$0\"\n"
     ).arg(pid).arg(downloadedFilePath, targetApp);
 

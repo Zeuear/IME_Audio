@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QQueue>
+#include <functional>
 #include "config/AppConfig.h"
 #include "interfaces/workflow_interfaces.h"
 
@@ -47,7 +48,9 @@ public:
     void preloadModel(const AppConfig& cfg);  
     void togglePause();                      
     WorkflowState state() const;
-    int pendingCount() const { return m_pending; }              
+    int pendingCount() const { return m_pending; }
+    // 返回 true 的结果不注入前台窗口，transcriptionResultReady 照常发出
+    void setInjectFilter(std::function<bool(const QString&)> filter) { m_injectFilter = std::move(filter); }
 
 signals:
     void stateChanged(WorkflowState newState);
@@ -73,6 +76,7 @@ private:
     void proceedToRecording();
     void abortRecording(WorkflowEvent evt);
 
+    std::function<bool(const QString&)> m_injectFilter;
     QQueue<QString> m_injectQueue;
     bool m_injecting = false;
     void processInjectQueue();

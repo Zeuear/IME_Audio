@@ -58,11 +58,13 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ordered_results_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/settings_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_history_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/snippet_search_index_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
 # we link only the seams under test, not the whole app).
 set(TEST_DEPS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/SnippetSearchIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TermsLibraryManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp

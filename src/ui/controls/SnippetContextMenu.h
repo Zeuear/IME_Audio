@@ -39,6 +39,9 @@ private:
     void onChooseImage(const QString& itemId);
     void onPasteClipboardImage(const QString& itemId);
     void onClearImage(const QString& itemId);
+    void onChooseFile(const QString& itemId);
+    void onPasteClipboardFile(const QString& itemId);
+    void onClearFile(const QString& itemId);
     void onMoveNode(const QString& nodeId, int direction);
     void onDeleteNode(const QString& nodeId);
 

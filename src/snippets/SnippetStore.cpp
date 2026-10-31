@@ -22,7 +22,9 @@ namespace {
 QString typeFor(const SnippetItem& it) {
     bool hasText = !it.text.trimmed().isEmpty();
     bool hasImg = !it.imagePath.trimmed().isEmpty();
-    return (hasText && hasImg) ? "combo" : (hasImg ? "image" : "text");
+    bool hasFile = !it.filePath.trimmed().isEmpty();
+    if (int(hasText) + int(hasImg) + int(hasFile) > 1) return "combo";
+    return hasImg ? "image" : (hasFile ? "file" : "text");
 }
 
 bool findFolderRec(const QString& id, FolderList& list, FolderNode* parent,
@@ -183,6 +185,7 @@ QJsonObject SnippetStore::itemToJson(const SnippetItem* item) const {
     obj["title"] = item->title;
     obj["text"] = item->text;
     obj["image_path"] = item->imagePath;
+    if (!item->filePath.isEmpty()) obj["file_path"] = item->filePath;
     obj["type"] = item->type;
     obj["use_count"] = item->useCount;
     return obj;
@@ -215,6 +218,7 @@ SnippetItem SnippetStore::jsonToItem(const QJsonObject& obj) const {
     item.title = obj["title"].toString();
     item.text = obj["text"].toString();
     item.imagePath = obj["image_path"].toString();
+    item.filePath = obj["file_path"].toString();
     item.type = obj["type"].toString("text");
     item.useCount = obj["use_count"].toInt(0);
     return item;
@@ -589,6 +593,7 @@ SnippetItem* SnippetStore::addItem(const QString& parentFolderId, const SnippetI
     item.title = (title.isEmpty() ? QString::fromUtf8("未命名中文标签") : title);
     item.text = itemData.text.trimmed();
     item.imagePath = itemData.imagePath.trimmed();
+    item.filePath = itemData.filePath.trimmed();
     item.useCount = 0;
     item.type = typeFor(item);
 
@@ -613,6 +618,7 @@ bool SnippetStore::updateNode(const QString& nodeId, const QString& field, const
     else if (field == "text") it->text = v;
     else if (field == "keyword") it->keyword = v;
     else if (field == "image_path") it->imagePath = v;
+    else if (field == "file_path") it->filePath = v;
     else return false;
 
     it->type = typeFor(*it);

@@ -181,148 +181,148 @@
 <context>
     <name>FileTranscribeWidget</name>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="248"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="247"/>
         <source>Add Files</source>
         <translation>添加文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="403"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="402"/>
         <source>Transcribe</source>
         <translation>转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="400"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="399"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="252"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="251"/>
         <source>Drop audio files here, or click &quot;Add Files&quot;</source>
         <translation>将音频文件拖到此处，或点击“添加文件”</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="353"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="352"/>
         <source>Transcription</source>
         <translation>转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="253"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="252"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="249"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="248"/>
         <source>TXT</source>
         <translation>TXT 文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="250"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="249"/>
         <source>SRT subtitles</source>
         <translation>SRT 字幕</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="251"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="250"/>
         <source>Timestamps follow speech pauses, one subtitle per detected sentence</source>
         <translation>时间戳依据语音停顿划分，每个检测到的句子对应一条字幕</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="254"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="253"/>
         <source>Select a file to view its transcription</source>
         <translation>选择一个文件查看转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="255"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="254"/>
         <source>Open Folder</source>
         <translation>打开文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="288"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="287"/>
         <source>Choose Audio Files</source>
         <translation>选择音频文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="289"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="288"/>
         <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
         <translation>音频文件 (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="297"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="296"/>
         <source>No new files added</source>
         <translation>没有新增文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="302"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="301"/>
         <source>Added %1 files</source>
         <translation>已添加 %1 个文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="335"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="334"/>
         <source>Re-transcribe</source>
         <translation>重新转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="336"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="335"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="338"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="337"/>
         <source>Clear All</source>
         <translation>清空全部</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="413"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="412"/>
         <source>Export Selected (%1)</source>
         <translation>导出所选 (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="414"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="413"/>
         <source>Export All (%1)</source>
         <translation>导出全部 (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="484"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="483"/>
         <source>Processing file %1/%2</source>
         <translation>正在处理文件 %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="560"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="559"/>
         <source>No audio data decoded</source>
         <translation>没有解码出音频数据</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="400"/>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="723"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="399"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="722"/>
         <source>Cancelling...</source>
         <translation>正在取消…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="783"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="782"/>
         <source>Cancelled</source>
         <translation>已取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="785"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="784"/>
         <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
         <translation>完成：成功 %1 个，失败 %2 个，无语音 %3 个</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="808"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="807"/>
         <source>Copied to clipboard</source>
         <translation>已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="835"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="834"/>
         <source>Choose Export Folder</source>
         <translation>选择导出文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="856"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="855"/>
         <source>Exported %1 files to %2, %3 failed</source>
         <translation>已导出 %1 个文件到 %2，%3 个失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="857"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="856"/>
         <source>Exported %1 files to %2</source>
         <translation>已导出 %1 个文件到 %2</translation>
     </message>
@@ -431,7 +431,7 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="160"/>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="198"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="192"/>
         <source>Paste a Google Sheets link first.</source>
         <translation>请先粘贴 Google 表格链接。</translation>
     </message>
@@ -441,78 +441,78 @@
         <translation>正在读取 Sheet 列表...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="184"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="175"/>
         <source>Read failed: %1</source>
         <translation>读取失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="185"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="176"/>
         <source>读取 Google 表格失败</source>
         <translation>读取 Google 表格失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="192"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="185"/>
         <source>Found %1 sheets. Check the ones you need, then click &quot;Import Checked Sheets&quot;.</source>
         <translation>读取到 %1 个 Sheet。请勾选需要的，然后点“导入勾选的 Sheet”。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="203"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="197"/>
         <source>Click &quot;Read Sheets&quot; and check at least one sheet first.</source>
         <translation>请先点“读取 Sheet 列表”，并至少勾选 1 个 Sheet。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="208"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="202"/>
         <source>Importing %1 sheets, please wait...</source>
         <translation>正在导入 %1 个 Sheet，请稍候...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="219"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="211"/>
         <source>Import failed: %1</source>
         <translation>导入失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="220"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="212"/>
         <source>导入 Google 表格失败</source>
         <translation>导入 Google 表格失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="229"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="221"/>
         <source>Imported %1 sheets, %2 snippets in total.</source>
         <translation>已导入 %1 个 Sheet，共 %2 条话术。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="247"/>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="264"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="240"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="257"/>
         <source>Select a saved table on the left first.</source>
         <translation>请先在左侧选择一个已保存的表。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="251"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="244"/>
         <source>Confirm Remove</source>
         <translation>确认移除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="252"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="245"/>
         <source>This also deletes everything of this table from the tree. Continue?</source>
         <translation>将同时删除该表在目录树中的全部内容，确定吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="273"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="266"/>
         <source>Refreshing with the saved selection...</source>
         <translation>正在按已存勾选刷新...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="282"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="274"/>
         <source>Refresh failed: %1</source>
         <translation>刷新失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="283"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="275"/>
         <source>刷新 Google 表格失败</source>
         <translation>刷新 Google 表格失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="288"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="280"/>
         <source>Refreshed.</source>
         <translation>已刷新。</translation>
     </message>
@@ -1180,23 +1180,23 @@
 <context>
     <name>MainWin</name>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1336"/>
-        <location filename="../../src/app/MainWin.ui" line="1412"/>
+        <location filename="../../src/app/MainWin.ui" line="1370"/>
+        <location filename="../../src/app/MainWin.ui" line="1446"/>
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1344"/>
+        <location filename="../../src/app/MainWin.ui" line="1378"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1348"/>
+        <location filename="../../src/app/MainWin.ui" line="1382"/>
         <source>Theme</source>
         <translation>主题</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1356"/>
+        <location filename="../../src/app/MainWin.ui" line="1390"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
@@ -1276,7 +1276,7 @@
         <translation type="unfinished">模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="979"/>
+        <location filename="../../src/app/MainWin.ui" line="996"/>
         <source>Custom Commands</source>
         <translation type="unfinished">自定义指令</translation>
     </message>
@@ -1291,18 +1291,18 @@
         <translation type="unfinished">API Key</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="940"/>
-        <location filename="../../src/app/MainWin.cpp" line="977"/>
+        <location filename="../../src/app/MainWin.ui" line="942"/>
+        <location filename="../../src/app/MainWin.cpp" line="989"/>
         <source>Polishing</source>
         <translation>润色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="959"/>
+        <location filename="../../src/app/MainWin.ui" line="976"/>
         <source>Style</source>
         <translation type="unfinished">风格</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="969"/>
+        <location filename="../../src/app/MainWin.ui" line="986"/>
         <source>AI vocabulary</source>
         <translation type="unfinished">AI 词库</translation>
     </message>
@@ -1354,33 +1354,33 @@
         <translation type="unfinished">AI 引擎</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1016"/>
-        <location filename="../../src/app/MainWin.cpp" line="978"/>
+        <location filename="../../src/app/MainWin.ui" line="1035"/>
+        <location filename="../../src/app/MainWin.cpp" line="990"/>
         <source>Translation</source>
         <translation>翻译</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1045"/>
+        <location filename="../../src/app/MainWin.ui" line="1079"/>
         <source>Source language</source>
         <translation>源语言</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1035"/>
+        <location filename="../../src/app/MainWin.ui" line="1069"/>
         <source>Target language</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1065"/>
+        <location filename="../../src/app/MainWin.ui" line="1099"/>
         <source>Download</source>
         <translation type="unfinished">下载</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1111"/>
+        <location filename="../../src/app/MainWin.ui" line="1145"/>
         <source>Theaurus</source>
         <translation type="unfinished">词库</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1133"/>
+        <location filename="../../src/app/MainWin.ui" line="1167"/>
         <source>File Transcription</source>
         <translation>文件转录</translation>
     </message>
@@ -1441,102 +1441,102 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="581"/>
-        <location filename="../../src/app/MainWin.cpp" line="1169"/>
+        <location filename="../../src/app/MainWin.cpp" line="1181"/>
         <source>Idle</source>
         <translation>空闲</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1123"/>
+        <location filename="../../src/app/MainWin.ui" line="1157"/>
         <source>Command Settings</source>
         <translation>指令设置</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1368"/>
+        <location filename="../../src/app/MainWin.ui" line="1402"/>
         <source>File</source>
         <translation>文件</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1379"/>
+        <location filename="../../src/app/MainWin.ui" line="1413"/>
         <source>About Qt</source>
         <translation>关于Qt</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1390"/>
-        <location filename="../../src/app/MainWin.ui" line="1393"/>
+        <location filename="../../src/app/MainWin.ui" line="1424"/>
+        <location filename="../../src/app/MainWin.ui" line="1427"/>
         <source>Light</source>
         <translation>亮色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1404"/>
-        <location filename="../../src/app/MainWin.ui" line="1407"/>
+        <location filename="../../src/app/MainWin.ui" line="1438"/>
+        <location filename="../../src/app/MainWin.ui" line="1441"/>
         <source>Dark</source>
         <translation>暗色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1420"/>
+        <location filename="../../src/app/MainWin.ui" line="1454"/>
         <source>System</source>
         <translation>系统</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1428"/>
-        <location filename="../../src/app/MainWin.ui" line="1431"/>
+        <location filename="../../src/app/MainWin.ui" line="1462"/>
+        <location filename="../../src/app/MainWin.ui" line="1465"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1439"/>
-        <location filename="../../src/app/MainWin.cpp" line="765"/>
+        <location filename="../../src/app/MainWin.ui" line="1473"/>
+        <location filename="../../src/app/MainWin.cpp" line="777"/>
         <source>English</source>
         <translation>英文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1447"/>
+        <location filename="../../src/app/MainWin.ui" line="1481"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1452"/>
+        <location filename="../../src/app/MainWin.ui" line="1486"/>
         <source>Exit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1455"/>
+        <location filename="../../src/app/MainWin.ui" line="1489"/>
         <source>Ctrl+Q</source>
         <translation>Ctrl+Q</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1460"/>
+        <location filename="../../src/app/MainWin.ui" line="1494"/>
         <source>yt-dlp Update</source>
         <translation>更新yt-dlp</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1465"/>
+        <location filename="../../src/app/MainWin.ui" line="1499"/>
         <source>Input Device</source>
         <translation type="unfinished">输入设备</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1470"/>
+        <location filename="../../src/app/MainWin.ui" line="1504"/>
         <source>Preferences</source>
         <translation type="unfinished">设置</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="630"/>
-        <location filename="../../src/app/MainWin.ui" line="1475"/>
+        <location filename="../../src/app/MainWin.ui" line="1509"/>
         <source>Shortcut Key</source>
         <translation type="unfinished">快捷键</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1480"/>
+        <location filename="../../src/app/MainWin.ui" line="1514"/>
         <source>Check Update</source>
         <translation type="unfinished">检查更新</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1485"/>
+        <location filename="../../src/app/MainWin.ui" line="1519"/>
         <source>About</source>
         <translation type="unfinished">关于</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="681"/>
+        <location filename="../../src/app/MainWin.cpp" line="693"/>
         <source>该模型正在安装....</source>
         <translation>该模型正在安装....</translation>
     </message>
@@ -1592,7 +1592,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.cpp" line="426"/>
-        <location filename="../../src/app/MainWin.cpp" line="1480"/>
+        <location filename="../../src/app/MainWin.cpp" line="1495"/>
         <source>已复制</source>
         <translation>已复制</translation>
     </message>
@@ -1638,275 +1638,275 @@
         <translation>冲突</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="742"/>
+        <location filename="../../src/app/MainWin.cpp" line="754"/>
         <source>Local (Sherpa)</source>
         <translation>本地识别(Sherpa)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="743"/>
+        <location filename="../../src/app/MainWin.cpp" line="755"/>
         <source>Gemini voice input</source>
         <translation>Gemini 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="744"/>
+        <location filename="../../src/app/MainWin.cpp" line="756"/>
         <source>Groq voice input</source>
         <translation>Groq 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="745"/>
+        <location filename="../../src/app/MainWin.cpp" line="757"/>
         <source>Gladia voice input</source>
         <translation>Gladia 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="749"/>
+        <location filename="../../src/app/MainWin.cpp" line="761"/>
         <source>Google Gemini API</source>
         <translation>Google Gemini API</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="750"/>
+        <location filename="../../src/app/MainWin.cpp" line="762"/>
         <source>Local / custom (OpenAI compatible)</source>
         <translation>本地/自订 (OpenAI 兼容)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="751"/>
+        <location filename="../../src/app/MainWin.cpp" line="763"/>
         <source>Ollama (local)</source>
         <translation>Ollama (本地)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="752"/>
+        <location filename="../../src/app/MainWin.cpp" line="764"/>
         <source>Local model (offline translation)</source>
         <translation>本地模型（离线翻译）</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="756"/>
+        <location filename="../../src/app/MainWin.cpp" line="768"/>
         <source>Smart default</source>
         <translation>智慧预设</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="757"/>
+        <location filename="../../src/app/MainWin.cpp" line="769"/>
         <source>Business formal</source>
         <translation>商务正式</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="758"/>
+        <location filename="../../src/app/MainWin.cpp" line="770"/>
         <source>Casual spoken</source>
         <translation>日常口语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="759"/>
+        <location filename="../../src/app/MainWin.cpp" line="771"/>
         <source>Concise</source>
         <translation>简洁扼要</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="760"/>
+        <location filename="../../src/app/MainWin.cpp" line="772"/>
         <source>Custom prompt</source>
         <translation>自订 Prompt</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="968"/>
+        <location filename="../../src/app/MainWin.cpp" line="980"/>
         <source>Enable polishing first, or switch to the local model</source>
         <translation>请先开启润色，或改用本地模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="766"/>
+        <location filename="../../src/app/MainWin.cpp" line="778"/>
         <source>Japanese</source>
         <translation type="unfinished">日语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="767"/>
+        <location filename="../../src/app/MainWin.cpp" line="779"/>
         <source>Korean</source>
         <translation type="unfinished">韩语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="768"/>
-        <location filename="../../src/app/MainWin.cpp" line="799"/>
+        <location filename="../../src/app/MainWin.cpp" line="780"/>
+        <location filename="../../src/app/MainWin.cpp" line="811"/>
         <source>Traditional Chinese</source>
         <translation>繁体中文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="769"/>
-        <location filename="../../src/app/MainWin.cpp" line="798"/>
+        <location filename="../../src/app/MainWin.cpp" line="781"/>
+        <location filename="../../src/app/MainWin.cpp" line="810"/>
         <source>Simplified Chinese</source>
         <translation>简体中文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="790"/>
-        <location filename="../../src/app/MainWin.cpp" line="976"/>
+        <location filename="../../src/app/MainWin.cpp" line="802"/>
+        <location filename="../../src/app/MainWin.cpp" line="988"/>
         <source>Recognition</source>
         <translation>声音识别</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="791"/>
+        <location filename="../../src/app/MainWin.cpp" line="803"/>
         <source>Logs &amp; Config</source>
         <translation>日志配置</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="792"/>
+        <location filename="../../src/app/MainWin.cpp" line="804"/>
         <source>Downloads</source>
         <translation>下载列表</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="850"/>
+        <location filename="../../src/app/MainWin.cpp" line="862"/>
         <source>Quality not evaluated</source>
         <translation>质量未评测</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="867"/>
+        <location filename="../../src/app/MainWin.cpp" line="879"/>
         <source>Auto</source>
         <translation>自动</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="892"/>
+        <location filename="../../src/app/MainWin.cpp" line="904"/>
         <source>Source and target are the same language</source>
         <translation>源语言和目标语言相同</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="895"/>
+        <location filename="../../src/app/MainWin.cpp" line="907"/>
         <source>Cannot detect the source language; choose one manually</source>
         <translation>无法确定源语言，请手动选择</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="896"/>
+        <location filename="../../src/app/MainWin.cpp" line="908"/>
         <source>This language pair is not supported</source>
         <translation>不支持该语言方向</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="899"/>
+        <location filename="../../src/app/MainWin.cpp" line="911"/>
         <source>Model ready</source>
         <translation>模型已就绪</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="905"/>
+        <location filename="../../src/app/MainWin.cpp" line="917"/>
         <source>Downloading model...</source>
         <translation>正在下载模型...</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="909"/>
+        <location filename="../../src/app/MainWin.cpp" line="921"/>
         <source>Model download required: %1 MB</source>
         <translation>需要下载模型：%1 MB</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="935"/>
+        <location filename="../../src/app/MainWin.cpp" line="947"/>
         <source>Not available in this version yet</source>
         <translation>当前版本暂未提供</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="979"/>
+        <location filename="../../src/app/MainWin.cpp" line="991"/>
         <source>Output</source>
         <translation>输出</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1169"/>
+        <location filename="../../src/app/MainWin.cpp" line="1181"/>
         <source>Recording</source>
         <translation>录音中</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1186"/>
+        <location filename="../../src/app/MainWin.cpp" line="1198"/>
         <source>本地模型未安装</source>
         <translation>本地模型未安装</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1186"/>
+        <location filename="../../src/app/MainWin.cpp" line="1198"/>
         <source>请先在&quot;本地识别&quot;页下载当前语言的模型</source>
         <translation>请先在&quot;本地识别&quot;页下载当前语言的模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1192"/>
+        <location filename="../../src/app/MainWin.cpp" line="1204"/>
         <source>模型正在下载</source>
         <translation>模型正在下载</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1192"/>
+        <location filename="../../src/app/MainWin.cpp" line="1204"/>
         <source>下载完成后即可开始听写</source>
         <translation>下载完成后即可开始听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1337"/>
+        <location filename="../../src/app/MainWin.cpp" line="1352"/>
         <source>Update Available</source>
         <translation type="unfinished">更新可用</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1338"/>
+        <location filename="../../src/app/MainWin.cpp" line="1353"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">新版本（%1）已发布！</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1339"/>
+        <location filename="../../src/app/MainWin.cpp" line="1354"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">您现在想下载并安装吗？</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1347"/>
+        <location filename="../../src/app/MainWin.cpp" line="1362"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">不要再提醒我了</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1374"/>
+        <location filename="../../src/app/MainWin.cpp" line="1389"/>
         <source>Restart Required</source>
         <translation type="unfinished">需要重启</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1375"/>
+        <location filename="../../src/app/MainWin.cpp" line="1390"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">更新已成功下载。应用程序即将关闭并重新启动以应用更新。是否继续？</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1384"/>
+        <location filename="../../src/app/MainWin.cpp" line="1399"/>
         <source>更新失败</source>
         <translation type="unfinished">更新失败</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1430"/>
+        <location filename="../../src/app/MainWin.cpp" line="1445"/>
         <source>开始听写</source>
         <translation>开始听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1431"/>
+        <location filename="../../src/app/MainWin.cpp" line="1446"/>
         <source>停止听写</source>
         <translation>停止听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1435"/>
+        <location filename="../../src/app/MainWin.cpp" line="1450"/>
         <source>识别语言</source>
         <translation>识别语言</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1456"/>
+        <location filename="../../src/app/MainWin.cpp" line="1471"/>
         <source>识别后端</source>
         <translation>识别后端</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1466"/>
+        <location filename="../../src/app/MainWin.cpp" line="1481"/>
         <source>实时字幕</source>
         <translation>实时字幕</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1473"/>
+        <location filename="../../src/app/MainWin.cpp" line="1488"/>
         <source>最近听写</source>
         <translation>最近听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1483"/>
+        <location filename="../../src/app/MainWin.cpp" line="1498"/>
         <source>暂无记录</source>
         <translation>暂无记录</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1486"/>
+        <location filename="../../src/app/MainWin.cpp" line="1501"/>
         <source>隐藏主窗口</source>
         <translation>隐藏主窗口</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1487"/>
+        <location filename="../../src/app/MainWin.cpp" line="1502"/>
         <source>显示主窗口</source>
         <translation>显示主窗口</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1488"/>
+        <location filename="../../src/app/MainWin.cpp" line="1503"/>
         <source>退出</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1253"/>
+        <location filename="../../src/app/MainWin.ui" line="1287"/>
         <source>Config Log</source>
         <translation type="unfinished">配置日志</translation>
     </message>
@@ -2231,211 +2231,251 @@
 <context>
     <name>SnippetContextMenu</name>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="49"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="113"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="114"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="50"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="121"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="122"/>
         <source>New Table</source>
         <translation>新建主表</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="51"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="52"/>
         <source>Select All</source>
         <translation type="unfinished">全选</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="52"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="53"/>
         <source>Invert Selection</source>
         <translation>反选</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="61"/>
-        <source>Add Sheet Folder (level 2)</source>
-        <translation>新增 Sheet 目录（2级）</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="62"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="69"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="71"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="63"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="70"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="72"/>
         <source>Add Snippet</source>
         <translation>新增话术</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="65"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="66"/>
         <source>Choose Sheets to Sync...</source>
         <translation>选择要同步的 Sheet...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="68"/>
-        <source>Add Group Folder (level 3, @@)</source>
-        <translation>新增分组目录（3级，@@）</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="75"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="146"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="76"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="154"/>
         <source>Rename</source>
         <translation>重命名</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="78"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="104"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="79"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="112"/>
         <source>Move Up</source>
         <translation>上移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="79"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="105"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="80"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="113"/>
         <source>Move Down</source>
         <translation>下移</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="82"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="108"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="83"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="116"/>
         <source>Delete &quot;%1&quot;</source>
         <translation>删除“%1”</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="91"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="92"/>
         <source>Edit Title</source>
         <translation>编辑标题</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="92"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="157"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="93"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="165"/>
         <source>Edit Text</source>
         <translation>编辑内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="93"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="169"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="94"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="177"/>
         <source>Set Keyword</source>
         <translation>设置快捷码</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="96"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="97"/>
         <source>Choose Image File...</source>
         <translation>选择图片文件...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="97"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="98"/>
         <source>Paste Image from Clipboard</source>
         <translation>从剪贴板粘贴图片</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="100"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="101"/>
         <source>Remove Image</source>
         <translation>清除配图</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="113"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="121"/>
         <source>Table name:</source>
         <translation>表名称：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="122"/>
-        <source>Sheet folder</source>
-        <translation>Sheet 目录</translation>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="62"/>
+        <source>Add Level 2 Folder</source>
+        <translation>添加 2 级目录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="122"/>
-        <source>Group folder</source>
-        <translation>分组目录</translation>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="69"/>
+        <source>Add Level 3 Folder</source>
+        <translation>添加 3 级目录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="124"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="105"/>
+        <source>Choose File...</source>
+        <translation>选择文件...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="106"/>
+        <source>Paste File from Clipboard</source>
+        <translation>从剪贴板粘贴文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="108"/>
+        <source>Remove File</source>
+        <translation>移除文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="130"/>
+        <source>Level %1 folder</source>
+        <translation>%1 级目录</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="132"/>
         <source>Add %1</source>
         <translation>新增%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="124"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="132"/>
         <source>Name:</source>
         <translation>名称：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="125"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="133"/>
         <source>New %1</source>
         <translation>新建%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="135"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="143"/>
         <source>New snippet (double-click to edit)</source>
         <translation>新话术（双击修改）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="136"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="144"/>
         <source>Double-click to edit the text</source>
         <translation>双击修改内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="146"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="154"/>
         <source>New name:</source>
         <translation>新名称：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="157"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="165"/>
         <source>Text to paste:</source>
         <translation>要粘贴的内容：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="169"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="177"/>
         <source>Spoken keyword, e.g. quote:</source>
         <translation>口述触发词，例如“报价”：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="178"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="186"/>
         <source>Choose Image</source>
         <translation>选择图片</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="179"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="187"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)</source>
         <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*.*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="183"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="191"/>
         <source>复制图片失败</source>
         <translation>复制图片失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="183"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="191"/>
         <source>无法把图片复制到话术库的 images 目录</source>
         <translation>无法把图片复制到话术库的 images 目录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="205"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="213"/>
         <source>剪贴板里没有图片</source>
         <translation>剪贴板里没有图片</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="205"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="213"/>
         <source>请先复制一张图片或截图</source>
         <translation>请先复制一张图片或截图</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="228"/>
+        <source>Choose File</source>
+        <translation>选择文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="228"/>
+        <source>All files (*.*)</source>
+        <translation>所有文件 (*.*)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="246"/>
+        <source>剪贴板里没有文件</source>
+        <translation>剪贴板里没有文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="246"/>
+        <source>请先在文件管理器里复制一个文件</source>
+        <translation>请先在文件管理器里复制一个文件</translation>
     </message>
 </context>
 <context>
     <name>SnippetPaster</name>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="54"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="52"/>
+        <source>文件粘贴失败</source>
+        <translation>文件粘贴失败</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/SnippetPaster.cpp" line="52"/>
+        <source>找不到文件：%1</source>
+        <translation>找不到文件：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/SnippetPaster.cpp" line="62"/>
         <source>图片粘贴失败</source>
         <translation>图片粘贴失败</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="54"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="62"/>
         <source>无法读取图片文件或下载远程图片</source>
         <translation>无法读取图片文件或下载远程图片</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="88"/>
-        <location filename="../../src/services/SnippetPaster.cpp" line="92"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="96"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="100"/>
         <source>粘贴失败</source>
         <translation>粘贴失败</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="88"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="96"/>
         <source>无法向当前窗口发送粘贴操作，内容已留在剪贴板，可手动 Ctrl+V</source>
         <translation>无法向当前窗口发送粘贴操作，内容已留在剪贴板，可手动 Ctrl+V</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="92"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="100"/>
         <source>当前系统暂不支持自动粘贴（或缺少辅助功能权限），内容已复制到剪贴板，请手动粘贴</source>
         <translation>当前系统暂不支持自动粘贴（或缺少辅助功能权限），内容已复制到剪贴板，请手动粘贴</translation>
     </message>
@@ -2443,47 +2483,32 @@
 <context>
     <name>SnippetSearchPopup</name>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="104"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="200"/>
         <source>Search snippets (title / text / keyword / folder)</source>
         <translation>搜索话术（标题 / 内容 / 快捷码 / 目录名）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="105"/>
-        <source>↑↓ Select  |  Enter / Click = Paste  |  Esc = Close</source>
-        <translation>↑↓ 选择  |  Enter / 单击 = 粘贴  |  Esc = 关闭</translation>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="201"/>
+        <source>↑↓ / Hover to preview  ·  Enter / Click to paste  ·  Esc to close</source>
+        <translation>↑↓ / 悬停预览  ·  Enter / 单击粘贴  ·  Esc 关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="167"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="265"/>
         <source>No matching snippets</source>
         <translation>未找到匹配的话术</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="187"/>
-        <source>Empty</source>
-        <translation>无内容</translation>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="324"/>
+        <source>File: %1</source>
+        <translation>文件：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="197"/>
-        <source>Text + Image</source>
-        <translation>图文组合</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="198"/>
-        <source>Image</source>
-        <translation>图片</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="199"/>
-        <source>Text</source>
-        <translation>内容</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="206"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="297"/>
         <source>Remote image, downloaded when pasted</source>
         <translation>远程图片，粘贴时下载</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="209"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="317"/>
         <source>Failed to load image</source>
         <translation>图片加载失败</translation>
     </message>
@@ -2491,32 +2516,32 @@
 <context>
     <name>SnippetTreeDelegate</name>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="203"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="224"/>
         <source>%1 snippets</source>
         <translation>共 %1 条话术</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="263"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="284"/>
         <source>+ Keyword</source>
         <translation>+快捷码</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="299"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="320"/>
         <source>Image missing</source>
         <translation>配图丢失</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="301"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="322"/>
         <source>+ Image</source>
         <translation>+配图</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="240"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="261"/>
         <source>CN</source>
         <translation>中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="252"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="273"/>
         <source>FL</source>
         <translation>外</translation>
     </message>
@@ -2524,37 +2549,42 @@
 <context>
     <name>SnippetTreeModel</name>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="206"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="190"/>
+        <source>File: %1</source>
+        <translation>文件：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="229"/>
         <source>Title</source>
         <translation>标题</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="207"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="230"/>
         <source>Text</source>
         <translation>内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="208"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="231"/>
         <source>Keyword</source>
         <translation>快捷码</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="277"/>
-        <source>Level 1 · Table</source>
-        <translation>1级 · 主表</translation>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="300"/>
+        <source>Level 1</source>
+        <translation>1级</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="278"/>
-        <source>Level 2 · Sheet</source>
-        <translation>2级 · Sheet</translation>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="301"/>
+        <source>Level 2</source>
+        <translation>2级</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="279"/>
-        <source>Level 3 · @@ Group</source>
-        <translation>3级 · @@ 分组</translation>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="302"/>
+        <source>Level 3</source>
+        <translation>3级</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="280"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="303"/>
         <source>Folder</source>
         <translation>目录</translation>
     </message>
@@ -2562,184 +2592,184 @@
 <context>
     <name>SnippetWidget</name>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="157"/>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="333"/>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="334"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="160"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="336"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="337"/>
         <source>New Table</source>
         <translation>新建主表</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="158"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="161"/>
         <source>Google Sheets Import</source>
         <translation>Google 表格导入</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="159"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="162"/>
         <source>Refresh Google Sheets</source>
         <translation>刷新 Google 表格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="160"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="163"/>
         <source>Options</source>
         <translation>选项</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="161"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="164"/>
         <source>Suggest when keyword is spoken</source>
         <translation>说到快捷码时提示</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="162"/>
-        <source>When a snippet&apos;s keyword appears in your dictation, the floating box shows a button to paste it.</source>
-        <translation>听写内容里出现话术的快捷码时，悬浮窗旁会显示可点击粘贴的按钮</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="163"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="166"/>
         <source>Image before text</source>
         <translation>图文组合先贴图片</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="164"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="167"/>
         <source>Search title / text / keyword / folder...</source>
         <translation>搜索 标题 / 内容 / 快捷码 / 目录名...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="165"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="168"/>
         <source>Expand All</source>
         <translation>全部展开</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="166"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="169"/>
         <source>Collapse All</source>
         <translation>全部折叠</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="167"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="170"/>
         <source>Multiline</source>
         <translation>多行显示</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="168"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="171"/>
         <source>Max lines:</source>
         <translation>最多行数：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="170"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="173"/>
         <source>More</source>
         <translation type="unfinished">更多</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="171"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="174"/>
         <source>Select All</source>
         <translation type="unfinished">全选</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="172"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="175"/>
         <source>Invert</source>
         <translation>反选</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="169"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="172"/>
         <source>Delete Selected</source>
         <translation>删除选中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="173"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="165"/>
+        <source>When a snippet&apos;s keyword appears in your dictation, the floating box shows a button to paste it. If the whole sentence is just the keyword, it is not typed.</source>
+        <translation>听写内容出现话术快捷码时，悬浮窗会显示按钮供点击粘贴。整句话只有快捷码时不会打字。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="176"/>
         <source>Search popup hotkey (leave empty to disable):</source>
         <translation>搜索框呼出快捷键（留空则不启用）：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="285"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="288"/>
         <source>%1 snippets · %2 Google Sheets synced</source>
         <translation>共 %1 条话术 · 已同步 %2 个 Google 表格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="333"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="336"/>
         <source>Table name:</source>
         <translation>表名称：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="351"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="354"/>
         <source>没有已保存的 Google 表格</source>
         <translation>没有已保存的 Google 表格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="351"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="354"/>
         <source>请先导入一个 Google 表格</source>
         <translation>请先导入一个 Google 表格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="362"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="371"/>
         <source>部分 Google 表格刷新失败</source>
         <translation>部分 Google 表格刷新失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="364"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="373"/>
         <source>刷新成功</source>
         <translation>刷新成功</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="364"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="373"/>
         <source>已刷新 %1 个 Google 表格</source>
         <translation>已刷新 %1 个 Google 表格</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="380"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="390"/>
         <source>未选择条目</source>
         <translation>未选择条目</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="380"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="390"/>
         <source>请先选择要删除的条目</source>
         <translation>请先选择要删除的条目</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="383"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="393"/>
         <source>Confirm Delete</source>
         <translation>确认删除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="384"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="394"/>
         <source>Delete the %1 selected nodes? Folders are deleted with their contents.</source>
         <translation>确定要删除选中的 %1 个节点吗？文件夹会连同其内容一起删除。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="467"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="477"/>
         <source>Rename Folder</source>
         <translation>重命名目录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="467"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="477"/>
         <source>New name:</source>
         <translation>新名称：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="479"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="490"/>
         <source>Edit Title</source>
         <translation>编辑标题</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="479"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="490"/>
         <source>New title:</source>
         <translation>新标题：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="486"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="498"/>
         <source>Edit Text</source>
         <translation>编辑内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="486"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="498"/>
         <source>Text to paste:</source>
         <translation>要粘贴的内容：</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="493"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="506"/>
         <source>Edit Keyword</source>
         <translation>编辑快捷码</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="493"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="506"/>
         <source>Spoken keyword, e.g. quote:</source>
         <translation>口述触发词，例如“报价”：</translation>
     </message>
@@ -3012,12 +3042,12 @@
         <translation>语音识别失败</translation>
     </message>
     <message>
-        <location filename="../../src/services/WorkflowManager.cpp" line="214"/>
+        <location filename="../../src/services/WorkflowManager.cpp" line="215"/>
         <source>文本注入失败</source>
         <translation>文本注入失败</translation>
     </message>
     <message>
-        <location filename="../../src/services/WorkflowManager.cpp" line="215"/>
+        <location filename="../../src/services/WorkflowManager.cpp" line="216"/>
         <source>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴</source>
         <translation>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴</translation>
     </message>

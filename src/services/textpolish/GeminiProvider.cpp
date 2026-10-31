@@ -19,7 +19,8 @@ QString GeminiProvider::buildEndpoint(const TextPolishService::RequestParams& pa
         : params.customUrl;
 
     QString model = params.model.isEmpty() ? QStringLiteral("gemini-1.5-flash") : params.model;
-    return QString("%1%2:generateContent?key=%3").arg(base, model, params.apiKey);
+    // Key 走请求头：Qt 的 HTTP 错误文本带完整 URL，放查询串会被写进日志
+    return QString("%1%2:generateContent").arg(base, model);
 }
 
 QString GeminiProvider::buildPolishPrompt(const QString& inputText, const TextPolishService::RequestParams& params) {
@@ -114,6 +115,7 @@ void GeminiProvider::polish(const QString& inputText,
     }
     QNetworkRequest req(QUrl(buildEndpoint(params)));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("x-goog-api-key", params.apiKey.toUtf8());
 
     QByteArray postData = buildTextRequestBody(inputText, params);
     QNetworkReply* reply = mgr->post(req, postData);
@@ -145,6 +147,7 @@ void GeminiProvider::transcribe(const QByteArray& wavBytes,
     QByteArray audioB64 = wavBytes.toBase64();
     QNetworkRequest req(QUrl(buildEndpoint(params)));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("x-goog-api-key", params.apiKey.toUtf8());
 
     QNetworkReply* reply = mgr->post(req, buildAudioRequestBody(audioB64, params));
     QObject::connect(reply, &QNetworkReply::finished, mgr, [reply, done]() {
@@ -168,6 +171,7 @@ void GeminiProvider::test(const TextPolishService::RequestParams& params,
     }
     QNetworkRequest req(QUrl(buildEndpoint(params)));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("x-goog-api-key", params.apiKey.toUtf8());
 
     QJsonObject textPart{ {"text", "ping"} };
     QJsonArray partsArray{ textPart };

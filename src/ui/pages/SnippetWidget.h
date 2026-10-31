@@ -8,7 +8,7 @@
 
 class GoogleSheetsService;
 class QAction;
-class QCheckBox;
+class AnimatedCheckBox;
 class QLabel;
 class QLineEdit;
 class QMenu;
@@ -83,8 +83,8 @@ private:
     QLineEdit* m_searchEdit = nullptr;
     QLabel* m_statusLabel = nullptr;
     QLabel* m_linesLabel = nullptr;
-    QCheckBox* m_voiceTriggerChk = nullptr;
-    QCheckBox* m_imageFirstChk = nullptr;
+    AnimatedCheckBox* m_voiceTriggerChk = nullptr;
+    AnimatedCheckBox* m_imageFirstChk = nullptr;
     QSpinBox* m_maxLinesSpin = nullptr;
     QLabel* m_hotkeyLabel = nullptr;
     ShortcutEdit* m_hotkeyEdit = nullptr;

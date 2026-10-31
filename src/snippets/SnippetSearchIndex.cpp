@@ -3,7 +3,6 @@
 
 namespace {
 
-// 英文快捷码要按整词匹配（"hi" 不应命中 "this"）；中日韩文字之间没有空格，仍按子串匹配
 bool containsKeyword(const QString& text, const QString& keyword) {
     int from = 0;
     while (true) {
@@ -18,7 +17,7 @@ bool containsKeyword(const QString& text, const QString& keyword) {
     }
 }
 
-} // namespace
+}
 
 QVector<SnippetSearchIndex::Hit> SnippetSearchIndex::search(FolderList& roots, const QString& query, bool allWhenEmpty) {
     QVector<Hit> results;
@@ -40,6 +39,18 @@ QVector<SnippetItem*> SnippetSearchIndex::matchKeywords(FolderList& roots, const
                      [](const SnippetItem* a, const SnippetItem* b) { return a->useCount > b->useCount; });
     if (hits.size() > limit) hits.resize(limit);
     return hits;
+}
+
+bool SnippetSearchIndex::isExactKeyword(const QString& spokenText, const QString& keyword) {
+    auto normalized = [](const QString& s) {
+        QString out;
+        for (QChar c : s) {
+            if (c.isLetterOrNumber()) out += c.toLower();
+        }
+        return out;
+    };
+    const QString key = normalized(keyword);
+    return !key.isEmpty() && normalized(spokenText) == key;
 }
 
 const QVector<SnippetSearchIndex::Entry>& SnippetSearchIndex::entries(FolderList& roots) {

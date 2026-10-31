@@ -24,6 +24,9 @@ public:
     // 听写文本里出现了哪些条目的快捷码；按使用次数降序，最多 limit 条
     QVector<SnippetItem*> matchKeywords(FolderList& roots, const QString& spokenText, int limit);
 
+    // 整句话是否就是这个快捷码。识别结果常带句末标点和空格，比较时只看字母和数字
+    static bool isExactKeyword(const QString& spokenText, const QString& keyword);
+
 private:
     struct Entry {
         SnippetItem* item = nullptr;

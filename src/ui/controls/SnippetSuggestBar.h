@@ -3,13 +3,17 @@
 
 #include <QString>
 #include <QStringList>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
 #include <QVector>
 #include <QTimer>
 #include <QWidget>
 
-class QHBoxLayout;
+class QVariantAnimation;
 
-// @brief 悬浮窗旁的指令条：听写里出现话术快捷码时，列出可点击的条目。
+// @brief 悬浮窗旁的指令入口：听写里出现话术快捷码时，先显示一个小圆形箭头（多条时带条数角标），
+//        鼠标移上去才展开成可点击的条目按钮，移开后延迟收起。
 //        置顶且不抢焦点，点击后焦点仍在目标应用里，粘贴才会落到用户正在输入的位置。
 class SnippetSuggestBar : public QWidget {
     Q_OBJECT
@@ -32,18 +36,47 @@ signals:
     void snippetClicked(const QString& id);
     // 点击或超时收起时带出这批条目的 id，调用方据此在同一句话里不再重复提示
     void closed(const QStringList& ids);
+    void visibilityChanged(bool visible);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
     void enterEvent(QEnterEvent *event) override;
     void leaveEvent(QEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    bool event(QEvent *event) override;
 
 private:
-    void closeAndRemember();
+    // 按钮是自绘的，不是 QPushButton：位置大小固定，展开时被底板的轮廓逐步揭开
+    struct Item {
+        QString id;
+        QString label;
+        QString tooltip;
+        QRectF finalRect;   // 展开后在按钮栏里的位置（栏内坐标）
+    };
 
-    QHBoxLayout* m_layout = nullptr;
+    void closeAndRemember();
+    void setExpanded(bool expanded);
+    void applyPlacement();    // 按锚点定位窗口并设回收起遮罩，只在收起且静止时调用
+    QRect collapsedRect() const;
+    QRectF buttonRect(int i) const;
+    int buttonAt(const QPoint& pos) const;
+
+    QVector<Item> m_items;
+    QVector<Suggestion> m_pending;  // 鼠标在栏上时到达的新提示，收起后再显示
+    QSize m_full;                   // 完全展开后的窗口尺寸
+    int m_hover = -1;
+    QVariantAnimation* m_anim = nullptr;
+    qreal m_progress = 0;           // 0=圆形箭头，1=完整按钮栏
     QStringList m_currentIds;
     QTimer m_hideTimer;
+    QTimer m_collapseTimer;
+    QRect m_anchor;       // placeNear 记下的最新锚点，展开/动画期间先存着不生效
+    bool m_anchorBelow = false;
+    bool m_below = false; // 当前生效的方向，绘制用
+    bool m_expanded = false;
 };
 
 #endif // SNIPPETSUGGESTBAR_H

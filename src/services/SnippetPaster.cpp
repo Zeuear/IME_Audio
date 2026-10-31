@@ -10,6 +10,7 @@
 #include <QPainter>
 #include <QPointer>
 #include <QTimer>
+#include <QVector>
 #include <functional>
 
 #include "services/InputInjector.h"
@@ -42,44 +43,51 @@ void SnippetPaster::paste(const QString& itemId) {
 
     const QString text = item->text;
     const QString imagePath = item->imagePath.trimmed();
+    QString filePath = item->filePath.trimmed();
     const bool imageFirst = m_store->settings().comboImageFirst;
     m_store->incrementUseCount(itemId);
 
+    // 只记了路径，原文件可能已被移走或删除；其余内容仍然可用
+    if (!filePath.isEmpty() && !QFileInfo::exists(filePath)) {
+        emit errorOccurred(tr("文件粘贴失败"), tr("找不到文件：%1").arg(filePath));
+        filePath.clear();
+    }
+
     if (imagePath.isEmpty()) {
-        pasteLoaded(text, QImage(), imageFirst);
+        pasteLoaded(text, QImage(), filePath, imageFirst);
         return;
     }
-    loadImage(imagePath, [this, text, imageFirst](const QImage& image) {
+    loadImage(imagePath, [this, text, filePath, imageFirst](const QImage& image) {
         if (image.isNull()) {
             emit errorOccurred(tr("图片粘贴失败"), tr("无法读取图片文件或下载远程图片"));
-            // 图片失败时文字仍然可用
-            if (!text.trimmed().isEmpty()) pasteLoaded(text, QImage(), imageFirst);
+            // 图片失败时文字和文件仍然可用
+            pasteLoaded(text, QImage(), filePath, imageFirst);
             return;
         }
-        pasteLoaded(text, flattenOnWhite(image), imageFirst);
+        pasteLoaded(text, flattenOnWhite(image), filePath, imageFirst);
     });
 }
 
-void SnippetPaster::pasteLoaded(const QString& text, const QImage& image, bool imageFirst) {
+void SnippetPaster::pasteLoaded(const QString& text, const QImage& image, const QString& filePath, bool imageFirst) {
     const bool hasText = !text.trimmed().isEmpty();
     const bool hasImage = !image.isNull();
+    const bool hasFile = !filePath.isEmpty();
 
-    auto pasteTextStep = [text]() { return InputInjector::pasteText(text); };
-    auto pasteImageStep = [image]() { return InputInjector::pasteImage(image); };
+    QVector<std::function<bool()>> steps;
+    if (hasImage && imageFirst) steps << [image]() { return InputInjector::pasteImage(image); };
+    if (hasText) steps << [text]() { return InputInjector::pasteText(text); };
+    if (hasImage && !imageFirst) steps << [image]() { return InputInjector::pasteImage(image); };
+    if (hasFile) steps << [filePath]() { return InputInjector::pasteFile(filePath); };
 
     bool ok = true;
-    if (hasText && hasImage) {
-        auto first = imageFirst ? std::function<bool()>(pasteImageStep) : std::function<bool()>(pasteTextStep);
-        auto second = imageFirst ? std::function<bool()>(pasteTextStep) : std::function<bool()>(pasteImageStep);
-        ok = first();
-        QPointer<SnippetPaster> self(this);
-        QTimer::singleShot(kComboGapMs, this, [self, second]() {
-            if (self && !second()) LOG_WARN("Snippet combo: second paste step failed");
+    for (int i = 0; i < steps.size(); ++i) {
+        if (i == 0) {
+            ok = steps[0]();
+            continue;
+        }
+        QTimer::singleShot(kComboGapMs * i, this, [step = steps[i]]() {
+            if (!step()) LOG_WARN("Snippet combo: later paste step failed");
         });
-    } else if (hasImage) {
-        ok = pasteImageStep();
-    } else if (hasText) {
-        ok = pasteTextStep();
     }
 
     if (!ok) {
@@ -88,7 +96,7 @@ void SnippetPaster::pasteLoaded(const QString& text, const QImage& image, bool i
         emit errorOccurred(tr("粘贴失败"), tr("无法向当前窗口发送粘贴操作，内容已留在剪贴板，可手动 Ctrl+V"));
 #else
         // Linux 尚未实现模拟按键，macOS 可能缺辅助功能权限；文字路径不会写剪贴板，这里补上才能手动粘贴
-        if (!hasImage && hasText) QGuiApplication::clipboard()->setText(text);
+        if (!hasImage && !hasFile && hasText) QGuiApplication::clipboard()->setText(text);
         emit errorOccurred(tr("粘贴失败"), tr("当前系统暂不支持自动粘贴（或缺少辅助功能权限），内容已复制到剪贴板，请手动粘贴"));
 #endif
     }

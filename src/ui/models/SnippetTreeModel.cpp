@@ -183,8 +183,14 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
         tip += "<br>" + html(item->text);
         return tip;
     }
-    case TextRole:
-        return isFol ? QVariant() : QVariant(item->text);
+    case TextRole: {
+        if (isFol) return QVariant();
+        if (item->filePath.isEmpty()) return item->text;
+        // 委托只画这段文字，附件名拼在后面才看得出条目带了文件
+        const QString attachment = QCoreApplication::translate("SnippetTreeModel", "File: %1")
+                                       .arg(QFileInfo(item->filePath).fileName());
+        return item->text.isEmpty() ? attachment : item->text + '\n' + attachment;
+    }
     case KeywordRole:
         return isFol ? QVariant() : QVariant(item->keyword);
     case CountRole:
@@ -291,9 +297,9 @@ QColor SnippetTreeModel::levelBg(int level) {
 
 QString SnippetTreeModel::levelBadge(int level) {
     switch (level) {
-        case 1: return QCoreApplication::translate("SnippetTreeModel", "Level 1 · Table");
-        case 2: return QCoreApplication::translate("SnippetTreeModel", "Level 2 · Sheet");
-        case 3: return QCoreApplication::translate("SnippetTreeModel", "Level 3 · @@ Group");
+        case 1: return QCoreApplication::translate("SnippetTreeModel", "Level 1");
+        case 2: return QCoreApplication::translate("SnippetTreeModel", "Level 2");
+        case 3: return QCoreApplication::translate("SnippetTreeModel", "Level 3");
         default: return QCoreApplication::translate("SnippetTreeModel", "Folder");
     }
 }

@@ -71,7 +71,7 @@ public:
     // parentFolderId 可为文件夹或条目 id（条目则取其所在文件夹）；找不到时回退到第一个可用文件夹
     SnippetItem* addItem(const QString& parentFolderId, const SnippetItem& itemData);
 
-    // field: title / text / keyword / image_path；文件夹仅支持 title
+    // field: title / text / keyword / image_path / file_path；文件夹仅支持 title
     bool updateNode(const QString& nodeId, const QString& field, const QString& value);
 
     // 删除文件夹（含子节点）或条目；删除 L1 时同步移除 google_sheets 配置

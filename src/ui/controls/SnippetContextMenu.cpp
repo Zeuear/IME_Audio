@@ -59,14 +59,14 @@ void SnippetContextMenu::buildFolderMenu() {
     const QString title = folder ? folder->title : id;
 
     if (m_currentLevel == 1) {
-        add(tr("Add Sheet Folder (level 2)"), [this, id]() { onAddSubfolder(id, 2); });
+        add(tr("Add Level 2 Folder"), [this, id]() { onAddSubfolder(id, 2); });
         add(tr("Add Snippet"), [this, id]() { onAddItem(id); });
         if (folder && !folder->sourceUrl.isEmpty()) {
             addSeparator();
             add(tr("Choose Sheets to Sync..."), [this, id]() { emit requestGoogleSheetsDialog(id); });
         }
     } else if (m_currentLevel == 2) {
-        add(tr("Add Group Folder (level 3, @@)"), [this, id]() { onAddSubfolder(id, 3); });
+        add(tr("Add Level 3 Folder"), [this, id]() { onAddSubfolder(id, 3); });
         add(tr("Add Snippet"), [this, id]() { onAddItem(id); });
     } else {
         add(tr("Add Snippet"), [this, id]() { onAddItem(id); });
@@ -102,6 +102,13 @@ void SnippetContextMenu::buildItemMenu() {
     }
 
     addSeparator();
+    add(tr("Choose File..."), [this, id]() { onChooseFile(id); });
+    add(tr("Paste File from Clipboard"), [this, id]() { onPasteClipboardFile(id); });
+    if (item && !item->filePath.isEmpty()) {
+        add(tr("Remove File"), [this, id]() { onClearFile(id); });
+    }
+
+    addSeparator();
     add(tr("Move Up"), [this, id]() { onMoveNode(id, -1); });
     add(tr("Move Down"), [this, id]() { onMoveNode(id, 1); });
 
@@ -120,7 +127,7 @@ void SnippetContextMenu::onAddLevel1Folder() {
 }
 
 void SnippetContextMenu::onAddSubfolder(const QString& parentId, int targetLevel) {
-    const QString levelName = targetLevel == 2 ? tr("Sheet folder") : tr("Group folder");
+    const QString levelName = tr("Level %1 folder").arg(targetLevel);
     bool ok = false;
     QString name = QInputDialog::getText(m_dialogParent, tr("Add %1").arg(levelName), tr("Name:"),
                                          QLineEdit::Normal, tr("New %1").arg(levelName), &ok);
@@ -214,6 +221,37 @@ void SnippetContextMenu::onPasteClipboardImage(const QString& itemId) {
 
 void SnippetContextMenu::onClearImage(const QString& itemId) {
     m_store->updateNode(itemId, "image_path", QString());
+    finish(itemId);
+}
+
+void SnippetContextMenu::onChooseFile(const QString& itemId) {
+    const QString path = QFileDialog::getOpenFileName(m_dialogParent, tr("Choose File"), QString(), tr("All files (*.*)"));
+    if (path.isEmpty()) return;
+    m_store->updateNode(itemId, "file_path", path);
+    finish(itemId);
+}
+
+void SnippetContextMenu::onPasteClipboardFile(const QString& itemId) {
+    const QMimeData* mime = QApplication::clipboard()->mimeData();
+    QString path;
+    if (mime && mime->hasUrls()) {
+        for (const QUrl& u : mime->urls()) {
+            if (u.isLocalFile() && QFileInfo(u.toLocalFile()).isFile()) {
+                path = u.toLocalFile();
+                break;
+            }
+        }
+    }
+    if (path.isEmpty()) {
+        emit errorOccurred(tr("剪贴板里没有文件"), tr("请先在文件管理器里复制一个文件"));
+        return;
+    }
+    m_store->updateNode(itemId, "file_path", path);
+    finish(itemId);
+}
+
+void SnippetContextMenu::onClearFile(const QString& itemId) {
+    m_store->updateNode(itemId, "file_path", QString());
     finish(itemId);
 }
 
