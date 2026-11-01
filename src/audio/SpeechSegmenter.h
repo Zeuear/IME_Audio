@@ -35,6 +35,7 @@ public slots:
 signals:
     void speechStarted();
     void speechEnded();
+    void carryOver(int carryMs);
     void sentenceReady(const QByteArray& pcmData, int sampleRate);
     void errorOccurred(const QString& title, const QString& cause = {});
 
@@ -57,7 +58,7 @@ private:
     // 把切段残留拼到 segment 前面，残留随之清空
     std::vector<float> takeWithLeftover(const std::vector<float>& segment);
     QByteArray toPcm16(const std::vector<float>& samples) const;
-    void emitSentence(const std::vector<float>& samples);
+    void emitSentence(const std::vector<float>& samples, int64_t carrySamples = 0);
     void resetState();
 
     static constexpr int kMaxSegmentMs = 20000;   // 一直说不停时的分段上限

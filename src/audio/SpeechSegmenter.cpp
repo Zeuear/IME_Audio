@@ -166,7 +166,7 @@ void SpeechSegmenter::cutAtPause(const std::vector<float>& segment)
     LOG_DEBUG(QString("VAD | no pause within limit, cut at %1 s, carry %2 s")
                   .arg(double(cut) / m_sampleRate, 0, 'f', 1)
                   .arg(double(m_leftover.size()) / m_sampleRate, 0, 'f', 1));
-    emitSentence(all);
+    emitSentence(all, static_cast<int64_t>(m_leftover.size()));
 }
 
 size_t SpeechSegmenter::findPauseCut(const std::vector<float>& samples, size_t searchFrom)
@@ -316,9 +316,10 @@ QByteArray SpeechSegmenter::toPcm16(const std::vector<float>& samples) const
         static_cast<int>(pcm16.size() * sizeof(int16_t)));
 }
 
-void SpeechSegmenter::emitSentence(const std::vector<float>& samples)
+void SpeechSegmenter::emitSentence(const std::vector<float>& samples, int64_t carrySamples)
 {
     if (samples.empty()) return;
     LOG_DEBUG(QString("VAD | segment %1 s").arg(double(samples.size()) / m_sampleRate, 0, 'f', 1));
+    emit carryOver(static_cast<int>(carrySamples * 1000 / m_sampleRate));
     emit sentenceReady(toPcm16(samples), m_sampleRate);
 }

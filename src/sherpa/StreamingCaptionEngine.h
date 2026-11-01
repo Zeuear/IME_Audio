@@ -26,7 +26,8 @@ public slots:
     void unloadModel();
     // 16 kHz / mono / 16-bit PCM
     void acceptAudio(const QByteArray &pcm);
-    void resetStream(quint64 epoch);
+    // replayMs > 0：新流先补喂
+    void resetStream(quint64 epoch, int replayMs = 0);
 
 signals:
     void partialText(quint64 epoch, const QString &text);
@@ -34,6 +35,13 @@ signals:
     void modelReady(const QString &repoId, bool ok);
 
 private:
+    // 喂一段音频、解码，文字有变化就发出去；出错时关闭引擎
+    void feed(const QByteArray &pcm);
+
+    static constexpr int kReplayMaxMs = 12000;   // 最多留多久的音频供补喂，需大于断句器的切点搜索范围
+    static constexpr int kReplaySlopMs = 300;    // 切段信号到达引擎之前又喂进来的音频，补喂时多带一点
+
+    QByteArray m_recent;   // 最近喂过的音频（16 kHz / mono / 16-bit）
     QThread *m_thread = nullptr;
     std::unique_ptr<sherpa_onnx::cxx::OnlineRecognizer> m_recognizer;
     std::unique_ptr<sherpa_onnx::cxx::OnlineStream> m_stream;

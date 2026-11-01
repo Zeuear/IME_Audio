@@ -59,6 +59,7 @@ void StreamingCaptionEngine::loadModel(const QString &repoId, int numThreads)
         m_repoId = repoId;
     }
     m_lastText.clear();
+    m_recent.clear();
     m_ready = true;
     LOG_INFO(QString("Live caption model ready: %1").arg(repoId));
     emit modelReady(repoId, true);
@@ -70,6 +71,7 @@ void StreamingCaptionEngine::unloadModel()
     m_stream.reset();
     m_recognizer.reset();
     m_lastText.clear();
+    m_recent.clear();
     {
         QMutexLocker lock(&m_repoMutex);
         m_repoId.clear();
@@ -81,6 +83,14 @@ void StreamingCaptionEngine::acceptAudio(const QByteArray &pcm)
 {
     if (!m_ready.load() || !m_recognizer || !m_stream || pcm.isEmpty()) return;
 
+    m_recent.append(pcm);
+    const qsizetype maxBytes = static_cast<qsizetype>(kReplayMaxMs) * 32;   // 16 kHz * 2 字节 = 32 字节/毫秒
+    if (m_recent.size() > maxBytes) m_recent.remove(0, m_recent.size() - maxBytes);
+    feed(pcm);
+}
+
+void StreamingCaptionEngine::feed(const QByteArray &pcm)
+{
     const auto *raw = reinterpret_cast<const int16_t *>(pcm.constData());
     const int count = static_cast<int>(pcm.size() / 2);
     std::vector<float> samples(count);
@@ -103,7 +113,7 @@ void StreamingCaptionEngine::acceptAudio(const QByteArray &pcm)
     }
 }
 
-void StreamingCaptionEngine::resetStream(quint64 epoch)
+void StreamingCaptionEngine::resetStream(quint64 epoch, int replayMs)
 {
     m_epoch = epoch;
     m_lastText.clear();
@@ -115,5 +125,12 @@ void StreamingCaptionEngine::resetStream(quint64 epoch)
         LOG_WARN(QString("Live caption reset failed, disabled: %1").arg(QString::fromLocal8Bit(e.what())));
         m_ready = false;
         emit modelReady(loadedRepoId(), false);
+        return;
     }
+
+    if (replayMs <= 0 || m_recent.isEmpty()) return;
+    // 切点落在停顿里，多补喂的那一小段是静音，不会混进上一句的字
+    const qsizetype bytes = qMin<qsizetype>(m_recent.size(), static_cast<qsizetype>(replayMs + kReplaySlopMs) * 32);
+    LOG_DEBUG(QString("Live caption replay %1 ms into new stream").arg(bytes / 32));
+    feed(m_recent.right(bytes));
 }

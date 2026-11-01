@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QObject>
 #include <atomic>
+#include <utility>
 
 #include "config/AppConfig.h"
 #include "interfaces/workflow_interfaces.h"
@@ -46,6 +47,9 @@ public:
 
     // 实时字幕的音频抽头，默认关闭；开启后每块 16k/单声道/Int16 数据通过 audioChunk 发出
     void setAudioTapEnabled(bool enabled) { m_audioTap = enabled; }
+    // 最近一次交出的句子若是强制切段切出来的，返回切点之后留给下一句的毫秒数（取走后清零，否则为 0）。
+    // 实时字幕换新流时据此补喂音频
+    int takeCarryMs() { return std::exchange(m_carryMs, 0); }
 
     static QStringList availableMicrophones();
     static QStringList availableSpeakers();
@@ -61,6 +65,7 @@ private slots:
     void onSpeechStarted();
     void onSpeechEnded();
     void onSentenceReady(const QByteArray& pcmData, int sampleRate);
+    void onCarryOver(int carryMs) { m_carryMs = carryMs; }
 
 private:
     // ---- 开始录音的步骤 ----
@@ -90,6 +95,7 @@ private:
     std::atomic<bool> m_audioTap{ false };
 
     QByteArray m_singleUtterance;
+    int m_carryMs = 0;
 
     // 后台线程
     SpectrumWorker* m_spectrumWorker = nullptr;

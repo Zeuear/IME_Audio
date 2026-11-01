@@ -53,6 +53,7 @@ AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject* par
     connect(m_segmenterThread, &QThread::finished, m_segmenter, &QObject::deleteLater);
     connect(m_segmenter, &SpeechSegmenter::speechStarted, this, &AudioRecorderService::onSpeechStarted);
     connect(m_segmenter, &SpeechSegmenter::speechEnded, this, &AudioRecorderService::onSpeechEnded);
+    connect(m_segmenter, &SpeechSegmenter::carryOver, this, &AudioRecorderService::onCarryOver);
     connect(m_segmenter, &SpeechSegmenter::sentenceReady, this, &AudioRecorderService::onSentenceReady);
     connect(m_segmenter, &SpeechSegmenter::errorOccurred, this, &AudioRecorderService::errorOccurred);
     m_segmenterThread->start();

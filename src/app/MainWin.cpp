@@ -454,7 +454,13 @@ void MainWin::setupUiConnections(){
     // 实时字幕：音频 → 流式引擎(独立线程) → 中间结果 → 字幕模型；正式结果到达后替换并变深色
     connect(m_recorderService, &AudioRecorderService::audioChunk, m_captionEngine, &StreamingCaptionEngine::acceptAudio);
     connect(m_captionEngine, &StreamingCaptionEngine::partialText, m_captionModel, &LiveCaptionModel::setPartial);
-    connect(m_captionModel, &LiveCaptionModel::epochChanged, m_captionEngine, &StreamingCaptionEngine::resetStream);
+    // 强制切段时切点在过去，换新流要把切点之后已经喂给旧流的音频补喂回去，否则下一句字幕开头会丢
+    connect(m_captionModel, &LiveCaptionModel::epochChanged, m_captionEngine, [this](quint64 epoch) {
+        const int replayMs = m_recorderService->takeCarryMs();
+        QMetaObject::invokeMethod(m_captionEngine, [engine = m_captionEngine, epoch, replayMs]() {
+            engine->resetStream(epoch, replayMs);
+        }, Qt::QueuedConnection);
+    });
     connect(m_captionEngine, &StreamingCaptionEngine::modelReady, this, [this](const QString&, bool ok) {
         m_recorderService->setAudioTapEnabled(ok && ConfigManager::instance().config().liveCaptionEnabled.load());
         // 每次开始录音都会重试装载，只提示一次，免得每次录音都弹窗
