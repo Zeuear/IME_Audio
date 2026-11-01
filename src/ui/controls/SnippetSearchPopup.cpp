@@ -340,11 +340,12 @@ void SnippetSearchPopup::refreshList() {
     auto hits = m_store->search(m_searchEdit->text(), true);
     if (hits.size() > kMaxResults) hits.resize(kMaxResults);
 
-    QStringList shown;   // 已经输出的目录链
+    QStringList shown;   // 已经输出的目录链（id），同名目录也不会被合并
     for (const auto& hit : hits) {
-        const QStringList parts = hit.trail.split(QStringLiteral(" / "));
+        const QStringList& parts = hit.trailNames;
+        const QStringList& keys = hit.trailKeys;
         int common = 0;
-        while (common < shown.size() && common < parts.size() && shown[common] == parts[common]) ++common;
+        while (common < shown.size() && common < keys.size() && shown[common] == keys[common]) ++common;
         for (int depth = common; depth < parts.size(); ++depth) {
             auto* header = new QStandardItem(parts[depth]);
             header->setEditable(false);
@@ -353,7 +354,7 @@ void SnippetSearchPopup::refreshList() {
             header->setData(depth, kDepthRole);
             m_model->appendRow(header);
         }
-        shown = parts;
+        shown = keys;
 
         auto* row = new QStandardItem(hit.item->title);
         row->setData(hit.item->keyword, kKeywordRole);

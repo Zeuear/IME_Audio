@@ -51,6 +51,29 @@ TEST(SnippetSearch, HitsFollowTreeOrderWithTrail) {
     EXPECT_EQ(hits[2].trail, "Book / Sheet / Group");
 }
 
+// 同名的相邻三级目录要靠 id 区分，弹窗按 trailKeys 分组，不能合并成一个目录行
+TEST(SnippetSearch, SameNameSiblingFoldersHaveDistinctKeys) {
+    auto g1 = makeFolder("Group");
+    g1->id = "g1";
+    g1->items.push_back(makeItem("x", "one"));
+    auto g2 = makeFolder("Group");
+    g2->id = "g2";
+    g2->items.push_back(makeItem("y", "two"));
+    auto sheet = makeFolder("Sheet");
+    sheet->id = "s";
+    sheet->children.push_back(std::move(g1));
+    sheet->children.push_back(std::move(g2));
+    FolderList roots;
+    roots.push_back(std::move(sheet));
+
+    SnippetSearchIndex index;
+    const auto hits = index.search(roots, "", true);
+    ASSERT_EQ(hits.size(), 2);
+    EXPECT_EQ(hits[0].trailNames, hits[1].trailNames);
+    EXPECT_NE(hits[0].trailKeys, hits[1].trailKeys);
+    EXPECT_EQ(hits[0].trailKeys.first(), hits[1].trailKeys.first());
+}
+
 TEST(SnippetSearch, EmptyQueryReturnsNothingUnlessAllRequested) {
     FolderList roots = sampleTree();
     SnippetSearchIndex index;
@@ -97,6 +120,15 @@ TEST(SnippetKeywordMatch, EnglishKeywordMatchesWholeWordOnly) {
     SnippetSearchIndex index;
     EXPECT_TRUE(index.matchKeywords(roots, "many quotes here", 10).isEmpty());
     EXPECT_EQ(index.matchKeywords(roots, "a quote.", 10).size(), 1);
+}
+
+// 流式识别在词中间插标点 / 空格时仍要命中
+TEST(SnippetKeywordMatch, PunctuationInsideKeywordIsIgnored) {
+    FolderList roots = sampleTree();
+    roots[0]->items[0].keyword = QString::fromUtf8("报价");
+    SnippetSearchIndex index;
+    EXPECT_EQ(index.matchKeywords(roots, QString::fromUtf8("给我报，价。"), 10).size(), 1);
+    EXPECT_EQ(index.matchKeywords(roots, QString::fromUtf8("给我 报 价"), 10).size(), 1);
 }
 
 TEST(SnippetKeywordMatch, BlankSpokenTextOrBlankKeywordNeverMatches) {

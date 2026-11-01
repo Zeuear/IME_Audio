@@ -14,6 +14,8 @@ public:
     struct Hit {
         SnippetItem* item = nullptr;
         QString trail;   // 所在目录路径 "A / B / C"
+        QStringList trailNames;   // 逐级目录名，显示用；名字里可能含 " / "，不能靠拆 trail 还原
+        QStringList trailKeys;    // 逐级目录的唯一标识（id），同名目录靠它区分
     };
 
     void invalidate() { m_valid = false; }
@@ -33,10 +35,12 @@ private:
         QString keyword;     // 已 trimmed；空则不参与快捷码匹配
         QString haystack;    // 快捷码/标题/内容/目录路径，小写
         QString trail;
+        QStringList trailNames;
+        QStringList trailKeys;
     };
 
     const QVector<Entry>& entries(FolderList& roots);
-    void build(FolderList& list, const QStringList& trail);
+    void build(FolderList& list, const QStringList& names, const QStringList& keys);
 
     QVector<Entry> m_entries;
     bool m_valid = false;
