@@ -1,12 +1,11 @@
 #include "ui/controls/ThemedIcon.h"
 
-#include <QBuffer>
 #include <QFile>
 #include <QGuiApplication>
 #include <QImage>
-#include <QImageReader>
 #include <QPainter>
 #include <QPixmap>
+#include <QSvgRenderer>
 #include <cmath>
 
 #include "utils/Logger.h"
@@ -17,15 +16,17 @@ QPixmap renderSvg(const QByteArray& svg, int logicalSize) {
     const qreal dpr = std::ceil(qApp->devicePixelRatio());
     const int px = static_cast<int>(logicalSize * dpr);
 
-    QByteArray data = svg;
-    QBuffer buffer(&data);
-    buffer.open(QIODevice::ReadOnly);
-    QImageReader reader(&buffer, "svg");
-    reader.setScaledSize(QSize(px, px));
-    const QImage image = reader.read();
-    if (image.isNull()) {
-        LOG_WARN(QString("Themed icon render failed: %1").arg(reader.errorString()));
+    // 直接用 QSvgRenderer，不依赖 qsvg 图片格式插件
+    QSvgRenderer renderer(svg);
+    if (!renderer.isValid()) {
+        LOG_WARN("Themed icon render failed: invalid SVG");
         return {};
+    }
+    QImage image(px, px, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        renderer.render(&painter);
     }
     QPixmap pixmap = QPixmap::fromImage(image);
     pixmap.setDevicePixelRatio(dpr);
