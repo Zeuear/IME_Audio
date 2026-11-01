@@ -116,8 +116,12 @@ constexpr int kBlurHideDelayMs = 150;
 } // namespace
 
 SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paster, QWidget *parent)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool),
+    // NoDropShadowWindowHint：卡片自己画了阴影，mac 上系统还会按半透明窗口的轮廓再加一层，叠出重影
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool
+                          | Qt::NoDropShadowWindowHint),
       m_store(store), m_paster(paster) {
+    // 打字前缀呼出时本应用不是前台，mac 上 Tool 窗口会在应用失活时被系统隐藏，必须声明始终显示
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow);
     setupUi();
     retranslateUi();
 
