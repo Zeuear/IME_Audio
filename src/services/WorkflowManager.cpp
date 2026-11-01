@@ -3,6 +3,11 @@
 #include "InputInjector.h"
 #include "utils/PlatformPermissions.h"
 #include <QMetaObject>
+#include <QDataStream>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include "utils/AppPaths.h"
 
 /*
 * 运行流程
@@ -12,6 +17,43 @@
                   continue模式，则会触发Process模型，如果没有声音则会自动停止，同时也会触发Recording。因为接下来还会继续录音
 4. 打印转录   --> 这个不会受影响。
 */
+
+namespace {
+
+// 排查识别效果用：设置环境变量 IMEAUDIO_DUMP_UTTERANCES=1 后，每句送去识别的音频都存成 WAV，
+// 可以直接听 VAD 切出来的句子是否完整（句首被吃、切在词中间等）。默认关闭，不影响正常使用
+bool dumpUtterancesEnabled() {
+    static const bool enabled = qEnvironmentVariableIntValue("IMEAUDIO_DUMP_UTTERANCES") != 0;
+    return enabled;
+}
+
+void dumpUtterance(quint64 id, const QByteArray& pcm, int sampleRate, int channels, int bitsPerSample) {
+    const QString dir = QDir(AppPaths::dataDir()).absoluteFilePath("debug_utterances");
+    QDir().mkpath(dir);
+    const QString path = QDir(dir).absoluteFilePath(
+        QString("%1_%2.wav").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz")).arg(id));
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        LOG_WARN(QString("Dump utterance failed: %1").arg(path));
+        return;
+    }
+    QDataStream out(&file);
+    out.setByteOrder(QDataStream::LittleEndian);
+    const quint32 dataSize = static_cast<quint32>(pcm.size());
+    file.write("RIFF");
+    out << quint32(36 + dataSize);
+    file.write("WAVEfmt ");
+    out << quint32(16) << quint16(1) << quint16(channels) << quint32(sampleRate)
+        << quint32(sampleRate * channels * bitsPerSample / 8) << quint16(channels * bitsPerSample / 8)
+        << quint16(bitsPerSample);
+    file.write("data");
+    out << dataSize;
+    file.write(pcm);
+    LOG_DEBUG(QString("Utterance #%1 dumped: %2 (%3 s)").arg(id).arg(path)
+                  .arg(double(pcm.size()) / (sampleRate * channels * bitsPerSample / 8), 0, 'f', 2));
+}
+
+} // namespace
 
 WorkflowManager::WorkflowManager(const AppConfig &config, QObject *parent) : QObject(parent), m_config(config) {}
 
@@ -161,6 +203,7 @@ void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate
     const quint64 id = ++m_nextUtteranceId;
     m_utteranceIds.enqueue(id);
     emit utteranceAccepted(id);
+    if (dumpUtterancesEnabled()) dumpUtterance(id, pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
     transitionTo(WorkflowState::Transcribing, WorkflowEvent::UtteranceCaptured);
     m_transcription->transcribe(pcmData, sampleRate, m_config.audio.channels, m_config.audio.bitsPerSample);
 }
@@ -169,6 +212,8 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
     if (m_pending > 0) m_pending--;
     const quint64 id = m_utteranceIds.isEmpty() ? 0 : m_utteranceIds.dequeue();
     emit utteranceFinished(success ? finalText : QString(), id);
+    if (dumpUtterancesEnabled())
+        LOG_DEBUG(QString("Utterance #%1 raw=\"%2\" final=\"%3\"").arg(id).arg(rawText, finalText));
 
     if (success) {
         if (!finalText.isEmpty()) {
