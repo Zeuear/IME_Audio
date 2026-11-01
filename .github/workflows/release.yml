@@ -28,7 +28,7 @@ jobs:
           #   asset_name: ImeAudio-x86_64.AppImage
           # sherpa 静态库按构建机 CPU 选择（osx-arm64 / osx-x64），
           # 所以 Apple Silicon 与 Intel 各用一台对应架构的 runner 分别构建
-          - os: macos-14
+          - os: macos-15
             platform: macos
             asset_name: ImeAudio_macOS_arm64.dmg
           - os: macos-15-intel
