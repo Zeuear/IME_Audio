@@ -30,6 +30,7 @@ ImeAudio is a high-performance, AI-driven real-time speech transcription and tex
 * **Modern UI/UX:** A sleek, macOS-inspired interface built with Qt Widgets, featuring smooth animations and modern aesthetics; supports light, gray, and dark themes.
 * **Background Operation:** Lightweight system tray integration with quick tray-menu actions for non-intrusive use.
 * **Recognition Log:** Keeps each recognition result; the log header can copy all records at once.
+* **Snippet Library:** Manage frequently used snippets in a tree; entries can carry images or files. Import from Google Sheets (multiple tabs), call up a hotkey search popup, get a floating hint when you say a snippet's shortcut, or type a prefix (default `//` or `;;`) in any app to open the search.
 * **Single Instance:** Launching again brings the running window to the front.
 * **Instant Settings:** Changes apply immediately; the Settings page is temporarily locked while recording to avoid mid-session changes.
 * **Auto-Update:** Stay current with the built-in automatic update system.
@@ -56,7 +57,7 @@ ImeAudio is a high-performance, AI-driven real-time speech transcription and tex
 * **Live Captions:** Toggle in Settings; supports streaming languages such as Chinese, English, Korean, and French.
 * **UI Themes:** Light, Dark, Gray, or System default.
 * **Speech Rules:** Custom vocabulary (key-value cards) and polishing styles.
-
+* **Snippet Library:** In the options on the Snippets page, set the search hotkey, typed prefixes (off by default), spoken-shortcut hints and the number of visible lines; 
 ## 🛠 Technical Stack
 * **Framework:** Qt 6 (C++/Widgets)
 * **Audio Capture:** Qt Multimedia (QAudioSource)
