@@ -554,6 +554,7 @@ void MainWin::setupUiConnections(){
     connect(m_prefixWatcher, &PrefixWatcher::prefixTyped, this, [this](const QString& prefix) {
         // 在本软件自己的窗口里打字（比如搜索框）不呼出，否则弹窗会盖在自己上面
         if (QApplication::activeWindow()) {
+            LOG_DEBUG(QString("Prefix %1 ignored: typed inside the app window").arg(prefix));
             m_prefixWatcher->endQuery();
             return;
         }

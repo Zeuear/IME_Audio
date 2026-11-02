@@ -83,6 +83,12 @@ struct PrefixWatcher::Impl {
         if (thread.joinable()) return;
         // 没授权就先弹系统的辅助功能引导框；授权要重启应用才生效，这次的 tap 仍会创建失败（只记日志）
         if (!PlatformPermissions::requestAccessibility(true)) LOG_WARN("PrefixWatcher(mac): accessibility not granted yet");
+        // 全局监听键盘按键还要“输入监控”权限：没有它 tap 能创建成功，但收不到任何按键，前缀监听就悄悄失效。
+        // 没授权时触发系统授权框，并在系统设置的“输入监控”里生成条目
+        if (!CGPreflightListenEventAccess()) {
+            LOG_WARN("PrefixWatcher(mac): input monitoring not granted, requesting");
+            CGRequestListenEventAccess();
+        }
         std::atomic<bool> ready{false};
         thread = std::thread([this, &ready]() {
             // 主动拦截（能吞键）需要辅助功能权限；没授权时 CGEventTapCreate 返回空，只记日志，不影响其它功能
@@ -98,6 +104,7 @@ struct PrefixWatcher::Impl {
             runLoop = CFRunLoopGetCurrent();
             CFRunLoopAddSource(runLoop, source, kCFRunLoopCommonModes);
             CGEventTapEnable(tap, true);
+            LOG_INFO("PrefixWatcher(mac): event tap started");
             ready = true;
 
             CFRunLoopRun();
@@ -195,6 +202,7 @@ struct PrefixWatcher::Impl {
             }
         }
         // 事件回调里不能做耗时的事，交回界面线程处理
+        if (!hitPrefix.isEmpty()) LOG_DEBUG(QString("PrefixWatcher(mac): prefix typed: %1").arg(hitPrefix));
         if (!hitPrefix.isEmpty())
             QMetaObject::invokeMethod(owner, [o = owner, hitPrefix]() { emit o->prefixTyped(hitPrefix); }, Qt::QueuedConnection);
         if (queryDirty)
