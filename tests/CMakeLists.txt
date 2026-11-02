@@ -60,6 +60,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_history_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/snippet_search_index_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/google_sheets_parse_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_pipeline_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
