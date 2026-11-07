@@ -52,6 +52,7 @@
 #include "ui/pages/DictationLogWidget.h"
 #include "ui/controls/AboutDialog.h"
 #include "ui/pages/FileTranscribeWidget.h"
+#include "ui/pages/LiveTranscriptWidget.h"
 #include "ui/controls/NavListWidget.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
@@ -426,6 +427,16 @@ void MainWin::setupUiConnections(){
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, m_history, [this](const QString& text) { m_history->add(text); });
     ui->dictation_log_widget->setModel(m_history);
     connect(ui->dictation_log_widget, &DictationLogWidget::copied, this, [this]() { notify(NotifyLevel::Success, tr("已复制")); });
+
+    // 实时转录页：所有听写结果连续写成稿子；"同时输入到前台"关掉时结果只留在稿子里
+    connect(m_workflow, &WorkflowManager::transcriptionResultReady,
+            ui->live_transcript_widget, [this](const QString& text) { ui->live_transcript_widget->appendUtterance(text); });
+    connect(ui->live_transcript_widget, &LiveTranscriptWidget::startRequested, this, [this]() { startDictation(); });
+    connect(ui->live_transcript_widget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
+    connect(ui->live_transcript_widget, &LiveTranscriptWidget::injectToggled,
+            m_workflow, &WorkflowManager::setInjectEnabled);
+    m_workflow->setInjectEnabled(ui->live_transcript_widget->injectToForeground());
+
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
     connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
@@ -1269,6 +1280,7 @@ void MainWin::stopDictation() {
 void MainWin::onStateChanged(WorkflowState state)
 {
     setSettingsLocked(state != WorkflowState::Idle);
+    ui->live_transcript_widget->setRecording(state != WorkflowState::Idle);
 
     switch (state) {
     case WorkflowState::Loading:

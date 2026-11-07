@@ -1138,6 +1138,16 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="live_transcript">
+         <attribute name="title">
+          <string>Live Transcript</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_lt">
+          <item>
+           <widget class="LiveTranscriptWidget" name="live_transcript_widget" native="true"/>
+          </item>
+         </layout>
+        </widget>
        </widget>
           </item>
          </layout>
@@ -1555,6 +1565,12 @@
    <class>FileTranscribeWidget</class>
    <extends>QWidget</extends>
    <header>ui/pages/FileTranscribeWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LiveTranscriptWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/pages/LiveTranscriptWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
