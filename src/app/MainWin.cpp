@@ -54,7 +54,6 @@
 #include "ui/models/LiveCaptionModel.h"
 #include "ui/controls/SettingsBinder.h"
 #include "ui/models/DictationHistoryModel.h"
-#include "ui/pages/DictationLogWidget.h"
 #include "ui/pages/AboutPage.h"
 #include "ui/pages/FileTranscribeWidget.h"
 #include "ui/pages/LiveTranscriptWidget.h"
@@ -123,8 +122,6 @@ void MainWin::initialize() {
     setupLanguageCombo();
     ui->model_list_widget->setLanguage(currentLanguageKey());
 
-    ui->nav_list_widget->addNavItem("identification", "", {});
-    ui->nav_list_widget->addNavItem("config", "", {});
     ui->nav_list_widget->addNavItem("download", "", {});
     setupAppearanceUi();
     retranslateDynamicItems();
@@ -431,8 +428,6 @@ void MainWin::setupUiConnections(){
 
     // 主要工作流
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, m_history, [this](const QString& text) { m_history->add(text); });
-    ui->dictation_log_widget->setModel(m_history);
-    connect(ui->dictation_log_widget, &DictationLogWidget::copied, this, [this]() { notify(NotifyLevel::Success, tr("已复制")); });
 
     // 实时转录页：所有听写结果连续写成稿子；"同时输入到前台"关掉时结果只留在稿子里
     connect(m_workflow, &WorkflowManager::transcriptionResultReady,
@@ -886,8 +881,6 @@ void MainWin::retranslateDynamicItems() {
     fillCombo(ui->ai_style_comb, kStyleItems);
     rebuildTranslationLanguages();
 
-    ui->nav_list_widget->setNavText("identification", tr("Recognition"));
-    ui->nav_list_widget->setNavText("config", tr("Logs & Config"));
     ui->nav_list_widget->setNavText("download", tr("Downloads"));
     retranslateAppearanceItems();
 }
