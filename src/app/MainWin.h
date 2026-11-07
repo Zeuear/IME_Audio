@@ -79,7 +79,6 @@ private slots:
     void onHideWindow();
     void onQuitApplication();
 
-    void on_actionAbout_Qt_triggered();
 
     void onToggleDrawer(int pageIndex);
 	void onNewLogEntry(const QString& logEntry);

@@ -2,6 +2,7 @@
 #include "ui_MainWin.h"
 
 #include <QActionGroup>
+#include <QMenu>
 #include <QShortcut>
 #include <QClipboard>
 #include <algorithm>
@@ -54,7 +55,7 @@
 #include "ui/controls/SettingsBinder.h"
 #include "ui/models/DictationHistoryModel.h"
 #include "ui/pages/DictationLogWidget.h"
-#include "ui/controls/AboutDialog.h"
+#include "ui/pages/AboutPage.h"
 #include "ui/pages/FileTranscribeWidget.h"
 #include "ui/pages/LiveTranscriptWidget.h"
 #include "ui/controls/TranscriptWindow.h"
@@ -165,6 +166,7 @@ void MainWin::initialize() {
                                                       m_translationService, config, this);
     m_termsManager = new TermsLibraryManager(this);
     m_updateManager = new UpdateManager(m_networkManager, this);
+    ui->about_page->setUpdateManager(m_updateManager);
 
     m_workflow = new WorkflowManager(config, this);
     m_workflow->initialize(m_recorderService, m_transcriptionService, m_sherpaManager);
@@ -224,11 +226,6 @@ void MainWin::initialize() {
 
 void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
-
-	connect(ui->actionAbout, &QAction::triggered, this, [this]() {
-        AboutDialog dialog(this);
-        dialog.exec();
-	});
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
@@ -425,7 +422,6 @@ void MainWin::setupUiConnections(){
     });
 
     // 更新检查
-    connect(ui->actionUpdate, &QAction::triggered, this, [this]() {  m_updateManager->checkForUpdates(); });
     connect(m_updateManager, &UpdateManager::updateAvailable, this, &MainWin::onUpdateFound);
     connect(m_updateManager, &UpdateManager::downloadFinished, this, &MainWin::onUpdateDownloaded);
     connect(m_updateManager, &UpdateManager::updateError, this, [this](const QString& message) { LOG_ERROR(message); });
@@ -1162,10 +1158,6 @@ void MainWin::readIni() {
   setLanguage(Language, false);
 }
 
-void MainWin::on_actionAbout_Qt_triggered() {
-  QMessageBox::aboutQt(this, "About Qt");
-}
-
 // ---- 外观：主题与界面语言（外观页） ----
 
 void MainWin::setupAppearanceUi() {
@@ -1435,6 +1427,9 @@ void MainWin::notify(NotifyLevel level, const QString& titleCN, const QString& c
 }
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
+    // 用户在关于页点了检查更新：结果已在页面里显示，不再弹这个启动自动检查用的对话框
+    if (ui->about_page->isUserDriven()) return;
+
     QMessageBox msgBox(this);
     msgBox.setWindowTitle(tr("Update Available"));
     msgBox.setText(tr("A new version (%1) is available!").arg(version));
@@ -1458,16 +1453,7 @@ void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, 
     }
 
     if (ret == QMessageBox::Ok) {
-        QString ext;
-#if defined(Q_OS_WIN)
-        ext = ".exe";
-#elif defined(Q_OS_MAC)
-        ext = ".dmg";
-#elif defined(Q_OS_LINUX)
-        ext = ".AppImage";
-#endif
-        m_updateManager->downloadUpdate(QDir::tempPath() + "/VoiceIME_new_version" + ext);
-        ui->actionUpdate->setEnabled(false);
+        m_updateManager->downloadUpdate(UpdateManager::defaultDownloadPath());
         qDebug() << "Update download started...";
     }
 }
@@ -1484,11 +1470,7 @@ void MainWin::onUpdateDownloaded(const QString& filePath) {
         }
         else {
             notify(NotifyLevel::Error, tr("更新失败"), err);
-            ui->actionUpdate->setEnabled(true);
         }
-    }
-    else {
-        ui->actionUpdate->setEnabled(true);
     }
 }
 

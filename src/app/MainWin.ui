@@ -1212,6 +1212,16 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="about">
+         <attribute name="title">
+          <string>About</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_about">
+          <item>
+           <widget class="AboutPage" name="about_page" native="true"/>
+          </item>
+         </layout>
+        </widget>
        </widget>
           </item>
          </layout>
@@ -1396,65 +1406,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>518</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menu">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout_Qt"/>
-    <addaction name="actionUpdate"/>
-    <addaction name="actionAbout"/>
-   </widget>
-   <addaction name="menu"/>
-  </widget>
-  <action name="actionAbout_Qt">
-   <property name="text">
-    <string>About Qt</string>
-   </property>
-  </action>
-  <action name="actionhelp">
-   <property name="text">
-    <string>Help</string>
-   </property>
-  </action>
-  <action name="actionyt_dlp_Update">
-   <property name="text">
-    <string>yt-dlp Update</string>
-   </property>
-  </action>
-  <action name="actionInput_Device">
-   <property name="text">
-    <string>Input Device</string>
-   </property>
-  </action>
-  <action name="actionPreference">
-   <property name="text">
-    <string>Preferences</string>
-   </property>
-  </action>
-  <action name="actionShortcut_Key">
-   <property name="text">
-    <string>Shortcut Key</string>
-   </property>
-  </action>
-  <action name="actionUpdate">
-   <property name="text">
-    <string>Check Update</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1462,6 +1413,12 @@
    <class>AnimatedCheckBox</class>
    <extends>QCheckBox</extends>
    <header>ui/controls/AnimatedCheckbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>AboutPage</class>
+   <extends>QWidget</extends>
+   <header>ui/pages/AboutPage.h</header>
+   <container>1</container>
   </customwidget>
   <customwidget>
    <class>ShortcutEdit</class>

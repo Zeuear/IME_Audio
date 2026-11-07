@@ -70,6 +70,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/toggle_link_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/expand_panel_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/appearance_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/update_status_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -136,6 +137,10 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/FloatingWindow.cpp
     # 外观：主题与语言键的映射（纯逻辑）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/Appearance.cpp
+    # 关于页的更新状态（纯逻辑）与版本比较
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/UpdateStatusModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.h
     # 横条开关与设置页复选框的双向联动
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToggleLink.cpp
     # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC

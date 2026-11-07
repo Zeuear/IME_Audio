@@ -24,6 +24,32 @@ void UpdateManager::setProjectInfo(const QString& owner, const QString& repo, co
     m_currentVersion = currentVersion;
 }
 
+QString UpdateManager::defaultDownloadPath() {
+    QString ext;
+#if defined(Q_OS_WIN)
+    ext = ".exe";
+#elif defined(Q_OS_MAC)
+    ext = ".dmg";
+#elif defined(Q_OS_LINUX)
+    ext = ".AppImage";
+#endif
+    return QDir::tempPath() + "/VoiceIME_new_version" + ext;
+}
+
+bool UpdateManager::isNewer(const QString& latest, const QString& current) {
+    auto stripV = [](QString v) {
+        if (v.startsWith('v', Qt::CaseInsensitive)) v.remove(0, 1);
+        return v;
+    };
+    const QVersionNumber latestNum = QVersionNumber::fromString(stripV(latest));
+    const QVersionNumber currentNum = QVersionNumber::fromString(stripV(current));
+    if (latestNum.isNull() || currentNum.isNull()) {
+        LOG_DEBUG("Could not parse version numbers, falling back to string compare.");
+        return latest > current;
+    }
+    return latestNum > currentNum;
+}
+
 void UpdateManager::checkForUpdates() {
     if (m_owner.isEmpty() || m_repo.isEmpty()) {
         emit updateError("Project info not set.");
@@ -66,24 +92,9 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
         return;
     }
 
-    auto stripV = [](QString v) {
-        if (v.startsWith('v', Qt::CaseInsensitive)) v.remove(0, 1);
-        return v;
-        };
-    QVersionNumber latestNum = QVersionNumber::fromString(stripV(latestVersion));
-    QVersionNumber currentNum = QVersionNumber::fromString(stripV(m_currentVersion));
-
-    if (latestNum.isNull() || currentNum.isNull()) {
-        LOG_DEBUG(QString("Could not parse version numbers, falling back to string compare.").arg(latestVersion).arg(m_currentVersion));
-        if (latestVersion <= m_currentVersion) {
-            LOG_INFO("Already on the latest version");
-            LOG_DEBUG(QString("Current version is up to date:").arg(m_currentVersion));
-            return;
-        }
-    }
-    else if (latestNum <= currentNum) {
+    if (!isNewer(latestVersion, m_currentVersion)) {
         LOG_INFO("Already on the latest version");
-        LOG_DEBUG(QString("Current version is up to date:").arg(m_currentVersion));
+        emit upToDate(m_currentVersion);
         return;
     }
 
