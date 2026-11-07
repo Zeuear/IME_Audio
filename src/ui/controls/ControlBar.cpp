@@ -2,6 +2,7 @@
 #include "ControlBarState.h"
 #include "FloatingWindow.h"
 #include "ToolIcon.h"
+#include <QAbstractButton>
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -15,6 +16,7 @@ constexpr int kButtonSize = 36;
 constexpr int kIconSize = 22;
 constexpr int kPadding = 8;
 constexpr int kRadius = 12;
+constexpr int kGroupGap = 8;
 const QString kPositionGroup = QStringLiteral("ControlBar");
 
 QToolButton* makeButton(QWidget* parent)
@@ -25,6 +27,13 @@ QToolButton* makeButton(QWidget* parent)
     b->setCursor(Qt::PointingHandCursor);
     b->setAutoRaise(true);
     b->setFocusPolicy(Qt::NoFocus);   // 点击不拿键盘焦点
+    // 开关打开只靠图标变色表示：应用样式表会给选中的工具按钮铺一块高亮底色，把图标盖住，这里单独去掉
+    b->setStyleSheet(QStringLiteral(
+        "QToolButton { background: transparent; border: none; border-radius: 8px; }"
+        "QToolButton:hover:enabled { background: rgba(128, 128, 128, 45); }"
+        "QToolButton:pressed:enabled { background: rgba(128, 128, 128, 80); }"
+        "QToolButton:checked { background: transparent; }"
+        "QToolButton:checked:hover:enabled { background: rgba(128, 128, 128, 45); }"));
     return b;
 }
 
@@ -47,14 +56,57 @@ ControlBar::ControlBar(QWidget* parent)
     layout->setSpacing(4);
     m_startBtn = makeButton(this);
     m_stopBtn = makeButton(this);
+    m_enhanceBtn = makeButton(this);
+    m_translateBtn = makeButton(this);
+    m_injectBtn = makeButton(this);
     layout->addWidget(m_startBtn);
     layout->addWidget(m_stopBtn);
+    layout->addSpacing(kGroupGap);   // 动作按钮和开关之间留一点距离，一眼分得出
+    layout->addWidget(m_enhanceBtn);
+    layout->addWidget(m_translateBtn);
+    layout->addWidget(m_injectBtn);
+
+    for (QToolButton* b : { m_enhanceBtn, m_translateBtn, m_injectBtn }) {
+        b->setCheckable(true);
+        connect(b, &QToolButton::toggled, this, &ControlBar::refreshIcons);
+        // 开关的可用状态由宿主（ToggleLink）改，变化时图标要跟着变灰或恢复
+        b->installEventFilter(this);
+    }
 
     connect(m_startBtn, &QToolButton::clicked, this, &ControlBar::startRequested);
     connect(m_stopBtn, &QToolButton::clicked, this, &ControlBar::stopRequested);
 
     retranslateUi();
     setWorkflowState(WorkflowState::Idle);
+}
+
+QToolButton* ControlBar::button(Toggle which) const
+{
+    switch (which) {
+    case Toggle::Enhance:   return m_enhanceBtn;
+    case Toggle::Translate: return m_translateBtn;
+    case Toggle::Inject:    return m_injectBtn;
+    }
+    return nullptr;
+}
+
+QAbstractButton* ControlBar::toggleButton(Toggle which) const
+{
+    return button(which);
+}
+
+void ControlBar::setToggleHint(Toggle which, const QString& hint)
+{
+    m_hints[static_cast<int>(which)] = hint;
+    refreshToggleTips();
+}
+
+bool ControlBar::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::EnabledChange && qobject_cast<QToolButton*>(watched)) {
+        refreshIcons();
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void ControlBar::setWorkflowState(WorkflowState state)
@@ -79,12 +131,31 @@ void ControlBar::refreshIcons()
                                m_startBtn->isEnabled() ? ToolIcon::State::Normal : ToolIcon::State::Disabled));
     m_stopBtn->setIcon(tinted(QStringLiteral(":/tool_stop"), pal,
                               m_stopBtn->isEnabled() ? ToolIcon::State::Normal : ToolIcon::State::Disabled));
+
+    // 开关：关闭用弱化色，开启用强调色，不可用变灰
+    auto toggleState = [](const QToolButton* b) {
+        if (!b->isEnabled()) return ToolIcon::State::Disabled;
+        return b->isChecked() ? ToolIcon::State::On : ToolIcon::State::Off;
+    };
+    m_enhanceBtn->setIcon(tinted(QStringLiteral(":/tool_ai_enhance"), pal, toggleState(m_enhanceBtn)));
+    m_translateBtn->setIcon(tinted(QStringLiteral(":/tool_translate"), pal, toggleState(m_translateBtn)));
+    m_injectBtn->setIcon(tinted(QStringLiteral(":/tool_inject"), pal, toggleState(m_injectBtn)));
 }
 
 void ControlBar::retranslateUi()
 {
     m_startBtn->setToolTip(tr("Start"));
     m_stopBtn->setToolTip(tr("Stop"));
+    refreshToggleTips();
+}
+
+void ControlBar::refreshToggleTips()
+{
+    const QString names[3] = { tr("AI Enhancement"), tr("AI Translation"), tr("Type into the foreground window") };
+    QToolButton* buttons[3] = { m_enhanceBtn, m_translateBtn, m_injectBtn };
+    for (int i = 0; i < 3; ++i) {
+        buttons[i]->setToolTip(m_hints[i].isEmpty() ? names[i] : names[i] + QLatin1Char('\n') + m_hints[i]);
+    }
 }
 
 void ControlBar::paintEvent(QPaintEvent*)

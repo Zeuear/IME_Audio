@@ -28,6 +28,8 @@ public:
 
     bool injectToForeground() const;
     void setInjectToForeground(bool on);
+    // 横条上的"同时输入到前台"开关用 ToggleLink 连到这个复选框，两处是同一个状态
+    QCheckBox* injectCheckBox() const { return m_injectCheck; }
 
     // 指定自动保存的文件：立刻恢复上次的稿子，之后内容变化约 2 秒后合并写入，退出程序前再写一次。
     // 点"清空"会同时删除这个文件。不调用则不保存

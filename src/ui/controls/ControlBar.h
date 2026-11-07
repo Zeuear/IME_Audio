@@ -1,8 +1,10 @@
 #pragma once
 #include <QPoint>
+#include <QString>
 #include <QWidget>
 #include "services/WorkflowManager.h"
 
+class QAbstractButton;
 class QToolButton;
 
 // @brief 横条：常驻置顶的小窗，一键开始 / 停止听写。不抢焦点，点击它不会把前台窗口切走。
@@ -12,7 +14,15 @@ class ControlBar : public QWidget
 {
     Q_OBJECT
 public:
+    // 开关类图标：点一下开启（图标变强调色），再点关闭。
+    // 横条不保存它们的状态，由宿主用 ToggleLink 连到设置里已有的控件
+    enum class Toggle { Enhance, Translate, Inject };
+
     explicit ControlBar(QWidget* parent = nullptr);
+
+    QAbstractButton* toggleButton(Toggle which) const;
+    // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
+    void setToggleHint(Toggle which, const QString& hint);
 
     void setWorkflowState(WorkflowState state);
 
@@ -26,6 +36,7 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -33,9 +44,15 @@ protected:
 private:
     void retranslateUi();
     void refreshIcons();
+    void refreshToggleTips();
+    QToolButton* button(Toggle which) const;
 
     QToolButton* m_startBtn = nullptr;
     QToolButton* m_stopBtn = nullptr;
+    QToolButton* m_enhanceBtn = nullptr;
+    QToolButton* m_translateBtn = nullptr;
+    QToolButton* m_injectBtn = nullptr;
+    QString m_hints[3];   // 按 Toggle 的顺序
 
     bool m_dragging = false;
     QPoint m_dragOffset;   // 按下时鼠标相对窗口左上角的偏移

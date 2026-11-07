@@ -41,6 +41,7 @@
 #include "sherpa/StreamingCaptionEngine.h"
 #include "ui/controls/LiveOverlay.h"
 #include "ui/controls/ControlBar.h"
+#include "ui/controls/ToggleLink.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
@@ -438,9 +439,19 @@ void MainWin::setupUiConnections(){
     connect(ui->live_transcript_widget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
     connect(ui->live_transcript_widget, &LiveTranscriptWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
-    connect(ui->live_transcript_widget, &LiveTranscriptWidget::injectToggled,
-            m_workflow, &WorkflowManager::setInjectEnabled);
+    connect(ui->live_transcript_widget, &LiveTranscriptWidget::injectToggled, this, [this](bool on) {
+        m_workflow->setInjectEnabled(on);
+        if (m_loadingSettings) return;   // 启动时按配置恢复，不回写
+        ConfigManager::instance().config().injectToForeground = on;
+        ConfigManager::instance().save();
+    });
     m_workflow->setInjectEnabled(ui->live_transcript_widget->injectToForeground());
+
+    // 横条上的三个开关不自己存状态：直接连到设置页里已有的复选框，
+    // 点图标就是点那个复选框，已有的配置绑定、保存和界面联动照常触发
+    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Enhance), ui->enable_enhancement_checkbox);
+    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Translate), ui->translate_enabled_checkbox);
+    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), ui->live_transcript_widget->injectCheckBox());
 
     // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
@@ -765,6 +776,8 @@ void MainWin::loadConfigToUI() {
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
     ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
     rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
+    ui->live_transcript_widget->setInjectToForeground(cfg.injectToForeground);
+    m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
@@ -1044,6 +1057,17 @@ void MainWin::updateAiEngineUi() {
     steps << tr("Output");
     ui->pipeline_hint_label->setText(steps.join(QStringLiteral("  →  ")));
     ui->pipeline_hint_label->setVisible(steps.size() > 2);
+
+    // 横条上的两个 AI 开关：和设置页同样的限制，并把原因写进悬停提示
+    if (m_controlBar) {
+        m_controlBar->toggleButton(ControlBar::Toggle::Enhance)->setEnabled(!local);
+        m_controlBar->setToggleHint(ControlBar::Toggle::Enhance,
+                                    local ? tr("Not available with the local translation engine") : QString());
+        m_controlBar->setToggleHint(ControlBar::Toggle::Translate,
+                                    (transOn && cloudBlocked)
+                                        ? tr("Turn on AI Enhancement first, or switch to the local model")
+                                        : QString());
+    }
 }
 
 // qss 只管写了规则的控件；自绘控件和 qss 里的 palette(...) 跟的是应用调色板。

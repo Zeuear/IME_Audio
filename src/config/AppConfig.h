@@ -98,7 +98,9 @@ struct AppConfig {
     std::atomic<bool> autoStopEnabled { true };
     std::atomic<bool> liveCaptionEnabled { true };
     int liveCaptionFontSize = 12;  
-    bool liveCaptionAtTop = false;  
+    bool liveCaptionAtTop = false;
+    // 听写结果是否同时输入到前台窗口；关掉后结果只进"实时转录"稿子。默认开
+    bool injectToForeground = true;
 
     QString hotkey;
     bool hotkeyHold = false;    
@@ -126,6 +128,7 @@ struct AppConfig {
         liveCaptionEnabled.store(other.liveCaptionEnabled.load());
         liveCaptionFontSize = other.liveCaptionFontSize;
         liveCaptionAtTop = other.liveCaptionAtTop;
+        injectToForeground = other.injectToForeground;
         hotkey = other.hotkey;
         hotkeyHold = other.hotkeyHold;
         style = other.style;
