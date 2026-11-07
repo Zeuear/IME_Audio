@@ -20,6 +20,24 @@ TEST(DictationHistory, KeepsOnlyMostRecentEntries) {
     EXPECT_EQ(m.textAt(DictationHistoryModel::kMaxEntries - 1), "20");
 }
 
+TEST(DictationHistory, LargerLimitKeepsLongSession) {
+    // 实时转录要保留整篇稿子，上限可以放大
+    DictationHistoryModel m;
+    m.setMaxEntries(1000);
+    for (int i = 0; i < 500; ++i) m.add(QString::number(i));
+    EXPECT_EQ(m.rowCount(), 500);
+    EXPECT_EQ(m.textAt(499), "0");
+}
+
+TEST(DictationHistory, LoweringLimitTrimsOldestEntries) {
+    DictationHistoryModel m;
+    for (int i = 0; i < 10; ++i) m.add(QString::number(i));
+    m.setMaxEntries(3);
+    ASSERT_EQ(m.rowCount(), 3);
+    EXPECT_EQ(m.textAt(0), "9");
+    EXPECT_EQ(m.textAt(2), "7");
+}
+
 TEST(DictationHistory, AllTextIsOldestFirstOneLinePerEntry) {
     DictationHistoryModel m;
     EXPECT_TRUE(m.allText().isEmpty());

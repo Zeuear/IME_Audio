@@ -27,11 +27,21 @@ void DictationHistoryModel::add(const QString& text, const QDateTime& time)
     beginInsertRows({}, 0, 0);
     m_entries.prepend({ time, t });
     endInsertRows();
-    if (m_entries.size() > kMaxEntries) {
-        beginRemoveRows({}, kMaxEntries, m_entries.size() - 1);
-        m_entries.resize(kMaxEntries);
-        endRemoveRows();
-    }
+    trimToLimit();
+}
+
+void DictationHistoryModel::setMaxEntries(int maxEntries)
+{
+    m_maxEntries = qMax(1, maxEntries);
+    trimToLimit();
+}
+
+void DictationHistoryModel::trimToLimit()
+{
+    if (m_entries.size() <= m_maxEntries) return;
+    beginRemoveRows({}, m_maxEntries, m_entries.size() - 1);
+    m_entries.resize(m_maxEntries);
+    endRemoveRows();
 }
 
 void DictationHistoryModel::clear()

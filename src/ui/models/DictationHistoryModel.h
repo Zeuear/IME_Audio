@@ -19,6 +19,10 @@ public:
     int rowCount(const QModelIndex& parent = {}) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
+    // 上限默认 kMaxEntries；实时转录要保留整篇稿子，可调大。调小会立刻丢掉最早的记录
+    int maxEntries() const { return m_maxEntries; }
+    void setMaxEntries(int maxEntries);
+
     void add(const QString& text, const QDateTime& time = QDateTime::currentDateTime());
     void clear();
     QString textAt(int row) const;
@@ -30,5 +34,8 @@ private:
         QDateTime time;
         QString text;
     };
+    void trimToLimit();
+
     QList<Entry> m_entries;
+    int m_maxEntries = kMaxEntries;
 };
