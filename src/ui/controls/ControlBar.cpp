@@ -5,7 +5,10 @@
 #include <QAbstractButton>
 #include <QEvent>
 #include <QHBoxLayout>
+#include <QAction>
+#include <QContextMenuEvent>
 #include <QIcon>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
@@ -59,12 +62,20 @@ ControlBar::ControlBar(QWidget* parent)
     m_enhanceBtn = makeButton(this);
     m_translateBtn = makeButton(this);
     m_injectBtn = makeButton(this);
+    m_settingsBtn = makeButton(this);
     layout->addWidget(m_startBtn);
     layout->addWidget(m_stopBtn);
     layout->addSpacing(kGroupGap);   // 动作按钮和开关之间留一点距离，一眼分得出
     layout->addWidget(m_enhanceBtn);
     layout->addWidget(m_translateBtn);
     layout->addWidget(m_injectBtn);
+    layout->addSpacing(kGroupGap);
+    layout->addWidget(m_settingsBtn);
+
+    m_menu = new QMenu(this);
+    m_settingsAction = m_menu->addAction(QString(), this, &ControlBar::settingsRequested);
+    m_menu->addSeparator();
+    m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
     for (QToolButton* b : { m_enhanceBtn, m_translateBtn, m_injectBtn }) {
         b->setCheckable(true);
@@ -75,9 +86,20 @@ ControlBar::ControlBar(QWidget* parent)
 
     connect(m_startBtn, &QToolButton::clicked, this, &ControlBar::startRequested);
     connect(m_stopBtn, &QToolButton::clicked, this, &ControlBar::stopRequested);
+    connect(m_settingsBtn, &QToolButton::clicked, this, &ControlBar::settingsRequested);
 
     retranslateUi();
     setWorkflowState(WorkflowState::Idle);
+}
+
+QAbstractButton* ControlBar::settingsButton() const
+{
+    return m_settingsBtn;
+}
+
+void ControlBar::contextMenuEvent(QContextMenuEvent* event)
+{
+    m_menu->exec(event->globalPos());
 }
 
 QToolButton* ControlBar::button(Toggle which) const
@@ -140,12 +162,17 @@ void ControlBar::refreshIcons()
     m_enhanceBtn->setIcon(tinted(QStringLiteral(":/tool_ai_enhance"), pal, toggleState(m_enhanceBtn)));
     m_translateBtn->setIcon(tinted(QStringLiteral(":/tool_translate"), pal, toggleState(m_translateBtn)));
     m_injectBtn->setIcon(tinted(QStringLiteral(":/tool_inject"), pal, toggleState(m_injectBtn)));
+    // 设置入口始终可点：录音中也要能打开
+    m_settingsBtn->setIcon(tinted(QStringLiteral(":/tool_settings"), pal, ToolIcon::State::Normal));
 }
 
 void ControlBar::retranslateUi()
 {
     m_startBtn->setToolTip(tr("Start"));
     m_stopBtn->setToolTip(tr("Stop"));
+    m_settingsBtn->setToolTip(tr("Settings"));
+    m_settingsAction->setText(tr("Settings"));
+    m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }
 

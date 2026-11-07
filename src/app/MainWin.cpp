@@ -456,6 +456,8 @@ void MainWin::setupUiConnections(){
     // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
     connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
+    connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::onShowWindow);
+    connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_controlBar->showAtSavedPosition();
 
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
@@ -690,14 +692,11 @@ void MainWin::changeEvent(QEvent* event)
 
 void MainWin::closeEvent(QCloseEvent* event)
 {
-    if (trayIcon && trayIcon->isVisible()) {
-        hide();
-        setWindowState(Qt::WindowMinimized);
-        event->ignore();  
-    }
-    else {
-        event->accept();
-    }
+    // 主窗口现在是设置窗口，横条才是常驻入口：关窗口只隐藏，不退出程序。
+    // 退出走横条右键菜单或托盘菜单，所以没有托盘的桌面也能退出
+    hide();
+    setWindowState(Qt::WindowMinimized);
+    event->ignore();
 }
 
 

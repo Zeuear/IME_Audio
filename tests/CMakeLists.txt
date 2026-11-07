@@ -134,6 +134,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/FloatingWindow.cpp
     # 横条开关与设置页复选框的双向联动
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToggleLink.cpp
+    # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.h
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h

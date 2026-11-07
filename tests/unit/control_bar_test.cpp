@@ -84,3 +84,54 @@ TEST(FloatingWindowPlace, UsesTheScreenThatHoldsTheWindowCenter) {
     const QPoint p = FloatingWindow::place(QPoint(1920 - 20, 100), kBar, { kMain, kRight }, kMain);
     EXPECT_EQ(p, QPoint(1920, 100));
 }
+
+// ---- 横条的设置入口与右键菜单：只测信号，布局和外观靠运行确认 ----
+
+#include <QAbstractButton>
+#include <QAction>
+#include "ui/controls/ControlBar.h"
+
+namespace {
+struct BarSignals {
+    explicit BarSignals(ControlBar& bar) {
+        QObject::connect(&bar, &ControlBar::settingsRequested, &bar, [this]() { ++settings; });
+        QObject::connect(&bar, &ControlBar::quitRequested, &bar, [this]() { ++quit; });
+    }
+    int settings = 0;
+    int quit = 0;
+};
+} // namespace
+
+TEST(ControlBarEntry, SettingsButtonAsksForTheSettingsWindow) {
+    ControlBar bar;
+    BarSignals s(bar);
+    ASSERT_NE(bar.settingsButton(), nullptr);
+    bar.settingsButton()->click();
+    EXPECT_EQ(s.settings, 1);
+    EXPECT_EQ(s.quit, 0);
+}
+
+TEST(ControlBarEntry, ContextMenuOffersSettingsAndQuit) {
+    ControlBar bar;
+    BarSignals s(bar);
+    ASSERT_NE(bar.settingsAction(), nullptr);
+    ASSERT_NE(bar.quitAction(), nullptr);
+
+    bar.settingsAction()->trigger();
+    EXPECT_EQ(s.settings, 1);
+    EXPECT_EQ(s.quit, 0);
+
+    bar.quitAction()->trigger();
+    EXPECT_EQ(s.quit, 1);
+    EXPECT_EQ(s.settings, 1);
+}
+
+TEST(ControlBarEntry, SettingsButtonStaysUsableWhileDictating) {
+    // 录音中也要能打开设置（听写时设置页自己会锁住不该改的项，入口不能消失）
+    ControlBar bar;
+    for (auto st : { WorkflowState::Idle, WorkflowState::Loading, WorkflowState::Recording,
+                     WorkflowState::Transcribing, WorkflowState::Stopping, WorkflowState::Error }) {
+        bar.setWorkflowState(st);
+        EXPECT_TRUE(bar.settingsButton()->isEnabled()) << static_cast<int>(st);
+    }
+}

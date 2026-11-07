@@ -5,6 +5,9 @@
 #include "services/WorkflowManager.h"
 
 class QAbstractButton;
+class QAction;
+class QContextMenuEvent;
+class QMenu;
 class QToolButton;
 
 // @brief 横条：常驻置顶的小窗，一键开始 / 停止听写。不抢焦点，点击它不会把前台窗口切走。
@@ -21,6 +24,10 @@ public:
     explicit ControlBar(QWidget* parent = nullptr);
 
     QAbstractButton* toggleButton(Toggle which) const;
+    // 设置入口（打开主窗口）和右键菜单，宿主只需接信号
+    QAbstractButton* settingsButton() const;
+    QAction* settingsAction() const { return m_settingsAction; }
+    QAction* quitAction() const { return m_quitAction; }
     // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
     void setToggleHint(Toggle which, const QString& hint);
 
@@ -32,10 +39,14 @@ public:
 signals:
     void startRequested();
     void stopRequested();
+    void settingsRequested();
+    // 横条是程序的常驻入口，退出不能只靠托盘（有的桌面没有托盘）
+    void quitRequested();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void contextMenuEvent(QContextMenuEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -52,6 +63,10 @@ private:
     QToolButton* m_enhanceBtn = nullptr;
     QToolButton* m_translateBtn = nullptr;
     QToolButton* m_injectBtn = nullptr;
+    QToolButton* m_settingsBtn = nullptr;
+    QMenu* m_menu = nullptr;
+    QAction* m_settingsAction = nullptr;
+    QAction* m_quitAction = nullptr;
     QString m_hints[3];   // 按 Toggle 的顺序
 
     bool m_dragging = false;
