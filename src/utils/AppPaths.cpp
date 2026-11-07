@@ -56,6 +56,11 @@ QString promptsDir()
     return QDir(dataDir()).absoluteFilePath("prompts");
 }
 
+QString transcriptFile()
+{
+    return QDir(dataDir()).absoluteFilePath("transcripts/live_transcript.txt");
+}
+
 QString sherpaRoot()
 {
     return QDir(dataDir()).absoluteFilePath("sherpa");

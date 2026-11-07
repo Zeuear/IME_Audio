@@ -210,7 +210,8 @@ void MainWin::initialize() {
     m_prefixWatcher = new PrefixWatcher(this);
     ui->snippet_widget->setSnippetStore(m_snippetStore);
     ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
-}  
+    ui->live_transcript_widget->setSessionFile(AppPaths::transcriptFile());
+}
 
 void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
@@ -433,6 +434,8 @@ void MainWin::setupUiConnections(){
             ui->live_transcript_widget, [this](const QString& text) { ui->live_transcript_widget->appendUtterance(text); });
     connect(ui->live_transcript_widget, &LiveTranscriptWidget::startRequested, this, [this]() { startDictation(); });
     connect(ui->live_transcript_widget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
+    connect(ui->live_transcript_widget, &LiveTranscriptWidget::errorOccurred, this,
+            [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
     connect(ui->live_transcript_widget, &LiveTranscriptWidget::injectToggled,
             m_workflow, &WorkflowManager::setInjectEnabled);
     m_workflow->setInjectEnabled(ui->live_transcript_widget->injectToForeground());
