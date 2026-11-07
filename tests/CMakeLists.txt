@@ -63,6 +63,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/google_sheets_parse_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_pipeline_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/audio_normalizer_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_document_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -119,6 +120,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/SettingsBinder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.h
+    # 实时转录稿子的追加规则，只依赖 QTextDocument
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptDocument.cpp
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
