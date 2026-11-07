@@ -36,6 +36,7 @@ endif()
 set(CMAKE_AUTOMOC ON)
 
 set(TEST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/widget_app_environment.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/term_replace_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/extract_progress_test.cpp
