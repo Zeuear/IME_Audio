@@ -9,6 +9,7 @@
 #include <QTranslator>
 #include <qprocess.h>
 #include <QSystemTrayIcon>
+#include "ui/controls/LiveOverlay.h"
 #include <QTableWidgetItem>
 #include <QNetworkAccessManager>
 #include <QElapsedTimer>
@@ -79,13 +80,6 @@ private slots:
     void onQuitApplication();
 
     void on_actionAbout_Qt_triggered();
-    void on_action_light_triggered();
-    void on_action_gray_triggered();
-    void on_action_dark_triggered();
-    void on_actionSystem_triggered();
-    void on_actionChinese_triggered();
-    void on_actionEnglish_triggered();
-    void on_actionExit_triggered();
 
     void onToggleDrawer(int pageIndex);
 	void onNewLogEntry(const QString& logEntry);
@@ -102,6 +96,13 @@ private slots:
     void onLocalModelActivated();
 
 private:
+    // 外观页：主题与界面语言（原来在菜单里）。persist=false 用于启动时按配置恢复，不回写
+    void setupAppearanceUi();
+    void retranslateAppearanceItems();
+    void setTheme(LiveOverlay::Theme theme, bool persist);
+    void setLanguage(const QString& key, bool persist);
+    void syncAppearanceCombos();
+
     void fitToScreen();
     void alignSettingsCards();
     bool m_fittedToScreen = false;

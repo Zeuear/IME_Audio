@@ -39,6 +39,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     w.polish.model = "m"; w.polish.prompt = "p"; w.polish.aiStyle = "s"; w.polish.targetLang = "t";
     w.polish.translateEnabled = true; w.polish.translateSourceLang = "ja";
     w.injectToForeground = false;   // 默认是开，设成关才能证明读写了这一项
+    w.barAlwaysOnTop = false;
     ASSERT_TRUE(writer.save());
 
     ConfigManager reader;
@@ -59,12 +60,14 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_EQ(r.polish.prompt, "p"); EXPECT_EQ(r.polish.aiStyle, "s"); EXPECT_EQ(r.polish.targetLang, "t");
     EXPECT_TRUE(r.polish.translateEnabled); EXPECT_EQ(r.polish.translateSourceLang, "ja");
     EXPECT_FALSE(r.injectToForeground);
+    EXPECT_FALSE(r.barAlwaysOnTop);
 
     // 赋值运算符同样要拷贝全部字段
     AppConfig copy;
     copy = r;
     EXPECT_EQ(copy.geminiKey, "gemini"); EXPECT_TRUE(copy.hotkeyHold); EXPECT_EQ(copy.liveCaptionFontSize, 21);
     EXPECT_FALSE(copy.injectToForeground);
+    EXPECT_FALSE(copy.barAlwaysOnTop);
 
     ConfigManager::setConfigFilePath(oldPath);
 }
@@ -88,6 +91,28 @@ TEST(ConfigRoundTrip, InjectToForegroundDefaultsToOn) {
     ConfigManager reader;
     reader.load();
     EXPECT_TRUE(reader.config().injectToForeground);
+
+    ConfigManager::setConfigFilePath(oldPath);
+}
+
+// 横条置顶默认开启；新用户、旧版本配置文件里没这一项，都应是开
+TEST(ConfigRoundTrip, BarAlwaysOnTopDefaultsToOn) {
+    EXPECT_TRUE(AppConfig{}.barAlwaysOnTop);
+
+    QTemporaryDir dir;
+    const QString oldPath = ConfigManager::configFilePath();
+    ConfigManager::setConfigFilePath(dir.filePath("old_version.ini"));
+    {
+        ConfigManager writer;
+        ASSERT_TRUE(writer.save());
+    }
+    {
+        QSettings s(dir.filePath("old_version.ini"), QSettings::IniFormat);
+        s.remove("barAlwaysOnTop");
+    }
+    ConfigManager reader;
+    reader.load();
+    EXPECT_TRUE(reader.config().barAlwaysOnTop);
 
     ConfigManager::setConfigFilePath(oldPath);
 }

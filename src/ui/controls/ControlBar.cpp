@@ -199,6 +199,11 @@ void ControlBar::setWorkflowState(WorkflowState state)
     refreshIcons();
 }
 
+void ControlBar::setAlwaysOnTop(bool on)
+{
+    FloatingWindow::setAlwaysOnTop(this, on);
+}
+
 void ControlBar::showAtSavedPosition()
 {
     adjustSize();

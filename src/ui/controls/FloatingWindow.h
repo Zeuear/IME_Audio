@@ -16,6 +16,10 @@ namespace FloatingWindow {
 // 否则听写结果会注入到它自己身上。必须在窗口显示之前调用
 void applyToolWindowFlags(QWidget* window);
 
+// 开关"始终置顶"。改窗口标志会让 Qt 先隐藏窗口、重建原生窗口，所以这里负责：
+// 原来可见的仍然显示（不激活，不抢焦点）、位置不变，"不接受焦点"等其他标志保持不变
+void setAlwaysOnTop(QWidget* window, bool on);
+
 // 决定窗口左上角：没有保存过位置或所在屏幕已不存在时，放主屏上方居中；
 // 否则整个收进窗口中心所在的屏幕。screens 是各屏的可用区域
 QPoint place(const std::optional<QPoint>& saved, const QSize& size,

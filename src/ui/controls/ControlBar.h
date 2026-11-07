@@ -43,6 +43,9 @@ public:
     // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
     void setToggleHint(Toggle which, const QString& hint);
 
+    // 设置里的"横条置顶"开关；关掉后横条不再盖在别的软件上面
+    void setAlwaysOnTop(bool on);
+
     void setWorkflowState(WorkflowState state);
 
     // 读取保存的位置并校正到当前屏幕内后显示（不激活）

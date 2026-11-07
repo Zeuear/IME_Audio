@@ -72,6 +72,7 @@ bool ConfigManager::load() {
     m_config.liveCaptionFontSize = s.value("liveCaptionFontSize", 12).toInt();
     m_config.liveCaptionAtTop = s.value("liveCaptionAtTop", false).toBool();
     m_config.injectToForeground = s.value("injectToForeground", true).toBool();
+    m_config.barAlwaysOnTop = s.value("barAlwaysOnTop", true).toBool();
     m_config.geminiKey = s.value("geminiKey").toString();
     m_config.gladiaKey = s.value("gladiaKey").toString();
     m_config.groqKey = s.value("groqKey").toString();
@@ -137,6 +138,7 @@ bool ConfigManager::save() {
     s.setValue("liveCaptionFontSize", m_config.liveCaptionFontSize);
     s.setValue("liveCaptionAtTop", m_config.liveCaptionAtTop);
     s.setValue("injectToForeground", m_config.injectToForeground);
+    s.setValue("barAlwaysOnTop", m_config.barAlwaysOnTop);
     s.setValue("geminiKey", m_config.geminiKey);
     s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("groqKey", m_config.groqKey);

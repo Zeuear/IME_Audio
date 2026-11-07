@@ -101,6 +101,8 @@ struct AppConfig {
     bool liveCaptionAtTop = false;
     // 听写结果是否同时输入到前台窗口；关掉后结果只进"实时转录"稿子。默认开
     bool injectToForeground = true;
+    // 横条（和它下方的面板）是否始终盖在别的软件上面。默认开
+    bool barAlwaysOnTop = true;
 
     QString hotkey;
     bool hotkeyHold = false;    
@@ -129,6 +131,7 @@ struct AppConfig {
         liveCaptionFontSize = other.liveCaptionFontSize;
         liveCaptionAtTop = other.liveCaptionAtTop;
         injectToForeground = other.injectToForeground;
+        barAlwaysOnTop = other.barAlwaysOnTop;
         hotkey = other.hotkey;
         hotkeyHold = other.hotkeyHold;
         style = other.style;

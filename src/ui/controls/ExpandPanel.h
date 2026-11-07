@@ -20,6 +20,9 @@ public:
     // 跟随这个窗口（横条）的位置；面板可见时它移动或改变大小，面板重新摆放
     void attachTo(QWidget* anchor);
 
+    // 和横条的置顶设置保持一致：横条不置顶时面板也不该盖在别的软件上面
+    void setAlwaysOnTop(bool on);
+
     PanelState::Page page() const { return m_page; }
     // None 表示收起
     void showPage(PanelState::Page page);
@@ -44,4 +47,5 @@ private:
     QPointer<QWidget> m_anchor;
     PanelState::Page m_page = PanelState::Page::None;
     bool m_syncingTab = false;   // 程序切 tab 时不当作用户操作再报一次
+    bool m_changingFlags = false;   // 改置顶标志时 Qt 会先隐藏再显示，那不是用户收起了面板
 };

@@ -22,6 +22,7 @@ public:
         Recorder    = 1 << 0,   // 录音参数
         LiveCaption = 1 << 1,   // 实时字幕
         Hotkey      = 1 << 2,   // 快捷键及触发方式
+        BarOnTop    = 1 << 3,   // 横条（和面板）是否置顶
     };
 
     enum class Apply {

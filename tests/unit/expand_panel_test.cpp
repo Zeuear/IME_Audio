@@ -206,3 +206,60 @@ TEST(ControlBarPanelIcons, StayUsableWhileDictating) {
         EXPECT_TRUE(bar.fileButton()->isEnabled()) << static_cast<int>(st);
     }
 }
+
+// ---- 置顶开关：关掉后窗口不再盖在别的软件上面，但已经开着的不能消失、不能跳位置 ----
+
+namespace {
+template <typename Window>
+void expectOnTopToggleKeepsWindowInPlace(Window& w)
+{
+    w.show();
+    const QPoint where(140, 90);
+    w.move(where);
+    EXPECT_TRUE(w.windowFlags() & Qt::WindowStaysOnTopHint);   // 默认置顶
+
+    w.setAlwaysOnTop(false);
+    EXPECT_FALSE(w.windowFlags() & Qt::WindowStaysOnTopHint);
+    EXPECT_TRUE(w.isVisible());
+    EXPECT_EQ(w.pos(), where);
+
+    w.setAlwaysOnTop(true);
+    EXPECT_TRUE(w.windowFlags() & Qt::WindowStaysOnTopHint);
+    EXPECT_TRUE(w.isVisible());
+    EXPECT_EQ(w.pos(), where);
+}
+} // namespace
+
+TEST(ControlBarOnTop, ToggleKeepsTheBarVisibleAndInPlace) {
+    ControlBar bar;
+    expectOnTopToggleKeepsWindowInPlace(bar);
+}
+
+TEST(ControlBarOnTop, StaysNonActivatingAfterTheFlagChanges) {
+    // 改窗口标志会重建原生窗口：不抢焦点的性质不能丢，否则点横条会切走前台窗口
+    ControlBar bar;
+    bar.show();
+    bar.setAlwaysOnTop(false);
+    EXPECT_TRUE(bar.windowFlags() & Qt::WindowDoesNotAcceptFocus);
+    EXPECT_TRUE(bar.testAttribute(Qt::WA_ShowWithoutActivating));
+}
+
+TEST(ExpandPanelOnTop, ToggleKeepsThePanelVisibleAndInPlace) {
+    ExpandPanel panel;
+    panel.setPages(new QWidget, new QWidget);
+    expectOnTopToggleKeepsWindowInPlace(panel);
+}
+
+TEST(ExpandPanelOnTop, ToggleDoesNotCollapseOrAnnounceAnything) {
+    ExpandPanel panel;
+    panel.setPages(new QWidget, new QWidget);
+    QList<Page> changes;
+    QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [&](Page p) { changes << p; });
+    panel.showPage(Page::File);
+    changes.clear();
+
+    panel.setAlwaysOnTop(false);   // 改标志会让 Qt 先隐藏再显示，不能被当成"面板被收起"
+    EXPECT_EQ(panel.page(), Page::File);
+    EXPECT_TRUE(panel.isVisible());
+    EXPECT_TRUE(changes.isEmpty());
+}

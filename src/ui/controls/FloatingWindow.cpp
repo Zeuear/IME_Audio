@@ -36,6 +36,18 @@ void applyToolWindowFlags(QWidget* window)
 #endif
 }
 
+void setAlwaysOnTop(QWidget* window, bool on)
+{
+    if (bool(window->windowFlags() & Qt::WindowStaysOnTopHint) == on) return;
+    const bool wasVisible = window->isVisible();
+    const QPoint where = window->pos();
+    window->setWindowFlag(Qt::WindowStaysOnTopHint, on);   // 会隐藏窗口
+    if (wasVisible) {
+        window->move(where);
+        window->show();   // WA_ShowWithoutActivating 在，所以不会抢焦点
+    }
+}
+
 QPoint place(const std::optional<QPoint>& saved, const QSize& size,
              const QList<QRect>& screens, const QRect& primary)
 {

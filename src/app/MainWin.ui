@@ -1116,6 +1116,102 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="appearance">
+         <attribute name="title">
+          <string>Appearance</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_appearance">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="topMargin">
+           <number>10</number>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QFrame" name="appearance_card">
+            <property name="card" stdset="0">
+             <bool>true</bool>
+            </property>
+            <layout class="QGridLayout" name="appearance_card_layout" columnstretch="0,1">
+             <property name="leftMargin">
+              <number>15</number>
+             </property>
+             <property name="topMargin">
+              <number>12</number>
+             </property>
+             <property name="rightMargin">
+              <number>15</number>
+             </property>
+             <property name="bottomMargin">
+              <number>12</number>
+             </property>
+             <property name="horizontalSpacing">
+              <number>15</number>
+             </property>
+             <property name="verticalSpacing">
+              <number>10</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="appearance_language_label">
+               <property name="text">
+                <string>Interface Language</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="ui_language_comb"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="appearance_theme_label">
+               <property name="text">
+                <string>Theme</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="theme_comb"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="appearance_on_top_label">
+               <property name="text">
+                <string>Keep the control bar on top</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1" alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter">
+              <widget class="AnimatedCheckBox" name="bar_on_top_checkbox">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_appearance">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
        </widget>
           </item>
          </layout>
@@ -1317,39 +1413,6 @@
     <addaction name="actionUpdate"/>
     <addaction name="actionAbout"/>
    </widget>
-   <widget class="QMenu" name="menu_2">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <widget class="QMenu" name="menu_3">
-     <property name="title">
-      <string>Theme</string>
-     </property>
-     <addaction name="action_light"/>
-     <addaction name="action_gray"/>
-     <addaction name="action_dark"/>
-    </widget>
-    <widget class="QMenu" name="menuLanguage">
-     <property name="title">
-      <string>Language</string>
-     </property>
-     <addaction name="actionSystem"/>
-     <addaction name="actionChinese"/>
-     <addaction name="actionEnglish"/>
-    </widget>
-    <addaction name="menu_3"/>
-    <addaction name="menuLanguage"/>
-    <addaction name="separator"/>
-   </widget>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="separator"/>
-    <addaction name="actionExit"/>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menu_2"/>
    <addaction name="menu"/>
   </widget>
   <action name="actionAbout_Qt">
@@ -1357,80 +1420,9 @@
     <string>About Qt</string>
    </property>
   </action>
-  <action name="action_light">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Light</string>
-   </property>
-   <property name="toolTip">
-    <string>Light</string>
-   </property>
-  </action>
-  <action name="action_dark">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Dark</string>
-   </property>
-   <property name="toolTip">
-    <string>Dark</string>
-   </property>
-  </action>
   <action name="actionhelp">
    <property name="text">
     <string>Help</string>
-   </property>
-  </action>
-  <action name="actionSystem">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>System</string>
-   </property>
-  </action>
-  <action name="actionChinese">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Chinese</string>
-   </property>
-   <property name="toolTip">
-    <string>Chinese</string>
-   </property>
-  </action>
-  <action name="actionEnglish">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>English</string>
-   </property>
-  </action>
-  <action name="action_gray">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Gray</string>
-   </property>
-  </action>
-  <action name="actionExit">
-   <property name="text">
-    <string>Exit</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Q</string>
    </property>
   </action>
   <action name="actionyt_dlp_Update">

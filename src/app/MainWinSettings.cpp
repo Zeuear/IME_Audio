@@ -7,6 +7,8 @@
 #include "utils/Logger.h"
 #include "ui/controls/SettingsBinder.h"
 #include "ui/pages/FileTranscribeWidget.h"
+#include "ui/controls/ControlBar.h"
+#include "ui/controls/ExpandPanel.h"
 
 namespace {
 using Apply = SettingsBinder::Apply;
@@ -95,6 +97,12 @@ void MainWin::registerSettings()
         [](const AppConfig& c) { return c.liveCaptionAtTop ? 1 : 0; },
         [](AppConfig& c, int v) { c.liveCaptionAtTop = v == 1; },
         Opt{ Apply::Instant, kCaption });
+
+    // ---- 外观：横条置顶（主题和语言不在配置对象里，由 MainWin 的外观函数直接存 ini）
+    s->bind(ui->bar_on_top_checkbox,
+        [](const AppConfig& c) { return c.barAlwaysOnTop; },
+        [](AppConfig& c, bool v) { c.barAlwaysOnTop = v; },
+        Opt{ Apply::Instant, SettingsBinder::BarOnTop });
 
     // ---- 基础设置：快捷键（组合键由 ShortcutEdit 自己注册，这里只负责记下来）
     s->bindIndex(ui->hotkey_mode_comb,
@@ -190,6 +198,10 @@ void MainWin::applySettings(unsigned effects)
     const AppConfig& cfg = ConfigManager::instance().config();
 
     if (effects & SettingsBinder::Recorder) m_workflow->applyRecorderConfig();
+    if (effects & SettingsBinder::BarOnTop) {
+        m_controlBar->setAlwaysOnTop(cfg.barAlwaysOnTop);
+        m_panel->setAlwaysOnTop(cfg.barAlwaysOnTop);
+    }
     if (effects & SettingsBinder::LiveCaption) {
         // 刚打开字幕或换了语言时，缺流式模型就补下载
         if (cfg.liveCaptionEnabled.load()) m_sherpaInstaller->ensureStreamingModel(cfg.sherpa.languageModel);

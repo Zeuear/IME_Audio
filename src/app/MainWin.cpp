@@ -2,6 +2,7 @@
 #include "ui_MainWin.h"
 
 #include <QActionGroup>
+#include <QShortcut>
 #include <QClipboard>
 #include <algorithm>
 #include <QDebug>
@@ -42,6 +43,7 @@
 #include "ui/controls/LiveOverlay.h"
 #include "ui/controls/ControlBar.h"
 #include "ui/controls/ToggleLink.h"
+#include "ui/controls/Appearance.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
@@ -123,17 +125,11 @@ void MainWin::initialize() {
     ui->nav_list_widget->addNavItem("identification", "", {});
     ui->nav_list_widget->addNavItem("config", "", {});
     ui->nav_list_widget->addNavItem("download", "", {});
+    setupAppearanceUi();
     retranslateDynamicItems();
 
-    QActionGroup* styleActionGroup = new QActionGroup(this);
-    styleActionGroup->addAction(ui->action_light);
-    styleActionGroup->addAction(ui->action_gray);
-    styleActionGroup->addAction(ui->action_dark);
-
-    QActionGroup* langActionGroup = new QActionGroup(this);
-    langActionGroup->addAction(ui->actionSystem);
-    langActionGroup->addAction(ui->actionChinese);
-    langActionGroup->addAction(ui->actionEnglish);
+    // 原来文件菜单里的 Ctrl+Q 退出：菜单去掉后快捷键仍保留
+    new QShortcut(QKeySequence::Quit, this, [this]() { onQuitApplication(); });
 
     m_networkManager = new QNetworkAccessManager(this);
 
@@ -805,6 +801,9 @@ void MainWin::loadConfigToUI() {
     m_transcriptWidget->setInjectToForeground(cfg.injectToForeground);
     m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
+    // loadAll 期间设置项的改动不会发通知，启动时的置顶状态要在这里按配置应用一次
+    m_controlBar->setAlwaysOnTop(cfg.barAlwaysOnTop);
+    m_panel->setAlwaysOnTop(cfg.barAlwaysOnTop);
 
     // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
     if (cfg.sherpa.languageModel.isEmpty() && !currentLanguageKey().isEmpty())
@@ -894,6 +893,7 @@ void MainWin::retranslateDynamicItems() {
     ui->nav_list_widget->setNavText("identification", tr("Recognition"));
     ui->nav_list_widget->setNavText("config", tr("Logs & Config"));
     ui->nav_list_widget->setNavText("download", tr("Downloads"));
+    retranslateAppearanceItems();
 }
 
 namespace {
@@ -1156,116 +1156,80 @@ void MainWin::readIni() {
 
   QSettings settings(inifile, QSettings::IniFormat);
   style = settings.value("style", "dark").toString();
-
-  if (style == "dark") {
-    applyAppTheme(LiveOverlay::Theme::Dark);
-
-    ui->action_dark->setChecked(true);
-    m_liveOverlay->setTheme(LiveOverlay::Theme::Dark);
-  } else if (style == "gray") {
-    applyAppTheme(LiveOverlay::Theme::Gray);
-
-    ui->action_gray->setChecked(true);
-    m_liveOverlay->setTheme(LiveOverlay::Theme::Gray);
-  } else {
-    applyAppTheme(LiveOverlay::Theme::Light);
-
-    ui->action_light->setChecked(true);
-    m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
-  }
+  setTheme(Appearance::themeFromKey(style), false);
 
   Language = settings.value("Language", "System").toString();
-  bool loadOk = false;
-  if (Language == "Chinese") {
-    ui->actionChinese->setChecked(true);
-    loadOk = mTranslator.load(":/i18n/zh_CN.qm");
-  } else if (Language == "System") {
-    ui->actionSystem->setChecked(true);
-    if(QLocale::system().name() == "zh_CN")  { loadOk = mTranslator.load(":/i18n/zh_CN.qm"); }
-    else { loadOk = mTranslator.load(":/i18n/qt_EN.qm"); }
-  } else {
-    ui->actionEnglish->setChecked(true);
-    loadOk = mTranslator.load(":/i18n/qt_EN.qm");
-  }
-
-  if(loadOk) qApp->installTranslator(&mTranslator);
+  setLanguage(Language, false);
 }
 
 void MainWin::on_actionAbout_Qt_triggered() {
   QMessageBox::aboutQt(this, "About Qt");
 }
 
-void MainWin::on_action_light_triggered() {
-    applyAppTheme(LiveOverlay::Theme::Light);
+// ---- 外观：主题与界面语言（外观页） ----
 
-    ui->action_light->setChecked(true);
-    m_liveOverlay->setTheme(LiveOverlay::Theme::Light);
+void MainWin::setupAppearanceUi() {
+    // 条目的文字在 retranslateAppearanceItems 里按当前语言设置；这里只放占位，保证个数和顺序
+    for (int i = 0; i < Appearance::languageKeys().size(); ++i) ui->ui_language_comb->addItem(QString());
+    for (int i = 0; i < Appearance::themeKeys().size(); ++i) ui->theme_comb->addItem(QString());
 
-    QString inifile = ConfigManager::configFilePath();
-    QSettings setting(inifile, QSettings::IniFormat);
-    setting.setValue("style", "light");
+    connect(ui->ui_language_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (index < 0) return;
+        setLanguage(Appearance::languageKeys().at(index), true);
+    });
+    connect(ui->theme_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (index < 0) return;
+        setTheme(Appearance::themeAt(index), true);
+    });
 }
 
-void MainWin::on_action_gray_triggered() {
-  applyAppTheme(LiveOverlay::Theme::Gray);
-  qApp->setFont(QFont("Arial", 9));
-
-  ui->action_gray->setChecked(true);
-  m_liveOverlay->setTheme(LiveOverlay::Theme::Gray);
-
-  QString inifile = ConfigManager::configFilePath();
-  QSettings setting(inifile, QSettings::IniFormat);
-  setting.setValue("style", "gray");
+void MainWin::retranslateAppearanceItems() {
+    // 只改文字不重建：重建会触发 currentIndexChanged，把刚选的语言又改一遍
+    const QSignalBlocker blockLang(ui->ui_language_comb);
+    const QSignalBlocker blockTheme(ui->theme_comb);
+    ui->ui_language_comb->setItemText(0, tr("Follow system"));
+    ui->ui_language_comb->setItemText(1, QStringLiteral("中文"));      // 语言名用它自己的文字，换了界面语言也认得出
+    ui->ui_language_comb->setItemText(2, QStringLiteral("English"));
+    ui->theme_comb->setItemText(0, tr("Light"));
+    ui->theme_comb->setItemText(1, tr("Gray"));
+    ui->theme_comb->setItemText(2, tr("Dark"));
 }
 
-void MainWin::on_action_dark_triggered() {
-  applyAppTheme(LiveOverlay::Theme::Dark);
-  qApp->setFont(QFont("Arial", 9));
-
-  ui->action_dark->setChecked(true);
-  m_liveOverlay->setTheme(LiveOverlay::Theme::Dark);
-
-  QString inifile = ConfigManager::configFilePath();
-  QSettings setting(inifile, QSettings::IniFormat);
-  setting.setValue("style", "dark");
+void MainWin::syncAppearanceCombos() {
+    const QSignalBlocker blockLang(ui->ui_language_comb);
+    const QSignalBlocker blockTheme(ui->theme_comb);
+    ui->ui_language_comb->setCurrentIndex(Appearance::languageIndex(Language));
+    ui->theme_comb->setCurrentIndex(Appearance::themeIndex(Appearance::themeFromKey(style)));
 }
 
-void MainWin::on_actionSystem_triggered() {
-    QString inifile = ConfigManager::configFilePath();
-    QSettings setting(inifile, QSettings::IniFormat);
-    setting.setValue("Language", "System");
-
-    ui->actionSystem->setChecked(true);
-    if (QLocale::system().name() == "zh_CN") {
-    if (mTranslator.load(":/i18n/zh_CN.qm")) { qApp->installTranslator(&mTranslator); }
-    } else {
-    if (mTranslator.load(":/i18n/qt_EN.qm")) { qApp->installTranslator(&mTranslator); }
+void MainWin::setTheme(LiveOverlay::Theme theme, bool persist) {
+    applyAppTheme(theme);
+    m_liveOverlay->setTheme(theme);
+    style = Appearance::themeKey(theme);
+    if (persist) {
+        // 和原来菜单里的行为一致：深色、灰色会把全局字体设成 Arial 9，浅色不动
+        if (theme != LiveOverlay::Theme::Light) qApp->setFont(QFont("Arial", 9));
+        QSettings setting(ConfigManager::configFilePath(), QSettings::IniFormat);
+        setting.setValue("style", style);
     }
+    syncAppearanceCombos();
 }
 
-void MainWin::on_actionChinese_triggered() {
-  QString inifile = ConfigManager::configFilePath();
-  QSettings setting(inifile, QSettings::IniFormat);
-  setting.setValue("Language", "Chinese");
+void MainWin::setLanguage(const QString& key, bool persist) {
+    Language = Appearance::languageKeys().contains(key) ? key : QStringLiteral("System");
+    if (persist) {
+        QSettings setting(ConfigManager::configFilePath(), QSettings::IniFormat);
+        setting.setValue("Language", Language);
+    }
 
-  if (mTranslator.load(":/i18n/zh_CN.qm")) {
-    qApp->installTranslator(&mTranslator);
-    ui->actionChinese->setChecked(true);
-  }
+    // 先拆再装：同一个翻译器对象重复安装会叠加；拆和装各发一次语言变化事件，界面据此重新翻译
+    qApp->removeTranslator(&mTranslator);
+    if (mTranslator.load(Appearance::translationResource(Language, QLocale::system().name()))) {
+        qApp->installTranslator(&mTranslator);
+    }
+    syncAppearanceCombos();
 }
 
-void MainWin::on_actionEnglish_triggered() {
-  QString inifile = ConfigManager::configFilePath();
-  QSettings setting(inifile, QSettings::IniFormat);
-  setting.setValue("Language", "English");
-
-  if (mTranslator.load(":/i18n/qt_EN.qm")) {
-    qApp->installTranslator(&mTranslator);
-    ui->actionEnglish->setChecked(true);
-  }
-}
-
-void MainWin::on_actionExit_triggered() { qApp->exit(0); }
 
 void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));

@@ -40,6 +40,13 @@ void ExpandPanel::setPages(QWidget* dictionary, QWidget* file)
     retranslateUi();
 }
 
+void ExpandPanel::setAlwaysOnTop(bool on)
+{
+    m_changingFlags = true;
+    FloatingWindow::setAlwaysOnTop(this, on);
+    m_changingFlags = false;
+}
+
 void ExpandPanel::attachTo(QWidget* anchor)
 {
     if (m_anchor) m_anchor->removeEventFilter(this);
@@ -90,8 +97,8 @@ void ExpandPanel::reposition()
 void ExpandPanel::hideEvent(QHideEvent* event)
 {
     QWidget::hideEvent(event);
-    // 最小化等自发的隐藏不算收起
-    if (event->spontaneous() || m_page == PanelState::Page::None) return;
+    // 最小化等自发的隐藏、改置顶标志时的临时隐藏，都不算收起
+    if (event->spontaneous() || m_changingFlags || m_page == PanelState::Page::None) return;
     m_page = PanelState::Page::None;
     emit pageChanged(m_page);
 }
