@@ -21,6 +21,15 @@ void applyToolWindowFlags(QWidget* window);
 QPoint place(const std::optional<QPoint>& saved, const QSize& size,
              const QList<QRect>& screens, const QRect& primary);
 
+// 面板摆在锚点（横条）正下方、左边对齐，间隔几个像素；右边超出时往里收；
+// 下方放不下就放到锚点上方。以锚点中心所在的屏幕为准，不在任何屏幕内时用主屏
+QPoint placeBelow(const QRect& anchor, const QSize& size,
+                  const QList<QRect>& screens, const QRect& primary);
+
+// 当前真实屏幕的可用区域，给 place / placeBelow 用
+QList<QRect> availableScreens();
+QRect primaryScreenArea();
+
 // 位置和大小存在配置文件的 group 分组下，不动 AppConfig。
 // 各窗口用各自的分组，和 ConfigManager 共用同一个 ini 互不覆盖；没存过时返回空
 std::optional<QPoint> loadPosition(const QString& group);

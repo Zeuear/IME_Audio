@@ -1106,18 +1106,6 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="theaurus">
-         <attribute name="title">
-          <string>Theaurus</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_11">
-          <item>
-           <widget class="TermWidget" name="terms_widget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_3"/>
-           </widget>
-          </item>
-         </layout>
-        </widget>
         <widget class="QWidget" name="snippets">
          <attribute name="title">
           <string>Command Settings</string>
@@ -1125,16 +1113,6 @@
          <layout class="QVBoxLayout" name="verticalLayout_snippets">
           <item>
            <widget class="SnippetWidget" name="snippet_widget" native="true"/>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="file_transcribe">
-         <attribute name="title">
-          <string>File Transcription</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_ft">
-          <item>
-           <widget class="FileTranscribeWidget" name="file_transcribe_widget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -1536,12 +1514,6 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>TermWidget</class>
-   <extends>QWidget</extends>
-   <header>ui/pages/TermWidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>SearchableComboBox</class>
    <extends>QComboBox</extends>
    <header>ui/controls/SearchableComboBox.h</header>
@@ -1550,12 +1522,6 @@
    <class>NavListWidget</class>
    <extends>QListWidget</extends>
    <header>ui/controls/NavListWidget.h</header>
-  </customwidget>
-  <customwidget>
-   <class>FileTranscribeWidget</class>
-   <extends>QWidget</extends>
-   <header>ui/pages/FileTranscribeWidget.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -27,6 +27,9 @@ class LiveOverlay;
 class ControlBar;
 class TranscriptWindow;
 class LiveTranscriptWidget;
+class ExpandPanel;
+class TermWidget;
+class FileTranscribeWidget;
 class LiveCaptionModel;
 class SnippetStore;
 class SnippetPaster;
@@ -144,6 +147,9 @@ private:
     ControlBar* m_controlBar = nullptr;   // 横条：一键开始 / 停止听写，常驻置顶、不抢焦点
     TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口，从横条打开
     LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件，归 m_transcriptWindow 所有
+    ExpandPanel* m_panel = nullptr;                     // 横条下方的展开面板（词典 / 文件转录）
+    TermWidget* m_termWidget = nullptr;                 // 词典页，归 m_panel 所有
+    FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页，归 m_panel 所有
     LiveCaptionModel* m_captionModel = nullptr;
     SnippetStore* m_snippetStore = nullptr;
     SnippetPaster* m_snippetPaster = nullptr;

@@ -68,6 +68,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/tool_icon_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/control_bar_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/toggle_link_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/expand_panel_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -137,6 +138,9 @@ set(TEST_DEPS
     # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.h
+    # 展开面板（Q_OBJECT）：词典与文件转录页由外部传入
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ExpandPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ExpandPanel.h
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h

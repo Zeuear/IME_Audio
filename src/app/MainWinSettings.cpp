@@ -6,6 +6,7 @@
 #include "sherpa/SherpaManager.h"
 #include "utils/Logger.h"
 #include "ui/controls/SettingsBinder.h"
+#include "ui/pages/FileTranscribeWidget.h"
 
 namespace {
 using Apply = SettingsBinder::Apply;
@@ -167,7 +168,7 @@ void MainWin::registerSettings()
         [](AppConfig& c, const QString& v) { c.polish.prompt = v; },
         Opt{ Apply::OnCommit });
 
-    s->addLockedWidget(ui->file_transcribe_widget);   // 与听写共用转录服务，不能同时进行
+    s->addLockedWidget(m_fileWidget);   // 与听写共用转录服务，不能同时进行
 
     connect(s, &SettingsBinder::changed, this, &MainWin::applySettings);
 }

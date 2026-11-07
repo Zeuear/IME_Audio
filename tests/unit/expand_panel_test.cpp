@@ -1,0 +1,208 @@
+#include <gtest/gtest.h>
+#include <QAbstractButton>
+#include <QList>
+#include <QPoint>
+#include <QRect>
+#include <QSize>
+#include <QTabWidget>
+#include <QWidget>
+
+#include "ui/controls/ControlBar.h"
+#include "ui/controls/ExpandPanel.h"
+#include "ui/controls/FloatingWindow.h"
+#include "ui/controls/PanelState.h"
+
+// QApplication 由 support/widget_app_environment.cpp 里的全局环境提供
+
+using PanelState::Page;
+
+// ---- 点图标后面板该是什么状态 ----
+
+TEST(PanelState, ClosedPanelOpensTheClickedPage) {
+    EXPECT_EQ(PanelState::afterClick(Page::None, Page::Dictionary), Page::Dictionary);
+    EXPECT_EQ(PanelState::afterClick(Page::None, Page::File), Page::File);
+}
+
+TEST(PanelState, ClickingTheCurrentPagesIconCollapsesThePanel) {
+    EXPECT_EQ(PanelState::afterClick(Page::Dictionary, Page::Dictionary), Page::None);
+    EXPECT_EQ(PanelState::afterClick(Page::File, Page::File), Page::None);
+}
+
+TEST(PanelState, ClickingTheOtherIconSwitchesPages) {
+    EXPECT_EQ(PanelState::afterClick(Page::Dictionary, Page::File), Page::File);
+    EXPECT_EQ(PanelState::afterClick(Page::File, Page::Dictionary), Page::Dictionary);
+}
+
+// ---- 面板摆在横条下面 ----
+
+namespace {
+const QRect kMain(0, 0, 1920, 1040);
+const QRect kRight(1920, 0, 1280, 1000);
+const QSize kPanel(780, 520);
+constexpr int kGap = 6;
+} // namespace
+
+TEST(FloatingWindowPlaceBelow, SitsRightUnderTheBarAlignedToItsLeftEdge) {
+    const QRect bar(500, 12, 300, 48);
+    const QPoint p = FloatingWindow::placeBelow(bar, kPanel, { kMain }, kMain);
+    EXPECT_EQ(p, QPoint(500, 12 + 48 + kGap));
+}
+
+TEST(FloatingWindowPlaceBelow, PulledLeftWhenItWouldRunOffTheRightEdge) {
+    const QRect bar(1700, 12, 300, 48);
+    const QPoint p = FloatingWindow::placeBelow(bar, kPanel, { kMain }, kMain);
+    EXPECT_EQ(p.x(), 1920 - 780);
+    EXPECT_EQ(p.y(), 12 + 48 + kGap);
+}
+
+TEST(FloatingWindowPlaceBelow, FlipsAboveTheBarWhenThereIsNoRoomBelow) {
+    const QRect bar(500, 900, 300, 48);
+    const QPoint p = FloatingWindow::placeBelow(bar, kPanel, { kMain }, kMain);
+    EXPECT_EQ(p, QPoint(500, 900 - kGap - 520));
+}
+
+TEST(FloatingWindowPlaceBelow, StaysOnTheScreenHoldingTheBar) {
+    const QRect bar(3000, 12, 300, 48);   // 在右侧副屏的右端
+    const QPoint p = FloatingWindow::placeBelow(bar, kPanel, { kMain, kRight }, kMain);
+    EXPECT_EQ(p.x(), 3200 - 780);
+    EXPECT_EQ(p.y(), 12 + 48 + kGap);
+}
+
+TEST(FloatingWindowPlaceBelow, BarOutsideEveryScreenFallsBackToPrimary) {
+    const QRect bar(9000, 12, 300, 48);
+    const QPoint p = FloatingWindow::placeBelow(bar, kPanel, { kMain }, kMain);
+    EXPECT_TRUE(kMain.contains(p));
+    EXPECT_TRUE(kMain.contains(p + QPoint(kPanel.width() - 1, kPanel.height() - 1)));
+}
+
+// ---- 面板本身：页面由外部传入，所以这里用普通 QWidget 代替词典和文件转录 ----
+
+namespace {
+struct PanelFixture {
+    PanelFixture() {
+        dictionary = new QWidget;
+        file = new QWidget;
+        panel.setPages(dictionary, file);   // 页面归面板所有
+        QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [this](Page p) { changes << p; });
+    }
+    QTabWidget* tabs() { return panel.findChild<QTabWidget*>(); }
+
+    ExpandPanel panel;
+    QWidget* dictionary = nullptr;
+    QWidget* file = nullptr;
+    QList<Page> changes;
+};
+} // namespace
+
+TEST(ExpandPanel, StartsCollapsedAndSettingPagesAnnouncesNothing) {
+    // 回归：QTabWidget 加第一页时会发 currentChanged(0)，不能把它当成"打开了词典页"，
+    // 否则面板还没开 page() 就是词典，第一次点词典图标反而被算成"收起"
+    ExpandPanel panel;
+    QList<Page> changes;
+    QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [&](Page p) { changes << p; });
+    panel.setPages(new QWidget, new QWidget);
+    EXPECT_EQ(panel.page(), Page::None);
+    EXPECT_FALSE(panel.isVisible());
+    EXPECT_TRUE(changes.isEmpty());
+}
+
+TEST(ExpandPanel, FirstClickOnADictionaryIconOpensItFromAFreshPanel) {
+    // 宿主的做法：点图标 → afterClick(当前页, 点的页) → showPage
+    ExpandPanel panel;
+    panel.setPages(new QWidget, new QWidget);
+    panel.showPage(PanelState::afterClick(panel.page(), Page::Dictionary));
+    EXPECT_TRUE(panel.isVisible());
+    EXPECT_EQ(panel.page(), Page::Dictionary);
+}
+
+TEST(ExpandPanel, TabChangesWhileCollapsedAreNotAnnounced) {
+    PanelFixture f;
+    f.tabs()->setCurrentIndex(1);   // 面板没开时，程序或别的原因改了当前 tab
+    EXPECT_EQ(f.panel.page(), Page::None);
+    EXPECT_TRUE(f.changes.isEmpty());
+}
+
+TEST(ExpandPanel, ShowPageOpensThatPage) {
+    PanelFixture f;
+    f.panel.showPage(Page::Dictionary);
+    EXPECT_TRUE(f.panel.isVisible());
+    EXPECT_EQ(f.panel.page(), Page::Dictionary);
+    EXPECT_EQ(f.tabs()->currentWidget(), f.dictionary);
+
+    f.panel.showPage(Page::File);
+    EXPECT_EQ(f.panel.page(), Page::File);
+    EXPECT_EQ(f.tabs()->currentWidget(), f.file);
+}
+
+TEST(ExpandPanel, ShowingNonePageCollapsesIt) {
+    PanelFixture f;
+    f.panel.showPage(Page::File);
+    f.panel.showPage(Page::None);
+    EXPECT_FALSE(f.panel.isVisible());
+    EXPECT_EQ(f.panel.page(), Page::None);
+}
+
+TEST(ExpandPanel, EachChangeIsAnnouncedExactlyOnce) {
+    // 横条据此点亮图标；程序切页和用户点 tab 都要报，但不能重复报
+    PanelFixture f;
+    f.panel.showPage(Page::Dictionary);
+    f.tabs()->setCurrentIndex(1);          // 用户点了面板里的 tab
+    f.panel.showPage(Page::None);
+    EXPECT_EQ(f.changes, (QList<Page>{ Page::Dictionary, Page::File, Page::None }));
+}
+
+TEST(ExpandPanel, HidingItAnyOtherWayAlsoReportsNone) {
+    PanelFixture f;
+    f.panel.showPage(Page::Dictionary);
+    f.panel.hide();
+    EXPECT_EQ(f.panel.page(), Page::None);
+    EXPECT_EQ(f.changes, (QList<Page>{ Page::Dictionary, Page::None }));
+}
+
+TEST(ExpandPanel, OpeningItDoesNotStealFocusFromTheDictationTarget) {
+    // 点图标开面板不能把前台窗口切走；用户自己点进输入框时才拿焦点
+    PanelFixture f;
+    EXPECT_TRUE(f.panel.testAttribute(Qt::WA_ShowWithoutActivating));
+}
+
+// ---- 横条上的词典 / 文件转录图标 ----
+
+TEST(ControlBarPanelIcons, ClickingAnIconAsksForThatPage) {
+    ControlBar bar;
+    QList<Page> asked;
+    QObject::connect(&bar, &ControlBar::panelRequested, &bar, [&](Page p) { asked << p; });
+    ASSERT_NE(bar.dictionaryButton(), nullptr);
+    ASSERT_NE(bar.fileButton(), nullptr);
+
+    bar.dictionaryButton()->click();
+    bar.fileButton()->click();
+    EXPECT_EQ(asked, (QList<Page>{ Page::Dictionary, Page::File }));
+}
+
+TEST(ControlBarPanelIcons, HostSetsWhichIconIsLitWithoutAskingAgain) {
+    ControlBar bar;
+    int asked = 0;
+    QObject::connect(&bar, &ControlBar::panelRequested, &bar, [&](Page) { ++asked; });
+
+    bar.setPanelPage(Page::Dictionary);
+    EXPECT_TRUE(bar.dictionaryButton()->isChecked());
+    EXPECT_FALSE(bar.fileButton()->isChecked());
+
+    bar.setPanelPage(Page::File);
+    EXPECT_FALSE(bar.dictionaryButton()->isChecked());
+    EXPECT_TRUE(bar.fileButton()->isChecked());
+
+    bar.setPanelPage(Page::None);
+    EXPECT_FALSE(bar.dictionaryButton()->isChecked());
+    EXPECT_FALSE(bar.fileButton()->isChecked());
+    EXPECT_EQ(asked, 0);
+}
+
+TEST(ControlBarPanelIcons, StayUsableWhileDictating) {
+    ControlBar bar;
+    for (auto st : { WorkflowState::Idle, WorkflowState::Recording, WorkflowState::Stopping, WorkflowState::Error }) {
+        bar.setWorkflowState(st);
+        EXPECT_TRUE(bar.dictionaryButton()->isEnabled()) << static_cast<int>(st);
+        EXPECT_TRUE(bar.fileButton()->isEnabled()) << static_cast<int>(st);
+    }
+}

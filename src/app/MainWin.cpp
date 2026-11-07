@@ -56,6 +56,8 @@
 #include "ui/pages/FileTranscribeWidget.h"
 #include "ui/pages/LiveTranscriptWidget.h"
 #include "ui/controls/TranscriptWindow.h"
+#include "ui/controls/ExpandPanel.h"
+#include "ui/pages/TermWidget.h"
 #include "ui/controls/NavListWidget.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
@@ -181,6 +183,11 @@ void MainWin::initialize() {
     m_controlBar = new ControlBar();
     m_transcriptWindow = new TranscriptWindow();
     m_transcriptWidget = m_transcriptWindow->transcript();
+    m_termWidget = new TermWidget();
+    m_fileWidget = new FileTranscribeWidget();
+    m_panel = new ExpandPanel();
+    m_panel->setPages(m_termWidget, m_fileWidget);   // 页面归面板所有
+    m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
     m_captionEngine = new StreamingCaptionEngine();
@@ -205,7 +212,7 @@ void MainWin::initialize() {
     // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
     m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
-    ui->terms_widget->setTermsManager(m_termsManager);
+    m_termWidget->setTermsManager(m_termsManager);
     m_snippetStore = new SnippetStore(AppPaths::snippetsFile());
     if (!m_snippetStore->load()) {
         LOG_WARN("Snippet library is damaged, falling back to defaults in memory");
@@ -215,7 +222,7 @@ void MainWin::initialize() {
     m_searchPopup = new SnippetSearchPopup(m_snippetStore, m_snippetPaster);
     m_prefixWatcher = new PrefixWatcher(this);
     ui->snippet_widget->setSnippetStore(m_snippetStore);
-    ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
+    m_fileWidget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
     m_transcriptWidget->setSessionFile(AppPaths::transcriptFile());
 }
 
@@ -466,6 +473,12 @@ void MainWin::setupUiConnections(){
         else m_transcriptWindow->hide();
     });
     connect(m_transcriptWindow, &TranscriptWindow::visibilityChanged, m_controlBar, &ControlBar::setTranscriptOpen);
+    // 展开面板：图标只"请求"，面板变成什么样由 PanelState 决定；面板变了（含自己点 tab、被隐藏）再点亮图标
+    connect(m_controlBar, &ControlBar::panelRequested, this, [this](PanelState::Page clicked) {
+        m_panel->showPage(PanelState::afterClick(m_panel->page(), clicked));
+    });
+    connect(m_panel, &ExpandPanel::pageChanged, m_controlBar, &ControlBar::setPanelPage);
+    connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_controlBar->showAtSavedPosition();
 
@@ -558,7 +571,7 @@ void MainWin::setupUiConnections(){
         ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
     });
 
-    connect(ui->terms_widget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
+    connect(m_termWidget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
         NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
                             : title.contains(tr("冲突")) ? NotifyLevel::Warning
                             : NotifyLevel::Error;
@@ -621,7 +634,7 @@ void MainWin::setupUiConnections(){
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, this,
             [this](const QString& text) { updateSnippetSuggestions(text); });
 
-    connect(ui->file_transcribe_widget, &FileTranscribeWidget::errorOccurred, this,
+    connect(m_fileWidget, &FileTranscribeWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
 
 }
@@ -633,6 +646,7 @@ MainWin::~MainWin() {
   delete m_searchPopup;
   delete m_controlBar;
   delete m_transcriptWindow;   // 析构时稿子控件会把还没写盘的内容写掉
+  delete m_panel;              // 连同词典页和文件转录页
   delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;
@@ -1289,7 +1303,7 @@ void MainWin::setDictationIndicator(bool recording) {
 }
 
 bool MainWin::startDictation() {
-    if (ui->file_transcribe_widget->isBusy()) {
+    if (m_fileWidget->isBusy()) {
         LOG_WARN("File transcription in progress, dictation hotkey ignored");
         m_liveOverlay->hideOverlay();
         return false;

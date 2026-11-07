@@ -3,6 +3,7 @@
 #include <QString>
 #include <QWidget>
 #include "services/WorkflowManager.h"
+#include "PanelState.h"
 
 class QAbstractButton;
 class QAction;
@@ -30,6 +31,13 @@ public:
     // 窗口被别处关掉时宿主用 setTranscriptOpen(false) 复位，这样不会再发一次信号
     QAbstractButton* transcriptButton() const;
     void setTranscriptOpen(bool open);
+    // 词典、文件转录图标：点击只发 panelRequested，面板怎么变由宿主决定（PanelState），
+    // 宿主再用 setPanelPage 点亮对应图标（不会再发信号）
+    QAbstractButton* dictionaryButton() const;
+    QAbstractButton* fileButton() const;
+    void setPanelPage(PanelState::Page page);
+    // 文件转录进行中：悬停提示里注明，面板收着时用户也知道它还在跑
+    void setFileBusy(bool busy);
     QAction* settingsAction() const { return m_settingsAction; }
     QAction* quitAction() const { return m_quitAction; }
     // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
@@ -45,6 +53,7 @@ signals:
     void stopRequested();
     void settingsRequested();
     void transcriptToggled(bool open);
+    void panelRequested(PanelState::Page page);
     // 横条是程序的常驻入口，退出不能只靠托盘（有的桌面没有托盘）
     void quitRequested();
 
@@ -69,6 +78,9 @@ private:
     QToolButton* m_translateBtn = nullptr;
     QToolButton* m_injectBtn = nullptr;
     QToolButton* m_transcriptBtn = nullptr;
+    QToolButton* m_dictionaryBtn = nullptr;
+    QToolButton* m_fileBtn = nullptr;
+    bool m_fileBusy = false;
     QToolButton* m_settingsBtn = nullptr;
     QMenu* m_menu = nullptr;
     QAction* m_settingsAction = nullptr;

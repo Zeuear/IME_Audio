@@ -64,6 +64,8 @@ ControlBar::ControlBar(QWidget* parent)
     m_translateBtn = makeButton(this);
     m_injectBtn = makeButton(this);
     m_transcriptBtn = makeButton(this);
+    m_dictionaryBtn = makeButton(this);
+    m_fileBtn = makeButton(this);
     m_settingsBtn = makeButton(this);
     layout->addWidget(m_startBtn);
     layout->addWidget(m_stopBtn);
@@ -73,6 +75,8 @@ ControlBar::ControlBar(QWidget* parent)
     layout->addWidget(m_injectBtn);
     layout->addSpacing(kGroupGap);
     layout->addWidget(m_transcriptBtn);
+    layout->addWidget(m_dictionaryBtn);
+    layout->addWidget(m_fileBtn);
     layout->addWidget(m_settingsBtn);
 
     m_menu = new QMenu(this);
@@ -97,8 +101,42 @@ ControlBar::ControlBar(QWidget* parent)
         emit transcriptToggled(open);
     });
 
+    // 面板图标：点击只"请求"，状态由宿主通过 setPanelPage 回写，所以自己点出来的选中状态马上会被校正
+    m_dictionaryBtn->setCheckable(true);
+    m_fileBtn->setCheckable(true);
+    connect(m_dictionaryBtn, &QToolButton::toggled, this, [this]() { emit panelRequested(PanelState::Page::Dictionary); });
+    connect(m_fileBtn, &QToolButton::toggled, this, [this]() { emit panelRequested(PanelState::Page::File); });
+    connect(m_dictionaryBtn, &QToolButton::toggled, this, &ControlBar::refreshIcons);
+    connect(m_fileBtn, &QToolButton::toggled, this, &ControlBar::refreshIcons);
+
     retranslateUi();
     setWorkflowState(WorkflowState::Idle);
+}
+
+QAbstractButton* ControlBar::dictionaryButton() const
+{
+    return m_dictionaryBtn;
+}
+
+QAbstractButton* ControlBar::fileButton() const
+{
+    return m_fileBtn;
+}
+
+void ControlBar::setPanelPage(PanelState::Page page)
+{
+    // 宿主已经决定了面板状态：只把图标对齐过去，不再发 panelRequested
+    const QSignalBlocker blockDict(m_dictionaryBtn);
+    const QSignalBlocker blockFile(m_fileBtn);
+    m_dictionaryBtn->setChecked(page == PanelState::Page::Dictionary);
+    m_fileBtn->setChecked(page == PanelState::Page::File);
+    refreshIcons();
+}
+
+void ControlBar::setFileBusy(bool busy)
+{
+    m_fileBusy = busy;
+    refreshToggleTips();
 }
 
 QAbstractButton* ControlBar::transcriptButton() const
@@ -187,6 +225,10 @@ void ControlBar::refreshIcons()
     // 转录内容：窗口开着高亮，关着用普通色；录音中同样可点
     m_transcriptBtn->setIcon(tinted(QStringLiteral(":/tool_transcript"), pal,
                                     m_transcriptBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
+    m_dictionaryBtn->setIcon(tinted(QStringLiteral(":/tool_dictionary"), pal,
+                                    m_dictionaryBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
+    m_fileBtn->setIcon(tinted(QStringLiteral(":/tool_file"), pal,
+                              m_fileBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
     // 设置入口始终可点：录音中也要能打开
     m_settingsBtn->setIcon(tinted(QStringLiteral(":/tool_settings"), pal, ToolIcon::State::Normal));
 }
@@ -209,6 +251,9 @@ void ControlBar::refreshToggleTips()
     for (int i = 0; i < 3; ++i) {
         buttons[i]->setToolTip(m_hints[i].isEmpty() ? names[i] : names[i] + QLatin1Char('\n') + m_hints[i]);
     }
+    m_dictionaryBtn->setToolTip(tr("Dictionary"));
+    m_fileBtn->setToolTip(m_fileBusy ? tr("File Transcription") + QLatin1Char('\n') + tr("Transcribing...")
+                                     : tr("File Transcription"));
 }
 
 void ControlBar::paintEvent(QPaintEvent*)

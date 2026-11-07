@@ -36,6 +36,8 @@ public:
 
 signals:
     void errorOccurred(const QString& title, const QString& cause = {});
+    // 批量转录开始 / 结束；横条据此在悬停提示里注明"转录中"
+    void busyChanged(bool busy);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;

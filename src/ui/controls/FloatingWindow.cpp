@@ -10,6 +10,7 @@ namespace FloatingWindow {
 
 namespace {
 constexpr int kTopMargin = 12;
+constexpr int kPanelGap = 6;
 
 QPoint topCenter(const QSize& size, const QRect& primary)
 {
@@ -60,6 +61,40 @@ QPoint place(const std::optional<QPoint>& saved, const QSize& size,
                   std::clamp(saved->y(), target->top(), maxY));
 }
 
+QPoint placeBelow(const QRect& anchor, const QSize& size,
+                  const QList<QRect>& screens, const QRect& primary)
+{
+    QRect target = primary;
+    for (const QRect& screen : screens) {
+        if (screen.contains(anchor.center())) { target = screen; break; }
+    }
+
+    const int maxX = std::max(target.left(), target.right() - size.width() + 1);
+    const int x = std::clamp(anchor.left(), target.left(), maxX);
+
+    const int below = anchor.bottom() + 1 + kPanelGap;
+    if (below + size.height() - 1 <= target.bottom()) return QPoint(x, below);
+
+    const int above = anchor.top() - kPanelGap - size.height();
+    if (above >= target.top()) return QPoint(x, above);
+
+    // 上下都放不下（屏幕很矮）：贴着屏幕下沿，至少保证面板在屏幕内
+    return QPoint(x, std::max(target.top(), target.bottom() - size.height() + 1));
+}
+
+QList<QRect> availableScreens()
+{
+    QList<QRect> screens;
+    for (QScreen* screen : QGuiApplication::screens()) screens << screen->availableGeometry();
+    return screens;
+}
+
+QRect primaryScreenArea()
+{
+    QScreen* primary = QGuiApplication::primaryScreen();
+    return primary ? primary->availableGeometry() : QRect(0, 0, 1280, 720);
+}
+
 std::optional<QPoint> loadPosition(const QString& group)
 {
     QSettings s = openSettings();
@@ -96,11 +131,7 @@ void saveSize(const QString& group, const QSize& size)
 
 void restore(QWidget* window, const QString& group)
 {
-    QList<QRect> screens;
-    for (QScreen* screen : QGuiApplication::screens()) screens << screen->availableGeometry();
-    QScreen* primary = QGuiApplication::primaryScreen();
-    const QRect primaryRect = primary ? primary->availableGeometry() : QRect(0, 0, 1280, 720);
-    window->move(place(loadPosition(group), window->size(), screens, primaryRect));
+    window->move(place(loadPosition(group), window->size(), availableScreens(), primaryScreenArea()));
 }
 
 } // namespace FloatingWindow

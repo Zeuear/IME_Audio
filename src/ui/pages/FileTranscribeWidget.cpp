@@ -416,10 +416,12 @@ void FileTranscribeWidget::updateButtons()
 
 void FileTranscribeWidget::setBusy(bool busy)
 {
+    const bool changed = m_busy != busy;
     m_busy = busy;
     if (busy) m_animTimer->start();
     else m_animTimer->stop();
     updateButtons();
+    if (changed) emit busyChanged(busy);
 }
 
 void FileTranscribeWidget::transcribeClicked()
