@@ -242,6 +242,7 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
 
 void WorkflowManager::onInjectText(const QString& text) {
     if (text.isEmpty()) return;
+    if (!m_injectEnabled) return;
     if (m_injectFilter && m_injectFilter(text)) return;
     m_injectQueue.enqueue(text);
     processInjectQueue();

@@ -119,6 +119,8 @@ protected:
         wf->setInjectFilter([this](const QString& t) { injected << t; return true; });
         QObject::connect(wf, &WorkflowManager::errorOccurred,
                          [this](const QString& title, const QString&) { errors << title; });
+        QObject::connect(wf, &WorkflowManager::transcriptionResultReady,
+                         [this](const QString& t) { results << t; });
     }
     void TearDown() override { delete wf; }
 
@@ -135,6 +137,7 @@ protected:
     PipelineModel* model = nullptr;
     PipelineTranscription* asr = nullptr;
     QStringList injected;
+    QStringList results;   // transcriptionResultReady 发出的结果，实时转录页从这里取稿
     QStringList errors;
 };
 
@@ -147,6 +150,32 @@ TEST_F(DictationPipelineTest, UtteranceFlowsToOutputWithReplaceRulesAndPunctuati
     EXPECT_EQ(injected, QStringList{ "hello world." });
     EXPECT_TRUE(errors.isEmpty());
     EXPECT_EQ(wf->pendingCount(), 0);
+}
+
+TEST_F(DictationPipelineTest, InjectingIsOnByDefault) {
+    wf->start();
+    hear("a", "hi world");
+    EXPECT_EQ(injected, QStringList{ "hi world." });
+    EXPECT_EQ(results, QStringList{ "hi world." });
+}
+
+TEST_F(DictationPipelineTest, InjectDisabledKeepsResultsButNeverTouchesForegroundWindow) {
+    wf->setInjectEnabled(false);
+    wf->start();
+    hear("a", "hi world");
+    // 过滤器没被调用 = 没有走向注入；结果仍发出，供实时转录页写进稿子
+    EXPECT_TRUE(injected.isEmpty());
+    EXPECT_EQ(results, QStringList{ "hi world." });
+}
+
+TEST_F(DictationPipelineTest, InjectCanBeTurnedBackOnMidSession) {
+    wf->start();
+    wf->setInjectEnabled(false);
+    hear("a", "first");
+    wf->setInjectEnabled(true);
+    hear("b", "second");
+    EXPECT_EQ(injected, QStringList{ "second." });
+    EXPECT_EQ(results, (QStringList{ "first.", "second." }));
 }
 
 TEST_F(DictationPipelineTest, PolishedTextIsPostProcessedAfterwards) {

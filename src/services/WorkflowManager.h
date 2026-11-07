@@ -51,6 +51,10 @@ public:
     int pendingCount() const { return m_pending; }
     // 返回 true 的结果不注入前台窗口，transcriptionResultReady 照常发出
     void setInjectFilter(std::function<bool(const QString&)> filter) { m_injectFilter = std::move(filter); }
+    // 关闭后结果一律不注入前台窗口（transcriptionResultReady 照常发出），默认开启。
+    // 用户边打字边转录时关掉，结果只进"实时转录"稿子，不会打进正在输入的软件
+    void setInjectEnabled(bool enabled) { m_injectEnabled = enabled; }
+    bool injectEnabled() const { return m_injectEnabled; }
 
 signals:
     void stateChanged(WorkflowState newState);
@@ -77,6 +81,7 @@ private:
     void abortRecording(WorkflowEvent evt);
 
     std::function<bool(const QString&)> m_injectFilter;
+    bool m_injectEnabled = true;
     QQueue<QString> m_injectQueue;
     bool m_injecting = false;
     void processInjectQueue();
