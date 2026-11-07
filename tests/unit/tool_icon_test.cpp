@@ -124,3 +124,26 @@ TEST(ToolIcon, DISABLED_WritePreviewSheet) {
     p.end();
     ASSERT_TRUE(sheet.save(out));
 }
+
+// ---- 横条配色：开始键用录音软件惯用的红色；三个开关各有自己的开启色 ----
+
+TEST(ToolIconColors, RecordIsAFixedRedInEveryTheme) {
+    const QColor red("#e5484d");
+    EXPECT_EQ(ToolIcon::stateColor(makePalette("#889099", "#1a73e8", "#b0b0b0"), ToolIcon::State::Record), red);
+    EXPECT_EQ(ToolIcon::stateColor(makePalette("#7a7f87", "#4da3ff", "#555555"), ToolIcon::State::Record), red);
+}
+
+TEST(ToolIconColors, HighlightAccentFollowsThePalette) {
+    EXPECT_EQ(ToolIcon::onColor(makePalette("#000000", "#1a73e8", "#000000"), ToolIcon::Accent::Highlight), QColor("#1a73e8"));
+    EXPECT_EQ(ToolIcon::onColor(makePalette("#000000", "#4da3ff", "#000000"), ToolIcon::Accent::Highlight), QColor("#4da3ff"));
+}
+
+TEST(ToolIconColors, VioletAndTealAreFixedAndDistinct) {
+    const QPalette a = makePalette("#889099", "#1a73e8", "#b0b0b0");
+    const QPalette b = makePalette("#7a7f87", "#4da3ff", "#555555");
+    EXPECT_EQ(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(b, ToolIcon::Accent::Violet));
+    EXPECT_EQ(ToolIcon::onColor(a, ToolIcon::Accent::Teal), ToolIcon::onColor(b, ToolIcon::Accent::Teal));
+    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(a, ToolIcon::Accent::Teal));
+    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(a, ToolIcon::Accent::Highlight));
+    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Teal), ToolIcon::onColor(a, ToolIcon::Accent::Highlight));
+}

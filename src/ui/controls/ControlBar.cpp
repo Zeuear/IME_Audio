@@ -16,11 +16,13 @@
 #include <QToolButton>
 
 namespace {
-constexpr int kButtonSize = 36;
-constexpr int kIconSize = 22;
-constexpr int kPadding = 8;
-constexpr int kRadius = 12;
-constexpr int kGroupGap = 8;
+constexpr int kButtonSize = 30;
+constexpr int kIconSize = 19;
+constexpr int kPadH = 14;   // 左右留白大一些，图标不贴边
+constexpr int kPadV = 6;    // 上下留白小，横条整体矮一点
+constexpr int kRadius = 11;
+constexpr int kGroupGap = 14;
+constexpr int kButtonSpacing = 6;
 const QString kPositionGroup = QStringLiteral("ControlBar");
 
 QToolButton* makeButton(QWidget* parent)
@@ -33,7 +35,7 @@ QToolButton* makeButton(QWidget* parent)
     b->setFocusPolicy(Qt::NoFocus);   // 点击不拿键盘焦点
     // 开关打开只靠图标变色表示：应用样式表会给选中的工具按钮铺一块高亮底色，把图标盖住，这里单独去掉
     b->setStyleSheet(QStringLiteral(
-        "QToolButton { background: transparent; border: none; border-radius: 8px; }"
+        "QToolButton { background: transparent; border: none; border-radius: 7px; }"
         "QToolButton:hover:enabled { background: rgba(128, 128, 128, 45); }"
         "QToolButton:pressed:enabled { background: rgba(128, 128, 128, 80); }"
         "QToolButton:checked { background: transparent; }"
@@ -41,12 +43,17 @@ QToolButton* makeButton(QWidget* parent)
     return b;
 }
 
-QIcon tinted(const QString& resource, const QPalette& palette, ToolIcon::State state)
+QIcon tintedWith(const QString& resource, const QColor& color)
 {
-    const QImage img = ToolIcon::render(resource, ToolIcon::stateColor(palette, state), kIconSize * 2);
+    const QImage img = ToolIcon::render(resource, color, kIconSize * 2);
     QPixmap pm = QPixmap::fromImage(img);
     pm.setDevicePixelRatio(2.0);
     return QIcon(pm);
+}
+
+QIcon tinted(const QString& resource, const QPalette& palette, ToolIcon::State state)
+{
+    return tintedWith(resource, ToolIcon::stateColor(palette, state));
 }
 } // namespace
 
@@ -56,8 +63,8 @@ ControlBar::ControlBar(QWidget* parent)
     FloatingWindow::applyToolWindowFlags(this);
 
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(kPadding, kPadding, kPadding, kPadding);
-    layout->setSpacing(4);
+    layout->setContentsMargins(kPadH, kPadV, kPadH, kPadV);
+    layout->setSpacing(kButtonSpacing);
     m_startBtn = makeButton(this);
     m_stopBtn = makeButton(this);
     m_enhanceBtn = makeButton(this);
@@ -214,26 +221,29 @@ void ControlBar::showAtSavedPosition()
 void ControlBar::refreshIcons()
 {
     const QPalette& pal = palette();
+    // 开始：录音软件惯用的红色；停止：普通文字色；不可用都变灰
     m_startBtn->setIcon(tinted(QStringLiteral(":/tool_play"), pal,
-                               m_startBtn->isEnabled() ? ToolIcon::State::Normal : ToolIcon::State::Disabled));
+                               m_startBtn->isEnabled() ? ToolIcon::State::Record : ToolIcon::State::Disabled));
     m_stopBtn->setIcon(tinted(QStringLiteral(":/tool_stop"), pal,
                               m_stopBtn->isEnabled() ? ToolIcon::State::Normal : ToolIcon::State::Disabled));
 
-    // 开关：关闭用弱化色，开启用强调色，不可用变灰
-    auto toggleState = [](const QToolButton* b) {
-        if (!b->isEnabled()) return ToolIcon::State::Disabled;
-        return b->isChecked() ? ToolIcon::State::On : ToolIcon::State::Off;
+    // 开关：关闭用弱化色，不可用变灰，开启用各自的强调色（增强紫、翻译青、输入沿用主题色）
+    auto toggleIcon = [&pal](const QString& resource, const QToolButton* b, ToolIcon::Accent accent) {
+        if (!b->isEnabled()) return tinted(resource, pal, ToolIcon::State::Disabled);
+        if (!b->isChecked()) return tinted(resource, pal, ToolIcon::State::Off);
+        return tintedWith(resource, ToolIcon::onColor(pal, accent));
     };
-    m_enhanceBtn->setIcon(tinted(QStringLiteral(":/tool_ai_enhance"), pal, toggleState(m_enhanceBtn)));
-    m_translateBtn->setIcon(tinted(QStringLiteral(":/tool_translate"), pal, toggleState(m_translateBtn)));
-    m_injectBtn->setIcon(tinted(QStringLiteral(":/tool_inject"), pal, toggleState(m_injectBtn)));
-    // 转录内容：窗口开着高亮，关着用普通色；录音中同样可点
-    m_transcriptBtn->setIcon(tinted(QStringLiteral(":/tool_transcript"), pal,
-                                    m_transcriptBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
-    m_dictionaryBtn->setIcon(tinted(QStringLiteral(":/tool_dictionary"), pal,
-                                    m_dictionaryBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
-    m_fileBtn->setIcon(tinted(QStringLiteral(":/tool_file"), pal,
-                              m_fileBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
+    m_enhanceBtn->setIcon(toggleIcon(QStringLiteral(":/tool_ai_enhance"), m_enhanceBtn, ToolIcon::Accent::Violet));
+    m_translateBtn->setIcon(toggleIcon(QStringLiteral(":/tool_translate"), m_translateBtn, ToolIcon::Accent::Teal));
+    m_injectBtn->setIcon(toggleIcon(QStringLiteral(":/tool_inject"), m_injectBtn, ToolIcon::Accent::Highlight));
+
+    // 转录内容、词典、文件转录：窗口或面板开着时用主题强调色，关着用普通色；录音中同样可点
+    auto panelIcon = [&pal](const QString& resource, const QToolButton* b) {
+        return tinted(resource, pal, b->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal);
+    };
+    m_transcriptBtn->setIcon(panelIcon(QStringLiteral(":/tool_transcript"), m_transcriptBtn));
+    m_dictionaryBtn->setIcon(panelIcon(QStringLiteral(":/tool_dictionary"), m_dictionaryBtn));
+    m_fileBtn->setIcon(panelIcon(QStringLiteral(":/tool_file"), m_fileBtn));
     // 设置入口始终可点：录音中也要能打开
     m_settingsBtn->setIcon(tinted(QStringLiteral(":/tool_settings"), pal, ToolIcon::State::Normal));
 }
