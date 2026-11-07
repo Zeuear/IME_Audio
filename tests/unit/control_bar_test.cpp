@@ -135,3 +135,96 @@ TEST(ControlBarEntry, SettingsButtonStaysUsableWhileDictating) {
         EXPECT_TRUE(bar.settingsButton()->isEnabled()) << static_cast<int>(st);
     }
 }
+
+// ---- 转录内容图标：开关式，窗口开着时高亮；宿主改状态不能再触发一次开关 ----
+
+TEST(ControlBarTranscript, ClickingTheIconAsksToOpenThenClose) {
+    ControlBar bar;
+    QList<bool> asked;
+    QObject::connect(&bar, &ControlBar::transcriptToggled, &bar, [&](bool open) { asked << open; });
+    ASSERT_NE(bar.transcriptButton(), nullptr);
+
+    bar.transcriptButton()->click();
+    bar.transcriptButton()->click();
+    EXPECT_EQ(asked, (QList<bool>{ true, false }));
+}
+
+TEST(ControlBarTranscript, HostClosingTheWindowResetsTheIconWithoutAskingAgain) {
+    ControlBar bar;
+    int emitted = 0;
+    QObject::connect(&bar, &ControlBar::transcriptToggled, &bar, [&](bool) { ++emitted; });
+
+    bar.transcriptButton()->click();          // 用户点开
+    ASSERT_EQ(emitted, 1);
+    EXPECT_TRUE(bar.transcriptButton()->isChecked());
+
+    bar.setTranscriptOpen(false);             // 用户点了窗口右上角 ×，宿主通知横条
+    EXPECT_FALSE(bar.transcriptButton()->isChecked());
+    EXPECT_EQ(emitted, 1);                    // 不再触发一次"关闭"
+}
+
+TEST(ControlBarTranscript, IconStaysUsableWhileDictating) {
+    ControlBar bar;
+    for (auto st : { WorkflowState::Idle, WorkflowState::Recording, WorkflowState::Stopping, WorkflowState::Error }) {
+        bar.setWorkflowState(st);
+        EXPECT_TRUE(bar.transcriptButton()->isEnabled()) << static_cast<int>(st);
+    }
+}
+
+// ---- 位置和大小的保存读取：横条、稿子窗口各一个分组，互不覆盖，也不动 ConfigManager 的字段 ----
+
+#include <QTemporaryDir>
+#include "config/ConfigManager.h"
+
+namespace {
+class TempConfigFile {
+public:
+    TempConfigFile() : m_old(ConfigManager::configFilePath()) {
+        ConfigManager::setConfigFilePath(m_dir.filePath("test.ini"));
+    }
+    ~TempConfigFile() { ConfigManager::setConfigFilePath(m_old); }
+private:
+    QTemporaryDir m_dir;
+    QString m_old;
+};
+} // namespace
+
+TEST(FloatingWindowStore, PositionAndSizeRoundTrip) {
+    TempConfigFile cfg;
+    FloatingWindow::savePosition("Win", QPoint(120, -30));
+    FloatingWindow::saveSize("Win", QSize(640, 480));
+    EXPECT_EQ(FloatingWindow::loadPosition("Win"), std::optional<QPoint>(QPoint(120, -30)));
+    EXPECT_EQ(FloatingWindow::loadSize("Win"), std::optional<QSize>(QSize(640, 480)));
+}
+
+TEST(FloatingWindowStore, NothingSavedMeansNothingLoaded) {
+    TempConfigFile cfg;
+    EXPECT_FALSE(FloatingWindow::loadPosition("Win").has_value());
+    EXPECT_FALSE(FloatingWindow::loadSize("Win").has_value());
+}
+
+TEST(FloatingWindowStore, GroupsDoNotOverwriteEachOther) {
+    TempConfigFile cfg;
+    FloatingWindow::savePosition("ControlBar", QPoint(1, 2));
+    FloatingWindow::savePosition("TranscriptWindow", QPoint(30, 40));
+    EXPECT_EQ(FloatingWindow::loadPosition("ControlBar"), std::optional<QPoint>(QPoint(1, 2)));
+    EXPECT_EQ(FloatingWindow::loadPosition("TranscriptWindow"), std::optional<QPoint>(QPoint(30, 40)));
+}
+
+TEST(FloatingWindowStore, SharesTheConfigFileWithoutDamagingEitherSide) {
+    TempConfigFile cfg;
+    {
+        ConfigManager writer;
+        writer.config().hotkey = "Ctrl+Shift+K";
+        ASSERT_TRUE(writer.save());
+    }
+    FloatingWindow::savePosition("ControlBar", QPoint(7, 8));
+    {
+        // 设置再保存一次：不能把位置分组冲掉
+        ConfigManager again;
+        again.load();
+        EXPECT_EQ(again.config().hotkey, "Ctrl+Shift+K");
+        ASSERT_TRUE(again.save());
+    }
+    EXPECT_EQ(FloatingWindow::loadPosition("ControlBar"), std::optional<QPoint>(QPoint(7, 8)));
+}

@@ -25,6 +25,8 @@ class SherpaInstaller;
 class SherpaManager;
 class LiveOverlay;
 class ControlBar;
+class TranscriptWindow;
+class LiveTranscriptWidget;
 class LiveCaptionModel;
 class SnippetStore;
 class SnippetPaster;
@@ -140,6 +142,8 @@ private:
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
     ControlBar* m_controlBar = nullptr;   // 横条：一键开始 / 停止听写，常驻置顶、不抢焦点
+    TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口，从横条打开
+    LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件，归 m_transcriptWindow 所有
     LiveCaptionModel* m_captionModel = nullptr;
     SnippetStore* m_snippetStore = nullptr;
     SnippetPaster* m_snippetPaster = nullptr;

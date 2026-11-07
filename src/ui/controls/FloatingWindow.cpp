@@ -76,6 +76,24 @@ void savePosition(const QString& group, const QPoint& pos)
     s.setValue(QStringLiteral("y"), pos.y());
 }
 
+std::optional<QSize> loadSize(const QString& group)
+{
+    QSettings s = openSettings();
+    s.beginGroup(group);
+    if (!s.contains(QStringLiteral("w")) || !s.contains(QStringLiteral("h"))) return std::nullopt;
+    const QSize size(s.value(QStringLiteral("w")).toInt(), s.value(QStringLiteral("h")).toInt());
+    if (size.width() <= 0 || size.height() <= 0) return std::nullopt;   // 坏数据当作没存过
+    return size;
+}
+
+void saveSize(const QString& group, const QSize& size)
+{
+    QSettings s = openSettings();
+    s.beginGroup(group);
+    s.setValue(QStringLiteral("w"), size.width());
+    s.setValue(QStringLiteral("h"), size.height());
+}
+
 void restore(QWidget* window, const QString& group)
 {
     QList<QRect> screens;

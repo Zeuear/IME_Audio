@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
+#include <QSignalBlocker>
 #include <QToolButton>
 
 namespace {
@@ -62,6 +63,7 @@ ControlBar::ControlBar(QWidget* parent)
     m_enhanceBtn = makeButton(this);
     m_translateBtn = makeButton(this);
     m_injectBtn = makeButton(this);
+    m_transcriptBtn = makeButton(this);
     m_settingsBtn = makeButton(this);
     layout->addWidget(m_startBtn);
     layout->addWidget(m_stopBtn);
@@ -70,6 +72,7 @@ ControlBar::ControlBar(QWidget* parent)
     layout->addWidget(m_translateBtn);
     layout->addWidget(m_injectBtn);
     layout->addSpacing(kGroupGap);
+    layout->addWidget(m_transcriptBtn);
     layout->addWidget(m_settingsBtn);
 
     m_menu = new QMenu(this);
@@ -88,8 +91,27 @@ ControlBar::ControlBar(QWidget* parent)
     connect(m_stopBtn, &QToolButton::clicked, this, &ControlBar::stopRequested);
     connect(m_settingsBtn, &QToolButton::clicked, this, &ControlBar::settingsRequested);
 
+    m_transcriptBtn->setCheckable(true);
+    connect(m_transcriptBtn, &QToolButton::toggled, this, [this](bool open) {
+        refreshIcons();
+        emit transcriptToggled(open);
+    });
+
     retranslateUi();
     setWorkflowState(WorkflowState::Idle);
+}
+
+QAbstractButton* ControlBar::transcriptButton() const
+{
+    return m_transcriptBtn;
+}
+
+void ControlBar::setTranscriptOpen(bool open)
+{
+    // 窗口是别处关的：只改图标，不能再发 transcriptToggled，否则宿主会再收到一次"关闭"
+    const QSignalBlocker blocker(m_transcriptBtn);
+    m_transcriptBtn->setChecked(open);
+    refreshIcons();
 }
 
 QAbstractButton* ControlBar::settingsButton() const
@@ -162,6 +184,9 @@ void ControlBar::refreshIcons()
     m_enhanceBtn->setIcon(tinted(QStringLiteral(":/tool_ai_enhance"), pal, toggleState(m_enhanceBtn)));
     m_translateBtn->setIcon(tinted(QStringLiteral(":/tool_translate"), pal, toggleState(m_translateBtn)));
     m_injectBtn->setIcon(tinted(QStringLiteral(":/tool_inject"), pal, toggleState(m_injectBtn)));
+    // 转录内容：窗口开着高亮，关着用普通色；录音中同样可点
+    m_transcriptBtn->setIcon(tinted(QStringLiteral(":/tool_transcript"), pal,
+                                    m_transcriptBtn->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal));
     // 设置入口始终可点：录音中也要能打开
     m_settingsBtn->setIcon(tinted(QStringLiteral(":/tool_settings"), pal, ToolIcon::State::Normal));
 }
@@ -170,6 +195,7 @@ void ControlBar::retranslateUi()
 {
     m_startBtn->setToolTip(tr("Start"));
     m_stopBtn->setToolTip(tr("Stop"));
+    m_transcriptBtn->setToolTip(tr("Live Transcript"));
     m_settingsBtn->setToolTip(tr("Settings"));
     m_settingsAction->setText(tr("Settings"));
     m_quitAction->setText(tr("Quit"));

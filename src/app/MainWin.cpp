@@ -55,6 +55,7 @@
 #include "ui/controls/AboutDialog.h"
 #include "ui/pages/FileTranscribeWidget.h"
 #include "ui/pages/LiveTranscriptWidget.h"
+#include "ui/controls/TranscriptWindow.h"
 #include "ui/controls/NavListWidget.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
@@ -178,6 +179,8 @@ void MainWin::initialize() {
     // 声音控件
     m_liveOverlay = new LiveOverlay();
     m_controlBar = new ControlBar();
+    m_transcriptWindow = new TranscriptWindow();
+    m_transcriptWidget = m_transcriptWindow->transcript();
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
     m_captionEngine = new StreamingCaptionEngine();
@@ -213,7 +216,7 @@ void MainWin::initialize() {
     m_prefixWatcher = new PrefixWatcher(this);
     ui->snippet_widget->setSnippetStore(m_snippetStore);
     ui->file_transcribe_widget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
-    ui->live_transcript_widget->setSessionFile(AppPaths::transcriptFile());
+    m_transcriptWidget->setSessionFile(AppPaths::transcriptFile());
 }
 
 void MainWin::setupUiConnections(){
@@ -434,29 +437,35 @@ void MainWin::setupUiConnections(){
 
     // 实时转录页：所有听写结果连续写成稿子；"同时输入到前台"关掉时结果只留在稿子里
     connect(m_workflow, &WorkflowManager::transcriptionResultReady,
-            ui->live_transcript_widget, [this](const QString& text) { ui->live_transcript_widget->appendUtterance(text); });
-    connect(ui->live_transcript_widget, &LiveTranscriptWidget::startRequested, this, [this]() { startDictation(); });
-    connect(ui->live_transcript_widget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
-    connect(ui->live_transcript_widget, &LiveTranscriptWidget::errorOccurred, this,
+            m_transcriptWidget, [this](const QString& text) { m_transcriptWidget->appendUtterance(text); });
+    connect(m_transcriptWidget, &LiveTranscriptWidget::startRequested, this, [this]() { startDictation(); });
+    connect(m_transcriptWidget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
+    connect(m_transcriptWidget, &LiveTranscriptWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
-    connect(ui->live_transcript_widget, &LiveTranscriptWidget::injectToggled, this, [this](bool on) {
+    connect(m_transcriptWidget, &LiveTranscriptWidget::injectToggled, this, [this](bool on) {
         m_workflow->setInjectEnabled(on);
         if (m_loadingSettings) return;   // 启动时按配置恢复，不回写
         ConfigManager::instance().config().injectToForeground = on;
         ConfigManager::instance().save();
     });
-    m_workflow->setInjectEnabled(ui->live_transcript_widget->injectToForeground());
+    m_workflow->setInjectEnabled(m_transcriptWidget->injectToForeground());
 
     // 横条上的三个开关不自己存状态：直接连到设置页里已有的复选框，
     // 点图标就是点那个复选框，已有的配置绑定、保存和界面联动照常触发
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Enhance), ui->enable_enhancement_checkbox);
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Translate), ui->translate_enabled_checkbox);
-    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), ui->live_transcript_widget->injectCheckBox());
+    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), m_transcriptWidget->injectCheckBox());
 
     // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
     connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
     connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::onShowWindow);
+    // 转录内容窗口：图标开关窗口；窗口被别处关掉（右上角 ×）时图标跟着复位
+    connect(m_controlBar, &ControlBar::transcriptToggled, this, [this](bool open) {
+        if (open) m_transcriptWindow->openAndRaise();
+        else m_transcriptWindow->hide();
+    });
+    connect(m_transcriptWindow, &TranscriptWindow::visibilityChanged, m_controlBar, &ControlBar::setTranscriptOpen);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_controlBar->showAtSavedPosition();
 
@@ -567,6 +576,9 @@ void MainWin::setupUiConnections(){
     // 整句就是快捷码时，用户要的是指令按钮，不把它打进目标应用。
     // 条件与 updateSnippetSuggestions 一致：按钮出不来时仍要注入，否则这句话就丢了
     m_workflow->setInjectFilter([this](const QString& text) {
+        // 稿子窗口在前台时不注入：结果本来就会追加进稿子，再注入就会在它的输入框里出现两遍，
+        // 和悬浮窗"不能成为焦点窗口，否则听写结果会注入到它自己身上"是同一个问题
+        if (m_transcriptWindow && m_transcriptWindow->isActiveWindow()) return true;
         if (!m_snippetStore->settings().voiceTrigger || !m_liveOverlay->isVisible()) return false;
         for (const SnippetItem* item : m_snippetStore->matchKeywords(text)) {
             if (!m_handledSnippetIds.contains(item->id) && SnippetSearchIndex::isExactKeyword(text, item->keyword))
@@ -620,6 +632,7 @@ MainWin::~MainWin() {
   delete m_suggestBar;
   delete m_searchPopup;
   delete m_controlBar;
+  delete m_transcriptWindow;   // 析构时稿子控件会把还没写盘的内容写掉
   delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;
@@ -775,7 +788,7 @@ void MainWin::loadConfigToUI() {
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
     ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
     rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
-    ui->live_transcript_widget->setInjectToForeground(cfg.injectToForeground);
+    m_transcriptWidget->setInjectToForeground(cfg.injectToForeground);
     m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
 
@@ -1314,7 +1327,7 @@ void MainWin::stopDictation() {
 void MainWin::onStateChanged(WorkflowState state)
 {
     setSettingsLocked(state != WorkflowState::Idle);
-    ui->live_transcript_widget->setRecording(state != WorkflowState::Idle);
+    m_transcriptWidget->setRecording(state != WorkflowState::Idle);
     m_controlBar->setWorkflowState(state);
 
     switch (state) {

@@ -21,9 +21,12 @@ void applyToolWindowFlags(QWidget* window);
 QPoint place(const std::optional<QPoint>& saved, const QSize& size,
              const QList<QRect>& screens, const QRect& primary);
 
-// 位置存在配置文件的 group 分组下，不动 AppConfig
+// 位置和大小存在配置文件的 group 分组下，不动 AppConfig。
+// 各窗口用各自的分组，和 ConfigManager 共用同一个 ini 互不覆盖；没存过时返回空
 std::optional<QPoint> loadPosition(const QString& group);
 void savePosition(const QString& group, const QPoint& pos);
+std::optional<QSize> loadSize(const QString& group);
+void saveSize(const QString& group, const QSize& size);
 
 // 按当前真实屏幕摆放窗口：读取保存的位置，经 place 校正后 move
 void restore(QWidget* window, const QString& group);

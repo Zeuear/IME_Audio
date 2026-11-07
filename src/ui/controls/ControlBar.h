@@ -26,6 +26,10 @@ public:
     QAbstractButton* toggleButton(Toggle which) const;
     // 设置入口（打开主窗口）和右键菜单，宿主只需接信号
     QAbstractButton* settingsButton() const;
+    // 转录内容图标：点一下打开稿子窗口，再点关闭；窗口开着时图标高亮。
+    // 窗口被别处关掉时宿主用 setTranscriptOpen(false) 复位，这样不会再发一次信号
+    QAbstractButton* transcriptButton() const;
+    void setTranscriptOpen(bool open);
     QAction* settingsAction() const { return m_settingsAction; }
     QAction* quitAction() const { return m_quitAction; }
     // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
@@ -40,6 +44,7 @@ signals:
     void startRequested();
     void stopRequested();
     void settingsRequested();
+    void transcriptToggled(bool open);
     // 横条是程序的常驻入口，退出不能只靠托盘（有的桌面没有托盘）
     void quitRequested();
 
@@ -63,6 +68,7 @@ private:
     QToolButton* m_enhanceBtn = nullptr;
     QToolButton* m_translateBtn = nullptr;
     QToolButton* m_injectBtn = nullptr;
+    QToolButton* m_transcriptBtn = nullptr;
     QToolButton* m_settingsBtn = nullptr;
     QMenu* m_menu = nullptr;
     QAction* m_settingsAction = nullptr;
