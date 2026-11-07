@@ -9,6 +9,7 @@ QColor stateColor(const QPalette& palette, State state)
 {
     switch (state) {
     case State::On:       return palette.color(QPalette::Active, QPalette::Highlight);
+    case State::Normal:   return palette.color(QPalette::Active, QPalette::ButtonText);
     case State::Disabled: return palette.color(QPalette::Disabled, QPalette::ButtonText);
     case State::Off:      break;
     }

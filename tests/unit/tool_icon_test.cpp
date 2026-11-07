@@ -35,6 +35,13 @@ TEST(ToolIcon, OffUsesMutedTextOnUsesHighlightDisabledUsesDisabledText) {
     EXPECT_EQ(ToolIcon::stateColor(light, ToolIcon::State::Disabled), QColor("#b0b0b0"));
 }
 
+TEST(ToolIcon, NormalUsesTheRegularTextColor) {
+    // 开始、停止这类动作按钮：可点时用普通文字色，既不是弱化色也不是强调色
+    QPalette p = makePalette("#889099", "#1a73e8", "#b0b0b0");
+    p.setColor(QPalette::Active, QPalette::ButtonText, QColor("#202124"));
+    EXPECT_EQ(ToolIcon::stateColor(p, ToolIcon::State::Normal), QColor("#202124"));
+}
+
 TEST(ToolIcon, ColorsFollowThePaletteOfEachTheme) {
     const QPalette dark = makePalette("#7a7f87", "#4da3ff", "#555555");
     EXPECT_EQ(ToolIcon::stateColor(dark, ToolIcon::State::Off), QColor("#7a7f87"));

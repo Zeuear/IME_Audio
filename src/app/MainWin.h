@@ -24,6 +24,7 @@ class TermsLibraryManager;
 class SherpaInstaller;
 class SherpaManager;
 class LiveOverlay;
+class ControlBar;
 class LiveCaptionModel;
 class SnippetStore;
 class SnippetPaster;
@@ -138,6 +139,7 @@ private:
 
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
+    ControlBar* m_controlBar = nullptr;   // 横条：一键开始 / 停止听写，常驻置顶、不抢焦点
     LiveCaptionModel* m_captionModel = nullptr;
     SnippetStore* m_snippetStore = nullptr;
     SnippetPaster* m_snippetPaster = nullptr;

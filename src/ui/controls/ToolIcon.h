@@ -9,8 +9,9 @@
 namespace ToolIcon {
 
 enum class State {
-    Off,        // 开关关闭 / 普通按钮：弱化文字色
+    Off,        // 开关关闭：弱化文字色
     On,         // 开关打开：强调色
+    Normal,     // 开始、停止这类动作按钮可点时：普通文字色
     Disabled,   // 不可用
 };
 

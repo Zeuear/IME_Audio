@@ -40,6 +40,7 @@
 
 #include "sherpa/StreamingCaptionEngine.h"
 #include "ui/controls/LiveOverlay.h"
+#include "ui/controls/ControlBar.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
@@ -175,6 +176,7 @@ void MainWin::initialize() {
 
     // 声音控件
     m_liveOverlay = new LiveOverlay();
+    m_controlBar = new ControlBar();
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
     m_captionEngine = new StreamingCaptionEngine();
@@ -440,6 +442,11 @@ void MainWin::setupUiConnections(){
             m_workflow, &WorkflowManager::setInjectEnabled);
     m_workflow->setInjectEnabled(ui->live_transcript_widget->injectToForeground());
 
+    // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
+    connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
+    connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
+    m_controlBar->showAtSavedPosition();
+
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
     connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
@@ -599,6 +606,7 @@ MainWin::~MainWin() {
   m_captionEngine = nullptr;
   delete m_suggestBar;
   delete m_searchPopup;
+  delete m_controlBar;
   delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;
@@ -1284,6 +1292,7 @@ void MainWin::onStateChanged(WorkflowState state)
 {
     setSettingsLocked(state != WorkflowState::Idle);
     ui->live_transcript_widget->setRecording(state != WorkflowState::Idle);
+    m_controlBar->setWorkflowState(state);
 
     switch (state) {
     case WorkflowState::Loading:

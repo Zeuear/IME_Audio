@@ -1,0 +1,86 @@
+#include <gtest/gtest.h>
+#include <QList>
+#include <QPoint>
+#include <QRect>
+#include <QSize>
+#include <optional>
+
+#include "services/WorkflowManager.h"
+#include "ui/controls/ControlBarState.h"
+#include "ui/controls/FloatingWindow.h"
+
+// ---- 按钮状态：开始键只在空闲时可点，停止键在有任务进行时可点 ----
+
+TEST(ControlBarState, IdleCanOnlyStart) {
+    const auto s = ControlBarState::forWorkflow(WorkflowState::Idle);
+    EXPECT_TRUE(s.startEnabled);
+    EXPECT_FALSE(s.stopEnabled);
+}
+
+TEST(ControlBarState, LoadingAndRecordingAndTranscribingCanOnlyStop) {
+    for (auto st : { WorkflowState::Loading, WorkflowState::Recording,
+                     WorkflowState::Transcribing, WorkflowState::Processing }) {
+        const auto s = ControlBarState::forWorkflow(st);
+        EXPECT_FALSE(s.startEnabled) << static_cast<int>(st);
+        EXPECT_TRUE(s.stopEnabled) << static_cast<int>(st);
+    }
+}
+
+TEST(ControlBarState, StoppingAndErrorDisableBothButtons) {
+    for (auto st : { WorkflowState::Stopping, WorkflowState::Error }) {
+        const auto s = ControlBarState::forWorkflow(st);
+        EXPECT_FALSE(s.startEnabled) << static_cast<int>(st);
+        EXPECT_FALSE(s.stopEnabled) << static_cast<int>(st);
+    }
+}
+
+// ---- 位置：保存的位置要落在仍然存在的屏幕里 ----
+
+namespace {
+const QRect kMain(0, 0, 1920, 1040);          // 主屏可用区域
+const QRect kRight(1920, 0, 1280, 1000);      // 右侧副屏
+const QSize kBar(300, 48);
+} // namespace
+
+TEST(FloatingWindowPlace, NoSavedPositionGoesTopCenterOfPrimary) {
+    const QPoint p = FloatingWindow::place(std::nullopt, kBar, { kMain }, kMain);
+    EXPECT_EQ(p.x(), (1920 - 300) / 2);
+    EXPECT_EQ(p.y(), 12);
+}
+
+TEST(FloatingWindowPlace, SavedPositionInsideAScreenIsKept) {
+    const QPoint p = FloatingWindow::place(QPoint(2100, 300), kBar, { kMain, kRight }, kMain);
+    EXPECT_EQ(p, QPoint(2100, 300));
+}
+
+TEST(FloatingWindowPlace, SavedOnAnUnpluggedScreenFallsBackToPrimaryTopCenter) {
+    // 之前放在右侧副屏，现在只剩主屏
+    const QPoint p = FloatingWindow::place(QPoint(2100, 300), kBar, { kMain }, kMain);
+    EXPECT_EQ(p.x(), (1920 - 300) / 2);
+    EXPECT_EQ(p.y(), 12);
+}
+
+TEST(FloatingWindowPlace, PartlyOffScreenIsPulledBackInside) {
+    // 右边缘超出主屏 100 像素
+    const QPoint p = FloatingWindow::place(QPoint(1920 - 300 + 100, 20), kBar, { kMain }, kMain);
+    EXPECT_EQ(p, QPoint(1920 - 300, 20));
+}
+
+TEST(FloatingWindowPlace, TooHighOrTooLowIsPulledBackInside) {
+    // 上边露出 30 像素在屏幕外；下边只剩 10 像素在屏幕内（中心都已落到屏幕外）
+    EXPECT_EQ(FloatingWindow::place(QPoint(100, -30), kBar, { kMain }, kMain), QPoint(100, 0));
+    EXPECT_EQ(FloatingWindow::place(QPoint(100, 1030), kBar, { kMain }, kMain), QPoint(100, 1040 - 48));
+}
+
+TEST(FloatingWindowPlace, CompletelyOffEveryScreenFallsBackToPrimaryTopCenter) {
+    // 分辨率变小或显示器拔掉后，保存的位置整个落在所有屏幕之外
+    const QPoint p = FloatingWindow::place(QPoint(100, 5000), kBar, { kMain }, kMain);
+    EXPECT_EQ(p.x(), (1920 - 300) / 2);
+    EXPECT_EQ(p.y(), 12);
+}
+
+TEST(FloatingWindowPlace, UsesTheScreenThatHoldsTheWindowCenter) {
+    // 窗口大半在副屏、一小截压在主屏边缘：以中心所在屏幕为准，整个收进副屏，不被拽回主屏
+    const QPoint p = FloatingWindow::place(QPoint(1920 - 20, 100), kBar, { kMain, kRight }, kMain);
+    EXPECT_EQ(p, QPoint(1920, 100));
+}
