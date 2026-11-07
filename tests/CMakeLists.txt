@@ -71,6 +71,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/expand_panel_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/appearance_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/update_status_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/install_marker_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -139,6 +140,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/Appearance.cpp
     # 关于页的更新状态（纯逻辑）与版本比较
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/UpdateStatusModel.cpp
+    # 模型安装完整性标记（纯文件操作）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/InstallMarker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.h
     # 横条开关与设置页复选框的双向联动

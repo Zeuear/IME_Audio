@@ -1,4 +1,5 @@
 #include "SherpaManager.h"
+#include "InstallMarker.h"
 #include <QFileInfo>
 #include <QFile>
 #include <QCoreApplication>
@@ -454,11 +455,17 @@ bool SherpaInstaller::isInstalling(const QString& repoId) const
     return m_activeManifests.contains(repoId) || !m_downloadManager->tasksInGroup(repoId).isEmpty();
 }
 
+namespace {
+QString modelDirFor(const QString& repoId)
+{
+    return ModelConfigFactory::getSherpaModel() + "/" + repoId.split("/").last();
+}
+}
+
 bool SherpaInstaller::isInstalled(const QString& repoId)
 {
-	QString repoName = repoId.split("/").last();
-	QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
-	return QFile::exists(modelPath);
+    // 目录存在且没有"安装中"标记才算装好；下到一半被杀留下的目录不算（升级前装好的旧模型没有标记，仍算已安装）
+    return InstallMarker::isInstalled(modelDirFor(repoId));
 }
 
 void SherpaInstaller::ensurePunctModel(const QString& repoId)
@@ -490,12 +497,16 @@ void SherpaInstaller::ensureStreamingModel(const QString& language)
     }
     if (isInstalling(repoId)) return;
 
+    // 上次没下完的残留先清掉，重新下
+    if (InstallMarker::isIncomplete(modelDirFor(repoId))) QDir(modelDirFor(repoId)).removeRecursively();
+
     ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
     if (manifest.files.empty()) {
         LOG_WARN(QString("Live caption model has no files to download: %1").arg(repoId));
         return;
     }
     LOG_INFO(QString("Downloading live caption model: %1").arg(repoId));
+    if (!InstallMarker::markInstalling(modelDirFor(repoId))) LOG_WARN(QString("Cannot create model directory: %1").arg(repoId));
     m_companionGroups.insert(repoId);
     for (const auto& f : manifest.files) {
         m_downloadManager->addGroupTask(repoId, manifest.displayName, f.sourceUrl, f.localPath);
@@ -511,15 +522,23 @@ void SherpaInstaller::installModel(const QString& repoId)
         if (cfg.liveCaptionEnabled.load()) ensureStreamingModel(cfg.sherpa.languageModel);
     }
 
-    QString repoName = repoId.split("/").last();
-    QString modelPath = ModelConfigFactory::getSherpaModel() + "/" + repoName;
-    if (QFile::exists(modelPath)) {
+    // 正在下载：别重复开一轮，也别把半截目录当成已存在
+    if (isInstalling(repoId)) return;
+
+    const QString modelPath = modelDirFor(repoId);
+    if (InstallMarker::isInstalled(modelPath)) {
         emit installGroupFinished(repoId, true, tr("%1 is exist.").arg(repoId));
         emit loadModel(repoId, true, tr("Download Complete"));
         return;
     }
+    // 上次没下完（带"安装中"标记）：清掉残留重新下
+    if (InstallMarker::isIncomplete(modelPath)) {
+        LOG_WARN(QString("Removing incomplete model directory: %1").arg(modelPath));
+        QDir(modelPath).removeRecursively();
+    }
 
     ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
+    if (!InstallMarker::markInstalling(modelPath)) LOG_WARN(QString("Cannot create model directory: %1").arg(modelPath));
 
     if (!manifest.archiveUrl.isEmpty()) {
         m_activeManifests[repoId] = manifest;
@@ -638,6 +657,7 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
             emit installGroupFinished(groupId, false, tr("Download Error"));
             return;
         }
+        InstallMarker::markComplete(modelDirFor(groupId));
         emit installGroupFinished(groupId, true, tr("Download Complete"));
         emit streamingModelReady(groupId);
         return;
@@ -651,6 +671,7 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
 
     auto it = m_activeManifests.find(groupId);
     if (it == m_activeManifests.end()) {
+        InstallMarker::markComplete(modelDirFor(groupId));
         emit installGroupFinished(groupId, true, tr("Download Complete"));
         emit loadModel(groupId, true, tr("Download Complete"));
         return;
@@ -684,6 +705,7 @@ void SherpaInstaller::onSherpaExtractFinished(const QString& groupId, bool ok)
         emit installGroupFinished(groupId, false, tr("Extract Error"));
         return;
     }
+    InstallMarker::markComplete(modelDirFor(groupId));
     emit installGroupFinished(groupId, true, tr("Download Complete"));
     emit loadModel(groupId, true, tr("Download Complete"));
 }
