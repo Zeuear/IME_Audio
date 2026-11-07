@@ -65,6 +65,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/audio_normalizer_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_document_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_store_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/tool_icon_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -124,6 +125,8 @@ set(TEST_DEPS
     # 实时转录稿子的追加规则，只依赖 QTextDocument
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptDocument.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptStore.cpp
+    # 横条图标：按状态取色并把线条 SVG 渲染成指定颜色，用到 Qt6::Svg
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToolIcon.cpp
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
@@ -162,6 +165,7 @@ if(WIN32)
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
+        Qt6::Svg
         imm32
     )
 elseif(APPLE)
@@ -175,6 +179,7 @@ elseif(APPLE)
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
+        Qt6::Svg
         "-framework ApplicationServices"
         "-framework AVFoundation"
         "-framework AppKit"
@@ -191,6 +196,7 @@ else()
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
+        Qt6::Svg
     )
 endif()
 

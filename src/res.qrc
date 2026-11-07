@@ -14,6 +14,16 @@
         <file alias="spin_up_gray">../resources/icons/spin_up_gray.svg</file>
         <file alias="spin_up_white">../resources/icons/spin_up_white.svg</file>       
         <file alias="info">../resources/icons/info.svg</file>        
+        <file alias="tool_play">../resources/icons/tool_play.svg</file>
+        <file alias="tool_pause">../resources/icons/tool_pause.svg</file>
+        <file alias="tool_stop">../resources/icons/tool_stop.svg</file>
+        <file alias="tool_ai_enhance">../resources/icons/tool_ai_enhance.svg</file>
+        <file alias="tool_translate">../resources/icons/tool_translate.svg</file>
+        <file alias="tool_inject">../resources/icons/tool_inject.svg</file>
+        <file alias="tool_transcript">../resources/icons/tool_transcript.svg</file>
+        <file alias="tool_dictionary">../resources/icons/tool_dictionary.svg</file>
+        <file alias="tool_file">../resources/icons/tool_file.svg</file>
+        <file alias="tool_settings">../resources/icons/tool_settings.svg</file>
         <file alias="info_close">../resources/icons/info_close.svg</file>    
         <file alias="info_error">../resources/icons/info_error.svg</file>        
         <file alias="info_success">../resources/icons/info_success.svg</file>    
