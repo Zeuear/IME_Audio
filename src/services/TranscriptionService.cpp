@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QBuffer>
 #include <QTimer>
+#include "audio/AudioNormalizer.h"
 #include "textpolish/GeminiProvider.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/LanguageCatalog.h"
@@ -47,12 +48,20 @@ TranscriptionService::TranscriptionService(
     });
 }
 
-void TranscriptionService::transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample){
+void TranscriptionService::transcribe(const QByteArray& rawPcm, int sampleRate, int channels, int bitsPerSample){
     const Ticket t{ m_results.reserve(), m_fileMode };
     // 每个序号都必须有结果，否则会挡住后面所有结果；SherpaManager 对空音频不入队也不回结果
-    if (pcmData.isEmpty()) {
+    if (rawPcm.isEmpty()) {
         finish(t, false, {}, QStringLiteral("音频为空"));
         return;
+    }
+
+    // 幅度标准化，仅 16-bit 单声道（内部统一格式）才处理
+    QByteArray pcmData = rawPcm;
+    if (channels == 1 && bitsPerSample == 16) {
+        double gain = 1.0;
+        pcmData = AudioNormalizer::normalizePcm16(rawPcm, &gain);
+        if (gain > 1.0) LOG_DEBUG(QString("Audio normalized, gain x%1").arg(gain, 0, 'f', 1));
     }
 
     if (m_config.backend == AsrBackendKind::Sherpa) {

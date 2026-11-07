@@ -61,6 +61,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/snippet_search_index_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/google_sheets_parse_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_pipeline_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/audio_normalizer_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -69,6 +70,7 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/SnippetSearchIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TermsLibraryManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/audio/AudioNormalizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/AppPaths.cpp
     # SingleInstanceGuard 是 Q_OBJECT，.h 也要交给 AUTOMOC
