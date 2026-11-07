@@ -34,6 +34,32 @@ void GpuBackendWidget::setBackendInstaller(CudaInstaller* cudaInstaller)
     connect(m_cudaInstaller, &CudaInstaller::installStarted, this, &GpuBackendWidget::onInstallerStatusChanged);
     connect(m_cudaInstaller, &CudaInstaller::installFinished, this, &GpuBackendWidget::onInstallerFinished);
 
+    // 下载进度：进度条加一行"文件名 · 第几个/共几个 · 百分比"，和模型列表、翻译卡片同一个样子
+    connect(m_cudaInstaller, &CudaInstaller::installGroupStarted, this,
+            [this](const QString&, const QString&, int totalFiles) {
+                m_downloadProgress.start(totalFiles);
+                m_lastDownloadError.clear();
+                m_progressBar->setValue(0);
+            });
+    connect(m_cudaInstaller, &CudaInstaller::installFileProgress, this,
+            [this](const QString&, const QString& filename, qint64, qint64, int overallPercent) {
+                m_downloadProgress.update(filename, overallPercent);
+                m_progressBar->setValue(m_downloadProgress.percent());
+                if (m_status == GpuStatus::Downloading) m_downloadSizeLabel->setText(m_downloadProgress.line());
+            });
+    connect(m_cudaInstaller, &CudaInstaller::installFileFinished, this,
+            [this]() { m_downloadProgress.fileFinished(); });
+    connect(m_cudaInstaller, &CudaInstaller::installFileError, this,
+            [this](const QString&, const QString&, const QString& error) { m_lastDownloadError = error; });
+    // 下载失败时安装器只发 installGroupFinished(false)，不发 installFinished：不接这个信号，
+    // 界面会一直停在"下载中，取消"，用户看不到失败也点不了重试
+    connect(m_cudaInstaller, &CudaInstaller::installGroupFinished, this,
+            [this](const QString&, bool success, const QString& message) {
+                if (success) return;
+                applyStatus(GpuStatus::Failed);
+                m_downloadSizeLabel->setText(m_lastDownloadError.isEmpty() ? message : message + QStringLiteral(": ") + m_lastDownloadError);
+            });
+
     detectGpuAsync();
 }
 
@@ -103,6 +129,12 @@ void GpuBackendWidget::setupUi()
     m_downloadSizeLabel->setWordWrap(true);
     downloadTextCol->addWidget(m_downloadTitleLabel);
     downloadTextCol->addWidget(m_downloadSizeLabel);
+    m_progressBar = new QProgressBar(m_downloadRow);
+    m_progressBar->setRange(0, 100);
+    m_progressBar->setTextVisible(false);
+    m_progressBar->setFixedHeight(6);
+    m_progressBar->hide();
+    downloadTextCol->addWidget(m_progressBar);
 
     m_downloadButton = new QPushButton(m_downloadRow);
     m_downloadButton->setObjectName("downloadButton");
@@ -147,6 +179,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
 {
     m_status = status;
     m_modeSwitchRow->setVisible(false);
+    m_progressBar->setVisible(status == GpuStatus::Downloading);
 
     switch (status) {
     case GpuStatus::Detecting:

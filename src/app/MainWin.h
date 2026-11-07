@@ -14,6 +14,7 @@
 #include <QNetworkAccessManager>
 #include <QElapsedTimer>
 #include "services/WorkflowManager.h"
+#include "utils/DownloadText.h"
 
 
 class UpdateManager;
@@ -177,6 +178,7 @@ private:
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;   // 录音状态指示当前显示的状态，换语言后用来恢复文字
     bool m_loadingSettings = false;
+    DownloadGroupProgress m_translateProgress;   // 翻译模型下载到第几个文件、多少百分比
 
     // 按住说话
     QElapsedTimer m_holdTimer;

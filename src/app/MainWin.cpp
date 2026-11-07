@@ -376,7 +376,20 @@ void MainWin::setupUiConnections(){
         m_translationInstaller->install(currentTranslationRoute());
         updateTranslationUi();
     });
-    connect(m_translationInstaller, &TranslationModelInstaller::installGroupStarted, this, [this]() { updateTranslationUi(); });
+    connect(m_translationInstaller, &TranslationModelInstaller::installGroupStarted, this,
+            [this](const QString&, const QString&, int totalFiles) {
+                m_translateProgress.start(totalFiles);
+                ui->translate_progress_bar->setValue(0);
+                updateTranslationUi();
+            });
+    connect(m_translationInstaller, &TranslationModelInstaller::installFileProgress, this,
+            [this](const QString&, const QString& filename, qint64, qint64, int overallPercent) {
+                m_translateProgress.update(filename, overallPercent);
+                ui->translate_progress_bar->setValue(m_translateProgress.percent());
+                updateTranslationUi();
+            });
+    connect(m_translationInstaller, &TranslationModelInstaller::installFileFinished, this,
+            [this]() { m_translateProgress.fileFinished(); });
     connect(m_translationInstaller, &TranslationModelInstaller::installGroupFinished, this, [this]() { updateTranslationUi(); });
 
     connect(ui->ai_engine_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
@@ -981,6 +994,7 @@ void MainWin::updateTranslationUi() {
 
     QString status;
     bool canDownload = false;
+    bool installing = false;
     if (route.kind == RouteKind::Same) {
         status = tr("Source and target are the same language");
     }
@@ -992,10 +1006,10 @@ void MainWin::updateTranslationUi() {
         status = tr("Model ready");
     }
     else {
-        bool installing = false;
         for (const TranslationHop& hop : route.hops) installing |= m_translationInstaller->isInstalling(hop.from, hop.to);
         if (installing) {
-            status = tr("Downloading model...");
+            const QString line = m_translateProgress.line();
+            status = line.isEmpty() ? tr("Downloading model...") : tr("Downloading model...") + QStringLiteral(" · ") + line;
         }
         else {
             const double mb = m_translationInstaller->bytesToDownload(route) / 1048576.0;
@@ -1006,6 +1020,7 @@ void MainWin::updateTranslationUi() {
 
     ui->translate_model_status_label->setText(status);
     ui->translate_model_download_btn->setEnabled(transOn && canDownload);
+    ui->translate_progress_bar->setVisible(local && installing);
 
     ui->translate_model_status_label->setVisible(local);
     ui->translate_model_download_btn->setVisible(local);

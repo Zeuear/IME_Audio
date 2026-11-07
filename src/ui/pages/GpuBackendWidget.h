@@ -5,6 +5,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
 #include "installers/CudaInstaller.h"
+#include "utils/DownloadText.h"
 
 class CudaInstaller;
 class QLabel;
@@ -92,6 +93,8 @@ private:
     QLabel    *m_downloadSizeLabel = nullptr;
     QPushButton *m_downloadButton = nullptr;
     QProgressBar *m_progressBar = nullptr;
+    DownloadGroupProgress m_downloadProgress;   // CUDA 包有几个文件，下到第几个
+    QString m_lastDownloadError;
 
     // 计算模式切换行(仅在 Ready 状态下显示)
     QWidget* m_modeSwitchRow = nullptr;
