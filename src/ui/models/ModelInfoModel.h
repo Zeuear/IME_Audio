@@ -11,6 +11,7 @@ struct ModelInfo {
     QStringList languages;      // 该模型所在的全部语言分组
     bool installed = false;
     bool builtinPunct = false;
+    bool autoLanguage = false;  // 多语种模型且无法指定语种，由模型自己判断
     bool benchmarked = false;   // 有无该语言的基准数据
     double score = 0;           // 100 × (1 − CER/WER)
     double rtf = 0;             // 识别耗时 / 音频时长
@@ -26,6 +27,7 @@ public:
         LanguagesRole,         
         InstalledRole,
         BuiltinPunctRole,
+        AutoLanguageRole,
         BenchmarkedRole,
         ScoreRole,
         RtfRole,

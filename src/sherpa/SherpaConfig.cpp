@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QtConcurrent> 
 #include "installers/CudaInstaller.h"
+#include "sherpa/LanguageCatalog.h"
 #include "utils/AppPaths.h"
 #include "utils/Logger.h"
 #include "config/ConfigManager.h"
@@ -136,9 +137,11 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildNemoCtc(
 
 // Whisper
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildWhisper(
-    const QString& repoId, const QString& name, int numThreads)
+    const QString& repoId, const QString& name, const QString& languageCode, int numThreads)
 {
     sherpa_onnx::cxx::OfflineRecognizerConfig config;
+    if (!languageCode.isEmpty() && !name.endsWith(QLatin1String(".en")))
+        config.model_config.whisper.language = languageCode.toStdString();
     config.model_config.tokens = getModelPath(repoId, "", name + "-tokens.txt").toStdString();
     config.model_config.whisper.encoder = getModelPath(repoId, "", name + "-encoder.int8.onnx").toStdString();
     config.model_config.whisper.decoder = getModelPath(repoId, "", name + "-decoder.int8.onnx").toStdString();
@@ -1327,6 +1330,19 @@ bool ModelRegistry::shouldUseNeuralPunct(const ModelDescriptor& desc, const QStr
     return language == "Chinese" || language == "English";
 }
 
+bool ModelRegistry::detectsLanguageAutomatically(const ModelDescriptor& desc, int coveredLanguageCount)
+{
+    if (coveredLanguageCount <= 1) return false;
+    switch (desc.arch) {
+    case ModelArch::Whisper:
+    case ModelArch::CohereTranscribe:
+    case ModelArch::Canary:
+        return false;
+    default:
+        return true;
+    }
+}
+
 const std::vector<std::pair<QString, QStringList>>& ModelRegistry::LanguageToModels()
 {
     static const std::vector<std::pair<QString, QStringList>> table = [] {
@@ -1486,7 +1502,9 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
         break;
     }
     case ModelArch::Whisper: {
-        configVar = ModelConfigFactory::buildWhisper(repoId, std::get<WhisperFiles>(desc->files).name, numThreads);
+        QString code = LanguageCatalog::codeOf(ConfigManager::instance().config().sherpa.languageModel);
+        if (code == QLatin1String("jv")) code = QStringLiteral("jw");
+        configVar = ModelConfigFactory::buildWhisper(repoId, std::get<WhisperFiles>(desc->files).name, code, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
     }

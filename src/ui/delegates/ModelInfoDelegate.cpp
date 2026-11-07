@@ -139,8 +139,14 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         features << tr("Punctuation");
         dots << pal.color(QPalette::Highlight);
     }
+    // 模型自己判断语种：短词、口音下可能串成别的语言，提示用户
+    if (index.data(ModelInfoModel::AutoLanguageRole).toBool()) {
+        features << tr("Auto language");
+        dots << pal.color(QPalette::Mid);
+    }
     p->setFont(subFont);
-    const int lineH = 18;
+    // 三项同时出现时行高收紧，保证在 58px 的行内放得下
+    const int lineH = features.size() > 2 ? 16 : 18;
     int y = c.features.center().y() - features.size() * lineH / 2;
     for (int i = 0; i < features.size(); ++i, y += lineH) {
         p->setPen(Qt::NoPen);

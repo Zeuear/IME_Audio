@@ -310,7 +310,7 @@ public:
         int numThreads);
 
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildNemoCtc(const QString& repoId, const QString& modelFile, int numThreads);
-	static sherpa_onnx::cxx::OfflineRecognizerConfig buildWhisper(const QString& repoId, const QString& name, int numThreads);
+	static sherpa_onnx::cxx::OfflineRecognizerConfig buildWhisper(const QString& repoId, const QString& name, const QString& languageCode, int numThreads);
 	static sherpa_onnx::cxx::OfflineRecognizerConfig buildMoonshine(const QString& repoId, const MoonshineFiles& files, int numThreads);
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildFireRedAsr(const QString& repoId, const FireRedAsrFiles& files, int numThreads);
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildDolphinCtc(const QString& repoId, bool useInt8, int numThreads);
@@ -436,6 +436,11 @@ public:
 
     // language 取用户所选语言：同一模型会出现在多个语言分组里，不能用注册表里记录的语言
     static bool shouldUseNeuralPunct(const ModelDescriptor& desc, const QString& language);
+
+    // 模型覆盖多种语言、而识别时无法指定语种（由模型自己判断）。
+    // 短词、口音下容易判成别的语言，界面据此给模型打上"自动识别语种"标注。
+    // Whisper / Cohere 会按所选语言传参，Canary 的源语种写在条目里，都不算
+    static bool detectsLanguageAutomatically(const ModelDescriptor& desc, int coveredLanguageCount);
 
     static const ModelDescriptor* Find(const QString& repoId);
     // allowHotwords=false 用于实时字幕：流式 BPE 模型没配词表，套用全局热词可能导致创建失败

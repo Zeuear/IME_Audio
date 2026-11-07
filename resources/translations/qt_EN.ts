@@ -1924,6 +1924,11 @@
         <translation>Punctuation</translation>
     </message>
     <message>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="143"/>
+        <source>Auto language</source>
+        <translation>Auto language</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="165"/>
         <source>Not benchmarked for this language yet</source>
         <translation>Not benchmarked for this language yet</translation>

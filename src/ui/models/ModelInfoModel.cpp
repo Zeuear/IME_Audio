@@ -58,6 +58,7 @@ QVariant ModelInfoModel::data(const QModelIndex& index, int role) const
     case LanguagesRole:       return m.languages;
     case InstalledRole:       return m.installed;
     case BuiltinPunctRole:    return m.builtinPunct;
+    case AutoLanguageRole:    return m.autoLanguage;
     case BenchmarkedRole:     return m.benchmarked;
     case ScoreRole:           return m.score;
     case RtfRole:             return m.rtf;
@@ -92,7 +93,10 @@ void ModelInfoModel::setLanguage(const QString& language)
             if (lang == language || !tooPoor(benchmarks().value(lang).toObject(), e.repoPath)) m.languages << lang;
         }
         m.installed = SherpaInstaller::isInstalled(e.repoPath);
-        if (const ModelDescriptor* d = ModelRegistry::Find(e.repoPath)) m.builtinPunct = d->hasBuiltinPunctuation;
+        if (const ModelDescriptor* d = ModelRegistry::Find(e.repoPath)) {
+            m.builtinPunct = d->hasBuiltinPunctuation;
+            m.autoLanguage = ModelRegistry::detectsLanguageAutomatically(*d, static_cast<int>(m.languages.size()));
+        }
         const QJsonObject s = scores.value(e.repoPath).toObject();
         if (!s.isEmpty()) {
             m.benchmarked = true;

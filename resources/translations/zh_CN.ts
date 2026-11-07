@@ -1924,6 +1924,11 @@
         <translation>自带标点</translation>
     </message>
     <message>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="143"/>
+        <source>Auto language</source>
+        <translation>自动识别语种</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="165"/>
         <source>Not benchmarked for this language yet</source>
         <translation>该语言暂无测试数据</translation>
