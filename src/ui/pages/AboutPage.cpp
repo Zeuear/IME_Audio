@@ -6,13 +6,16 @@
 #include <QEvent>
 #include <QFile>
 #include <QFont>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPixmap>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QTabWidget>
+#include <QTextBrowser>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -39,56 +42,68 @@ QString AboutPage::loadChangelog() const
 void AboutPage::setupUi()
 {
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(12);
+    layout->setContentsMargins(24, 20, 24, 20);
+    layout->setSpacing(16);
 
+    // 顶部：大图标 + 名称版本 + 一句话简介
     auto* header = new QHBoxLayout;
+    header->setSpacing(20);
     m_iconLabel = new QLabel(this);
     const QPixmap icon(":/title_icon");
-    if (!icon.isNull()) m_iconLabel->setPixmap(icon.scaled(56, 56, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    m_iconLabel->setFixedSize(56, 56);
-    header->addWidget(m_iconLabel);
+    if (!icon.isNull()) m_iconLabel->setPixmap(icon.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_iconLabel->setFixedSize(96, 96);
+    header->addWidget(m_iconLabel, 0, Qt::AlignTop);
 
     auto* titleCol = new QVBoxLayout;
+    titleCol->setSpacing(4);
     m_titleLabel = new QLabel(QApplication::applicationName().isEmpty() ? QStringLiteral("ImeAudio")
                                                                         : QApplication::applicationName(), this);
-    QFont titleFont = m_titleLabel->font();
-    titleFont.setPointSize(16);
-    titleFont.setBold(true);
-    m_titleLabel->setFont(titleFont);
+    m_titleLabel->setStyleSheet("font-size: 22pt; font-weight: bold;");   // 应用样式表会盖掉 setFont
     m_versionLabel = new QLabel(this);
     m_versionLabel->setStyleSheet("color: gray;");
+    m_descriptionLabel = new QLabel(this);
+    m_descriptionLabel->setWordWrap(true);
     titleCol->addWidget(m_titleLabel);
     titleCol->addWidget(m_versionLabel);
-    header->addLayout(titleCol);
-    header->addStretch();
+    titleCol->addSpacing(6);
+    titleCol->addWidget(m_descriptionLabel);
+    titleCol->addStretch();
+    header->addLayout(titleCol, 1);
     layout->addLayout(header);
 
-    auto* updateRow = new QHBoxLayout;
-    updateRow->setSpacing(10);
-    m_checkBtn = new QPushButton(this);
-    m_statusLabel = new QLabel(this);
+    // 更新卡片：状态、进度、操作
+    auto* card = new QFrame(this);
+    card->setObjectName("aboutCard");
+    card->setStyleSheet("QFrame#aboutCard { background: palette(base); border: 1px solid palette(midlight); border-radius: 10px; }");
+    auto* cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(16, 14, 16, 14);
+    cardLayout->setSpacing(10);
+    m_statusLabel = new QLabel(card);
     m_statusLabel->setWordWrap(true);
-    m_installBtn = new QPushButton(this);
-    m_aboutQtBtn = new QPushButton(this);
-    updateRow->addWidget(m_checkBtn);
-    updateRow->addWidget(m_statusLabel, 1);
-    updateRow->addWidget(m_installBtn);
-    updateRow->addWidget(m_aboutQtBtn);
-    layout->addLayout(updateRow);
-
-    m_progress = new QProgressBar(this);
+    m_progress = new QProgressBar(card);
     m_progress->setRange(0, 100);
     m_progress->setTextVisible(true);
-    layout->addWidget(m_progress);
+    m_checkBtn = new QPushButton(card);
+    m_installBtn = new QPushButton(card);
+    m_aboutQtBtn = new QPushButton(card);
+    auto* buttons = new QHBoxLayout;
+    buttons->setSpacing(10);
+    buttons->addWidget(m_checkBtn);
+    buttons->addWidget(m_installBtn);
+    buttons->addStretch();
+    buttons->addWidget(m_aboutQtBtn);
+    cardLayout->addWidget(m_statusLabel);
+    cardLayout->addWidget(m_progress);
+    cardLayout->addLayout(buttons);
+    layout->addWidget(card);
 
     m_tabs = new QTabWidget(this);
-    m_descriptionText = new QTextEdit(this);
-    m_descriptionText->setReadOnly(true);
+    m_creditsText = new QTextBrowser(this);
+    m_creditsText->setOpenExternalLinks(true);
     m_changelogText = new QTextEdit(this);
     m_changelogText->setReadOnly(true);
     m_changelogText->setMarkdown(loadChangelog());
-    m_tabs->addTab(m_descriptionText, QString());
+    m_tabs->addTab(m_creditsText, QString());
     m_tabs->addTab(m_changelogText, QString());
     layout->addWidget(m_tabs, 1);
 
@@ -124,6 +139,7 @@ void AboutPage::refresh()
 {
     const UpdateStatusModel::View v = m_status->view();
     m_statusLabel->setText(v.text);
+    m_statusLabel->setVisible(!v.text.isEmpty());
     m_checkBtn->setEnabled(v.checkEnabled);
     m_installBtn->setVisible(v.installVisible);
     m_progress->setVisible(v.progressVisible);
@@ -148,15 +164,25 @@ void AboutPage::retranslateUi()
     // 模型里的文字在状态变化时才生成；换语言后重新取一遍
     refresh();
 
-    // 模型署名：Kroko 社区模型为 CC-BY-SA 许可，要求注明来源
-    m_descriptionText->setText(
+    m_descriptionLabel->setText(
         tr("ImeAudio 是一款专注于输入法语音辅助的桌面工具，"
-           "支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。")
-        + QStringLiteral("\n\n")
-        + tr("语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。"
-             "英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。")
-        + QStringLiteral("\n\n")
-        + tr("本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。"));
-    m_tabs->setTabText(0, tr("软件简介"));
+           "支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。"));
+
+    // Kroko 社区模型为 CC-BY-SA 许可，要求注明来源
+    const QStringList credits = {
+        tr("语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。"
+           "英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。"),
+        tr("本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。"),
+    };
+    static const QRegularExpression url(QStringLiteral("(https?://[A-Za-z0-9./_-]+)"));
+    QString html;
+    for (const QString& c : credits) {
+        QString p = c.toHtmlEscaped();
+        p.replace(url, QStringLiteral("<a href=\"\\1\">\\1</a>"));
+        html += QStringLiteral("<p>") + p + QStringLiteral("</p>");
+    }
+    m_creditsText->document()->setDefaultStyleSheet(QStringLiteral("a { color: #3b82f6; }"));
+    m_creditsText->setHtml(html);
+    m_tabs->setTabText(0, tr("开源组件与许可"));
     m_tabs->setTabText(1, tr("更新说明"));
 }

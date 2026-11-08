@@ -4,52 +4,52 @@
 <context>
     <name>AboutPage</name>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="36"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="39"/>
         <source>暂无更新说明。</source>
         <translation>暂无更新说明。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="144"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="162"/>
         <source>Version %1</source>
         <translation>版本 %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="145"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="163"/>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="146"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="164"/>
         <source>Download and Install</source>
         <translation>下载并安装</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="147"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="165"/>
         <source>About Qt</source>
         <translation>关于 Qt</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="153"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="170"/>
         <source>ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</source>
         <translation>ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="156"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="175"/>
         <source>语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。</source>
         <translation>语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="159"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="177"/>
         <source>本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。</source>
         <translation>本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="160"/>
-        <source>软件简介</source>
-        <translation>软件简介</translation>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="187"/>
+        <source>开源组件与许可</source>
+        <translation>开源组件与许可</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="161"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="188"/>
         <source>更新说明</source>
         <translation>更新说明</translation>
     </message>

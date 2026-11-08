@@ -6,6 +6,7 @@ class QLabel;
 class QProgressBar;
 class QPushButton;
 class QTabWidget;
+class QTextBrowser;
 class QTextEdit;
 class UpdateManager;
 class UpdateStatusModel;
@@ -44,6 +45,7 @@ private:
     QLabel* m_statusLabel = nullptr;
     QProgressBar* m_progress = nullptr;
     QTabWidget* m_tabs = nullptr;
-    QTextEdit* m_descriptionText = nullptr;
+    QLabel* m_descriptionLabel = nullptr;
+    QTextBrowser* m_creditsText = nullptr;
     QTextEdit* m_changelogText = nullptr;
 };
