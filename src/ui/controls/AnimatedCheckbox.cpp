@@ -11,6 +11,11 @@ AnimatedCheckBox::AnimatedCheckBox(QWidget* parent) :
     m_animation = new QPropertyAnimation(this, "animationProgress", this);
     m_animation->setDuration(300);
     m_animation->setEasingCurve(QEasingCurve::InOutQuad); 
+
+    // 代码里 setChecked 时没有点击动画，直接把进度对到终点，否则勾会不显示
+    connect(this, &QCheckBox::toggled, this, [this](bool on) {
+        if (!m_userToggling) setAnimationProgress(on ? 1.0f : 0.0f);
+    });
 }
 
 
@@ -22,7 +27,9 @@ AnimatedCheckBox::~AnimatedCheckBox()
 void AnimatedCheckBox::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        m_userToggling = true;
         changeState();
+        m_userToggling = false;
         startAnimation();
     }   
 }

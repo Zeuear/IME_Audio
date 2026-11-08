@@ -283,3 +283,28 @@ TEST(ControlBarTimer, ErrorStopsTheTimer) {
     bar.setWorkflowState(WorkflowState::Error);
     EXPECT_FALSE(bar.timerRunning());
 }
+
+TEST(ControlBarMenu, AlwaysOnTopIsACheckableMenuItemThatTellsTheHost) {
+    ControlBar bar;
+    QAction* a = bar.alwaysOnTopAction();
+    ASSERT_NE(a, nullptr);
+    EXPECT_TRUE(a->isCheckable());
+
+    int fired = 0;
+    bool last = true;
+    QObject::connect(&bar, &ControlBar::alwaysOnTopToggled, &bar, [&](bool on) { ++fired; last = on; });
+    a->trigger();
+    EXPECT_EQ(fired, 1);
+    EXPECT_EQ(last, !a->isChecked() ? false : true);
+}
+
+TEST(ControlBarMenu, SettingAlwaysOnTopFromTheHostOnlyMovesTheCheckmark) {
+    ControlBar bar;
+    int fired = 0;
+    QObject::connect(&bar, &ControlBar::alwaysOnTopToggled, &bar, [&](bool) { ++fired; });
+    bar.setAlwaysOnTop(false);
+    EXPECT_FALSE(bar.alwaysOnTopAction()->isChecked());
+    bar.setAlwaysOnTop(true);
+    EXPECT_TRUE(bar.alwaysOnTopAction()->isChecked());
+    EXPECT_EQ(fired, 0);
+}

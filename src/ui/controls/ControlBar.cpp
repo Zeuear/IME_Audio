@@ -19,11 +19,11 @@
 #include <QToolButton>
 
 namespace {
-constexpr int kButtonSize = 28;
-constexpr int kIconSize = 18;
-constexpr int kPadH = 12;
+constexpr int kButtonSize = 34;
+constexpr int kIconSize = 23;
+constexpr int kPadH = 14;
 constexpr int kPadV = 5;
-constexpr int kRadius = 12;
+constexpr int kRadius = 16;
 constexpr int kSpacing = 4;
 constexpr int kGroupGap = 8;
 const QString kPositionGroup = QStringLiteral("ControlBar");
@@ -33,7 +33,7 @@ QString buttonStyle(const QColor& accent)
     // 选中态用强调色半透明底；应用样式表自带的选中底色会盖住图标，所以逐个覆盖
     const QString on = QStringLiteral("rgba(%1, %2, %3, ").arg(accent.red()).arg(accent.green()).arg(accent.blue());
     return QStringLiteral(
-        "QToolButton { background: transparent; border: none; border-radius: 8px; }"
+        "QToolButton { background: transparent; border: none; border-radius: 10px; }"
         "QToolButton:hover:enabled { background: rgba(128, 128, 128, 45); }"
         "QToolButton:pressed:enabled { background: rgba(128, 128, 128, 80); }"
         "QToolButton:checked { background: ") + on + QStringLiteral("45); }"
@@ -54,7 +54,7 @@ QToolButton* makeButton(QWidget* parent)
 QFrame* makeDivider(QWidget* parent)
 {
     auto* f = new QFrame(parent);
-    f->setFixedSize(1, 16);
+    f->setFixedSize(1, 20);
     f->setStyleSheet(QStringLiteral("background: rgba(128, 128, 128, 80);"));
     return f;
 }
@@ -77,6 +77,7 @@ ControlBar::ControlBar(QWidget* parent)
     : QWidget(parent)
 {
     FloatingWindow::applyToolWindowFlags(this);
+    setAttribute(Qt::WA_AlwaysShowToolTips);   // 非激活的工具窗口默认不显示悬停提示
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(kPadH, kPadV, kPadH, kPadV);
@@ -97,6 +98,7 @@ ControlBar::ControlBar(QWidget* parent)
     QFont mono = m_timerLabel->font();
     mono.setStyleHint(QFont::Monospace);
     mono.setFamily(QStringLiteral("Consolas"));
+    mono.setPointSizeF(mono.pointSizeF() + 1);
     m_timerLabel->setFont(mono);
 
     layout->addWidget(m_startBtn);
@@ -125,6 +127,10 @@ ControlBar::ControlBar(QWidget* parent)
 
     m_menu = new QMenu(this);
     m_settingsAction = m_menu->addAction(QString(), this, &ControlBar::settingsRequested);
+    m_topAction = m_menu->addAction(QString());
+    m_topAction->setCheckable(true);
+    m_topAction->setChecked(true);
+    connect(m_topAction, &QAction::triggered, this, &ControlBar::alwaysOnTopToggled);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
@@ -283,6 +289,8 @@ void ControlBar::refreshTimerLabel()
 
 void ControlBar::setAlwaysOnTop(bool on)
 {
+    const QSignalBlocker blocker(m_topAction);
+    m_topAction->setChecked(on);
     FloatingWindow::setAlwaysOnTop(this, on);
 }
 
@@ -331,6 +339,7 @@ void ControlBar::retranslateUi()
     m_transcriptBtn->setToolTip(tr("Live Transcript"));
     m_settingsBtn->setToolTip(tr("Settings"));
     m_settingsAction->setText(tr("Settings"));
+    m_topAction->setText(tr("Always on top"));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }

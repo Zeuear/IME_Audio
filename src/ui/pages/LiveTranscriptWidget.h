@@ -1,7 +1,9 @@
 #pragma once
 #include <QDateTime>
 #include <QWidget>
+#include "ui/controls/AnimatedCheckbox.h"
 #include <memory>
+
 
 class QCheckBox;
 class QLabel;
@@ -52,8 +54,8 @@ private:
     void clearAll();
 
     QPushButton* m_toggleBtn = nullptr;
-    QCheckBox* m_injectCheck = nullptr;
-    QCheckBox* m_timestampCheck = nullptr;
+    AnimatedCheckBox* m_injectCheck = nullptr;
+    AnimatedCheckBox* m_timestampCheck = nullptr;
     QPushButton* m_copyBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     QPushButton* m_clearBtn = nullptr;

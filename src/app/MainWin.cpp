@@ -17,6 +17,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QCheckBox>
+#include "ui/controls/AnimatedCheckbox.h"
 #include <QListWidget>
 #include <QDesktopServices>
 #include <QScreen>
@@ -486,6 +487,11 @@ void MainWin::setupUiConnections(){
     connect(m_panel, &ExpandPanel::pageChanged, m_controlBar, &ControlBar::setPanelPage);
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
+    connect(m_controlBar, &ControlBar::alwaysOnTopToggled, this, [this](bool on) {
+        ConfigManager::instance().config().barAlwaysOnTop = on;
+        ConfigManager::instance().save();
+        m_panel->setAlwaysOnTop(on);
+    });
     m_controlBar->showAtSavedPosition();
 
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
@@ -1439,7 +1445,8 @@ void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, 
     msgBox.setIcon(QMessageBox::Information);
 
     // "不再提醒"复选项：勾选后持久化，后续启动不再弹更新提示
-    QCheckBox* neverAgain = new QCheckBox(tr("Do not remind me again"));
+    auto* neverAgain = new AnimatedCheckBox;
+    neverAgain->setLabelText(tr("Do not remind me again"));
     msgBox.setCheckBox(neverAgain);
 
     int ret = msgBox.exec();

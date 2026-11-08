@@ -36,6 +36,7 @@ private:
 
     void startAnimation();
     void changeState();
+    bool m_userToggling = false;
 
 private:
     QPropertyAnimation* m_animation;

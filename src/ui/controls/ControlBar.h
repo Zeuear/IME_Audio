@@ -35,6 +35,7 @@ public:
     void setFileBusy(bool busy);
     QAction* settingsAction() const { return m_settingsAction; }
     QAction* quitAction() const { return m_quitAction; }
+    QAction* alwaysOnTopAction() const { return m_topAction; }
     // 在名称后追加一行说明；传空串去掉
     void setToggleHint(Toggle which, const QString& hint);
 
@@ -56,6 +57,7 @@ signals:
     void panelRequested(PanelState::Page page);
     // 有的桌面没有托盘，退出入口放在横条的右键菜单
     void quitRequested();
+    void alwaysOnTopToggled(bool on);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -89,6 +91,7 @@ private:
     bool m_fileBusy = false;
     QMenu* m_menu = nullptr;
     QAction* m_settingsAction = nullptr;
+    QAction* m_topAction = nullptr;
     QAction* m_quitAction = nullptr;
     QString m_hints[3];   // 按 Toggle 的顺序
 

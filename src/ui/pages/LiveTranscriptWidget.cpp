@@ -2,6 +2,7 @@
 #include "ui/models/TranscriptDocument.h"
 #include "ui/models/TranscriptStore.h"
 #include <QCheckBox>
+#include "ui/controls/AnimatedCheckbox.h"
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QEvent>
@@ -39,9 +40,9 @@ void LiveTranscriptWidget::setupUi()
     bar->setSpacing(10);
     m_toggleBtn = new QPushButton(this);
     m_toggleBtn->setCursor(Qt::PointingHandCursor);
-    m_injectCheck = new QCheckBox(this);
+    m_injectCheck = new AnimatedCheckBox(this);
     m_injectCheck->setChecked(true);
-    m_timestampCheck = new QCheckBox(this);
+    m_timestampCheck = new AnimatedCheckBox(this);
     m_copyBtn = new QPushButton(this);
     m_exportBtn = new QPushButton(this);
     m_clearBtn = new QPushButton(this);
@@ -194,9 +195,9 @@ void LiveTranscriptWidget::changeEvent(QEvent* event)
 
 void LiveTranscriptWidget::retranslateUi()
 {
-    m_injectCheck->setText(tr("Also type into the foreground window"));
+    m_injectCheck->setLabelText(tr("Also type into the foreground window"));
     m_injectCheck->setToolTip(tr("Turn off when you are typing yourself, so the transcript only goes here"));
-    m_timestampCheck->setText(tr("Timestamps"));
+    m_timestampCheck->setLabelText(tr("Timestamps"));
     m_copyBtn->setText(tr("Copy"));
     m_exportBtn->setText(tr("Export"));
     m_clearBtn->setText(tr("Clear"));
