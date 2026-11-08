@@ -19,4 +19,17 @@ Buttons forWorkflow(WorkflowState state)
     return { false, false };
 }
 
+bool isSessionActive(WorkflowState state)
+{
+    return state != WorkflowState::Idle && state != WorkflowState::Error;
+}
+
+QString formatElapsed(qint64 seconds)
+{
+    if (seconds < 0) seconds = 0;
+    const qint64 h = seconds / 3600, m = seconds / 60 % 60, s = seconds % 60;
+    if (h > 0) return QStringLiteral("%1:%2:%3").arg(h).arg(m, 2, 10, QLatin1Char('0')).arg(s, 2, 10, QLatin1Char('0'));
+    return QStringLiteral("%1:%2").arg(m, 2, 10, QLatin1Char('0')).arg(s, 2, 10, QLatin1Char('0'));
+}
+
 } // namespace ControlBarState

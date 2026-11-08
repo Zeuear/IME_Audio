@@ -108,8 +108,7 @@ void UpdateManager::onVersionCheckFinished(QNetworkReply* reply) {
     expectedSuffix = ".AppImage";
 #endif
 
-    // macOS 同一版本同时发布 arm64 与 x86_64 两个 dmg，必须按本程序的架构挑选，
-    // 否则 Intel 机器可能下到 arm64 包而无法运行
+    // macOS 同版本有 arm64 与 x86_64 两个 dmg，必须按本机架构挑，否则 Intel 机器下到 arm64 包无法运行
     QString expectedArch;
 #if defined(Q_OS_MAC)
     expectedArch = QSysInfo::buildCpuArchitecture();
@@ -237,8 +236,7 @@ bool UpdateManager::launchUpdaterMacOS(const QString& downloadedFilePath, QStrin
     const qint64 pid = QCoreApplication::applicationPid();
     QString targetApp = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../../..");
 
-    // 下载的是 dmg，要挂载后取出里面的 .app。
-    // 先复制到旁边的临时路径，全部成功才替换，任何一步失败都保留旧版本并重新打开
+    // 挂载 dmg 取 .app：先复制到临时路径，全部成功才替换，失败则保留旧版本并重新打开
     QString script = QString(
         "#!/bin/bash\n"
         "while kill -0 %1 2>/dev/null; do sleep 0.5; done\n"

@@ -8,48 +8,45 @@
 class QAbstractButton;
 class QAction;
 class QContextMenuEvent;
+class QLabel;
 class QMenu;
+class QTimer;
 class QToolButton;
 
-// @brief 横条：常驻置顶的小窗，一键开始 / 停止听写。不抢焦点，点击它不会把前台窗口切走。
-//        只负责显示和发信号，不依赖任何服务；按钮是否可点由工作流状态决定（ControlBarState）。
-//        可拖动，位置记在配置文件里，下次启动回到原处。
+// @brief 常驻置顶的图标横条：开始 / 停止、开关、面板入口。不抢焦点，可拖动，位置记在配置里。
 class ControlBar : public QWidget
 {
     Q_OBJECT
 public:
-    // 开关类图标：点一下开启（图标变强调色），再点关闭。
-    // 横条不保存它们的状态，由宿主用 ToggleLink 连到设置里已有的控件
+    // 开关类图标，状态由宿主用 ToggleLink 连到设置里已有的控件，横条自己不保存
     enum class Toggle { Enhance, Translate, Inject };
 
     explicit ControlBar(QWidget* parent = nullptr);
 
     QAbstractButton* toggleButton(Toggle which) const;
-    // 设置入口（打开主窗口）和右键菜单，宿主只需接信号
     QAbstractButton* settingsButton() const;
-    // 转录内容图标：点一下打开稿子窗口，再点关闭；窗口开着时图标高亮。
-    // 窗口被别处关掉时宿主用 setTranscriptOpen(false) 复位，这样不会再发一次信号
     QAbstractButton* transcriptButton() const;
+    // 窗口被别处关掉时用它复位，不会再发 transcriptToggled
     void setTranscriptOpen(bool open);
-    // 词典、文件转录图标：点击只发 panelRequested，面板怎么变由宿主决定（PanelState），
-    // 宿主再用 setPanelPage 点亮对应图标（不会再发信号）
     QAbstractButton* dictionaryButton() const;
     QAbstractButton* fileButton() const;
+    // 点击只发 panelRequested，面板状态由宿主决定后用它回写
     void setPanelPage(PanelState::Page page);
-    // 文件转录进行中：悬停提示里注明，面板收着时用户也知道它还在跑
     void setFileBusy(bool busy);
     QAction* settingsAction() const { return m_settingsAction; }
     QAction* quitAction() const { return m_quitAction; }
-    // 在名称后追加一行说明（例如"需要先开启 AI 增强"）；传空串去掉
+    // 在名称后追加一行说明；传空串去掉
     void setToggleHint(Toggle which, const QString& hint);
 
-    // 设置里的"横条置顶"开关；关掉后横条不再盖在别的软件上面
     void setAlwaysOnTop(bool on);
-
     void setWorkflowState(WorkflowState state);
 
-    // 读取保存的位置并校正到当前屏幕内后显示（不激活）
+    // 读取保存的位置并校正到屏幕内后显示（不激活）
     void showAtSavedPosition();
+
+    // 录音计时：会话进行中每秒走一次，结束后归零
+    bool timerRunning() const;
+    QString elapsedText() const;
 
 signals:
     void startRequested();
@@ -57,7 +54,7 @@ signals:
     void settingsRequested();
     void transcriptToggled(bool open);
     void panelRequested(PanelState::Page page);
-    // 横条是程序的常驻入口，退出不能只靠托盘（有的桌面没有托盘）
+    // 有的桌面没有托盘，退出入口放在横条的右键菜单
     void quitRequested();
 
 protected:
@@ -73,6 +70,8 @@ private:
     void retranslateUi();
     void refreshIcons();
     void refreshToggleTips();
+    void refreshTimerLabel();
+    void tick();
     QToolButton* button(Toggle which) const;
 
     QToolButton* m_startBtn = nullptr;
@@ -83,8 +82,11 @@ private:
     QToolButton* m_transcriptBtn = nullptr;
     QToolButton* m_dictionaryBtn = nullptr;
     QToolButton* m_fileBtn = nullptr;
-    bool m_fileBusy = false;
     QToolButton* m_settingsBtn = nullptr;
+    QLabel* m_timerLabel = nullptr;
+    QTimer* m_ticker = nullptr;
+    qint64 m_elapsedSec = 0;
+    bool m_fileBusy = false;
     QMenu* m_menu = nullptr;
     QAction* m_settingsAction = nullptr;
     QAction* m_quitAction = nullptr;

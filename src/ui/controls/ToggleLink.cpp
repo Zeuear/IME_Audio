@@ -42,7 +42,7 @@ void connect(QAbstractButton* button, QCheckBox* box)
     QObject::connect(button, &QAbstractButton::toggled, box, [box](bool on) {
         if (box->isChecked() != on) box->setChecked(on);   // 相等时不再触发，避免来回弹
     });
-    // 复选框 → 按钮：复选框被代码改、被配置载入改时同步；相等时不动，同样避免来回弹
+    // 复选框 → 按钮：代码或配置载入改复选框时同步；相等不动，避免来回弹
     QObject::connect(box, &QCheckBox::toggled, button, [button](bool on) {
         if (button->isChecked() != on) button->setChecked(on);
     });

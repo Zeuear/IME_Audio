@@ -40,7 +40,7 @@ void LiveTranscriptWidget::setupUi()
     m_toggleBtn = new QPushButton(this);
     m_toggleBtn->setCursor(Qt::PointingHandCursor);
     m_injectCheck = new QCheckBox(this);
-    m_injectCheck->setChecked(true);   // 默认同时输入到前台，不需要时再关
+    m_injectCheck->setChecked(true);
     m_timestampCheck = new QCheckBox(this);
     m_copyBtn = new QPushButton(this);
     m_exportBtn = new QPushButton(this);
@@ -143,7 +143,6 @@ void LiveTranscriptWidget::setSessionFile(const QString& path)
 {
     m_store = std::make_unique<TranscriptStore>(path);
 
-    // 恢复上次的稿子：崩溃或误关之后不丢
     const QString last = m_store->load();
     if (!last.isEmpty()) {
         m_restoring = true;
@@ -169,7 +168,7 @@ void LiveTranscriptWidget::flushSave()
     m_saveTimer->stop();
     const QString text = m_edit->toPlainText();
     if (text.isEmpty()) {
-        m_store->remove();   // 空稿子不留文件
+        m_store->remove();
         return;
     }
     if (!m_store->save(text)) {

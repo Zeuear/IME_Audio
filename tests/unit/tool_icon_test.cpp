@@ -8,7 +8,7 @@
 
 namespace {
 const QStringList kToolIcons = {
-    "tool_play", "tool_pause", "tool_stop", "tool_ai_enhance", "tool_translate",
+    "tool_record", "tool_stop", "tool_ai_enhance", "tool_translate",
     "tool_inject", "tool_transcript", "tool_dictionary", "tool_file", "tool_settings",
 };
 
@@ -63,9 +63,10 @@ TEST(ToolIcon, RenderedStrokesTakeTheRequestedColor) {
             const QColor c = px.pixelColor(x, y);
             if (c.alpha() < 200) continue;
             ++solid;
-            EXPECT_EQ(c.red(), 0xff);
-            EXPECT_EQ(c.green(), 0x88);
-            EXPECT_EQ(c.blue(), 0x00);
+            // 预乘 alpha 换回来会差 1 到 2
+            EXPECT_NEAR(c.red(), 0xff, 2);
+            EXPECT_NEAR(c.green(), 0x88, 2);
+            EXPECT_NEAR(c.blue(), 0x00, 2);
         }
     }
     EXPECT_GT(solid, 20);   // 确实画出了线条，不是空图
@@ -131,19 +132,4 @@ TEST(ToolIconColors, RecordIsAFixedRedInEveryTheme) {
     const QColor red("#e5484d");
     EXPECT_EQ(ToolIcon::stateColor(makePalette("#889099", "#1a73e8", "#b0b0b0"), ToolIcon::State::Record), red);
     EXPECT_EQ(ToolIcon::stateColor(makePalette("#7a7f87", "#4da3ff", "#555555"), ToolIcon::State::Record), red);
-}
-
-TEST(ToolIconColors, HighlightAccentFollowsThePalette) {
-    EXPECT_EQ(ToolIcon::onColor(makePalette("#000000", "#1a73e8", "#000000"), ToolIcon::Accent::Highlight), QColor("#1a73e8"));
-    EXPECT_EQ(ToolIcon::onColor(makePalette("#000000", "#4da3ff", "#000000"), ToolIcon::Accent::Highlight), QColor("#4da3ff"));
-}
-
-TEST(ToolIconColors, VioletAndTealAreFixedAndDistinct) {
-    const QPalette a = makePalette("#889099", "#1a73e8", "#b0b0b0");
-    const QPalette b = makePalette("#7a7f87", "#4da3ff", "#555555");
-    EXPECT_EQ(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(b, ToolIcon::Accent::Violet));
-    EXPECT_EQ(ToolIcon::onColor(a, ToolIcon::Accent::Teal), ToolIcon::onColor(b, ToolIcon::Accent::Teal));
-    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(a, ToolIcon::Accent::Teal));
-    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Violet), ToolIcon::onColor(a, ToolIcon::Accent::Highlight));
-    EXPECT_NE(ToolIcon::onColor(a, ToolIcon::Accent::Teal), ToolIcon::onColor(a, ToolIcon::Accent::Highlight));
 }

@@ -5,11 +5,7 @@
 
 class QTabWidget;
 
-// @brief 横条下方展开的面板：用 tab 切换词典和文件转录两页。
-//        页面控件由外部传入（面板接管所有权），面板本身不依赖转录服务。
-//        是单独的窗口紧贴在横条下面，横条移到哪它跟到哪：横条是不可激活的窗口，里面的输入框收不到键盘，
-//        所以面板不能是横条的一部分。打开时"显示但不激活"，不会把前台窗口切走，
-//        用户自己点进输入框时才拿焦点。
+// @brief 横条下方展开的面板（词典、文件转录两页），页面由外部传入；横条不可激活收不到键盘，故面板是紧贴其下的独立窗口，显示但不激活。
 class ExpandPanel : public QWidget
 {
     Q_OBJECT
@@ -28,7 +24,7 @@ public:
     void showPage(PanelState::Page page);
 
 signals:
-    // 面板页面变了（程序切页、用户点 tab、被别处隐藏都会报，每次变化只报一次），横条据此点亮图标
+    // 面板页面变了（每次变化只报一次），横条据此点亮图标
     void pageChanged(PanelState::Page page);
 
 protected:

@@ -47,14 +47,14 @@ QStringList languageKeys()
 
 int languageIndex(const QString& key)
 {
-    return qMax(0, languageKeys().indexOf(key));   // 不认识的键 → 0，即"跟随系统"
+    return qMax(0, languageKeys().indexOf(key));
 }
 
 QString translationResource(const QString& languageKey, const QString& systemLocaleName)
 {
     if (languageKey == QLatin1String("Chinese")) return kChinese;
     if (languageKey == QLatin1String("English")) return kEnglish;
-    return systemLocaleName == QLatin1String("zh_CN") ? kChinese : kEnglish;   // 跟随系统（含不认识的键）
+    return systemLocaleName == QLatin1String("zh_CN") ? kChinese : kEnglish;
 }
 
 } // namespace Appearance

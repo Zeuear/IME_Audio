@@ -2,9 +2,7 @@
 #include <QString>
 #include <QtGlobal>
 
-// @brief 关于页里"检查更新"的状态机：该显示什么文字、哪些按钮可用、进度条多少。
-//        只有纯逻辑，不含界面和网络代码，便于单元测试；界面和 UpdateManager 的信号都交给它转成状态。
-//        没经过用户点击的结果（启动时的自动检查）一律忽略，所以关于页不会冒出"已是最新"。
+// @brief 关于页检查更新的状态机（文字、按钮可用性、进度条），纯逻辑；未经用户点击的自动检查结果一律忽略。
 class UpdateStatusModel
 {
 public:
@@ -30,7 +28,6 @@ public:
     void startDownload();
     void progress(qint64 received, qint64 total);
     void downloadFinished();
-    // 检查失败或下载失败
     void failed(const QString& message);
 
 private:

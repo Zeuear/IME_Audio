@@ -34,7 +34,7 @@ TranscriptWindow::~TranscriptWindow()
 
 void TranscriptWindow::openAndRaise()
 {
-    showNormal();   // 最小化着也一并还原
+    showNormal();
     raise();
     activateWindow();
 }

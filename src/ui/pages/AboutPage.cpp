@@ -42,7 +42,6 @@ void AboutPage::setupUi()
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(12);
 
-    // 顶部：图标 + 名称 + 版本
     auto* header = new QHBoxLayout;
     m_iconLabel = new QLabel(this);
     const QPixmap icon(":/title_icon");
@@ -65,7 +64,6 @@ void AboutPage::setupUi()
     header->addStretch();
     layout->addLayout(header);
 
-    // 检查更新一行：按钮 + 状态文字 + 安装按钮；下面是下载进度条
     auto* updateRow = new QHBoxLayout;
     updateRow->setSpacing(10);
     m_checkBtn = new QPushButton(this);
@@ -84,7 +82,6 @@ void AboutPage::setupUi()
     m_progress->setTextVisible(true);
     layout->addWidget(m_progress);
 
-    // 简介 / 更新说明
     m_tabs = new QTabWidget(this);
     m_descriptionText = new QTextEdit(this);
     m_descriptionText->setReadOnly(true);

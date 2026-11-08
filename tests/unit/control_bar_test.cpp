@@ -228,3 +228,58 @@ TEST(FloatingWindowStore, SharesTheConfigFileWithoutDamagingEitherSide) {
     }
     EXPECT_EQ(FloatingWindow::loadPosition("ControlBar"), std::optional<QPoint>(QPoint(7, 8)));
 }
+
+
+// ---- 录音计时与会话状态 ----
+
+TEST(ControlBarState, SessionIsActiveFromLoadingUntilItReturnsToIdle) {
+    for (auto st : { WorkflowState::Loading, WorkflowState::Recording, WorkflowState::Transcribing,
+                     WorkflowState::Processing, WorkflowState::Stopping }) {
+        EXPECT_TRUE(ControlBarState::isSessionActive(st)) << static_cast<int>(st);
+    }
+    EXPECT_FALSE(ControlBarState::isSessionActive(WorkflowState::Idle));
+    EXPECT_FALSE(ControlBarState::isSessionActive(WorkflowState::Error));
+}
+
+TEST(ControlBarState, ElapsedTimeUnderAnHourIsMinutesAndSeconds) {
+    EXPECT_EQ(ControlBarState::formatElapsed(0), "00:00");
+    EXPECT_EQ(ControlBarState::formatElapsed(9), "00:09");
+    EXPECT_EQ(ControlBarState::formatElapsed(59), "00:59");
+    EXPECT_EQ(ControlBarState::formatElapsed(60), "01:00");
+    EXPECT_EQ(ControlBarState::formatElapsed(754), "12:34");
+    EXPECT_EQ(ControlBarState::formatElapsed(3599), "59:59");
+}
+
+TEST(ControlBarState, ElapsedTimeFromAnHourOnShowsHours) {
+    EXPECT_EQ(ControlBarState::formatElapsed(3600), "1:00:00");
+    EXPECT_EQ(ControlBarState::formatElapsed(3725), "1:02:05");
+    EXPECT_EQ(ControlBarState::formatElapsed(36000 + 61), "10:01:01");
+}
+
+TEST(ControlBarState, NegativeElapsedTimeIsZero) {
+    EXPECT_EQ(ControlBarState::formatElapsed(-5), "00:00");
+}
+
+TEST(ControlBarTimer, RunsOnlyWhileASessionIsActiveAndResetsAfterwards) {
+    ControlBar bar;
+    EXPECT_FALSE(bar.timerRunning());
+    EXPECT_EQ(bar.elapsedText(), "00:00");
+
+    bar.setWorkflowState(WorkflowState::Loading);
+    EXPECT_TRUE(bar.timerRunning());
+    bar.setWorkflowState(WorkflowState::Recording);
+    EXPECT_TRUE(bar.timerRunning());
+    bar.setWorkflowState(WorkflowState::Transcribing);   // 连续听写在录音和转录之间来回切，计时不能被打断
+    EXPECT_TRUE(bar.timerRunning());
+
+    bar.setWorkflowState(WorkflowState::Idle);
+    EXPECT_FALSE(bar.timerRunning());
+    EXPECT_EQ(bar.elapsedText(), "00:00");
+}
+
+TEST(ControlBarTimer, ErrorStopsTheTimer) {
+    ControlBar bar;
+    bar.setWorkflowState(WorkflowState::Recording);
+    bar.setWorkflowState(WorkflowState::Error);
+    EXPECT_FALSE(bar.timerRunning());
+}

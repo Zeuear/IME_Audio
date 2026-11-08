@@ -22,7 +22,7 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     setAutoFillBackground(true);
 
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(1, 1, 1, 1);   // 留出边框
+    layout->setContentsMargins(1, 1, 1, 1);
     m_tabs = new QTabWidget(this);
     layout->addWidget(m_tabs);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
@@ -71,7 +71,7 @@ void ExpandPanel::showPage(PanelState::Page page)
 
     if (!wasOpen) {
         reposition();
-        show();   // WA_ShowWithoutActivating：显示但不激活
+        show();
     }
     if (changed || !wasOpen) emit pageChanged(m_page);
 }
@@ -118,7 +118,7 @@ bool ExpandPanel::eventFilter(QObject* watched, QEvent* event)
         switch (event->type()) {
         case QEvent::Move:
         case QEvent::Resize:
-            reposition();   // 横条拖到哪，面板跟到哪
+            reposition();
             break;
         default:
             break;
@@ -129,7 +129,6 @@ bool ExpandPanel::eventFilter(QObject* watched, QEvent* event)
 
 void ExpandPanel::paintEvent(QPaintEvent*)
 {
-    // 边框取自调色板，三个主题都可读
     QPainter p(this);
     QColor border = palette().color(QPalette::WindowText);
     border.setAlpha(60);

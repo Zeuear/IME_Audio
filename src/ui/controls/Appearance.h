@@ -3,22 +3,19 @@
 #include <QStringList>
 #include "LiveOverlay.h"
 
-// @brief 外观设置（主题、界面语言）的键与枚举、翻译文件之间的映射，只有纯逻辑，便于单元测试。
-//        配置文件里存的键沿用原来的写法：主题 "dark" / "gray" / "light"，语言 "System" / "Chinese" / "English"，
-//        旧用户的设置不会丢。以前这些判断在读配置和三个菜单槽里重复了四份。
+// @brief 外观设置（主题、界面语言）的键、枚举与翻译文件的映射，纯逻辑；键沿用旧写法以免旧配置丢失。
 namespace Appearance {
 
-// 主题。不认识的值按浅色，和原来读配置时的 else 分支一致
+// 主题；不认识的值按浅色
 LiveOverlay::Theme themeFromKey(const QString& key);
 QString themeKey(LiveOverlay::Theme theme);
 
-// 下拉框的顺序：浅色、灰色、深色；序号和主题互转，越界按浅色
+// 下拉框顺序：浅色、灰色、深色；越界按浅色
 QStringList themeKeys();
 int themeIndex(LiveOverlay::Theme theme);
 LiveOverlay::Theme themeAt(int index);
 
-// 语言。下拉框的顺序：跟随系统、中文、English；不认识的键按"跟随系统"，
-// 这样配置文件被改坏时，界面显示的选项和实际用的翻译一致
+// 语言，下拉框顺序：跟随系统、中文、English；不认识的键按跟随系统，保证选项与实际翻译一致
 QStringList languageKeys();
 int languageIndex(const QString& key);
 

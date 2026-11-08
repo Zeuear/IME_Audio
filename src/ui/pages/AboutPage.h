@@ -10,8 +10,7 @@ class QTextEdit;
 class UpdateManager;
 class UpdateStatusModel;
 
-// @brief 设置窗口里的"关于"页：版本、检查更新（状态文字、下载进度）、关于 Qt、简介与更新说明。
-//        检查更新的状态逻辑在 UpdateStatusModel 里，本控件只负责把它和 UpdateManager 的信号、界面连起来。
+// @brief 设置窗口的关于页：版本、检查更新、简介与更新说明；状态逻辑在 UpdateStatusModel，本控件只做连接。
 class AboutPage : public QWidget
 {
     Q_OBJECT

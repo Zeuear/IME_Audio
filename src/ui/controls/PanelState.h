@@ -5,8 +5,7 @@ namespace PanelState {
 
 enum class Page { None, Dictionary, File };
 
-// 点了某个页面的图标之后，面板应该是什么状态：
-// 点的就是当前页 → 收起；点另一个 → 切过去；面板收着 → 打开点的那页
+// 点某页图标后的状态：点当前页收起，点另一页切过去，面板收着则打开该页
 inline Page afterClick(Page current, Page clicked)
 {
     return current == clicked ? Page::None : clicked;

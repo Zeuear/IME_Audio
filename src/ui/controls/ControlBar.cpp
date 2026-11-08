@@ -7,23 +7,38 @@
 #include <QHBoxLayout>
 #include <QAction>
 #include <QContextMenuEvent>
+#include <QFrame>
 #include <QIcon>
+#include <QLabel>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
 #include <QSignalBlocker>
+#include <QTimer>
 #include <QToolButton>
 
 namespace {
-constexpr int kButtonSize = 30;
-constexpr int kIconSize = 19;
-constexpr int kPadH = 14;   // 左右留白大一些，图标不贴边
-constexpr int kPadV = 6;    // 上下留白小，横条整体矮一点
-constexpr int kRadius = 11;
-constexpr int kGroupGap = 14;
-constexpr int kButtonSpacing = 6;
+constexpr int kButtonSize = 28;
+constexpr int kIconSize = 18;
+constexpr int kPadH = 12;
+constexpr int kPadV = 5;
+constexpr int kRadius = 12;
+constexpr int kSpacing = 4;
+constexpr int kGroupGap = 8;
 const QString kPositionGroup = QStringLiteral("ControlBar");
+
+QString buttonStyle(const QColor& accent)
+{
+    // 选中态用强调色半透明底；应用样式表自带的选中底色会盖住图标，所以逐个覆盖
+    const QString on = QStringLiteral("rgba(%1, %2, %3, ").arg(accent.red()).arg(accent.green()).arg(accent.blue());
+    return QStringLiteral(
+        "QToolButton { background: transparent; border: none; border-radius: 8px; }"
+        "QToolButton:hover:enabled { background: rgba(128, 128, 128, 45); }"
+        "QToolButton:pressed:enabled { background: rgba(128, 128, 128, 80); }"
+        "QToolButton:checked { background: ") + on + QStringLiteral("45); }"
+        "QToolButton:checked:hover:enabled { background: ") + on + QStringLiteral("70); }");
+}
 
 QToolButton* makeButton(QWidget* parent)
 {
@@ -32,15 +47,16 @@ QToolButton* makeButton(QWidget* parent)
     b->setIconSize(QSize(kIconSize, kIconSize));
     b->setCursor(Qt::PointingHandCursor);
     b->setAutoRaise(true);
-    b->setFocusPolicy(Qt::NoFocus);   // 点击不拿键盘焦点
-    // 开关打开只靠图标变色表示：应用样式表会给选中的工具按钮铺一块高亮底色，把图标盖住，这里单独去掉
-    b->setStyleSheet(QStringLiteral(
-        "QToolButton { background: transparent; border: none; border-radius: 7px; }"
-        "QToolButton:hover:enabled { background: rgba(128, 128, 128, 45); }"
-        "QToolButton:pressed:enabled { background: rgba(128, 128, 128, 80); }"
-        "QToolButton:checked { background: transparent; }"
-        "QToolButton:checked:hover:enabled { background: rgba(128, 128, 128, 45); }"));
+    b->setFocusPolicy(Qt::NoFocus);
     return b;
+}
+
+QFrame* makeDivider(QWidget* parent)
+{
+    auto* f = new QFrame(parent);
+    f->setFixedSize(1, 16);
+    f->setStyleSheet(QStringLiteral("background: rgba(128, 128, 128, 80);"));
+    return f;
 }
 
 QIcon tintedWith(const QString& resource, const QColor& color)
@@ -64,7 +80,7 @@ ControlBar::ControlBar(QWidget* parent)
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(kPadH, kPadV, kPadH, kPadV);
-    layout->setSpacing(kButtonSpacing);
+    layout->setSpacing(kSpacing);
     m_startBtn = makeButton(this);
     m_stopBtn = makeButton(this);
     m_enhanceBtn = makeButton(this);
@@ -74,17 +90,38 @@ ControlBar::ControlBar(QWidget* parent)
     m_dictionaryBtn = makeButton(this);
     m_fileBtn = makeButton(this);
     m_settingsBtn = makeButton(this);
+
+    m_timerLabel = new QLabel(this);
+    m_timerLabel->setMinimumWidth(42);
+    m_timerLabel->setAlignment(Qt::AlignCenter);
+    QFont mono = m_timerLabel->font();
+    mono.setStyleHint(QFont::Monospace);
+    mono.setFamily(QStringLiteral("Consolas"));
+    m_timerLabel->setFont(mono);
+
     layout->addWidget(m_startBtn);
     layout->addWidget(m_stopBtn);
-    layout->addSpacing(kGroupGap);   // 动作按钮和开关之间留一点距离，一眼分得出
+    layout->addWidget(m_timerLabel);
+    layout->addSpacing(kGroupGap);
+    layout->addWidget(makeDivider(this));
+    layout->addSpacing(kGroupGap);
     layout->addWidget(m_enhanceBtn);
     layout->addWidget(m_translateBtn);
     layout->addWidget(m_injectBtn);
     layout->addSpacing(kGroupGap);
+    layout->addWidget(makeDivider(this));
+    layout->addSpacing(kGroupGap);
     layout->addWidget(m_transcriptBtn);
     layout->addWidget(m_dictionaryBtn);
     layout->addWidget(m_fileBtn);
+    layout->addSpacing(kGroupGap);
+    layout->addWidget(makeDivider(this));
+    layout->addSpacing(kGroupGap);
     layout->addWidget(m_settingsBtn);
+
+    m_ticker = new QTimer(this);
+    m_ticker->setInterval(1000);
+    connect(m_ticker, &QTimer::timeout, this, &ControlBar::tick);
 
     m_menu = new QMenu(this);
     m_settingsAction = m_menu->addAction(QString(), this, &ControlBar::settingsRequested);
@@ -94,7 +131,7 @@ ControlBar::ControlBar(QWidget* parent)
     for (QToolButton* b : { m_enhanceBtn, m_translateBtn, m_injectBtn }) {
         b->setCheckable(true);
         connect(b, &QToolButton::toggled, this, &ControlBar::refreshIcons);
-        // 开关的可用状态由宿主（ToggleLink）改，变化时图标要跟着变灰或恢复
+        // 宿主会改可用状态，图标要跟着变灰或恢复
         b->installEventFilter(this);
     }
 
@@ -108,7 +145,7 @@ ControlBar::ControlBar(QWidget* parent)
         emit transcriptToggled(open);
     });
 
-    // 面板图标：点击只"请求"，状态由宿主通过 setPanelPage 回写，所以自己点出来的选中状态马上会被校正
+    // 点击只请求，选中状态由宿主经 setPanelPage 回写校正
     m_dictionaryBtn->setCheckable(true);
     m_fileBtn->setCheckable(true);
     connect(m_dictionaryBtn, &QToolButton::toggled, this, [this]() { emit panelRequested(PanelState::Page::Dictionary); });
@@ -132,7 +169,6 @@ QAbstractButton* ControlBar::fileButton() const
 
 void ControlBar::setPanelPage(PanelState::Page page)
 {
-    // 宿主已经决定了面板状态：只把图标对齐过去，不再发 panelRequested
     const QSignalBlocker blockDict(m_dictionaryBtn);
     const QSignalBlocker blockFile(m_fileBtn);
     m_dictionaryBtn->setChecked(page == PanelState::Page::Dictionary);
@@ -153,7 +189,6 @@ QAbstractButton* ControlBar::transcriptButton() const
 
 void ControlBar::setTranscriptOpen(bool open)
 {
-    // 窗口是别处关的：只改图标，不能再发 transcriptToggled，否则宿主会再收到一次"关闭"
     const QSignalBlocker blocker(m_transcriptBtn);
     m_transcriptBtn->setChecked(open);
     refreshIcons();
@@ -203,7 +238,47 @@ void ControlBar::setWorkflowState(WorkflowState state)
     const ControlBarState::Buttons b = ControlBarState::forWorkflow(state);
     m_startBtn->setEnabled(b.startEnabled);
     m_stopBtn->setEnabled(b.stopEnabled);
+
+    // 连续听写会在录音和转录间来回切，只在会话首尾动计时
+    if (ControlBarState::isSessionActive(state)) {
+        if (!m_ticker->isActive()) {
+            m_elapsedSec = 0;
+            m_ticker->start();
+        }
+    } else {
+        m_ticker->stop();
+        m_elapsedSec = 0;
+    }
+    refreshTimerLabel();
     refreshIcons();
+}
+
+bool ControlBar::timerRunning() const
+{
+    return m_ticker->isActive();
+}
+
+QString ControlBar::elapsedText() const
+{
+    return ControlBarState::formatElapsed(m_elapsedSec);
+}
+
+void ControlBar::tick()
+{
+    ++m_elapsedSec;
+    refreshTimerLabel();
+}
+
+void ControlBar::refreshTimerLabel()
+{
+    const QString text = elapsedText();
+    const bool widthChanged = text.size() != m_timerLabel->text().size();
+    m_timerLabel->setText(text);
+    QPalette pal = m_timerLabel->palette();
+    const auto state = m_ticker->isActive() ? ToolIcon::State::Record : ToolIcon::State::Off;
+    pal.setColor(QPalette::WindowText, ToolIcon::stateColor(palette(), state));
+    m_timerLabel->setPalette(pal);
+    if (widthChanged && isVisible()) adjustSize();
 }
 
 void ControlBar::setAlwaysOnTop(bool on)
@@ -221,30 +296,31 @@ void ControlBar::showAtSavedPosition()
 void ControlBar::refreshIcons()
 {
     const QPalette& pal = palette();
-    // 开始：录音软件惯用的红色；停止：普通文字色；不可用都变灰
-    m_startBtn->setIcon(tinted(QStringLiteral(":/tool_play"), pal,
+    const QString style = buttonStyle(pal.color(QPalette::Active, QPalette::Highlight));
+    for (QToolButton* b : { m_startBtn, m_stopBtn, m_enhanceBtn, m_translateBtn, m_injectBtn,
+                            m_transcriptBtn, m_dictionaryBtn, m_fileBtn, m_settingsBtn }) {
+        if (b->styleSheet() != style) b->setStyleSheet(style);
+    }
+
+    m_startBtn->setIcon(tinted(QStringLiteral(":/tool_record"), pal,
                                m_startBtn->isEnabled() ? ToolIcon::State::Record : ToolIcon::State::Disabled));
     m_stopBtn->setIcon(tinted(QStringLiteral(":/tool_stop"), pal,
-                              m_stopBtn->isEnabled() ? ToolIcon::State::Normal : ToolIcon::State::Disabled));
+                              m_stopBtn->isEnabled() ? ToolIcon::State::Record : ToolIcon::State::Disabled));
 
-    // 开关：关闭用弱化色，不可用变灰，开启用各自的强调色（增强紫、翻译青、输入沿用主题色）
-    auto toggleIcon = [&pal](const QString& resource, const QToolButton* b, ToolIcon::Accent accent) {
+    auto toggleIcon = [&pal](const QString& resource, const QToolButton* b) {
         if (!b->isEnabled()) return tinted(resource, pal, ToolIcon::State::Disabled);
-        if (!b->isChecked()) return tinted(resource, pal, ToolIcon::State::Off);
-        return tintedWith(resource, ToolIcon::onColor(pal, accent));
+        return tinted(resource, pal, b->isChecked() ? ToolIcon::State::On : ToolIcon::State::Off);
     };
-    m_enhanceBtn->setIcon(toggleIcon(QStringLiteral(":/tool_ai_enhance"), m_enhanceBtn, ToolIcon::Accent::Violet));
-    m_translateBtn->setIcon(toggleIcon(QStringLiteral(":/tool_translate"), m_translateBtn, ToolIcon::Accent::Teal));
-    m_injectBtn->setIcon(toggleIcon(QStringLiteral(":/tool_inject"), m_injectBtn, ToolIcon::Accent::Highlight));
+    m_enhanceBtn->setIcon(toggleIcon(QStringLiteral(":/tool_ai_enhance"), m_enhanceBtn));
+    m_translateBtn->setIcon(toggleIcon(QStringLiteral(":/tool_translate"), m_translateBtn));
+    m_injectBtn->setIcon(toggleIcon(QStringLiteral(":/tool_inject"), m_injectBtn));
 
-    // 转录内容、词典、文件转录：窗口或面板开着时用主题强调色，关着用普通色；录音中同样可点
     auto panelIcon = [&pal](const QString& resource, const QToolButton* b) {
         return tinted(resource, pal, b->isChecked() ? ToolIcon::State::On : ToolIcon::State::Normal);
     };
     m_transcriptBtn->setIcon(panelIcon(QStringLiteral(":/tool_transcript"), m_transcriptBtn));
     m_dictionaryBtn->setIcon(panelIcon(QStringLiteral(":/tool_dictionary"), m_dictionaryBtn));
     m_fileBtn->setIcon(panelIcon(QStringLiteral(":/tool_file"), m_fileBtn));
-    // 设置入口始终可点：录音中也要能打开
     m_settingsBtn->setIcon(tinted(QStringLiteral(":/tool_settings"), pal, ToolIcon::State::Normal));
 }
 
@@ -273,7 +349,6 @@ void ControlBar::refreshToggleTips()
 
 void ControlBar::paintEvent(QPaintEvent*)
 {
-    // 底色和边框取自调色板，light / gray / dark 主题都可读
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     QColor border = palette().color(QPalette::WindowText);
@@ -291,7 +366,8 @@ void ControlBar::changeEvent(QEvent* event)
         break;
     case QEvent::PaletteChange:
     case QEvent::ApplicationPaletteChange:
-        refreshIcons();   // 主题切换走调色板，图标要按新颜色重画
+        refreshIcons();
+        refreshTimerLabel();
         update();
         break;
     default:

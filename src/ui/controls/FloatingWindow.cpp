@@ -44,7 +44,7 @@ void setAlwaysOnTop(QWidget* window, bool on)
     window->setWindowFlag(Qt::WindowStaysOnTopHint, on);   // 会隐藏窗口
     if (wasVisible) {
         window->move(where);
-        window->show();   // WA_ShowWithoutActivating 在，所以不会抢焦点
+        window->show();
     }
 }
 
@@ -129,7 +129,7 @@ std::optional<QSize> loadSize(const QString& group)
     s.beginGroup(group);
     if (!s.contains(QStringLiteral("w")) || !s.contains(QStringLiteral("h"))) return std::nullopt;
     const QSize size(s.value(QStringLiteral("w")).toInt(), s.value(QStringLiteral("h")).toInt());
-    if (size.width() <= 0 || size.height() <= 0) return std::nullopt;   // 坏数据当作没存过
+    if (size.width() <= 0 || size.height() <= 0) return std::nullopt;
     return size;
 }
 

@@ -17,16 +17,6 @@ QColor stateColor(const QPalette& palette, State state)
     return palette.color(QPalette::Active, QPalette::PlaceholderText);
 }
 
-QColor onColor(const QPalette& palette, Accent accent)
-{
-    switch (accent) {
-    case Accent::Violet: return QColor(0x9b, 0x6b, 0xf2);
-    case Accent::Teal:   return QColor(0x1f, 0xb5, 0xa3);
-    case Accent::Highlight: break;
-    }
-    return palette.color(QPalette::Active, QPalette::Highlight);
-}
-
 QImage render(const QString& path, const QColor& color, int size)
 {
     QFile file(path);

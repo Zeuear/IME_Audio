@@ -2,11 +2,9 @@
 #include <QString>
 #include <QtGlobal>
 
-// @brief 下载进度的文字格式化，只有纯逻辑。模型列表行、CUDA 下载行、翻译卡片共用，
-//        三处的进度条后面写的说明保持同一个样子："文件名 · 第几个/共几个 · 百分比"。
+// @brief 下载进度文字格式化，纯逻辑；模型行、CUDA 行、翻译卡片共用"文件名 · 第几个/共几个 · 百分比"。
 namespace DownloadText {
 
-// 字节数换算成 B / KB / MB / GB；负数表示大小未知，显示 "?"
 QString formatSize(qint64 bytes);
 
 // 单个文件名超过 maxNameChars 时从中间省略（保留开头和扩展名）；
@@ -15,8 +13,7 @@ QString progressLine(const QString& fileName, int fileIndex, int fileCount, int 
 
 } // namespace DownloadText
 
-// @brief 一组文件（一个模型、一个 CUDA 包）的进度累计：共几个文件、完成几个、当前文件、整体百分比。
-//        喂下载器已有的信号即可，不含界面代码。
+// @brief 一组文件（模型、CUDA 包）的进度累计：文件数、完成数、当前文件、整体百分比；喂下载器信号即可。
 class DownloadGroupProgress
 {
 public:

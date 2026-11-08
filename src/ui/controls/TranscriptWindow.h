@@ -3,9 +3,7 @@
 
 class LiveTranscriptWidget;
 
-// @brief 转录内容独立窗口：装着"实时转录"稿子控件，可拖到副屏，关闭只隐藏、内容保留。
-//        稿子控件只有这一份（主窗口里不再有），所以数据和保存文件天然只有一份。
-//        位置和大小记在配置文件里，下次打开回到原处。
+// @brief 转录内容独立窗口：装着实时转录稿子控件，可拖到副屏，关闭只隐藏，位置大小记在配置里。
 class TranscriptWindow : public QWidget
 {
     Q_OBJECT

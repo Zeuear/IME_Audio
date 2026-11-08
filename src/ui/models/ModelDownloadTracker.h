@@ -4,9 +4,7 @@
 #include <QString>
 #include "utils/DownloadText.h"
 
-// @brief 按模型记录下载状态：下载中（第几个文件、百分比）、解压中、失败（带原因）。
-//        只含状态逻辑，不碰界面和网络：把 SherpaInstaller 已有的信号喂进来即可，模型列表的行据此画进度条。
-//        状态放在这里而不是列表模型里：切换语言会重建列表，下载却还在后台继续，状态不能跟着丢。
+// @brief 按模型记录下载状态（下载中、解压中、失败）；状态放这里而非列表模型，因切语言会重建列表而下载仍在继续。
 class ModelDownloadTracker : public QObject
 {
     Q_OBJECT
@@ -23,7 +21,6 @@ public:
 
     Info info(const QString& repoId) const;
 
-    // 对应 SherpaInstaller 的信号
     void onGroupStarted(const QString& repoId, const QString& displayName, int totalFiles);
     void onFileProgress(const QString& repoId, const QString& filename, qint64 received, qint64 total, int overallPercent);
     void onFileFinished(const QString& repoId, const QString& filename);
