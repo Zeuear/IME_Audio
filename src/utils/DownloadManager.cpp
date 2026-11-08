@@ -21,8 +21,11 @@ QString DownloadManager::addTask(const QUrl& url, const QString& savePath, TaskF
     emit taskAdded(task);
     emit queueChanged();
 
+    // 先取出 id 再启动：第一个文件在启动时就同步失败时，失败处理会在 startNext 里把 task 删掉，
+    // 之后再读 task->id 就是读已释放的内存（复制 QString 会改坏堆，表现为 0xc0000374 崩溃）
+    const QString id = task->id;
     startNext();
-    return task->id;
+    return id;
 }
 
 void DownloadManager::startNext()
@@ -160,20 +163,38 @@ void DownloadManager::cancelTask(const QString& taskId)
 
 void DownloadManager::cancelGroup(const QString& groupId)
 {
+    // 排队中的：摘出队列，并从任务表里删掉。以前只摘队列不删任务表，tasksInGroup 永远非空，
+    // isInstalling 恒为真，取消之后再也无法重新下载
     for (int i = m_queue.size() - 1; i >= 0; --i) {
-        if (m_queue[i]->groupId == groupId) {
-            m_queue[i]->status = TaskStatus::Cancelled;
-            m_queue.removeAt(i);
-        }
+        DownloadTask* task = m_queue[i];
+        if (task->groupId != groupId) continue;
+        m_queue.removeAt(i);
+        m_tasks.removeAll(task);
+        delete task;
     }
-    for (auto it = m_activeMap.begin(); it != m_activeMap.end(); ++it) {
-        if (it.value()->groupId == groupId && m_currentDownloader) {
-            m_currentDownloader->cancel();
+
+    // 正在下载的：停掉下载器，并把"占用下载通道"的记账还回去。
+    // 以前只调了 cancel，m_runningCount 不减，之后所有下载都在 startNext 里被挡住，队列卡死
+    bool releasedActive = false;
+    for (auto it = m_activeMap.begin(); it != m_activeMap.end();) {
+        DownloadTask* task = it.value();
+        if (task->groupId != groupId) { ++it; continue; }
+        it = m_activeMap.erase(it);
+        if (m_currentDownloader) {
+            m_currentDownloader->cancel();   // 断开回复信号并删除 .part 临时文件
+            m_currentDownloader->deleteLater();
+            m_currentDownloader = nullptr;
         }
+        --m_runningCount;
+        m_tasks.removeAll(task);
+        delete task;
+        releasedActive = true;
     }
+
     m_groups.remove(groupId);
     emit groupFinished(groupId, false);
     emit queueChanged();
+    if (releasedActive) startNext();   // 通道空出来了，让排在后面的组继续
 }
 
 
@@ -218,8 +239,9 @@ QString DownloadManager::addGroupTask(const QString& groupId, const QString& dis
     emit queueChanged();
     emit groupStarted(groupId, group.displayName, group.totalFiles);
 
+    const QString id = task->id;   // 同上：startNext 里可能同步失败并删掉 task
     startNext();
-    return task->id;
+    return id;
 }
 
 void DownloadManager::updateGroupOnProgress(DownloadTask* task, qint64 received, qint64 total)

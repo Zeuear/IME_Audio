@@ -17,6 +17,7 @@ constexpr int kCompactMetricWidth = 80;
 constexpr int kCompactFeatureWidth = 88;
 constexpr int kBarCount = 5;
 const QColor kSuccessColor(46, 160, 67);
+const QColor kFailColor(220, 53, 69);
 }
 
 ModelInfoDelegate::Columns ModelInfoDelegate::columns(const QRect& row)
@@ -32,6 +33,26 @@ ModelInfoDelegate::Columns ModelInfoDelegate::columns(const QRect& row)
     c.accuracy = QRect(c.speed.left() - metricW, r.top(), metricW, r.height());
     c.name = QRect(c.radio.right() + 1, r.top(), c.accuracy.left() - c.radio.right() - 9, r.height());
     return c;
+}
+
+QRect ModelInfoDelegate::actionRect(const QRect& row)
+{
+    const QRect f = columns(row).features;
+    constexpr int kActionHeight = 24;
+    return QRect(f.left(), f.center().y() - kActionHeight / 2, f.width(), kActionHeight);
+}
+
+ModelInfoDelegate::Action ModelInfoDelegate::actionAt(const QRect& row, const QPoint& pos,
+                                                      ModelDownloadTracker::State state)
+{
+    if (!actionRect(row).contains(pos)) return Action::None;
+    switch (state) {
+    case ModelDownloadTracker::State::Downloading: return Action::Cancel;
+    case ModelDownloadTracker::State::Failed:      return Action::Retry;
+    case ModelDownloadTracker::State::Extracting:
+    case ModelDownloadTracker::State::None:        break;
+    }
+    return Action::None;
 }
 
 void ModelInfoDelegate::drawBars(QPainter* p, const QRect& area, int level, const QPalette& pal)
@@ -101,14 +122,36 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     p->drawText(nameRect, Qt::AlignLeft | Qt::AlignVCenter,
                 QFontMetrics(nameFont).elidedText(index.data(Qt::DisplayRole).toString(), Qt::ElideRight, nameRect.width()));
 
+    // 下载状态：第二行在下载、解压、失败时换成对应的说明，没有任务时仍是覆盖语言
+    const auto dlState = static_cast<ModelDownloadTracker::State>(index.data(ModelInfoModel::DownloadStateRole).toInt());
+    const int dlPercent = index.data(ModelInfoModel::DownloadPercentRole).toInt();
+    const QString dlText = index.data(ModelInfoModel::DownloadTextRole).toString();
+
     QFont subFont = opt.font;
     subFont.setPointSizeF(subFont.pointSizeF() * 0.9);
     p->setFont(subFont);
-    p->setPen(pal.color(QPalette::PlaceholderText));
+    QString subText = index.data(ModelInfoModel::LanguagesRole).toStringList().join(QStringLiteral(" · "));
+    QColor subColor = pal.color(QPalette::PlaceholderText);
+    switch (dlState) {
+    case ModelDownloadTracker::State::Downloading:
+        subText = dlText.isEmpty() ? tr("Starting download...") : dlText;
+        subColor = pal.color(QPalette::Highlight);
+        break;
+    case ModelDownloadTracker::State::Extracting:
+        subText = tr("Extracting... %1%").arg(dlPercent);
+        subColor = pal.color(QPalette::Highlight);
+        break;
+    case ModelDownloadTracker::State::Failed:
+        subText = tr("Download failed: %1").arg(dlText);
+        subColor = kFailColor;
+        break;
+    case ModelDownloadTracker::State::None:
+        break;
+    }
+    p->setPen(subColor);
     const QRect langRect(c.name.left(), nameRect.bottom() + 2, c.name.width(), 18);
-    const QString langs = index.data(ModelInfoModel::LanguagesRole).toStringList().join(QStringLiteral(" · "));
     p->drawText(langRect, Qt::AlignLeft | Qt::AlignVCenter,
-                QFontMetrics(subFont).elidedText(langs, Qt::ElideRight, langRect.width()));
+                QFontMetrics(subFont).elidedText(subText, Qt::ElideRight, langRect.width()));
 
     // 准确度 / 速度：信号格 + 数值
     auto drawMetric = [&](const QRect& col, int level, const QString& value) {
@@ -127,6 +170,35 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
                QString::number(index.data(ModelInfoModel::AccuracyRatingRole).toDouble(), 'f', 1));
     drawMetric(c.speed, index.data(ModelInfoModel::SpeedLevelRole).toInt(),
                QString::number(index.data(ModelInfoModel::SpeedRatingRole).toDouble(), 'f', 1));
+
+    // 有下载任务时，特性那一列换成"取消 / 重试"，行内进度条画在行底边
+    if (dlState != ModelDownloadTracker::State::None) {
+        const QRect a = actionRect(opt.rect);
+        p->setFont(subFont);
+        if (dlState == ModelDownloadTracker::State::Downloading) {
+            p->setPen(pal.color(QPalette::Highlight));
+            p->drawText(a, Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("✕ ") + tr("Cancel"));
+        } else if (dlState == ModelDownloadTracker::State::Failed) {
+            p->setPen(kFailColor);
+            p->drawText(a, Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("↻ ") + tr("Retry"));
+        }
+        constexpr int kBarHeight = 3;
+        const QRect track(opt.rect.left(), opt.rect.bottom() - kBarHeight + 1, opt.rect.width(), kBarHeight);
+        QColor trackColor = pal.color(QPalette::Mid);
+        trackColor.setAlpha(60);
+        p->setPen(Qt::NoPen);
+        p->setBrush(trackColor);
+        p->drawRect(track);
+        if (dlState == ModelDownloadTracker::State::Failed) {
+            p->setBrush(kFailColor);
+            p->drawRect(track);
+        } else {
+            p->setBrush(pal.color(QPalette::Highlight));
+            p->drawRect(QRect(track.left(), track.top(), track.width() * qBound(0, dlPercent, 100) / 100, kBarHeight));
+        }
+        p->restore();
+        return;
+    }
 
     // 特性：已安装（成功语义色）/ 自带标点
     QStringList features;
@@ -166,7 +238,11 @@ bool ModelInfoDelegate::helpEvent(QHelpEvent* e, QAbstractItemView* view, const 
     if (!e || !index.isValid()) return false;
     const Columns c = columns(opt.rect);
     QString tip;
-    if (c.accuracy.contains(e->pos()) || c.speed.contains(e->pos())) {
+    const auto dlState = static_cast<ModelDownloadTracker::State>(index.data(ModelInfoModel::DownloadStateRole).toInt());
+    if (dlState == ModelDownloadTracker::State::Failed) {
+        // 失败原因在行里被省略号截断时，悬停看完整原因
+        tip = tr("Download failed: %1").arg(index.data(ModelInfoModel::DownloadTextRole).toString());
+    } else if (c.accuracy.contains(e->pos()) || c.speed.contains(e->pos())) {
         if (!index.data(ModelInfoModel::BenchmarkedRole).toBool()) {
             tip = tr("Not benchmarked for this language yet");
         } else {

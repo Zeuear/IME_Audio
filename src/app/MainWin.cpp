@@ -59,6 +59,7 @@
 #include "ui/pages/LiveTranscriptWidget.h"
 #include "ui/controls/TranscriptWindow.h"
 #include "ui/controls/ExpandPanel.h"
+#include "ui/models/ModelDownloadTracker.h"
 #include "ui/pages/TermWidget.h"
 #include "ui/controls/NavListWidget.h"
 #include "ui/infobar/inforbarmanager.h"
@@ -289,13 +290,30 @@ void MainWin::setupUiConnections(){
 	// 下载触发：仅用户在模型列表里点击时下载
 	connect(ui->model_list_widget, &ModelListWidget::modelActivated, this, &MainWin::onLocalModelActivated);
 
+    // 模型行内的下载进度：安装器已有的信号喂给 tracker，列表据此画进度条；行里的"取消 / 重试"回到安装器
+    m_downloadTracker = new ModelDownloadTracker(this);
+    ui->model_list_widget->setDownloadTracker(m_downloadTracker);
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, m_downloadTracker, &ModelDownloadTracker::onGroupStarted);
+    connect(m_sherpaInstaller, &SherpaInstaller::installFileProgress, m_downloadTracker, &ModelDownloadTracker::onFileProgress);
+    connect(m_sherpaInstaller, &SherpaInstaller::installFileFinished, m_downloadTracker, &ModelDownloadTracker::onFileFinished);
+    connect(m_sherpaInstaller, &SherpaInstaller::installFileError, m_downloadTracker, &ModelDownloadTracker::onFileError);
+    connect(m_sherpaInstaller, &SherpaInstaller::extractStarted, m_downloadTracker, &ModelDownloadTracker::onExtractStarted);
+    connect(m_sherpaInstaller, &SherpaInstaller::extractProgress, m_downloadTracker, &ModelDownloadTracker::onExtractProgress);
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, m_downloadTracker, &ModelDownloadTracker::onGroupFinished);
+    connect(m_sherpaInstaller, &SherpaInstaller::installCancelled, m_downloadTracker, &ModelDownloadTracker::markCancelled);
+    connect(ui->model_list_widget, &ModelListWidget::cancelRequested, m_sherpaInstaller, &SherpaInstaller::cancelInstall);
+    connect(ui->model_list_widget, &ModelListWidget::retryRequested, m_sherpaInstaller, &SherpaInstaller::installModel);
+
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, this, [=]() {
         notify(NotifyLevel::Info, tr("开始下载模型..."));
     });
+    connect(m_sherpaInstaller, &SherpaInstaller::installCancelled, this, [this](const QString&) { m_userCancelledInstall = true; });
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
         ui->model_list_widget->refreshInstalled();
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
+        else if (m_userCancelledInstall) notify(NotifyLevel::Info, tr("已取消下载"));   // 取消不是失败，不弹错误
         else notify(NotifyLevel::Error, tr("模型下载失败"), tr("请检查网络后重试"));
+        m_userCancelledInstall = false;
     });
     connect(m_sherpaInstaller, &SherpaInstaller::vadModelReady, this, [this](bool success, const QString&) {
         if (success) {

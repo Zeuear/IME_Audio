@@ -15,15 +15,21 @@ public:
     bool setCurrentModel(const QString& displayName);
     QString currentModel() const;
     void refreshInstalled();
+    // 行内下载进度来自 tracker（SherpaInstaller 的信号由宿主喂给它）
+    void setDownloadTracker(ModelDownloadTracker* tracker);
 
 signals:
     // 仅用户点击时发出；程序同步选中不会触发
     void modelActivated(const QString& displayName);
+    // 点了行里的"取消"或"重试"；不会同时选中该行
+    void cancelRequested(const QString& repoId);
+    void retryRequested(const QString& repoId);
 
 protected:
     void changeEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     void setupUi();
@@ -33,6 +39,7 @@ private:
     void applySort();
 
     ModelInfoModel* m_model = nullptr;
+    ModelDownloadTracker* m_tracker = nullptr;
     QWidget* m_header = nullptr;
     QListView* m_list = nullptr;
     ModelInfoModel::SortKey m_sortKey = ModelInfoModel::SortKey::Default;

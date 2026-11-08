@@ -108,6 +108,8 @@ public:
     explicit SherpaInstaller(QNetworkAccessManager* nam, QObject* parent = nullptr);
     void uninstallAll();
     void installModel(const QString& repoId);
+    // 取消正在下载的模型：停下载、删掉已下的残留。解压阶段不能取消，调用也不会有效果
+    void cancelInstall(const QString& repoId);
     void uninstallModel(const QString& repoId);
     void ensurePunctModel(const QString& repoId);
     void ensureStreamingModel(const QString& language);
@@ -124,6 +126,8 @@ signals:
     
     void installGroupStarted(const QString& repoId, const QString& displayName, int totalFiles);
     void installGroupFinished(const QString& repoId, bool success, const QString& msg);
+    // 用户主动取消（先于下载层报告"组失败"发出，界面据此不把它当成失败）
+    void installCancelled(const QString& repoId);
 
     void installFileProgress(const QString& repoId, const QString& filename, qint64 recv, qint64 total, int overallPercent);
     void installFileFinished(const QString& repoId, const QString& filename);

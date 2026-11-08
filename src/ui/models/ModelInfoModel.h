@@ -4,6 +4,8 @@
 #include <QString>
 #include <QStringList>
 
+class ModelDownloadTracker;
+
 
 struct ModelInfo {
     QString displayName;
@@ -36,6 +38,9 @@ public:
         SpeedLevelRole,         // 信号格数 1..5，0 表示无数据
         AccuracyRatingRole,     // 1.0..5.0（一位小数），界面显示用
         SpeedRatingRole,        // 1.0..5.0（一位小数），界面显示用
+        DownloadStateRole,      // ModelDownloadTracker::State（int），0 = 没有下载任务
+        DownloadPercentRole,    // 下载或解压的百分比
+        DownloadTextRole,       // 下载中："文件名 · 第几个/共几个 · 百分比"；失败：原因
     };
 
     // 排序依据；Default 为注册表原始顺序
@@ -45,6 +50,10 @@ public:
 
     int rowCount(const QModelIndex& parent = {}) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+
+    // 下载状态来自 tracker：状态放在列表之外，切换语言重建列表时下载进度不会丢。
+    // tracker 变化时只刷新对应那一行，装好时顺带更新"已安装"
+    void setTracker(ModelDownloadTracker* tracker);
 
     void setLanguage(const QString& language);
     void refreshInstalled();
@@ -59,4 +68,5 @@ public:
 private:
     QString m_language;
     QList<ModelInfo> m_items;
+    ModelDownloadTracker* m_tracker = nullptr;
 };

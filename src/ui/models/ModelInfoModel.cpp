@@ -1,6 +1,7 @@
 #include "ModelInfoModel.h"
 #include "sherpa/SherpaConfig.h"
 #include "sherpa/SherpaManager.h"
+#include "ModelDownloadTracker.h"
 #include "utils/Logger.h"
 #include <QFile>
 #include <QJsonDocument>
@@ -67,8 +68,25 @@ QVariant ModelInfoModel::data(const QModelIndex& index, int role) const
     case SpeedRatingRole:     return m.benchmarked ? speedRating(m.rtf) : 0.0;
     case AccuracyLevelRole:   return m.benchmarked ? qRound(accuracyRating(m.score)) : 0;
     case SpeedLevelRole:      return m.benchmarked ? qRound(speedRating(m.rtf)) : 0;
+    case DownloadStateRole:   return m_tracker ? static_cast<int>(m_tracker->info(m.repoId).state) : 0;
+    case DownloadPercentRole: return m_tracker ? m_tracker->info(m.repoId).percent : 0;
+    case DownloadTextRole:    return m_tracker ? m_tracker->info(m.repoId).text : QString();
     default:                  return {};
     }
+}
+
+void ModelInfoModel::setTracker(ModelDownloadTracker* tracker)
+{
+    m_tracker = tracker;
+    if (!tracker) return;
+    connect(tracker, &ModelDownloadTracker::changed, this, [this](const QString& repoId) {
+        for (int i = 0; i < m_items.size(); ++i) {
+            if (m_items[i].repoId != repoId) continue;
+            m_items[i].installed = SherpaInstaller::isInstalled(repoId);   // 下完的那一刻"已安装"也要跟着亮
+            const QModelIndex idx = index(i);
+            emit dataChanged(idx, idx);
+        }
+    });
 }
 
 void ModelInfoModel::setLanguage(const QString& language)

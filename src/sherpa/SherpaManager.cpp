@@ -508,10 +508,10 @@ void SherpaInstaller::ensureStreamingModel(const QString& language)
     LOG_INFO(QString("Downloading live caption model: %1").arg(repoId));
     if (!InstallMarker::markInstalling(modelDirFor(repoId))) LOG_WARN(QString("Cannot create model directory: %1").arg(repoId));
     m_companionGroups.insert(repoId);
+    emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
     for (const auto& f : manifest.files) {
         m_downloadManager->addGroupTask(repoId, manifest.displayName, f.sourceUrl, f.localPath);
     }
-    emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
 }
 
 void SherpaInstaller::installModel(const QString& repoId)
@@ -540,17 +540,27 @@ void SherpaInstaller::installModel(const QString& repoId)
     ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
     if (!InstallMarker::markInstalling(modelPath)) LOG_WARN(QString("Cannot create model directory: %1").arg(modelPath));
 
+    // 先发"开始"再提交下载：文件在启动时就同步失败（目标路径建不出来）时，"失败"会在 addGroupTask 里同步发出，
+    // 如果"开始"排在后面，行内状态会先变失败、再被"开始"盖回下载中，永远停在那里
     if (!manifest.archiveUrl.isEmpty()) {
         m_activeManifests[repoId] = manifest;
-        m_downloadManager->addGroupTask(repoId, manifest.displayName, QUrl(manifest.archiveUrl), manifest.archiveLocalPath);
         emit installGroupStarted(repoId, manifest.displayName, 1);
+        m_downloadManager->addGroupTask(repoId, manifest.displayName, QUrl(manifest.archiveUrl), manifest.archiveLocalPath);
         return;
     }
 
+    emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
     for (const auto& f : manifest.files) {
         m_downloadManager->addGroupTask(repoId, manifest.displayName, f.sourceUrl, f.localPath);
     }
-    emit installGroupStarted(repoId, manifest.displayName, static_cast<int>(manifest.files.size()));
+}
+
+void SherpaInstaller::cancelInstall(const QString& repoId)
+{
+    if (m_downloadManager->tasksInGroup(repoId).isEmpty()) return;   // 没在下载（装好了，或在解压）
+    emit installCancelled(repoId);
+    // 下载层会随后报告"组失败"，onGroupFinished 的失败分支负责清理目录和记录
+    m_downloadManager->cancelGroup(repoId);
 }
 
 void SherpaInstaller::uninstallAll()
@@ -664,6 +674,8 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
     }
 
     if (!success) {
+        // 压缩包类模型失败时 m_activeManifests 里还留着记录，不清掉 isInstalling 恒为真，重试会被挡住
+        m_activeManifests.remove(groupId);
         uninstallModel(groupId);
         emit installGroupFinished(groupId, false, tr("Download Error"));
         return;

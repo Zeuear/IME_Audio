@@ -73,6 +73,9 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/update_status_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/install_marker_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/download_text_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/download_cancel_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_download_tracker_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_row_action_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -145,6 +148,15 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/InstallMarker.cpp
     # 下载进度说明行与分组进度累计（纯逻辑）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/DownloadText.cpp
+    # 模型行内下载：状态跟踪、行点击区域、下载管理器的取消（Q_OBJECT 的头文件交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/ModelDownloadTracker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/ModelDownloadTracker.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/ModelInfoDelegate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/ModelInfoDelegate.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/DownloadManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/DownloadManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Downloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Downloader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.h
     # 横条开关与设置页复选框的双向联动

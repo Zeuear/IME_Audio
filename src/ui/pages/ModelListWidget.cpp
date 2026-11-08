@@ -151,6 +151,7 @@ void ModelListWidget::setupUi()
     m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setFrameShape(QFrame::NoFrame);
+    m_list->viewport()->installEventFilter(this);   // 截获"取消 / 重试"的点击
 
     auto* header = new HeaderBar(this);
     header->onSortClicked = [this](ModelInfoModel::SortKey key) { onHeaderSortClicked(key); };
@@ -230,6 +231,35 @@ QString ModelListWidget::currentModel() const
 void ModelListWidget::refreshInstalled()
 {
     m_model->refreshInstalled();
+}
+
+void ModelListWidget::setDownloadTracker(ModelDownloadTracker* tracker)
+{
+    m_tracker = tracker;
+    m_model->setTracker(tracker);
+}
+
+bool ModelListWidget::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_list->viewport() && m_tracker
+        && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease)) {
+        auto* me = static_cast<QMouseEvent*>(event);
+        const QModelIndex index = m_list->indexAt(me->position().toPoint());
+        if (me->button() == Qt::LeftButton && index.isValid()) {
+            const auto state = static_cast<ModelDownloadTracker::State>(index.data(ModelInfoModel::DownloadStateRole).toInt());
+            const auto action = ModelInfoDelegate::actionAt(m_list->visualRect(index), me->position().toPoint(), state);
+            if (action != ModelInfoDelegate::Action::None) {
+                // 按下和松开都拦住：不然会顺带把这一行选成当前模型
+                if (event->type() == QEvent::MouseButtonRelease) {
+                    const QString repoId = index.data(ModelInfoModel::RepoIdRole).toString();
+                    if (action == ModelInfoDelegate::Action::Cancel) emit cancelRequested(repoId);
+                    else emit retryRequested(repoId);
+                }
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void ModelListWidget::fitHeight()

@@ -30,6 +30,7 @@ class ControlBar;
 class TranscriptWindow;
 class LiveTranscriptWidget;
 class ExpandPanel;
+class ModelDownloadTracker;
 class TermWidget;
 class FileTranscribeWidget;
 class LiveCaptionModel;
@@ -148,6 +149,7 @@ private:
     ControlBar* m_controlBar = nullptr;   // 横条：一键开始 / 停止听写，常驻置顶、不抢焦点
     TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口，从横条打开
     LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件，归 m_transcriptWindow 所有
+    ModelDownloadTracker* m_downloadTracker = nullptr;   // 模型列表行内下载进度的状态
     ExpandPanel* m_panel = nullptr;                     // 横条下方的展开面板（词典 / 文件转录）
     TermWidget* m_termWidget = nullptr;                 // 词典页，归 m_panel 所有
     FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页，归 m_panel 所有
@@ -178,6 +180,7 @@ private:
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;   // 录音状态指示当前显示的状态，换语言后用来恢复文字
     bool m_loadingSettings = false;
+    bool m_userCancelledInstall = false;   // 用户点了取消：随后下载层的"组失败"不弹错误提示
     DownloadGroupProgress m_translateProgress;   // 翻译模型下载到第几个文件、多少百分比
 
     // 按住说话
