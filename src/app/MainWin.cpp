@@ -61,7 +61,6 @@
 #include "ui/controls/ExpandPanel.h"
 #include "ui/models/ModelDownloadTracker.h"
 #include "ui/pages/TermWidget.h"
-#include "ui/controls/NavListWidget.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
 #include "ui/infobar/inforbar.h"
@@ -123,7 +122,6 @@ void MainWin::initialize() {
     setupLanguageCombo();
     ui->model_list_widget->setLanguage(currentLanguageKey());
 
-    ui->nav_list_widget->addNavItem("download", "", {});
     setupAppearanceUi();
     retranslateDynamicItems();
 
@@ -170,9 +168,6 @@ void MainWin::initialize() {
     m_workflow->initialize(m_recorderService, m_transcriptionService, m_sherpaManager);
 
     // 初始化动画
-    m_drawerAnimation = new QPropertyAnimation(ui->drawer_stack, "maximumHeight", this);
-    m_drawerAnimation->setDuration(300);
-    m_drawerAnimation->setEasingCurve(QEasingCurve::InOutQuart);
 
     // 声音控件
     m_liveOverlay = new LiveOverlay();
@@ -201,9 +196,6 @@ void MainWin::initialize() {
         m_updateManager->checkForUpdates(); 
     });
 
-    ui->download_list_widget->setSherpaInstaller(m_sherpaInstaller);
-    ui->download_list_widget->setCudaInstaller(m_cudaInstaller);
-    ui->download_list_widget->setTranslationInstaller(m_translationInstaller);
     // VAD 模型随安装包分发；若缺失(旧安装包/被误删)则自动补下载，避免用户卡在
     // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
     m_sherpaInstaller->ensureVadModel();
@@ -359,10 +351,6 @@ void MainWin::setupUiConnections(){
         params.aiVocab = config.polish.vocab;
         params.targetLang = config.polish.cloudTargetLang();
         m_textPolishService->testConnection(params);
-    });
-
-    connect(ui->nav_list_widget, &QListWidget::currentItemChanged, this, [this]() {
-        onToggleDrawer(ui->nav_list_widget->currentRow());
     });
 
     connect(ui->enable_enhancement_checkbox, &QCheckBox::toggled, this, [this]() { updateAiEngineUi(); });
@@ -912,7 +900,6 @@ void MainWin::retranslateDynamicItems() {
     fillCombo(ui->ai_style_comb, kStyleItems);
     rebuildTranslationLanguages();
 
-    ui->nav_list_widget->setNavText("download", tr("Downloads"));
     retranslateAppearanceItems();
 }
 
@@ -1377,21 +1364,6 @@ void MainWin::onStateChanged(WorkflowState state)
 void MainWin::setSettingsLocked(bool locked)
 {
     m_settings->setDictating(locked);
-}
-
-void MainWin::onToggleDrawer(int pageIndex) {
-    ui->drawer_stack->setCurrentIndex(pageIndex);
-    // if (isTriggered) {
-    //     isTriggered = false;
-    //     m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
-    //     m_drawerAnimation->setEndValue(0);
-    // }
-    // else {
-    //     isTriggered = true;
-    //     m_drawerAnimation->setStartValue(ui->drawer_stack->maximumHeight());
-    //     m_drawerAnimation->setEndValue(200);
-    // }
-    // m_drawerAnimation->start();
 }
 
 void MainWin::onNewLogEntry(const QString& entry)

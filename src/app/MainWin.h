@@ -82,7 +82,6 @@ private slots:
     void onQuitApplication();
 
 
-    void onToggleDrawer(int pageIndex);
 	void onNewLogEntry(const QString& logEntry);
 
 private slots:
@@ -186,7 +185,6 @@ private:
     // 按住说话
     QElapsedTimer m_holdTimer;
     bool m_holdStarted = false;
-    QPropertyAnimation *m_drawerAnimation;
     bool isTriggered = false;
 
     QString style;

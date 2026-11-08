@@ -107,7 +107,7 @@ public:
     void startInstall();
 
 signals:
-    // 用于 DownloadListWidget 显示
+    // 下载进度（CUDA 下载行用）
     void installGroupStarted(const QString& groupId, const QString& displayName, int totalFiles);
     void installGroupFinished(const QString& groupId, bool success, const QString& message);
     void installFileProgress(const QString& groupId, const QString& filename,  qint64 received, qint64 total, int overallPercent);
