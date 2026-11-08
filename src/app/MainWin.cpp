@@ -90,27 +90,37 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
   alignSettingsCards();
 }
 
-void MainWin::alignSettingsCards()
+namespace {
+// 各卡片是独立的网格，标签列宽度随文字各不相同，控件起点对不齐；把指定列统一成同组里最宽的
+void alignColumns(const QList<QGridLayout*>& grids, const QList<int>& cols)
 {
-    const QList<QGridLayout*> grids{ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
-                                     ui->shortcut_card_layout };
-    for (int col : { 0, 3 }) {
+    for (int col : cols) {
         int width = 0;
         for (QGridLayout* grid : grids) {
             for (int i = 0; i < grid->count(); ++i) {
-                // 只算正好占这一列的控件
                 int r, c, rowSpan, colSpan;
                 grid->getItemPosition(i, &r, &c, &rowSpan, &colSpan);
-                if (c == col && colSpan == 1 && grid->itemAt(i)->widget())
+                if (c == col && colSpan == 1 && grid->itemAt(i)->widget() && !grid->itemAt(i)->widget()->isHidden())
                     width = std::max(width, grid->itemAt(i)->widget()->sizeHint().width());
             }
         }
         for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(col, width);
     }
-    // 第 2 列是左右两组之间的空隔
-    for (QGridLayout* grid : grids) grid->setColumnMinimumWidth(2, 24);
 }
-    
+} // namespace
+
+void MainWin::alignSettingsCards()
+{
+    alignColumns({ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
+                   ui->shortcut_card_layout }, { 0, 3 });
+    // 第 2 列是左右两组之间的空隔
+    for (QGridLayout* grid : { ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
+                               ui->shortcut_card_layout })
+        grid->setColumnMinimumWidth(2, 24);
+
+    alignColumns({ ui->ai_service_card_layout, ui->polish_card_layout, ui->translate_card_layout }, { 0, 2 });
+}
+
 void MainWin::initialize() {
     ui->recording_equ_comb->clear();
     auto items = AudioRecorderService::availableMicrophones();
