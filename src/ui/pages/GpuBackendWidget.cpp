@@ -316,6 +316,10 @@ void GpuBackendWidget::detectGpuAsync()
 void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
 {
     m_detail = result;
+    LOG_INFO(QString("GPU detection: gpu=%1 (%2), cudart=%3 (%4), cudnn=%5, ortCudaProvider=%6, ready=%7, mode=%8, reason=%9")
+                 .arg(result.hasNvidiaGpu).arg(result.gpuName).arg(result.hasCudaRuntime).arg(result.cudaRuntimeVersion)
+                 .arg(result.hasCudnn).arg(result.hasOrtCudaProvider).arg(result.isFullyReady)
+                 .arg(m_computeMode == ComputeMode::CUDA ? "CUDA" : "CPU").arg(result.failReason));
     if (!result.hasNvidiaGpu) {
         m_computeMode = ComputeMode::CPU;
         applyStatus(GpuStatus::NoGpu);

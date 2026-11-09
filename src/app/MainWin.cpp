@@ -71,7 +71,6 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
 
   ui->ai_vocabulary_edit->setReadOnly(true);
   ui->config_log_edit->setReadOnly(true);
-
   ui->grop_key_label->setVisible(false);
   ui->grop_key_edit->setVisible(false);
   ui->gladia_key_edit->setVisible(false);
@@ -91,7 +90,6 @@ MainWin::MainWin(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWin) {
 }
 
 namespace {
-// 各卡片是独立的网格，标签列宽度随文字各不相同，控件起点对不齐；把指定列统一成同组里最宽的
 void alignColumns(const QList<QGridLayout*>& grids, const QList<int>& cols)
 {
     for (int col : cols) {
@@ -724,9 +722,8 @@ void MainWin::changeEvent(QEvent* event)
 {
     if (QEvent::LanguageChange == event->type()) {
         ui->retranslateUi(this);
-        // 代码里动态加的下拉项和导航，retranslateUi 不会更新
         retranslateDynamicItems();
-        setDictationIndicator(m_indicatorRecording);   // retranslateUi 会把状态文字重置为默认值
+        setDictationIndicator(m_indicatorRecording);  
         refreshLanguageComboTexts();
         alignSettingsCards();
     }
@@ -778,7 +775,7 @@ void MainWin::fitToScreen()
         resize(qMin(width(), maxW), qMin(height(), maxH));
     }
 
-    // 尺寸缩不下（最小尺寸大于屏幕）时也至少保证左上角可见，让标题栏能拖动
+    // 尺寸缩不下时也至少保证左上角可见，让标题栏能拖动
     QRect frame = frameGeometry();
     const int x = qBound(avail.left(), frame.left(), qMax(avail.left(), avail.right() - frame.width() + 1));
     const int y = qBound(avail.top(), frame.top(), qMax(avail.top(), avail.bottom() - frame.height() + 1));
@@ -1582,21 +1579,21 @@ void MainWin::rebuildTrayMenu()
     if (recent->isEmpty()) recent->addAction(tr("暂无记录"))->setEnabled(false);
 
     trayMenu->addSeparator();
-    if (isVisible()) trayMenu->addAction(tr("隐藏主窗口"), this, &MainWin::onHideWindow);
-    else trayMenu->addAction(tr("显示主窗口"), this, &MainWin::onShowWindow);
+    trayMenu->addAction(tr("设置"), this, &MainWin::onShowWindow);
     trayMenu->addAction(tr("退出"), this, &MainWin::onQuitApplication);
 }
 
 void MainWin::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
-        if (isVisible()) {
-            onHideWindow();
-        }
-        else {
-            onShowWindow();
-        }
+        showControlBar();
     }
+}
+
+void MainWin::showControlBar()
+{
+    m_controlBar->showAtSavedPosition();
+    m_controlBar->raise();
 }
 
 void MainWin::onShowWindow()

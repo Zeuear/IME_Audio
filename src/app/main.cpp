@@ -61,9 +61,8 @@ int main(int argc, char *argv[])
     MainWin w;
     QObject::connect(&guard, &SingleInstanceGuard::anotherInstanceStarted,
                      &w, &MainWin::onShowWindow);
-    // 启动只显示横条（MainWin 初始化时已摆好），主窗口作为设置窗口，从横条的设置图标或托盘打开
 
-    // 缺少必需授权时（目前只有 macOS）引导授权；
+    // 缺少必需授权时引导授权（目前只有 macOS）；
     if (PermissionGuideDialog::isNeeded()) {
         auto* guide = new PermissionGuideDialog(&w);
         guide->setAttribute(Qt::WA_DeleteOnClose);

@@ -48,7 +48,7 @@ void LiveTranscriptWidget::setupUi()
     m_clearBtn = new QPushButton(this);
     bar->addWidget(m_toggleBtn);
     bar->addSpacing(8);
-    bar->addWidget(m_injectCheck);
+    m_injectCheck->hide();
     bar->addWidget(m_timestampCheck);
     bar->addStretch();
     bar->addWidget(m_copyBtn);

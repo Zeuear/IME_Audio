@@ -73,41 +73,35 @@ protected:
     void showEvent(QShowEvent* event) override;
 
 public slots:
-    // 也用于响应"用户又启动了一份程序"：把已在运行的窗口调到前台
     void onShowWindow();
 
 private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void showControlBar();
     void onHideWindow();
     void onQuitApplication();
-
-
 	void onNewLogEntry(const QString& logEntry);
 
 private slots:
     void onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes);
     void onUpdateDownloaded(const QString& filePath);
-
     void onLoadConfig();
-
     void onHotkeyPressed();
     void onHotkeyReleased();
     void onStateChanged(WorkflowState newState);
     void onLocalModelActivated();
 
 private:
-    // 外观页：主题与界面语言（原来在菜单里）。persist=false 用于启动时按配置恢复，不回写
     void setupAppearanceUi();
     void retranslateAppearanceItems();
     void setTheme(LiveOverlay::Theme theme, bool persist);
     void setLanguage(const QString& key, bool persist);
     void syncAppearanceCombos();
-
     void fitToScreen();
     void alignSettingsCards();
     bool m_fittedToScreen = false;
 
-    // 听写进行中锁住各设置页和保存/取消
+    // 听写进行中锁住各设置页
     void setSettingsLocked(bool locked);
 
     enum class NotifyLevel { Info, Success, Warning, Error };
@@ -145,20 +139,20 @@ private:
 
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
-    ControlBar* m_controlBar = nullptr;   // 横条：一键开始 / 停止听写，常驻置顶、不抢焦点
-    TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口，从横条打开
-    LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件，归 m_transcriptWindow 所有
-    ModelDownloadTracker* m_downloadTracker = nullptr;   // 模型列表行内下载进度的状态
-    ExpandPanel* m_panel = nullptr;                     // 横条下方的展开面板（词典 / 文件转录）
-    TermWidget* m_termWidget = nullptr;                 // 词典页，归 m_panel 所有
-    FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页，归 m_panel 所有
+    ControlBar* m_controlBar = nullptr;                 // 常驻置顶
+    TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口
+    LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件
+    ModelDownloadTracker* m_downloadTracker = nullptr;  // 模型列表行内下载进度的状态
+    ExpandPanel* m_panel = nullptr;                     // 词典 / 文件转录
+    TermWidget* m_termWidget = nullptr;                 // 词典页
+    FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页
     LiveCaptionModel* m_captionModel = nullptr;
     SnippetStore* m_snippetStore = nullptr;
     SnippetPaster* m_snippetPaster = nullptr;
     SnippetSuggestBar* m_suggestBar = nullptr;
-    QSet<QString> m_handledSnippetIds;   // 这句话里已点击/已超时的话术，下一句开始前不再提示
+    QSet<QString> m_handledSnippetIds;   
     SnippetSearchPopup* m_searchPopup = nullptr;
-    PrefixWatcher* m_prefixWatcher = nullptr;   // 打字前缀呼出搜索框；用户不勾选就不安装钩子
+    PrefixWatcher* m_prefixWatcher = nullptr; 
     StreamingCaptionEngine* m_captionEngine = nullptr;  
     bool m_liveCaptionFailNotified = false;
 
@@ -175,12 +169,12 @@ private:
 
     WorkflowManager *m_workflow = nullptr;
     SettingsBinder* m_settings = nullptr;
-    QTimer* m_saveTimer = nullptr;   // 设置改动合并后再写文件
+    QTimer* m_saveTimer = nullptr;   
     DictationHistoryModel* m_history = nullptr;   
-    bool m_indicatorRecording = false;   // 录音状态指示当前显示的状态，换语言后用来恢复文字
+    bool m_indicatorRecording = false;  
     bool m_loadingSettings = false;
-    bool m_userCancelledInstall = false;   // 用户点了取消：随后下载层的"组失败"不弹错误提示
-    DownloadGroupProgress m_translateProgress;   // 翻译模型下载到第几个文件、多少百分比
+    bool m_userCancelledInstall = false;  
+    DownloadGroupProgress m_translateProgress; 
 
     // 按住说话
     QElapsedTimer m_holdTimer;
