@@ -77,6 +77,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_download_tracker_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_row_action_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/media_link_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/gpu_variant_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:

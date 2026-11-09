@@ -8,6 +8,7 @@
 #include <QtConcurrent> 
 #include "installers/CudaInstaller.h"
 #include "sherpa/LanguageCatalog.h"
+#include "sherpa/GpuVariant.h"
 #include "utils/AppPaths.h"
 #include "utils/Logger.h"
 #include "config/ConfigManager.h"
@@ -1370,6 +1371,38 @@ const ModelDescriptor* ModelRegistry::Find(const QString& repoId)
     return it != Table().end() ? &it.value() : nullptr;
 }
 
+namespace {
+// 从模型表取配对关系；表很小，每次现建即可
+QList<GpuVariant::Link> gpuLinks(const QMap<QString, ModelDescriptor>& table)
+{
+    QList<GpuVariant::Link> links;
+    links.reserve(table.size());
+    for (auto it = table.constBegin(); it != table.constEnd(); ++it)
+        links.append({ it.key(), it.value().gpuRepoId, it.value().gpuVariant });
+    return links;
+}
+}
+
+bool ModelRegistry::IsGpuVariant(const QString& repoId)
+{
+    return GpuVariant::isGpuVariant(gpuLinks(Table()), repoId);
+}
+
+QString ModelRegistry::GpuVariantOf(const QString& cpuRepoId)
+{
+    return GpuVariant::gpuVariantOf(gpuLinks(Table()), cpuRepoId);
+}
+
+QString ModelRegistry::CpuVariantOf(const QString& gpuRepoId)
+{
+    return GpuVariant::cpuVariantOf(gpuLinks(Table()), gpuRepoId);
+}
+
+bool ModelRegistry::ShouldUseCuda(const ModelDescriptor& desc, bool globalUseGpu)
+{
+    return GpuVariant::shouldUseCuda(desc.gpuVariant, globalUseGpu);
+}
+
 QStringList ModelRegistry::GetLanguages()
 {
     QStringList langs;
@@ -1456,11 +1489,10 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }
 
     RecognizerKind kind = RecognizerKind::None;
-	bool isCudaAvailable = useGpu;
-    if (isCudaAvailable) {
-        LOG_DEBUG("Sherpa initialized successfully with [CUDA] acceleration.");
-    }else {
-        LOG_DEBUG("CUDA not available. Sherpa fallback to [CPU].");
+    // 只有 GPU 变体才用 CUDA：int8 模型在 CUDA 后端没有算子内核，试了也是白试
+    const bool wantCuda = ShouldUseCuda(*desc, useGpu) && cudaPlatformSpec().detectable;
+    if (useGpu && !desc->gpuVariant) {
+        LOG_INFO(QString("Model is not a GPU variant, using CPU: %1").arg(repoId));
     }
 
 	QString hotwords = allowHotwords ? ConfigManager::instance().config().sherpa.hotwords : QString();
@@ -1646,36 +1678,46 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 LOG_WARN(tr("Hotwords configured but architecture does not support contextual biasing, ignored: %1").arg(repoId));
             }
 
-            if (useGpu && cudaPlatformSpec().detectable) {
+            // GPU 变体用 CUDA，失败不回退 CPU：回退会悄悄变慢，让用户误以为 GPU 在工作
+            const char* provider = wantCuda ? "cuda" : "cpu";
+            config.model_config.provider = provider;
+            if (wantCuda) {
                 try {
-                    config.model_config.provider = "cuda";
-                    LOG_INFO("Sherpa initialized with [CUDA]");
-                    LOG_DEBUG("Attempting to initialize Sherpa with [CUDA] acceleration...");
+                    LOG_DEBUG("Creating recognizer with provider=cuda");
                     if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
-                        return std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
+                        auto r = std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
+                        LOG_INFO("Recognizer created, provider=cuda");
+                        return r;
                     } else {
-                        return std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
+                        auto r = std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
+                        LOG_INFO("Recognizer created, provider=cuda");
+                        return r;
                     }
-                } 
-                catch (const std::exception& e) {
-                    LOG_WARN(tr("CUDA initialization failed: %1. Automatically falling back to CPU.").arg(e.what()));
-                    result.cudaFellBack = true;
-                } 
-                catch (...) {
-                    LOG_WARN("CUDA initialization failed due to an unknown hardware/driver error. Falling back to CPU.");
-                    result.cudaFellBack = true;
                 }
+                catch (const std::exception& e) {
+                    LOG_ERROR(QString("CUDA initialization failed (no CPU fallback): %1").arg(e.what()));
+                    result.cudaFailed = true;
+                    result.failReason = QString::fromUtf8(e.what());
+                }
+                catch (...) {
+                    LOG_ERROR("CUDA initialization failed (no CPU fallback): unknown hardware/driver error");
+                    result.cudaFailed = true;
+                    result.failReason = QStringLiteral("unknown hardware/driver error");
+                }
+                return std::monostate{};
             }
 
-            config.model_config.provider = "cpu";
-            LOG_INFO("Sherpa initialized with [CPU]");
-            LOG_DEBUG("Sherpa initialized successfully with [CPU].");
             try {
+                LOG_DEBUG("Creating recognizer with provider=cpu");
                 if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
-                    return std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
+                    auto r = std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
+                    LOG_INFO("Recognizer created, provider=cpu");
+                    return r;
                 }
                 else {
-                    return std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
+                    auto r = std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
+                    LOG_INFO("Recognizer created, provider=cpu");
+                    return r;
                 }
             }
             catch (const std::exception& e) {

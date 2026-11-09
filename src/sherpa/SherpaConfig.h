@@ -154,6 +154,9 @@ struct ModelDescriptor {
     PunctMode punctMode = PunctMode::Auto; // 神经标点绑定模式
     bool hasBuiltinPunctuation = false;    // 模型自带标点（SenseVoice/Canary 等）→ 不绑 punc
 
+    QString gpuRepoId;                     // 非空 = 该 CPU 模型有对应的 GPU 变体（另一行）
+    bool gpuVariant = false;               // 该行本身是 GPU 变体（fp16），只有它才会用 CUDA
+
     ModelDescriptor(ModelArch a)
         : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {
     }
@@ -403,7 +406,8 @@ public:
     struct Result {
 		QString repoId;
 		bool isLoaded = false;
-		bool cudaFellBack = false;   // CUDA 初始化失败，已回退 CPU
+		bool cudaFailed = false;     // GPU 变体的 CUDA 初始化失败（不回退 CPU，isLoaded 为 false）
+		QString failReason;          // cudaFailed 时的原因（来自底层异常，英文）
 		RecognizerKind kind = RecognizerKind::None;
         RecognizerPtrVar recognizer = std::monostate{};
 	};
@@ -443,6 +447,12 @@ public:
     static bool detectsLanguageAutomatically(const ModelDescriptor& desc, int coveredLanguageCount);
 
     static const ModelDescriptor* Find(const QString& repoId);
+
+    // GPU 变体配对：CPU 模型的 gpuRepoId 指向另一行 GPU 变体
+    static bool IsGpuVariant(const QString& repoId);
+    static QString GpuVariantOf(const QString& cpuRepoId);   // 没有返回空串
+    static QString CpuVariantOf(const QString& gpuRepoId);   // 没有返回空串
+    static bool ShouldUseCuda(const ModelDescriptor& desc, bool globalUseGpu);
     // allowHotwords=false 用于实时字幕：流式 BPE 模型没配词表，套用全局热词可能导致创建失败
     static Result GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords = true);
 

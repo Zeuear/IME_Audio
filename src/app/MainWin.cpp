@@ -324,9 +324,8 @@ void MainWin::setupUiConnections(){
             notify(NotifyLevel::Error, tr("VAD 模型下载失败"), tr("请检查网络后重试，或前往 \"下载列表\" 查看进度"));
         }
     });
-    // CUDA 初始化失败回退 CPU（非错误，仅提示）
-    connect(m_sherpaManager, &SherpaManager::gpuFallbackToCpu, this, [this]() {
-        notify(NotifyLevel::Warning, tr("已切换至 CPU 模式"), tr("显卡不可用，识别速度可能下降"));
+    connect(m_sherpaManager, &SherpaManager::loadFailed, this, [this](const QString& title, const QString& cause) {
+        notify(NotifyLevel::Error, title, cause);
     });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {

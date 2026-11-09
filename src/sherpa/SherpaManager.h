@@ -49,7 +49,8 @@ public slots:
 signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
-    void gpuFallbackToCpu();
+    // 用户可见的加载失败（title/cause 为中文），由 MainWin 走统一弹窗
+    void loadFailed(const QString& title, const QString& cause);
     void idleUnloaded();
 
 private:

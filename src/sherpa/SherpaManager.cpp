@@ -190,25 +190,34 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         return;
     }
 
-    m_isLoaded = false;
-    m_offlineRecognizer.reset();
-    m_onlineRecognizer.reset();
-    m_kind = RecognizerKind::None;
-    m_currentRepoId.clear();
+    auto releaseCurrent = [this]() {
+        m_isLoaded = false;
+        m_offlineRecognizer.reset();
+        m_onlineRecognizer.reset();
+        m_kind = RecognizerKind::None;
+        m_currentRepoId.clear();
+    };
+    // GPU 变体用 CUDA 且不回退 CPU：创建失败时要保住已加载的模型，所以成功后才释放旧的
+    // （代价是切换瞬间两个模型同时在内存里）
+    const bool keepOldOnFail = ModelRegistry::ShouldUseCuda(*desc, useGpu);
+    if (!keepOldOnFail) releaseCurrent();
 
 	QElapsedTimer loadTimer;
 	loadTimer.start();
 	auto result = ModelRegistry::GetConfig(repoId, numThreads, useGpu);
-	m_isLoaded = result.isLoaded;
-	if (result.cudaFellBack) {
-	    emit gpuFallbackToCpu();
-	}
 	if (!result.isLoaded) {
+	    if (result.cudaFailed) {
+	        emit loadFailed(QStringLiteral("GPU 加速初始化失败"),
+	                        QStringLiteral("该模型需要显卡运行，但 CUDA 初始化失败，请检查显卡驱动与 CUDA 组件，或切换到 CPU 模式"));
+	    }
+	    if (!keepOldOnFail) m_isLoaded = false;
 	    LOG_ERROR(QString("Load failed: recognizer not created for %1 after %2 ms (dir=%3)，"
 	                      "具体原因见上方 Failed to create recognizer 记录与 voice_ime.stderr.log")
 	                  .arg(repoId).arg(loadTimer.elapsed()).arg(modelDir));
 	    return;
 	}
+	if (keepOldOnFail) releaseCurrent();
+	m_isLoaded = true;
 
     switch (result.kind)
     {

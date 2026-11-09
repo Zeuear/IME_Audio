@@ -1,0 +1,42 @@
+#pragma once
+#include <QList>
+#include <QString>
+
+// @brief 模型 CPU 版与 GPU 变体之间的配对规则，纯逻辑、不依赖识别库，便于单元测试。
+namespace GpuVariant {
+
+struct Link {
+    QString repoId;
+    QString gpuRepoId;        // 非空 = 该 CPU 模型有 GPU 变体
+    bool gpuVariant = false;  // 该行本身是 GPU 变体
+};
+
+// int8 模型在 ORT 的 CUDA 后端没有算子内核，只有 GPU 变体才值得用 CUDA
+inline bool shouldUseCuda(bool gpuVariant, bool globalUseGpu)
+{
+    return globalUseGpu && gpuVariant;
+}
+
+inline bool isGpuVariant(const QList<Link>& links, const QString& repoId)
+{
+    for (const Link& l : links)
+        if (l.repoId == repoId) return l.gpuVariant;
+    return false;
+}
+
+inline QString gpuVariantOf(const QList<Link>& links, const QString& cpuRepoId)
+{
+    for (const Link& l : links)
+        if (l.repoId == cpuRepoId) return l.gpuRepoId;
+    return {};
+}
+
+inline QString cpuVariantOf(const QList<Link>& links, const QString& gpuRepoId)
+{
+    if (gpuRepoId.isEmpty()) return {};
+    for (const Link& l : links)
+        if (l.gpuRepoId == gpuRepoId) return l.repoId;
+    return {};
+}
+
+} // namespace GpuVariant
