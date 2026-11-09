@@ -3,6 +3,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFileInfo>
+#include <QSaveFile>
 #include <QApplication>
 
 ConfigManager& ConfigManager::instance()
@@ -20,6 +21,19 @@ void ConfigManager::setConfigFilePath(const QString& path)
 
 QString ConfigManager::configFilePath() {
     return m_configPath;
+}
+
+bool ConfigManager::writeFileAtomically(const QString& path, const QByteArray& data, bool ownerOnly)
+{
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) return false;
+    // Windows 上权限位主要靠目录本身的 ACL，这一步效果有限
+    if (ownerOnly) file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    if (file.write(data) != data.size()) {
+        file.cancelWriting();
+        return false;
+    }
+    return file.commit();
 }
 
 void ConfigManager::updateConfig(const AppConfig& newConfig) {

@@ -2,7 +2,7 @@
 #include "snippets/SnippetSearchIndex.h"
 #include <QFile>
 #include <QDir>
-#include <QSaveFile>
+#include "config/ConfigManager.h"
 #include <QJsonDocument>
 #include <QJsonValue>
 #include <QCryptographicHash>
@@ -377,14 +377,8 @@ bool SnippetStore::flush() {
     root["google_sheets"] = gsArr;
 
     ensureDirs();
-    QSaveFile file(m_dataFilePath);
-    if (!file.open(QIODevice::WriteOnly)) {
-        LOG_ERROR(QString("Snippet store save failed: cannot open %1").arg(m_dataFilePath));
-        return false;
-    }
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        LOG_ERROR(QString("Snippet store save failed: commit %1").arg(m_dataFilePath));
+    if (!ConfigManager::writeFileAtomically(m_dataFilePath, QJsonDocument(root).toJson(QJsonDocument::Indented))) {
+        LOG_ERROR(QString("Snippet store save failed: cannot write %1").arg(m_dataFilePath));
         return false;
     }
     return true;
