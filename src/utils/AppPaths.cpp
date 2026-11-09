@@ -61,6 +61,16 @@ QString transcriptFile()
     return QDir(dataDir()).absoluteFilePath("transcripts/live_transcript.txt");
 }
 
+QString toolsDir()
+{
+    return QDir(dataDir()).absoluteFilePath("tools");
+}
+
+QString linkDownloadsDir()
+{
+    return QDir(dataDir()).absoluteFilePath("link_downloads");
+}
+
 QString sherpaRoot()
 {
     return QDir(dataDir()).absoluteFilePath("sherpa");

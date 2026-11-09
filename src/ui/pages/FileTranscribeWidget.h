@@ -9,7 +9,9 @@
 #include "audio/AudioFileDecoder.h"
 
 class QAudioDecoder;
+class QNetworkAccessManager;
 class AnimatedCheckBox;
+class YtDlpManager;
 class QLabel;
 class QListView;
 class QPlainTextEdit;
@@ -59,6 +61,18 @@ private:
     void chooseFiles();
     void addFiles(const QStringList& paths);
     QList<int> selectedRows() const;
+
+    // 链接
+    void addLinksClicked();
+    void startDownloads(const QStringList& urls);
+    void ensureDownloader();
+    void enqueueDownload(int row);
+    void onLinkFinished(quint64 id, bool ok, const QString& path, const QString& title, const QString& error);
+    void queueForTranscription(int row);
+    // 筛出能直接转录的行；下载失败的链接任务在这里改为重新下载
+    QList<int> runnableRows(const QList<int>& candidates);
+    void updateAnimTimer();
+    static QString exportBaseName(const FileTask& task);
     void removeSelected();
     void clearAll();
     void showContextMenu(const QPoint& pos);
@@ -113,6 +127,7 @@ private:
     QString m_previewPath;   // 预览当前显示的文件，用来区分"同一文件内容更新"和"换了文件"
     QLabel* m_statusLabel = nullptr;
     QPushButton* m_addBtn = nullptr;
+    QPushButton* m_addLinkBtn = nullptr;
     QPushButton* m_transcribeBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     AnimatedCheckBox* m_exportTxtCheck = nullptr;
@@ -132,6 +147,11 @@ private:
     int m_noSpeechCount = 0;
     QString m_lastError;
     QString m_lastExportDir;
+
+    QNetworkAccessManager* m_nam = nullptr;
+    YtDlpManager* m_downloader = nullptr;
+    int m_linkFailed = 0;          // 本轮下载失败的个数，全部下完时汇总提示一次
+    QString m_lastLinkError;
 
     // 当前文件
     QString m_path;

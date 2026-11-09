@@ -22,6 +22,11 @@ QString promptsDir();
 // 实时转录稿子的自动保存文件（可写，只留上次一份；属隐私内容，放在程序数据目录，随卸载清理）
 QString transcriptFile();
 
+// 按需下载的外部工具（如 yt-dlp）
+QString toolsDir();
+// 链接转录下载的音频
+QString linkDownloadsDir();
+
 QString sherpaRoot();
 // 目录不存在时会创建
 QString sherpaModelsDir();

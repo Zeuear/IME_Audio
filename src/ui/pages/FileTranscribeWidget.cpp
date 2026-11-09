@@ -1,5 +1,9 @@
 #include "FileTranscribeWidget.h"
 #include "ui/delegates/FileTaskDelegate.h"
+#include "ui/controls/LinkInputDialog.h"
+#include "services/media/YtDlpManager.h"
+#include <QNetworkAccessManager>
+#include <QStandardPaths>
 #include <QAudioDecoder>
 #include <QAudioBuffer>
 #include <QAudioFormat>
@@ -61,6 +65,7 @@ void FileTranscribeWidget::setupUi()
     m_model = new FileTaskModel(this);
 
     m_addBtn = new QPushButton(this);
+    m_addLinkBtn = new QPushButton(this);
     m_transcribeBtn = new QPushButton(this);   // 空闲时"开始转录"，转录中变为"取消"
     m_exportBtn = new QPushButton(this);
     m_exportTxtCheck = new AnimatedCheckBox(this);
@@ -69,6 +74,7 @@ void FileTranscribeWidget::setupUi()
 
     auto* toolbar = new QHBoxLayout;
     toolbar->addWidget(m_addBtn);
+    toolbar->addWidget(m_addLinkBtn);
     toolbar->addWidget(m_transcribeBtn);
     toolbar->addStretch();
 
@@ -194,12 +200,14 @@ void FileTranscribeWidget::setupUi()
     m_animTimer = new QTimer(this);
     m_animTimer->setInterval(80);
     connect(m_animTimer, &QTimer::timeout, this, [this]() {
-        if (m_currentRow >= 0 && m_currentRow < m_model->rowCount()
-            && m_model->task(m_currentRow).state == FileTask::State::Decoding)
+        const bool decoding = m_currentRow >= 0 && m_currentRow < m_model->rowCount()
+                              && m_model->task(m_currentRow).state == FileTask::State::Decoding;
+        if (decoding || m_model->count(FileTask::State::Downloading) > 0)
             m_list->viewport()->update();
     });
 
     connect(m_addBtn, &QPushButton::clicked, this, &FileTranscribeWidget::chooseFiles);
+    connect(m_addLinkBtn, &QPushButton::clicked, this, &FileTranscribeWidget::addLinksClicked);
     connect(m_transcribeBtn, &QPushButton::clicked, this, [this]() {
         if (m_busy) cancel();
         else transcribeClicked();
@@ -220,11 +228,13 @@ void FileTranscribeWidget::setupUi()
         const int cur = m_list->currentIndex().row();
         if (cur >= top.row() && cur <= bottom.row()) updatePreview();
         updateButtons();
+        updateAnimTimer();
     });
     auto onStructureChanged = [this]() {
         m_listStack->setCurrentIndex(m_model->rowCount() > 0 ? 1 : 0);
         updatePreview();
         updateButtons();
+        updateAnimTimer();
     };
     connect(m_model, &QAbstractItemModel::rowsInserted, this, onStructureChanged);
     connect(m_model, &QAbstractItemModel::rowsRemoved, this, onStructureChanged);
@@ -245,10 +255,12 @@ void FileTranscribeWidget::changeEvent(QEvent* event)
 void FileTranscribeWidget::retranslateUi()
 {
     m_addBtn->setText(tr("Add Files"));
+    m_addLinkBtn->setText(tr("Add Links"));
+    m_addLinkBtn->setToolTip(tr("Download the audio of public Facebook links and transcribe it"));
     m_exportTxtCheck->setLabelText(tr("TXT"));
     m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
     m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));
-    m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\""));
+    m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\" / \"Add Links\""));
     m_copyBtn->setText(tr("Copy"));
     m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
     m_openFolderBtn->setText(tr("Open Folder"));
@@ -288,6 +300,114 @@ void FileTranscribeWidget::chooseFiles()
         tr("Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)")));
 }
 
+// ---------------------------------------------------------------- 链接
+void FileTranscribeWidget::updateAnimTimer()
+{
+    // 解码中和下载中的"未知进度"条都靠这个定时器重绘
+    if (m_busy || m_model->count(FileTask::State::Downloading) > 0) {
+        if (!m_animTimer->isActive()) m_animTimer->start();
+    } else {
+        m_animTimer->stop();
+    }
+}
+
+void FileTranscribeWidget::addLinksClicked()
+{
+    if (!YtDlpManager::isPlatformSupported()) {
+        emit errorOccurred(QStringLiteral("暂不支持链接下载"), QStringLiteral("当前系统没有可用的下载组件"));
+        return;
+    }
+    LinkInputDialog dialog(this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    startDownloads(dialog.links());
+    if (!dialog.invalidLines().isEmpty())
+        m_statusLabel->setText(tr("%1 invalid lines ignored").arg(dialog.invalidLines().size()));
+}
+
+void FileTranscribeWidget::ensureDownloader()
+{
+    if (m_downloader) return;
+    if (!m_nam) m_nam = new QNetworkAccessManager(this);
+    m_downloader = new YtDlpManager(m_nam, this);
+
+    connect(m_downloader, &YtDlpManager::toolStatus, this, [this](const QString& text) {
+        m_statusLabel->setText(text.isEmpty() ? tr("Downloading audio...") : text);
+    });
+    connect(m_downloader, &YtDlpManager::taskProgress, this, [this](quint64 id, int percent) {
+        const int row = m_model->rowOfLink(id);
+        if (row >= 0) m_model->setDownloadPercent(row, percent);
+    });
+    connect(m_downloader, &YtDlpManager::taskTitle, this, [this](quint64 id, const QString& title) {
+        const int row = m_model->rowOfLink(id);
+        if (row >= 0) m_model->setTitle(row, title);
+    });
+    connect(m_downloader, &YtDlpManager::taskFinished, this, &FileTranscribeWidget::onLinkFinished);
+}
+
+void FileTranscribeWidget::startDownloads(const QStringList& urls)
+{
+    if (urls.isEmpty()) return;
+    ensureDownloader();
+    int added = 0;
+    for (const QString& url : urls) {
+        const int row = m_model->addLink(url);
+        if (row < 0) continue;
+        enqueueDownload(row);
+        ++added;
+    }
+    m_statusLabel->setText(added > 0 ? tr("Added %1 links").arg(added) : tr("No new links added"));
+}
+
+void FileTranscribeWidget::enqueueDownload(int row)
+{
+    const quint64 id = m_downloader->enqueue(m_model->task(row).url);
+    m_model->setLinkId(row, id);
+}
+
+void FileTranscribeWidget::onLinkFinished(quint64 id, bool ok, const QString& path, const QString& title, const QString& error)
+{
+    const int row = m_model->rowOfLink(id);
+    if (row < 0) {   // 任务在下载期间被移除了
+        if (ok) m_downloader->release(id);
+        return;
+    }
+
+    if (ok) {
+        m_model->setDownloaded(row, path, title);
+        queueForTranscription(row);
+    } else {
+        LOG_WARN(QString("Link download failed (row %1): %2").arg(row).arg(error));
+        m_model->setFailed(row, error);
+        ++m_linkFailed;
+        m_lastLinkError = error;
+    }
+
+    // 这一轮链接都处理完了再汇总提示，批量添加时不会连弹
+    if (m_model->count(FileTask::State::Downloading) == 0 && m_linkFailed > 0) {
+        const int failed = m_linkFailed;
+        const QString lastError = m_lastLinkError;
+        m_linkFailed = 0;
+        m_lastLinkError.clear();
+        m_statusLabel->setText(tr("%1 links failed to download").arg(failed));
+        emit errorOccurred(QStringLiteral("链接下载失败"),
+                           failed > 1 ? QStringLiteral("%1 个链接下载失败，最后一个原因：%2").arg(failed).arg(lastError)
+                                      : lastError);
+    }
+}
+
+void FileTranscribeWidget::queueForTranscription(int row)
+{
+    if (m_busy) {
+        // 并入当前批次队尾；批次已取消则留在待处理
+        if (!m_cancelled) {
+            m_runRows << row;
+            ++m_fileTotal;
+        }
+        return;
+    }
+    startRun({row});
+}
+
 void FileTranscribeWidget::addFiles(const QStringList& paths)
 {
     if (paths.isEmpty()) return;
@@ -313,12 +433,20 @@ QList<int> FileTranscribeWidget::selectedRows() const
 void FileTranscribeWidget::removeSelected()
 {
     if (m_busy) return;
-    m_model->removeRows(selectedRows());
+    const QList<int> rows = selectedRows();
+    // 链接任务：同时取消下载并删除临时音频
+    if (m_downloader) {
+        for (int row : rows) {
+            if (m_model->task(row).linkId != 0) m_downloader->cancel(m_model->task(row).linkId);
+        }
+    }
+    m_model->removeRows(rows);
 }
 
 void FileTranscribeWidget::clearAll()
 {
     if (m_busy) return;
+    if (m_downloader) m_downloader->cancelAll();
     m_model->clear();
     m_statusLabel->clear();
 }
@@ -340,7 +468,7 @@ void FileTranscribeWidget::showContextMenu(const QPoint& pos)
     clear->setEnabled(!m_busy);
 
     const QAction* chosen = menu.exec(m_list->viewport()->mapToGlobal(pos));
-    if (chosen == retry) startRun(selectedRows());
+    if (chosen == retry) startRun(runnableRows(selectedRows()));
     else if (chosen == remove) removeSelected();
     else if (chosen == clear) clearAll();
 }
@@ -357,13 +485,15 @@ void FileTranscribeWidget::updatePreview()
     }
 
     const FileTask& t = m_model->task(idx.row());
-    m_previewTitle->setText(QFileInfo(t.path).fileName());
+    m_previewTitle->setText(t.displayName());
     // 预览每行带时间戳便于对照音频；复制与导出 txt 用的是不带时间戳的 t.text
     const QString text = t.state == FileTask::State::Failed ? t.error : buildTimestampedText(t.cues);
     const QString shown = m_preview->toPlainText();
+    // 链接任务下载完成前没有路径，用链接区分"是不是同一条"
+    const QString previewKey = t.path.isEmpty() ? t.url : t.path;
     if (shown != text) {
         QScrollBar* bar = m_preview->verticalScrollBar();
-        const bool sameFile = t.path == m_previewPath;
+        const bool sameFile = previewKey == m_previewPath;
         const bool atBottom = bar->value() >= bar->maximum() - 4;
         if (sameFile && !shown.isEmpty() && text.startsWith(shown)) {
             // 转录结果按提交顺序追加，用户的滚动位置和选区都原样保留
@@ -378,7 +508,7 @@ void FileTranscribeWidget::updatePreview()
             if (sameFile) bar->setValue(atBottom ? bar->maximum() : pos);
         }
     }
-    m_previewPath = t.path;
+    m_previewPath = previewKey;
     m_copyBtn->setEnabled(!t.text.isEmpty());
 }
 
@@ -390,7 +520,8 @@ void FileTranscribeWidget::updateButtons()
         hasRunnable = m_model->count(FileTask::State::Pending) > 0 || m_model->count(FileTask::State::Failed) > 0;
     } else {
         for (int row : selected) {
-            if (m_model->task(row).state != FileTask::State::Done) { hasRunnable = true; break; }
+            const auto state = m_model->task(row).state;
+            if (state != FileTask::State::Done && state != FileTask::State::Downloading) { hasRunnable = true; break; }
         }
     }
 
@@ -418,27 +549,41 @@ void FileTranscribeWidget::setBusy(bool busy)
 {
     const bool changed = m_busy != busy;
     m_busy = busy;
-    if (busy) m_animTimer->start();
-    else m_animTimer->stop();
+    updateAnimTimer();
     updateButtons();
     if (changed) emit busyChanged(busy);
 }
 
 void FileTranscribeWidget::transcribeClicked()
 {
-    QList<int> rows;
+    QList<int> candidates;
     const QList<int> selected = selectedRows();
     if (!selected.isEmpty()) {
-        for (int row : selected) {
-            if (m_model->task(row).state != FileTask::State::Done) rows << row;
-        }
+        candidates = selected;
     } else {
         for (int row = 0; row < m_model->rowCount(); ++row) {
             const auto state = m_model->task(row).state;
-            if (state == FileTask::State::Pending || state == FileTask::State::Failed) rows << row;
+            if (state == FileTask::State::Pending || state == FileTask::State::Failed) candidates << row;
         }
     }
-    startRun(rows);
+    startRun(runnableRows(candidates));
+}
+
+QList<int> FileTranscribeWidget::runnableRows(const QList<int>& candidates)
+{
+    QList<int> rows;
+    for (int row : candidates) {
+        const FileTask& t = m_model->task(row);
+        if (t.state == FileTask::State::Done || t.state == FileTask::State::Downloading) continue;
+        if (t.isLink() && t.path.isEmpty()) {   // 链接没下载下来：重新下载，成功后自动转录
+            ensureDownloader();
+            m_model->restartDownload(row);
+            enqueueDownload(row);
+            continue;
+        }
+        rows << row;
+    }
+    return rows;
 }
 
 void FileTranscribeWidget::startRun(const QList<int>& rows)
@@ -831,8 +976,11 @@ void FileTranscribeWidget::exportResults()
     }
     if (rows.isEmpty()) return;
 
-    const QString startDir = m_lastExportDir.isEmpty() ? QFileInfo(m_model->task(rows.first()).path).absolutePath()
-                                                       : m_lastExportDir;
+    // 链接任务的音频在临时目录里，用完即删，不适合作为默认导出位置
+    const FileTask& first = m_model->task(rows.first());
+    const QString defaultDir = first.isLink() ? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                                              : QFileInfo(first.path).absolutePath();
+    const QString startDir = m_lastExportDir.isEmpty() ? defaultDir : m_lastExportDir;
     const QString dir = QFileDialog::getExistingDirectory(this, tr("Choose Export Folder"), startDir);
     if (dir.isEmpty()) return;
 
@@ -845,7 +993,7 @@ void FileTranscribeWidget::exportResults()
     int failed = 0;
     for (int row : std::as_const(rows)) {
         const FileTask& t = m_model->task(row);
-        const QString base = uniqueExportBase(dir, QFileInfo(t.path).completeBaseName(), exts);
+        const QString base = uniqueExportBase(dir, exportBaseName(t), exts);
         for (const QString& ext : std::as_const(exts)) {
             const QString text = ext == QLatin1String("srt") ? buildSrt(t.cues) : t.text;
             if (writeTextFile(QDir(dir).filePath(base + QLatin1Char('.') + ext), text)) ++written;
@@ -857,6 +1005,22 @@ void FileTranscribeWidget::exportResults()
     m_statusLabel->setText(failed > 0 ? tr("Exported %1 files to %2, %3 failed").arg(written).arg(dir).arg(failed)
                                       : tr("Exported %1 files to %2").arg(written).arg(dir));
     m_openFolderBtn->show();
+}
+
+// 链接任务用标题当主名（临时文件名只是视频 id），并去掉文件名不能含的字符
+QString FileTranscribeWidget::exportBaseName(const FileTask& task)
+{
+    const QString fallback = QFileInfo(task.path).completeBaseName();
+    if (!task.isLink() || task.title.isEmpty()) return fallback;
+
+    QString name;
+    for (const QChar c : task.title) {
+        name += (c.unicode() < 0x20 || QStringLiteral("\\/:*?\"<>|").contains(c)) ? QLatin1Char('_') : c;
+    }
+    name = name.trimmed();
+    while (name.endsWith(QLatin1Char('.'))) name.chop(1);   // Windows 不允许文件名以点结尾
+    if (name.size() > 80) name = name.left(80).trimmed();
+    return name.isEmpty() ? fallback : name;
 }
 
 // 同一音频的 txt 与 srt 共用一个主名：只要任一格式的目标已存在就整体换号，

@@ -76,6 +76,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/download_cancel_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_download_tracker_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_row_action_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/media_link_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -159,6 +160,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/Downloader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/UpdateManager.h
+    # 链接转录：链接白名单、yt-dlp 输出解析与失败归类（纯逻辑）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/media/MediaLink.cpp
     # 横条开关与设置页复选框的双向联动
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToggleLink.cpp
     # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC

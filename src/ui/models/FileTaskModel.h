@@ -4,11 +4,17 @@
 #include <QString>
 #include "ui/format/SubtitleFormat.h"
 
-// 一个待转录文件及其进度/结果
+// 一个待转录文件及其进度/结果。链接任务先处于 Downloading，下载完成后 path 指向本地音频，之后与普通文件一样
 struct FileTask {
-    enum class State { Pending, Decoding, Transcribing, Done, Failed, NoSpeech };
+    // Downloading 放在最后，保持其余状态的数值不变
+    enum class State { Pending, Decoding, Transcribing, Done, Failed, NoSpeech, Downloading };
 
     QString path;
+    QString url;          // 非空表示链接任务
+    QString title;
+    quint64 linkId = 0;   // 下载器里的任务 id，把下载结果对回这一行
+    bool isLink() const { return !url.isEmpty(); }
+    QString displayName() const;
     qint64 size = 0;
     State state = State::Pending;
     int segDone = 0;
@@ -41,6 +47,15 @@ public:
 
     // 返回实际新增数量（已存在的路径会被忽略）
     int addPaths(const QStringList& paths);
+
+    // 返回新行号；同一链接已在列表里返回 -1
+    int addLink(const QString& url);
+    int rowOfLink(quint64 linkId) const;
+    void setLinkId(int row, quint64 linkId);
+    void setDownloadPercent(int row, int percent);
+    void setTitle(int row, const QString& title);
+    void setDownloaded(int row, const QString& path, const QString& title);
+    void restartDownload(int row);
     void removeRows(QList<int> rows);
     void clear();
 

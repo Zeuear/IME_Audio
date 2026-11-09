@@ -1,6 +1,6 @@
 #include "UpdateManager.h"
 #include <QFile>
-#include <QSaveFile>
+#include "utils/Downloader.h"
 #include <QDir>
 #include <QDebug>
 #include <QCoreApplication>
@@ -143,50 +143,15 @@ void UpdateManager::downloadUpdate(const QString& savePath) {
         return;
     }
 
-    QNetworkRequest request((QUrl(m_downloadUrl)));
-    request.setHeader(QNetworkRequest::UserAgentHeader, "VoiceIME-Updater-Client");
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-
-    auto* file = new QSaveFile(savePath, this);
-    if (!file->open(QIODevice::WriteOnly)) {
-        emit updateError(tr("Could not open file for writing: %1").arg(file->errorString()));
-        delete file;
-        return;
+    if (!m_downloader) {
+        m_downloader = new Downloader(m_networkManager, this);
+        m_downloader->setUserAgent("VoiceIME-Updater-Client");
+        connect(m_downloader, &Downloader::progress, this,
+                [this](const QString&, qint64 received, qint64 total, double) { emit downloadProgress(received, total); });
+        connect(m_downloader, &Downloader::finished, this, &UpdateManager::downloadFinished);
+        connect(m_downloader, &Downloader::error, this, &UpdateManager::updateError);
     }
-
-    QNetworkReply* reply = m_networkManager->get(request);
-    connect(reply, &QNetworkReply::downloadProgress, this, &UpdateManager::downloadProgress);
-    connect(reply, &QNetworkReply::readyRead, this, [reply, file]() {
-        file->write(reply->readAll());
-    });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, savePath, file]() {
-        onDownloadFinished(reply, savePath, file);
-    });
-}
-
-void UpdateManager::onDownloadFinished(QNetworkReply* reply, const QString& savePath, QSaveFile* file) {
-    reply->deleteLater();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        file->cancelWriting();
-        file->deleteLater();
-        emit updateError(reply->errorString());
-        return;
-    }
-
-    if (!file->commit()) {
-        emit updateError(tr("Failed to save downloaded file: %1").arg(file->errorString()));
-        file->deleteLater();
-        return;
-    }
-    file->deleteLater();
-
-    if (!QFile::exists(savePath)) {
-        emit updateError(tr("Download finished but file was not found on disk."));
-        return;
-    }
-
-    emit downloadFinished(savePath);
+    m_downloader->start(QUrl(m_downloadUrl), savePath);
 }
 
 bool UpdateManager::launchUpdaterAndPrepareExit(const QString& downloadedFilePath, QString* errorMessage) {

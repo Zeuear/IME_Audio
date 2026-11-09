@@ -4,7 +4,12 @@
 #include <QNetworkRequest>
 
 Downloader::Downloader(QNetworkAccessManager* nam, QObject* parent) : QObject(parent), m_nam(nam)
-{}
+{
+    m_stallTimer.setSingleShot(true);
+    connect(&m_stallTimer, &QTimer::timeout, this, [this]() {
+        failAndCleanup("下载超时：长时间没有收到数据");
+    });
+}
 
 Downloader::~Downloader()
 {
@@ -40,6 +45,9 @@ void Downloader::start(const QUrl& url, const QString& savePath)
     // 强制 HTTP/1.1：部分模型服务器（HuggingFace 等）与 Qt 的 HTTP/2 实现握手失败，
     // 会报 "HTTP/2 protocol error" / QNetworkReply::ProtocolError。关闭后可正常下载。
     req.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
+    // GitHub Release 等会 302 到 CDN，允许 https 之间的跳转
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    if (!m_userAgent.isEmpty()) req.setRawHeader("User-Agent", m_userAgent);
 
     m_reply = m_nam->get(req);
 
@@ -49,10 +57,12 @@ void Downloader::start(const QUrl& url, const QString& savePath)
     connect(m_reply, &QNetworkReply::errorOccurred, this, &Downloader::onError);
 
     m_speedTimer.start();
+    if (m_stallTimeoutMs > 0) m_stallTimer.start(m_stallTimeoutMs);
 }
 
 void Downloader::cancel()
 {
+    m_stallTimer.stop();
     if (m_reply) {
         // 断开信号，避免 abort() 触发的 finished/error 再被处理一次
         m_reply->disconnect(this);
@@ -71,7 +81,11 @@ void Downloader::cancel()
 
 void Downloader::cleanupReply()
 {
+    m_stallTimer.stop();
     if (m_reply) {
+        // 先断开再 abort：出错/超时时连接可能还开着，不中止会继续下载；断开避免回调重入
+        m_reply->disconnect(this);
+        m_reply->abort();
         m_reply->deleteLater();
         m_reply = nullptr;
     }
@@ -93,6 +107,7 @@ void Downloader::onReadyRead()
 {
     if (!m_reply || !m_file.isOpen())
         return;
+    if (m_stallTimeoutMs > 0) m_stallTimer.start(m_stallTimeoutMs);   // 有数据就续命
 
     // 每次有新数据到达就立刻写入磁盘，内存中只保留当前这一小块数据
     const QByteArray chunk = m_reply->readAll();
@@ -100,7 +115,6 @@ void Downloader::onReadyRead()
         qint64 written = m_file.write(chunk);
         if (written != chunk.size()) {
             failAndCleanup("写入文件失败: " + m_tmpPath);
-            if (m_reply) m_reply->abort();
             return;
         }
         m_bytesReceived += written;
@@ -135,6 +149,14 @@ void Downloader::onFinished()
             m_bytesReceived += remain.size();
         }
         m_file.close();
+
+        if (m_verifier) {
+            const QString verifyError = m_verifier(m_tmpPath);
+            if (!verifyError.isEmpty()) {
+                failAndCleanup(verifyError);
+                return;
+            }
+        }
 
         if (QFile::exists(m_savePath)) {
             QFile::remove(m_savePath);

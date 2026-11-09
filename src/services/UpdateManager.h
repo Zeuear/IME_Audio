@@ -9,7 +9,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-class QSaveFile;
+class Downloader;
 
 class UpdateManager : public QObject {
     Q_OBJECT
@@ -44,7 +44,6 @@ signals:
 
 private slots:
     void onVersionCheckFinished(QNetworkReply* reply);
-    void onDownloadFinished(QNetworkReply* reply, const QString& savePath, QSaveFile* file);
 
 private:
     QString m_owner;
@@ -54,6 +53,7 @@ private:
     QString m_releaseNotes;
 
     QNetworkAccessManager* m_networkManager;
+    Downloader* m_downloader = nullptr;
 };
 
 #endif
