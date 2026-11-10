@@ -1,6 +1,8 @@
 #pragma once
 #include <QList>
+#include <QPair>
 #include <QString>
+#include <QStringList>
 
 // @brief 模型 CPU 版与 GPU 变体之间的配对规则，纯逻辑、不依赖识别库，便于单元测试。
 namespace GpuVariant {
@@ -39,4 +41,14 @@ inline QString cpuVariantOf(const QList<Link>& links, const QString& gpuRepoId)
     return {};
 }
 
-} // namespace GpuVariant
+inline QList<QPair<QString, QString>> onnxFileList(const QString& convFile, const QString& encoderFile,
+                                                   const QString& decoderFile, const QString& decoderDataFile,
+                                                   const QString& tokenizerDir, const QStringList& tokenizerFiles)
+{
+    QList<QPair<QString, QString>> out{ {{}, convFile}, {{}, encoderFile}, {{}, decoderFile} };
+    if (!decoderDataFile.isEmpty()) out.append({{}, decoderDataFile});
+    for (const QString& t : tokenizerFiles) out.append({tokenizerDir, t});
+    return out;
+}
+
+}

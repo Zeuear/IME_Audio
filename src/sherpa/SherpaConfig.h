@@ -111,6 +111,8 @@ struct Qwen3AsrFiles {
     QString encoderFile = "encoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
     QString decoderFile = "decoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
     QString convFile = "conv_frontend.onnx";    // 用于判断"是否已安装"的探测文件
+    QString decoderDataFile;                    // 外部权重，空串 = 没有；须与 decoderFile 同目录
+    QStringList tokenizerFiles;                 // 放在 tokenizer 子目录下
     QString tokenizer = "tokenizer";
     QString hotwords;
 };
@@ -471,6 +473,8 @@ public:
     static const QString FindByDisplayName(const QString& language, const QString& displayName);
 
 private:
+    // 语言表里的模型行，已把 GPU 变体接在对应 CPU 行后面
+    static const std::vector<std::pair<QString, ModelDescriptor>>& RowsOf(const LanguageTableEntry& entry);
     static const QMap<QString, ModelDescriptor>& Table();
     static const std::vector<std::pair<QString, QStringList>>& LanguageToModels();
 };

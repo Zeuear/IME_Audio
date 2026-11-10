@@ -52,3 +52,19 @@ TEST(GpuVariantTest, IsGpuVariantFollowsFlag)
     EXPECT_TRUE(isGpuVariant(t, "me/gpu-a"));
     EXPECT_FALSE(isGpuVariant(t, "org/cpu-a"));
 }
+
+TEST(GpuVariantTest, FileListWithoutDataFile)
+{
+    const auto l = onnxFileList("conv.onnx", "encoder.onnx", "decoder.onnx", "", "tokenizer", {"merges.txt", "vocab.json"});
+    ASSERT_EQ(l.size(), 5);
+    EXPECT_EQ(l[2], qMakePair(QString(), QString("decoder.onnx")));
+    EXPECT_EQ(l[3], qMakePair(QString("tokenizer"), QString("merges.txt")));
+}
+
+TEST(GpuVariantTest, FileListDataFileSharesDirectoryWithOnnx)
+{
+    const auto l = onnxFileList("conv.onnx", "encoder.onnx", "decoder.onnx", "decoder.onnx.data", "tokenizer", {});
+    ASSERT_EQ(l.size(), 4);
+    EXPECT_EQ(l[3], qMakePair(QString(), QString("decoder.onnx.data")));
+    EXPECT_EQ(l[2].first, l[3].first);
+}

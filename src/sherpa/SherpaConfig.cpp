@@ -1,5 +1,6 @@
 #include "SherpaConfig.h"
 #include <QFileInfo>
+#include <map>
 #include <QFile>
 #include <QCoreApplication>
 #include <QDir>
@@ -426,8 +427,46 @@ const std::pair<QString, ModelDescriptor> kFunasrSenseVoice =
         {ModelArch::SenseVoice, "SenseVoice (Funasr-Nano 多语言)"}};
 const std::pair<QString, ModelDescriptor> kFunasrNano =
     {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30", {ModelArch::FunasrNano}};
-const std::pair<QString, ModelDescriptor> kQwen3Asr =
-    {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25", {ModelArch::Qwen3Asr}};
+// GPU 变体（fp16）所在的 Hugging Face 账号。空串 = 还没上传：不登记变体，CPU 行也不指向它们，
+// 避免列表里出现下载必然失败的选项。账号确定后只改这里
+const QString kQwen3GpuOwner;
+QString qwen3GpuRepo(const QString& size)
+{
+    return kQwen3GpuOwner.isEmpty() ? QString() : kQwen3GpuOwner + "/sherpa-onnx-qwen3-asr-" + size + "-fp16";
+}
+
+const std::pair<QString, ModelDescriptor> kQwen3Asr = [] {
+    ModelDescriptor d{ModelArch::Qwen3Asr};
+    d.gpuRepoId = qwen3GpuRepo("0.6B");
+    return std::make_pair(QString("k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25"), d);
+}();
+
+// GPU 变体
+struct GpuVariantRow {
+    QString cpuRepoId;
+    std::pair<QString, ModelDescriptor> row;
+};
+const std::vector<GpuVariantRow>& GpuVariantRows()
+{
+    static const std::vector<GpuVariantRow> rows = [] {
+        std::vector<GpuVariantRow> r;
+        if (kQwen3GpuOwner.isEmpty()) return r;
+        auto add = [&](const QString& size, const QString& name, const QString& decoderData) {
+            Qwen3AsrFiles f;
+            f.encoderFile = "encoder.onnx";
+            f.decoderFile = "decoder.onnx";
+            f.decoderDataFile = decoderData;
+            f.tokenizerFiles = {"merges.txt", "vocab.json", "tokenizer_config.json"};
+            ModelDescriptor d{ModelArch::Qwen3Asr, f, name};
+            d.gpuVariant = true;
+            r.push_back({kQwen3Asr.first, {qwen3GpuRepo(size), d}});
+        };
+        add("0.6B", "Qwen3-ASR 0.6B (GPU)", "");
+        add("1.7B", "Qwen3-ASR 1.7B (GPU)", "decoder.onnx.data");
+        return r;
+    }();
+    return rows;
+}
 const std::pair<QString, ModelDescriptor> kWhisperBase =
     {"csukuangfj/sherpa-onnx-whisper-base",
         {ModelArch::Whisper, WhisperFiles{.name = "base"}, "Whisper_base (OpenAI/多语言)"}};
@@ -1280,6 +1319,27 @@ bool ModelRegistry::IsStreamingCompanion(const QString& repoId)
     return false;
 }
 
+// 语言表只写 CPU 模型；GPU 变体在这里统一接到对应 CPU 行后面，新增变体不用改各语言表
+const std::vector<std::pair<QString, ModelDescriptor>>& ModelRegistry::RowsOf(const LanguageTableEntry& entry)
+{
+    using Rows = std::vector<std::pair<QString, ModelDescriptor>>;
+    static const std::map<decltype(entry.getter), Rows> expanded = [] {
+        std::map<decltype(entry.getter), Rows> m;
+        for (const auto& e : LanguageTables()) {
+            if (m.count(e.getter)) continue;
+            Rows rows;
+            for (const auto& p : e.getter()) {
+                rows.push_back(p);
+                for (const auto& v : GpuVariantRows())
+                    if (v.cpuRepoId == p.first) rows.push_back(v.row);
+            }
+            m.emplace(e.getter, std::move(rows));
+        }
+        return m;
+    }();
+    return expanded.at(entry.getter);
+}
+
 const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
 {
     static const QMap<QString, ModelDescriptor> merged = [] {
@@ -1291,7 +1351,7 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
             t.insert(pair.first, d);
         }
         for (const auto& entry : LanguageTables()) {
-            const auto& sub = entry.getter();
+            const auto& sub = RowsOf(entry);
             for (const auto& pair : sub) {
                 ModelDescriptor d = pair.second;
 
@@ -1351,7 +1411,7 @@ const std::vector<std::pair<QString, QStringList>>& ModelRegistry::LanguageToMod
         t.reserve(LanguageTables().size());
 
         for (const auto& entry : LanguageTables()) {
-            const auto& sub = entry.getter();
+            const auto& sub = RowsOf(entry);
 
             QStringList models;
             models.reserve(static_cast<int>(sub.size()));
@@ -1441,7 +1501,7 @@ QList<ModelEntry> ModelRegistry::GetModelEntriesByLanguage(const QString& langua
     QList<ModelEntry> entries;
     for (const auto& langEntry : LanguageTables()) {
         if (langEntry.languageName != language) continue;
-        for (const auto& pair : langEntry.getter()) {
+        for (const auto& pair : RowsOf(langEntry)) {
             entries.push_back({pair.second.displayName, pair.first});
         }
         break;
@@ -1453,7 +1513,7 @@ QStringList ModelRegistry::GetLanguagesByRepo(const QString& repoId)
 {
     QStringList langs;
     for (const auto& langEntry : LanguageTables()) {
-        for (const auto& pair : langEntry.getter()) {
+        for (const auto& pair : RowsOf(langEntry)) {
             if (pair.first == repoId) {
                 langs << langEntry.languageName;
                 break;
@@ -1741,7 +1801,7 @@ const QString ModelRegistry::FindByDisplayName(const QString& language, const QS
 {
     for (const auto& langEntry : LanguageTables()) {
         if (langEntry.languageName == language) {
-            for (const auto& modelPair : langEntry.getter()) {
+            for (const auto& modelPair : RowsOf(langEntry)) {
                 if (modelPair.second.displayName == displayName) {
                     return modelPair.first;
                 }
@@ -1878,6 +1938,14 @@ ModelInstallManifest ModelRegistry::BuildManifest(const QString& repoId)
     }
     case ModelArch::Qwen3Asr: {
         auto files = safeGet(Qwen3AsrFiles{});
+        if (files.archiveUrl.isEmpty()) {
+            // GPU 变体：从仓库根目录逐个下载；.onnx 与 .onnx.data 必须在同一目录
+            for (const auto& [sub, name] : GpuVariant::onnxFileList(
+                     files.convFile, files.encoderFile, files.decoderFile, files.decoderDataFile,
+                     files.tokenizer, files.tokenizerFiles))
+                addFile(sub, name);
+            break;
+        }
         manifest.archiveUrl = files.archiveUrl;
         manifest.archiveLocalPath = ModelConfigFactory::getSherpaRoot() + "/" + files.archiveFileName;
         QDir().mkpath(ModelConfigFactory::getSherpaRoot());
