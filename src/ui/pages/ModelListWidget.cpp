@@ -216,12 +216,7 @@ void ModelListWidget::setLanguage(const QString& language)
 
 void ModelListWidget::setGpuMode(bool gpuMode)
 {
-    const QString selected = currentModel();
     m_model->setGpuMode(gpuMode);
-    applySort();
-    fitHeight();
-    // 选中的模型被过滤掉时记下来：列表里看不到，但当前模型没变，切回来要能恢复
-    m_hiddenSelection = setCurrentModel(selected) ? QString() : selected;
 }
 
 bool ModelListWidget::setCurrentModel(const QString& displayName)
@@ -235,7 +230,7 @@ bool ModelListWidget::setCurrentModel(const QString& displayName)
 QString ModelListWidget::currentModel() const
 {
     const QModelIndex index = m_list->currentIndex();
-    return index.isValid() ? index.data(Qt::DisplayRole).toString() : m_hiddenSelection;
+    return index.isValid() ? index.data(Qt::DisplayRole).toString() : QString();
 }
 
 void ModelListWidget::refreshInstalled()
@@ -261,7 +256,8 @@ bool ModelListWidget::eventFilter(QObject* watched, QEvent* event)
             if (action != ModelInfoDelegate::Action::None) {
                 // 按下和松开都拦住：不然会顺带把这一行选成当前模型
                 if (event->type() == QEvent::MouseButtonRelease) {
-                    const QString repoId = index.data(ModelInfoModel::RepoIdRole).toString();
+                    // GPU 版在下载时，取消/重试针对的是 GPU 版自己的仓库
+                    const QString repoId = index.data(ModelInfoModel::DownloadRepoIdRole).toString();
                     if (action == ModelInfoDelegate::Action::Cancel) emit cancelRequested(repoId);
                     else emit retryRequested(repoId);
                 }

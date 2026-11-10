@@ -156,6 +156,13 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         return;
     }
 
+    // 选中的是 CPU 模型；GPU 模式且 GPU 版已下载时，实际加载它的 GPU 版（没下完就继续用 CPU 版）
+    const QString selectedRepoId = repoId;
+    repoId = ModelRegistry::ResolveForMode(selectedRepoId, config.sherpa.useGpu);
+    if (repoId != selectedRepoId) {
+        LOG_INFO(QString("Using GPU variant %1 for selected model %2").arg(repoId, selectedRepoId));
+    }
+
     const QString modelDir = ModelConfigFactory::getSherpaModel() + "/" + repoId.split("/").last();
     LOG_DEBUG(QString("Model load | repo=%1 dir=%2 threads=%3 gpu=%4 reload=%5")
                   .arg(repoId, modelDir).arg(config.sherpa.threads).arg(config.sherpa.useGpu).arg(isReload));

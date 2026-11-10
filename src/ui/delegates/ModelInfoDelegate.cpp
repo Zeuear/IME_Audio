@@ -1,5 +1,6 @@
 #include "ModelInfoDelegate.h"
 #include "ui/models/ModelInfoModel.h"
+#include "sherpa/GpuVariant.h"
 #include <QAbstractItemView>
 #include <QHelpEvent>
 #include <QPainter>
@@ -148,18 +149,8 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     case ModelDownloadTracker::State::None:
         break;
     }
-    // GPU 变体：第二行开头先画"GPU · 体积"，用强调色，三种主题下都取自 palette
-    int subLeft = c.name.left();
-    if (dlState == ModelDownloadTracker::State::None && index.data(ModelInfoModel::GpuVariantRole).toBool()) {
-        const int mb = index.data(ModelInfoModel::SizeMbRole).toInt();
-        const QString badge = mb > 0 ? tr("GPU · %1 GB").arg(mb / 1000.0, 0, 'f', 1) : tr("GPU");
-        p->setPen(pal.color(QPalette::Highlight));
-        const int w = QFontMetrics(subFont).horizontalAdvance(badge);
-        p->drawText(QRect(subLeft, nameRect.bottom() + 2, w, 18), Qt::AlignLeft | Qt::AlignVCenter, badge);
-        subLeft += w + 8;
-    }
     p->setPen(subColor);
-    const QRect langRect(subLeft, nameRect.bottom() + 2, c.name.right() - subLeft + 1, 18);
+    const QRect langRect(c.name.left(), nameRect.bottom() + 2, c.name.width(), 18);
     p->drawText(langRect, Qt::AlignLeft | Qt::AlignVCenter,
                 QFontMetrics(subFont).elidedText(subText, Qt::ElideRight, langRect.width()));
 
@@ -221,14 +212,26 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         features << tr("Punctuation");
         dots << pal.color(QPalette::Highlight);
     }
+    // GPU 模式下的加速状态：不支持 / 没下载（点切换后自动下载）/ 已就绪
+    const int gpuState = index.data(ModelInfoModel::GpuStateRole).toInt();
+    if (gpuState == static_cast<int>(GpuVariant::GpuState::Ready)) {
+        features << tr("GPU ready");
+        dots << pal.color(QPalette::Highlight);
+    } else if (gpuState == static_cast<int>(GpuVariant::GpuState::NotInstalled)) {
+        features << tr("GPU not downloaded");
+        dots << pal.color(QPalette::Mid);
+    } else if (gpuState == static_cast<int>(GpuVariant::GpuState::Unsupported)) {
+        features << tr("No GPU support");
+        dots << pal.color(QPalette::Mid);
+    }
     // 模型自己判断语种：短词、口音下可能串成别的语言，提示用户
     if (index.data(ModelInfoModel::AutoLanguageRole).toBool()) {
         features << tr("Auto language");
         dots << pal.color(QPalette::Mid);
     }
     p->setFont(subFont);
-    // 三项同时出现时行高收紧，保证在 58px 的行内放得下
-    const int lineH = features.size() > 2 ? 16 : 18;
+    // 项多时行高收紧，保证在 58px 的行内放得下
+    const int lineH = features.size() > 3 ? 14 : (features.size() > 2 ? 16 : 18);
     int y = c.features.center().y() - features.size() * lineH / 2;
     for (int i = 0; i < features.size(); ++i, y += lineH) {
         p->setPen(Qt::NoPen);
@@ -264,6 +267,10 @@ bool ModelInfoDelegate::helpEvent(QHelpEvent* e, QAbstractItemView* view, const 
                       .arg(QString::number(100 - score, 'f', 1))
                       .arg(QString::number(rtf * 10, 'f', 1));
         }
+    } else if (c.features.contains(e->pos())
+               && index.data(ModelInfoModel::GpuStateRole).toInt() == static_cast<int>(GpuVariant::GpuState::NotInstalled)) {
+        const double gb = index.data(ModelInfoModel::GpuSizeMbRole).toInt() / 1000.0;
+        tip = tr("The GPU version (about %1 GB) is downloaded automatically when GPU mode is switched on").arg(gb, 0, 'f', 1);
     } else {
         tip = index.data(ModelInfoModel::RepoIdRole).toString();
     }

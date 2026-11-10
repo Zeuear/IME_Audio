@@ -309,7 +309,8 @@ void MainWin::setupUiConnections(){
         notify(NotifyLevel::Info, tr("开始下载模型..."));
     });
     connect(m_sherpaInstaller, &SherpaInstaller::installCancelled, this, [this](const QString&) { m_userCancelledInstall = true; });
-    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString&, bool success, const QString&) {
+    connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString& repoId, bool success, const QString&) {
+        if (repoId == m_autoGpuRepoId) m_autoGpuRepoId.clear();
         ui->model_list_widget->refreshInstalled();
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
         else if (m_userCancelledInstall) notify(NotifyLevel::Info, tr("已取消下载"));   // 取消不是失败，不弹错误
@@ -804,6 +805,49 @@ void MainWin::onLocalModelActivated()
 
 	LOG_DEBUG(QString("Download %1...").arg(repoId));
 	m_sherpaInstaller->installModel(repoId);
+	// GPU 模式下顺带补齐该模型的 GPU 版（没有 GPU 版 / 已下载则什么都不做）
+	if (config.sherpa.useGpu) ensureGpuVariant(repoId);
+}
+
+void MainWin::onComputeModeChanged(bool toGpu)
+{
+    AppConfig& cfg = ConfigManager::instance().config();
+    const QString repoId = ModelRegistry::FindByDisplayName(cfg.sherpa.languageModel, cfg.sherpa.localModelRepoId);
+    LOG_INFO(QString("Compute mode -> %1, selected model=%2").arg(toGpu ? "GPU" : "CPU", repoId));
+
+    // 切回 CPU：自动下载没必要继续，取消并清掉残留
+    if (!toGpu && !m_autoGpuRepoId.isEmpty()) {
+        LOG_INFO(QString("Cancel auto GPU download: %1").arg(m_autoGpuRepoId));
+        m_sherpaInstaller->cancelInstall(m_autoGpuRepoId);
+        m_autoGpuRepoId.clear();
+    }
+    if (repoId.isEmpty()) return;
+    if (toGpu) ensureGpuVariant(repoId);
+    // 让加载器按新模式选 CPU 版或 GPU 版；版本没变时它会直接复用已加载的识别器
+    m_workflow->preloadModel(cfg);
+}
+
+void MainWin::ensureGpuVariant(const QString& repoId)
+{
+    switch (ModelRegistry::GpuStateOf(repoId)) {
+    case GpuVariant::GpuState::Unsupported:
+        notify(NotifyLevel::Info, tr("当前模型不支持 GPU"), tr("继续使用 CPU 运行"));
+        break;
+    case GpuVariant::GpuState::Ready:
+        break;
+    case GpuVariant::GpuState::NotInstalled: {
+        const QString gpuRepo = ModelRegistry::GpuVariantOf(repoId);
+        if (m_sherpaInstaller->isInstalling(gpuRepo)) break;
+        m_autoGpuRepoId = gpuRepo;
+        const ModelDescriptor* d = ModelRegistry::Find(gpuRepo);
+        const double gb = d ? d->approxSizeMb / 1000.0 : 0.0;
+        LOG_INFO(QString("Auto download GPU variant %1 for %2").arg(gpuRepo, repoId));
+        notify(NotifyLevel::Info, tr("正在下载 GPU 版"),
+               tr("约 %1 GB，下载期间继续使用 CPU，完成后自动切换").arg(gb, 0, 'f', 1));
+        m_sherpaInstaller->installModel(gpuRepo);
+        break;
+    }
+    }
 }
 
 // 启动时：配置 → 控件。标准控件由 SettingsBinder 回填，其余是登记表里注明的自定义流程

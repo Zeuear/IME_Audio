@@ -69,17 +69,24 @@ TEST(GpuVariantTest, FileListDataFileSharesDirectoryWithOnnx)
     EXPECT_EQ(l[2].first, l[3].first);
 }
 
-TEST(GpuVariantTest, VisibleInModeSplitsRowsWithoutOverlap)
-{
-    // 一组行在两种模式下可见的数量之和 = 总数，且互不重叠
-    const bool flags[] = { false, true, false, false, true };
-    int cpuVisible = 0, gpuVisible = 0;
-    for (bool v : flags) {
-        EXPECT_NE(visibleInMode(v, false), visibleInMode(v, true));
-        cpuVisible += visibleInMode(v, false);
-        gpuVisible += visibleInMode(v, true);
-    }
-    EXPECT_EQ(cpuVisible, 3);
-    EXPECT_EQ(gpuVisible, 2);
-    EXPECT_EQ(cpuVisible + gpuVisible, 5);
+namespace {
+bool installedOnly(const QString& repo) { return repo == "me/gpu-a"; }
 }
+
+TEST(GpuVariantTest, GpuStateCoversThreeCases)
+{
+    const auto t = sampleTable();
+    EXPECT_EQ(gpuStateOf(t, "org/plain", installedOnly), GpuState::Unsupported);
+    EXPECT_EQ(gpuStateOf(t, "org/cpu-a", installedOnly), GpuState::Ready);
+    EXPECT_EQ(gpuStateOf(t, "org/cpu-a", [](const QString&) { return false; }), GpuState::NotInstalled);
+}
+
+TEST(GpuVariantTest, ResolveUsesGpuOnlyWhenGpuModeAndInstalled)
+{
+    const auto t = sampleTable();
+    EXPECT_EQ(resolveForMode(t, "org/cpu-a", true, installedOnly), QString("me/gpu-a"));
+    EXPECT_EQ(resolveForMode(t, "org/cpu-a", false, installedOnly), QString("org/cpu-a"));
+    EXPECT_EQ(resolveForMode(t, "org/cpu-a", true, [](const QString&) { return false; }), QString("org/cpu-a"));
+    EXPECT_EQ(resolveForMode(t, "org/plain", true, installedOnly), QString("org/plain"));
+}
+

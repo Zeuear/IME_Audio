@@ -1,6 +1,5 @@
 #include "SherpaConfig.h"
 #include <QFileInfo>
-#include <map>
 #include <QFile>
 #include <QCoreApplication>
 #include <QDir>
@@ -10,6 +9,7 @@
 #include "installers/CudaInstaller.h"
 #include "sherpa/LanguageCatalog.h"
 #include "sherpa/GpuVariant.h"
+#include "sherpa/InstallMarker.h"
 #include "utils/AppPaths.h"
 #include "utils/Logger.h"
 #include "config/ConfigManager.h"
@@ -441,7 +441,8 @@ const std::pair<QString, ModelDescriptor> kQwen3Asr = [] {
     return std::make_pair(QString("k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25"), d);
 }();
 
-// GPU 变体
+// GPU 变体（fp16）：不是列表里的行，而是 CPU 行的"加速组件"，只登记进模型表供安装与加载使用。
+// 权重是单文件、按文件清单下载；没有 .int8 后缀。1.7B 只有 fp16，本期不做
 struct GpuVariantRow {
     QString cpuRepoId;
     std::pair<QString, ModelDescriptor> row;
@@ -451,19 +452,14 @@ const std::vector<GpuVariantRow>& GpuVariantRows()
     static const std::vector<GpuVariantRow> rows = [] {
         std::vector<GpuVariantRow> r;
         if (kQwen3GpuOwner.isEmpty()) return r;
-        auto add = [&](const QString& size, const QString& name, int sizeMb, const QString& decoderData) {
-            Qwen3AsrFiles f;
-            f.encoderFile = "encoder.onnx";
-            f.decoderFile = "decoder.onnx";
-            f.decoderDataFile = decoderData;
-            f.tokenizerFiles = {"merges.txt", "vocab.json", "tokenizer_config.json"};
-            ModelDescriptor d{ModelArch::Qwen3Asr, f, name};
-            d.gpuVariant = true;
-            d.approxSizeMb = sizeMb;
-            r.push_back({kQwen3Asr.first, {qwen3GpuRepo(size), d}});
-        };
-        add("0.6B", "Qwen3-ASR 0.6B (GPU)", 1900, "");
-        add("1.7B", "Qwen3-ASR 1.7B (GPU)", 4700, "decoder.onnx.data");
+        Qwen3AsrFiles f;
+        f.encoderFile = "encoder.onnx";
+        f.decoderFile = "decoder.onnx";
+        f.tokenizerFiles = {"merges.txt", "vocab.json", "tokenizer_config.json"};
+        ModelDescriptor d{ModelArch::Qwen3Asr, f, "Qwen3-ASR 0.6B (GPU)"};
+        d.gpuVariant = true;
+        d.approxSizeMb = 1900;
+        r.push_back({kQwen3Asr.first, {qwen3GpuRepo("0.6B"), d}});
         return r;
     }();
     return rows;
@@ -474,6 +470,9 @@ const std::pair<QString, ModelDescriptor> kWhisperBase =
 const std::pair<QString, ModelDescriptor> kOmnilingual300M =
     {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (small)"}};
+// 2026 新增：在 tools/asr_bench 测出分数前先放在各表末尾。
+// FireRedASR2 CTC 已测（中文 90.2 / RTF 0.58，粤语 92.3 / 0.66），准确度与速度都不如现有模型，未列入
+// 约 2.9 GB，CPU 上偏慢，更适合文件转录；必须指定语种，没有自动识别
 const std::pair<QString, ModelDescriptor> kCohereTranscribe =
     {"csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01", {ModelArch::CohereTranscribe}};
 const std::pair<QString, ModelDescriptor> kOmnilingual1B =
@@ -1317,27 +1316,6 @@ bool ModelRegistry::IsStreamingCompanion(const QString& repoId)
     return false;
 }
 
-// 语言表只写 CPU 模型；GPU 变体在这里统一接到对应 CPU 行后面，新增变体不用改各语言表
-const std::vector<std::pair<QString, ModelDescriptor>>& ModelRegistry::RowsOf(const LanguageTableEntry& entry)
-{
-    using Rows = std::vector<std::pair<QString, ModelDescriptor>>;
-    static const std::map<decltype(entry.getter), Rows> expanded = [] {
-        std::map<decltype(entry.getter), Rows> m;
-        for (const auto& e : LanguageTables()) {
-            if (m.count(e.getter)) continue;
-            Rows rows;
-            for (const auto& p : e.getter()) {
-                rows.push_back(p);
-                for (const auto& v : GpuVariantRows())
-                    if (v.cpuRepoId == p.first) rows.push_back(v.row);
-            }
-            m.emplace(e.getter, std::move(rows));
-        }
-        return m;
-    }();
-    return expanded.at(entry.getter);
-}
-
 const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
 {
     static const QMap<QString, ModelDescriptor> merged = [] {
@@ -1349,7 +1327,7 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
             t.insert(pair.first, d);
         }
         for (const auto& entry : LanguageTables()) {
-            const auto& sub = RowsOf(entry);
+            const auto& sub = entry.getter();
             for (const auto& pair : sub) {
                 ModelDescriptor d = pair.second;
 
@@ -1366,6 +1344,16 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
                 }
                 t.insert(pair.first, d);
             }
+        }
+        // GPU 变体不在语言表里（不出现在列表），按它的 CPU 行补齐语言和标点属性后并入
+        for (const auto& v : GpuVariantRows()) {
+            ModelDescriptor d = v.row.second;
+            const auto cpu = t.constFind(v.cpuRepoId);
+            if (cpu != t.constEnd()) {
+                d.language = cpu->language;
+                d.hasBuiltinPunctuation = cpu->hasBuiltinPunctuation;
+            }
+            t.insert(v.row.first, d);
         }
         return t;
         }();
@@ -1409,7 +1397,7 @@ const std::vector<std::pair<QString, QStringList>>& ModelRegistry::LanguageToMod
         t.reserve(LanguageTables().size());
 
         for (const auto& entry : LanguageTables()) {
-            const auto& sub = RowsOf(entry);
+            const auto& sub = entry.getter();
 
             QStringList models;
             models.reserve(static_cast<int>(sub.size()));
@@ -1461,6 +1449,23 @@ bool ModelRegistry::ShouldUseCuda(const ModelDescriptor& desc, bool globalUseGpu
     return GpuVariant::shouldUseCuda(desc.gpuVariant, globalUseGpu);
 }
 
+namespace {
+bool modelInstalled(const QString& repoId)
+{
+    return InstallMarker::isInstalled(ModelConfigFactory::getSherpaModel() + "/" + repoId.split("/").last());
+}
+}
+
+QString ModelRegistry::ResolveForMode(const QString& repoId, bool useGpu)
+{
+    return GpuVariant::resolveForMode(gpuLinks(Table()), repoId, useGpu, modelInstalled);
+}
+
+GpuVariant::GpuState ModelRegistry::GpuStateOf(const QString& cpuRepoId)
+{
+    return GpuVariant::gpuStateOf(gpuLinks(Table()), cpuRepoId, modelInstalled);
+}
+
 QStringList ModelRegistry::GetLanguages()
 {
     QStringList langs;
@@ -1499,7 +1504,7 @@ QList<ModelEntry> ModelRegistry::GetModelEntriesByLanguage(const QString& langua
     QList<ModelEntry> entries;
     for (const auto& langEntry : LanguageTables()) {
         if (langEntry.languageName != language) continue;
-        for (const auto& pair : RowsOf(langEntry)) {
+        for (const auto& pair : langEntry.getter()) {
             entries.push_back({pair.second.displayName, pair.first});
         }
         break;
@@ -1511,7 +1516,7 @@ QStringList ModelRegistry::GetLanguagesByRepo(const QString& repoId)
 {
     QStringList langs;
     for (const auto& langEntry : LanguageTables()) {
-        for (const auto& pair : RowsOf(langEntry)) {
+        for (const auto& pair : langEntry.getter()) {
             if (pair.first == repoId) {
                 langs << langEntry.languageName;
                 break;
@@ -1799,7 +1804,7 @@ const QString ModelRegistry::FindByDisplayName(const QString& language, const QS
 {
     for (const auto& langEntry : LanguageTables()) {
         if (langEntry.languageName == language) {
-            for (const auto& modelPair : RowsOf(langEntry)) {
+            for (const auto& modelPair : langEntry.getter()) {
                 if (modelPair.second.displayName == displayName) {
                     return modelPair.first;
                 }

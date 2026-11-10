@@ -19,8 +19,9 @@ struct ModelInfo {
     double rtf = 0;             // 识别耗时 / 音频时长
     QString metric;             // "cer" / "wer"
     int rank = 0;               // 注册表里的原始顺序（质量从高到低），用于恢复默认排序
-    bool gpuVariant = false;    // GPU 变体（fp16），仅 GPU 模式的列表里出现
-    int sizeMb = 0;             // 下载体积，0 = 未知
+    QString gpuRepoId;          // 该模型的 GPU 变体（隐藏组件，不是列表行），没有则空
+    bool gpuInstalled = false;  // GPU 变体是否已下载
+    int gpuSizeMb = 0;          // GPU 变体的下载体积，只用于提示
 };
 
 class ModelInfoModel : public QAbstractListModel {
@@ -43,8 +44,9 @@ public:
         DownloadStateRole,      // ModelDownloadTracker::State（int），0 = 没有下载任务
         DownloadPercentRole,    // 下载或解压的百分比
         DownloadTextRole,       // 下载中："文件名 · 第几个/共几个 · 百分比"；失败：原因
-        GpuVariantRole,
-        SizeMbRole,
+        GpuStateRole,           // GpuVariant::GpuState（int）；CPU 模式下恒为 -1（不显示）
+        GpuSizeMbRole,          // GPU 变体的下载体积（MB），0 = 没有
+        DownloadRepoIdRole,     // 取消/重试下载时对应的仓库：GPU 版在下载时是它自己的仓库名
     };
 
     // 排序依据；Default 为注册表原始顺序
@@ -60,7 +62,7 @@ public:
     void setTracker(ModelDownloadTracker* tracker);
 
     void setLanguage(const QString& language);
-    // GPU 模式只列 GPU 变体，CPU 模式只列普通模型；切换时按当前语言重建列表
+    // GPU 模式只影响每行"特性"里的 GPU 提示，列表内容两种模式下完全一样
     void setGpuMode(bool gpuMode);
     void refreshInstalled();
     // Descending 表示“最好的在前”（准确度高 / 速度快）；没有基准数据的模型始终排在最后
@@ -72,8 +74,11 @@ public:
     static double speedRating(double rtf);
 
 private:
-    QString m_language;
+    // 该行当前要显示哪个仓库的下载状态：GPU 模式下 GPU 版正在下载就显示它，否则是 CPU 版本身
+    QString downloadRepoOf(const ModelInfo& m) const;
+
     bool m_gpuMode = false;
+    QString m_language;
     QList<ModelInfo> m_items;
     ModelDownloadTracker* m_tracker = nullptr;
 };

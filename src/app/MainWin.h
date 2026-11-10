@@ -90,6 +90,9 @@ private slots:
     void onHotkeyReleased();
     void onStateChanged(WorkflowState newState);
     void onLocalModelActivated();
+    // 切换 CPU/GPU：选中的模型不变，按模式加载对应版本；GPU 版没下载就自动下载，下完由安装器的加载信号重载
+    void onComputeModeChanged(bool toGpu);
+    void ensureGpuVariant(const QString& repoId);
 
 private:
     void setupAppearanceUi();
@@ -173,7 +176,8 @@ private:
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;  
     bool m_loadingSettings = false;
-    bool m_userCancelledInstall = false;  
+    bool m_userCancelledInstall = false;
+    QString m_autoGpuRepoId;   // 切到 GPU 模式时自动下载中的 GPU 版仓库，空 = 没有
     DownloadGroupProgress m_translateProgress; 
 
     // 按住说话

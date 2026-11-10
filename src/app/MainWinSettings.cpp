@@ -123,11 +123,13 @@ void MainWin::registerSettings()
         applySettings(kCaption);   // 实时字幕的流式模型跟随语言
     });
     connect(ui->gpu_backend_widget, &GpuBackendWidget::computeModeChanged, this, [this](GpuBackendWidget::ComputeMode mode) {
-        // 列表过滤只跟显示模式走，载入配置时也要同步，所以放在 m_loadingSettings 判断之前
-        ui->model_list_widget->setGpuMode(mode == GpuBackendWidget::ComputeMode::CUDA);
+        const bool toGpu = mode == GpuBackendWidget::ComputeMode::CUDA;
+        // 列表里的 GPU 提示只跟显示模式走，载入配置时也要同步，所以放在 m_loadingSettings 判断之前
+        ui->model_list_widget->setGpuMode(toGpu);
         if (m_loadingSettings) return;
-        ConfigManager::instance().config().sherpa.useGpu = mode == GpuBackendWidget::ComputeMode::CUDA;
+        ConfigManager::instance().config().sherpa.useGpu = toGpu;
         applySettings(0);
+        onComputeModeChanged(toGpu);
     });
 
     // ---- AI 增强（润色服务每次请求时读配置，不需要额外通知）

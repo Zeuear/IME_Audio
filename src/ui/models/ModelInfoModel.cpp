@@ -69,13 +69,25 @@ QVariant ModelInfoModel::data(const QModelIndex& index, int role) const
     case SpeedRatingRole:     return m.benchmarked ? speedRating(m.rtf) : 0.0;
     case AccuracyLevelRole:   return m.benchmarked ? qRound(accuracyRating(m.score)) : 0;
     case SpeedLevelRole:      return m.benchmarked ? qRound(speedRating(m.rtf)) : 0;
-    case DownloadStateRole:   return m_tracker ? static_cast<int>(m_tracker->info(m.repoId).state) : 0;
-    case DownloadPercentRole: return m_tracker ? m_tracker->info(m.repoId).percent : 0;
-    case DownloadTextRole:    return m_tracker ? m_tracker->info(m.repoId).text : QString();
-    case GpuVariantRole:      return m.gpuVariant;
-    case SizeMbRole:          return m.sizeMb;
+    case DownloadStateRole:   return m_tracker ? static_cast<int>(m_tracker->info(downloadRepoOf(m)).state) : 0;
+    case DownloadPercentRole: return m_tracker ? m_tracker->info(downloadRepoOf(m)).percent : 0;
+    case DownloadTextRole:    return m_tracker ? m_tracker->info(downloadRepoOf(m)).text : QString();
+    case DownloadRepoIdRole:  return downloadRepoOf(m);
+    case GpuSizeMbRole:       return m.gpuSizeMb;
+    case GpuStateRole:
+        if (!m_gpuMode) return -1;
+        if (m.gpuRepoId.isEmpty()) return static_cast<int>(GpuVariant::GpuState::Unsupported);
+        return static_cast<int>(m.gpuInstalled ? GpuVariant::GpuState::Ready : GpuVariant::GpuState::NotInstalled);
     default:                  return {};
     }
+}
+
+QString ModelInfoModel::downloadRepoOf(const ModelInfo& m) const
+{
+    if (m_gpuMode && m_tracker && !m.gpuRepoId.isEmpty()
+        && m_tracker->info(m.gpuRepoId).state != ModelDownloadTracker::State::None)
+        return m.gpuRepoId;
+    return m.repoId;
 }
 
 void ModelInfoModel::setTracker(ModelDownloadTracker* tracker)
@@ -84,8 +96,9 @@ void ModelInfoModel::setTracker(ModelDownloadTracker* tracker)
     if (!tracker) return;
     connect(tracker, &ModelDownloadTracker::changed, this, [this](const QString& repoId) {
         for (int i = 0; i < m_items.size(); ++i) {
-            if (m_items[i].repoId != repoId) continue;
-            m_items[i].installed = SherpaInstaller::isInstalled(repoId);   // 下完的那一刻"已安装"也要跟着亮
+            if (m_items[i].repoId != repoId && m_items[i].gpuRepoId != repoId) continue;
+            m_items[i].installed = SherpaInstaller::isInstalled(m_items[i].repoId);   // 下完的那一刻"已安装"也要跟着亮
+            if (!m_items[i].gpuRepoId.isEmpty()) m_items[i].gpuInstalled = SherpaInstaller::isInstalled(m_items[i].gpuRepoId);
             const QModelIndex idx = index(i);
             emit dataChanged(idx, idx);
         }
@@ -96,7 +109,8 @@ void ModelInfoModel::setGpuMode(bool gpuMode)
 {
     if (m_gpuMode == gpuMode) return;
     m_gpuMode = gpuMode;
-    if (!m_language.isEmpty()) setLanguage(m_language);
+    if (m_items.isEmpty()) return;
+    emit dataChanged(index(0), index(m_items.size() - 1));
 }
 
 void ModelInfoModel::setLanguage(const QString& language)
@@ -114,8 +128,6 @@ void ModelInfoModel::setLanguage(const QString& language)
     for (const ModelEntry& e : ModelRegistry::GetModelEntriesByLanguage(language)) {
         // 注册表里有空白占位的 repoId，跳过
         if (e.repoPath.trimmed().isEmpty()) continue;
-        const ModelDescriptor* desc = ModelRegistry::Find(e.repoPath);
-        if (!GpuVariant::visibleInMode(desc && desc->gpuVariant, m_gpuMode)) continue;
         ModelInfo m;
         m.displayName = e.displayName;
         m.repoId = e.repoPath;
@@ -124,10 +136,13 @@ void ModelInfoModel::setLanguage(const QString& language)
         }
         m.installed = SherpaInstaller::isInstalled(e.repoPath);
         if (const ModelDescriptor* d = ModelRegistry::Find(e.repoPath)) {
-            m.gpuVariant = d->gpuVariant;
-            m.sizeMb = d->approxSizeMb;
             m.builtinPunct = d->hasBuiltinPunctuation;
             m.autoLanguage = ModelRegistry::detectsLanguageAutomatically(*d, static_cast<int>(m.languages.size()));
+            m.gpuRepoId = d->gpuRepoId;
+            if (const ModelDescriptor* g = ModelRegistry::Find(d->gpuRepoId)) {
+                m.gpuSizeMb = g->approxSizeMb;
+                m.gpuInstalled = SherpaInstaller::isInstalled(d->gpuRepoId);
+            }
         }
         const QJsonObject s = scores.value(e.repoPath).toObject();
         if (!s.isEmpty()) {
@@ -173,6 +188,7 @@ void ModelInfoModel::setSort(SortKey key, Qt::SortOrder order)
 void ModelInfoModel::refreshInstalled()
 {
     for (int i = 0; i < m_items.size(); ++i) {
+        if (!m_items[i].gpuRepoId.isEmpty()) m_items[i].gpuInstalled = SherpaInstaller::isInstalled(m_items[i].gpuRepoId);
         const bool installed = SherpaInstaller::isInstalled(m_items[i].repoId);
         if (installed == m_items[i].installed) continue;
         m_items[i].installed = installed;

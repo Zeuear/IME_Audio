@@ -10,6 +10,7 @@
 #include <functional>
 #include <variant>
 #include "cxx-api.h"
+#include "sherpa/GpuVariant.h"
 
 
 enum class ModelArch {
@@ -158,7 +159,7 @@ struct ModelDescriptor {
 
     QString gpuRepoId;                     // 非空 = 该 CPU 模型有对应的 GPU 变体（另一行）
     bool gpuVariant = false;               // 该行本身是 GPU 变体（fp16），只有它才会用 CUDA
-    int approxSizeMb = 0;                  // 下载体积（MB），只用于界面显示，不联网查
+    int approxSizeMb = 0;                  // GPU 变体的下载体积（MB），只用于界面显示
 
     ModelDescriptor(ModelArch a)
         : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {
@@ -456,6 +457,9 @@ public:
     static QString GpuVariantOf(const QString& cpuRepoId);   // 没有返回空串
     static QString CpuVariantOf(const QString& gpuRepoId);   // 没有返回空串
     static bool ShouldUseCuda(const ModelDescriptor& desc, bool globalUseGpu);
+    // 选中 CPU 模型后实际加载哪个仓库（GPU 模式且 GPU 版已下载才换成 GPU 版）
+    static QString ResolveForMode(const QString& repoId, bool useGpu);
+    static GpuVariant::GpuState GpuStateOf(const QString& cpuRepoId);
     // allowHotwords=false 用于实时字幕：流式 BPE 模型没配词表，套用全局热词可能导致创建失败
     static Result GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords = true);
 
@@ -474,8 +478,6 @@ public:
     static const QString FindByDisplayName(const QString& language, const QString& displayName);
 
 private:
-    // 语言表里的模型行，已把 GPU 变体接在对应 CPU 行后面
-    static const std::vector<std::pair<QString, ModelDescriptor>>& RowsOf(const LanguageTableEntry& entry);
     static const QMap<QString, ModelDescriptor>& Table();
     static const std::vector<std::pair<QString, QStringList>>& LanguageToModels();
 };
