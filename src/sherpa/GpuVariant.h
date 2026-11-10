@@ -53,6 +53,12 @@ inline QList<QPair<QString, QString>> onnxFileList(const QString& convFile, cons
 }
 
 
+// 启动时首次加载模型要不要等 GPU 检测：只有 useGpu 为真且检测还没结束才等，useGpu 为假时立即加载
+inline bool shouldWaitForGpuDetection(bool useGpu, bool detectionDone)
+{
+    return useGpu && !detectionDone;
+}
+
 // 该 CPU 模型的 GPU 加速组件状态：没有 GPU 版 / 有但没下载 / 已下载
 enum class GpuState { Unsupported, NotInstalled, Ready };
 

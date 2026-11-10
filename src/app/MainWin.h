@@ -93,6 +93,10 @@ private slots:
     // 切换 CPU/GPU：选中的模型不变，按模式加载对应版本；GPU 版没下载就自动下载，下完由安装器的加载信号重载
     void onComputeModeChanged(bool toGpu);
     void ensureGpuVariant(const QString& repoId);
+    // 首次加载模型：useGpu 为真时等 GPU 检测结束再加载（最多 kGpuDetectionWaitMs），只加载一次
+    void requestPreload();
+    void settleGpuDetection(const char* reason);
+    void onGpuDetectionFinished(bool ready);
 
 private:
     void setupAppearanceUi();
@@ -178,6 +182,11 @@ private:
     bool m_loadingSettings = false;
     bool m_userCancelledInstall = false;
     QString m_autoGpuRepoId;   // 切到 GPU 模式时自动下载中的 GPU 版仓库，空 = 没有
+    static constexpr int kGpuDetectionWaitMs = 5000;
+    QTimer* m_detectTimer = nullptr;
+    bool m_gpuDetectionDone = false;
+    bool m_preloadDeferred = false;     // 首次加载被推迟，等检测结果
+    bool m_detectionTimedOut = false;
     DownloadGroupProgress m_translateProgress; 
 
     // 按住说话

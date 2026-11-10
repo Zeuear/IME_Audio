@@ -90,3 +90,11 @@ TEST(GpuVariantTest, ResolveUsesGpuOnlyWhenGpuModeAndInstalled)
     EXPECT_EQ(resolveForMode(t, "org/plain", true, installedOnly), QString("org/plain"));
 }
 
+
+TEST(GpuVariantTest, WaitForGpuDetectionOnlyWhenUseGpuAndNotDone)
+{
+    EXPECT_TRUE(shouldWaitForGpuDetection(true, false));
+    EXPECT_FALSE(shouldWaitForGpuDetection(true, true));
+    EXPECT_FALSE(shouldWaitForGpuDetection(false, false));   // useGpu 关闭：立即加载，行为不变
+    EXPECT_FALSE(shouldWaitForGpuDetection(false, true));
+}

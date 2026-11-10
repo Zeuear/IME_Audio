@@ -342,6 +342,9 @@ void MainWin::setupUiConnections(){
     connect(ui->gpu_backend_widget, &GpuBackendWidget::detectFinished, this, [this](bool result) {
         ConfigManager::instance().config().sherpa.useGpu = result;
         ConfigManager::instance().save();
+        // 检测结果可能把模式改回 CPU 而不发 computeModeChanged，列表的 GPU 提示要跟上
+        ui->model_list_widget->setGpuMode(result);
+        onGpuDetectionFinished(result);
     });
 
     // gemini
@@ -560,8 +563,7 @@ void MainWin::setupUiConnections(){
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
         this, [this](const QString& repoId, bool success, const QString& msg) {
             if (success && !repoId.isEmpty()) {
-                const AppConfig& config = ConfigManager::instance().config();
-                m_workflow->preloadModel(config);
+                requestPreload();
                 notify(NotifyLevel::Info, tr("模型加载成功"));
             }
         });
@@ -809,6 +811,56 @@ void MainWin::onLocalModelActivated()
 	if (config.sherpa.useGpu) ensureGpuVariant(repoId);
 }
 
+// 首次加载模型的入口：useGpu 为真且 GPU 检测还没结束时先不加载，等检测结果再加载一次。
+// 否则会先按 CPU 加载、检测完又按 CUDA 重载，白白多花数秒
+void MainWin::requestPreload()
+{
+    const AppConfig& cfg = ConfigManager::instance().config();
+    // 平台没有 CUDA 时检测不会有结果可等
+    const bool detectionDone = m_gpuDetectionDone || !cudaPlatformSpec().detectable;
+    if (GpuVariant::shouldWaitForGpuDetection(cfg.sherpa.useGpu, detectionDone)) {
+        if (!m_preloadDeferred) LOG_INFO("Model load deferred until GPU detection finishes");
+        m_preloadDeferred = true;
+        if (!m_detectTimer) {
+            m_detectTimer = new QTimer(this);
+            m_detectTimer->setSingleShot(true);
+            m_detectTimer->setInterval(kGpuDetectionWaitMs);
+            connect(m_detectTimer, &QTimer::timeout, this, [this]() {
+                m_detectionTimedOut = true;
+                settleGpuDetection("detection timeout");
+            });
+        }
+        if (!m_detectTimer->isActive()) m_detectTimer->start();
+        return;
+    }
+    LOG_INFO(QString("Model load triggered by %1").arg(cfg.sherpa.useGpu ? "detection already finished" : "useGpu disabled"));
+    m_workflow->preloadModel(cfg);
+}
+
+void MainWin::settleGpuDetection(const char* reason)
+{
+    m_gpuDetectionDone = true;
+    if (m_detectTimer) m_detectTimer->stop();
+    if (!m_preloadDeferred) return;
+    m_preloadDeferred = false;
+    LOG_INFO(QString("Model load triggered by %1").arg(reason));
+    m_workflow->preloadModel(ConfigManager::instance().config());
+}
+
+void MainWin::onGpuDetectionFinished(bool ready)
+{
+    if (m_detectionTimedOut) {
+        // 已经超时按当前状态加载过了；检测结果才出来且 CUDA 可用时，补一次加载切到 GPU
+        m_detectionTimedOut = false;
+        if (ready) {
+            LOG_INFO("Model load re-triggered by late GPU detection");
+            m_workflow->preloadModel(ConfigManager::instance().config());
+        }
+        return;
+    }
+    settleGpuDetection("detection finished");
+}
+
 void MainWin::onComputeModeChanged(bool toGpu)
 {
     AppConfig& cfg = ConfigManager::instance().config();
@@ -883,7 +935,7 @@ void MainWin::loadConfigToUI() {
                                                           cfg.sherpa.localModelRepoId);
         if (!repoId.isEmpty()) {
             m_sherpaInstaller->installModel(repoId);
-            m_workflow->preloadModel(cfg);
+            requestPreload();
         }
     }
 
