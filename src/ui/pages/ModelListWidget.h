@@ -12,6 +12,8 @@ public:
     explicit ModelListWidget(QWidget* parent = nullptr);
 
     void setLanguage(const QString& language);
+    // GPU 模式只列 GPU 变体；当前选中的模型若被过滤掉，选中状态不动（只是列表里看不到）
+    void setGpuMode(bool gpuMode);
     bool setCurrentModel(const QString& displayName);
     QString currentModel() const;
     void refreshInstalled();
@@ -39,6 +41,7 @@ private:
     void applySort();
 
     ModelInfoModel* m_model = nullptr;
+    QString m_hiddenSelection;   // 当前模型被模式过滤掉时的显示名
     ModelDownloadTracker* m_tracker = nullptr;
     QWidget* m_header = nullptr;
     QListView* m_list = nullptr;

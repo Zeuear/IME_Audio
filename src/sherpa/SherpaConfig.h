@@ -158,6 +158,7 @@ struct ModelDescriptor {
 
     QString gpuRepoId;                     // 非空 = 该 CPU 模型有对应的 GPU 变体（另一行）
     bool gpuVariant = false;               // 该行本身是 GPU 变体（fp16），只有它才会用 CUDA
+    int approxSizeMb = 0;                  // 下载体积（MB），只用于界面显示，不联网查
 
     ModelDescriptor(ModelArch a)
         : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {

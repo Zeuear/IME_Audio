@@ -123,6 +123,8 @@ void MainWin::registerSettings()
         applySettings(kCaption);   // 实时字幕的流式模型跟随语言
     });
     connect(ui->gpu_backend_widget, &GpuBackendWidget::computeModeChanged, this, [this](GpuBackendWidget::ComputeMode mode) {
+        // 列表过滤只跟显示模式走，载入配置时也要同步，所以放在 m_loadingSettings 判断之前
+        ui->model_list_widget->setGpuMode(mode == GpuBackendWidget::ComputeMode::CUDA);
         if (m_loadingSettings) return;
         ConfigManager::instance().config().sherpa.useGpu = mode == GpuBackendWidget::ComputeMode::CUDA;
         applySettings(0);

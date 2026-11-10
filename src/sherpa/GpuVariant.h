@@ -13,6 +13,12 @@ struct Link {
     bool gpuVariant = false;  // 该行本身是 GPU 变体
 };
 
+// 列表可见性：CPU 模式只列普通模型，GPU 模式只列 GPU 变体
+inline bool visibleInMode(bool gpuVariant, bool gpuMode)
+{
+    return gpuVariant == gpuMode;
+}
+
 // int8 模型在 ORT 的 CUDA 后端没有算子内核，只有 GPU 变体才值得用 CUDA
 inline bool shouldUseCuda(bool gpuVariant, bool globalUseGpu)
 {

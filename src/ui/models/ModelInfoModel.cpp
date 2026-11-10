@@ -1,5 +1,6 @@
 #include "ModelInfoModel.h"
 #include "sherpa/SherpaConfig.h"
+#include "sherpa/GpuVariant.h"
 #include "sherpa/SherpaManager.h"
 #include "ModelDownloadTracker.h"
 #include "utils/Logger.h"
@@ -71,6 +72,8 @@ QVariant ModelInfoModel::data(const QModelIndex& index, int role) const
     case DownloadStateRole:   return m_tracker ? static_cast<int>(m_tracker->info(m.repoId).state) : 0;
     case DownloadPercentRole: return m_tracker ? m_tracker->info(m.repoId).percent : 0;
     case DownloadTextRole:    return m_tracker ? m_tracker->info(m.repoId).text : QString();
+    case GpuVariantRole:      return m.gpuVariant;
+    case SizeMbRole:          return m.sizeMb;
     default:                  return {};
     }
 }
@@ -89,6 +92,13 @@ void ModelInfoModel::setTracker(ModelDownloadTracker* tracker)
     });
 }
 
+void ModelInfoModel::setGpuMode(bool gpuMode)
+{
+    if (m_gpuMode == gpuMode) return;
+    m_gpuMode = gpuMode;
+    if (!m_language.isEmpty()) setLanguage(m_language);
+}
+
 void ModelInfoModel::setLanguage(const QString& language)
 {
     beginResetModel();
@@ -104,6 +114,8 @@ void ModelInfoModel::setLanguage(const QString& language)
     for (const ModelEntry& e : ModelRegistry::GetModelEntriesByLanguage(language)) {
         // 注册表里有空白占位的 repoId，跳过
         if (e.repoPath.trimmed().isEmpty()) continue;
+        const ModelDescriptor* desc = ModelRegistry::Find(e.repoPath);
+        if (!GpuVariant::visibleInMode(desc && desc->gpuVariant, m_gpuMode)) continue;
         ModelInfo m;
         m.displayName = e.displayName;
         m.repoId = e.repoPath;
@@ -112,6 +124,8 @@ void ModelInfoModel::setLanguage(const QString& language)
         }
         m.installed = SherpaInstaller::isInstalled(e.repoPath);
         if (const ModelDescriptor* d = ModelRegistry::Find(e.repoPath)) {
+            m.gpuVariant = d->gpuVariant;
+            m.sizeMb = d->approxSizeMb;
             m.builtinPunct = d->hasBuiltinPunctuation;
             m.autoLanguage = ModelRegistry::detectsLanguageAutomatically(*d, static_cast<int>(m.languages.size()));
         }

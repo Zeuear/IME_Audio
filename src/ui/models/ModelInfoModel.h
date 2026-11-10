@@ -19,6 +19,8 @@ struct ModelInfo {
     double rtf = 0;             // 识别耗时 / 音频时长
     QString metric;             // "cer" / "wer"
     int rank = 0;               // 注册表里的原始顺序（质量从高到低），用于恢复默认排序
+    bool gpuVariant = false;    // GPU 变体（fp16），仅 GPU 模式的列表里出现
+    int sizeMb = 0;             // 下载体积，0 = 未知
 };
 
 class ModelInfoModel : public QAbstractListModel {
@@ -41,6 +43,8 @@ public:
         DownloadStateRole,      // ModelDownloadTracker::State（int），0 = 没有下载任务
         DownloadPercentRole,    // 下载或解压的百分比
         DownloadTextRole,       // 下载中："文件名 · 第几个/共几个 · 百分比"；失败：原因
+        GpuVariantRole,
+        SizeMbRole,
     };
 
     // 排序依据；Default 为注册表原始顺序
@@ -56,6 +60,8 @@ public:
     void setTracker(ModelDownloadTracker* tracker);
 
     void setLanguage(const QString& language);
+    // GPU 模式只列 GPU 变体，CPU 模式只列普通模型；切换时按当前语言重建列表
+    void setGpuMode(bool gpuMode);
     void refreshInstalled();
     // Descending 表示“最好的在前”（准确度高 / 速度快）；没有基准数据的模型始终排在最后
     void setSort(SortKey key, Qt::SortOrder order);
@@ -67,6 +73,7 @@ public:
 
 private:
     QString m_language;
+    bool m_gpuMode = false;
     QList<ModelInfo> m_items;
     ModelDownloadTracker* m_tracker = nullptr;
 };

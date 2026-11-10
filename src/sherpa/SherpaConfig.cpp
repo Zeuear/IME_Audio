@@ -451,7 +451,7 @@ const std::vector<GpuVariantRow>& GpuVariantRows()
     static const std::vector<GpuVariantRow> rows = [] {
         std::vector<GpuVariantRow> r;
         if (kQwen3GpuOwner.isEmpty()) return r;
-        auto add = [&](const QString& size, const QString& name, const QString& decoderData) {
+        auto add = [&](const QString& size, const QString& name, int sizeMb, const QString& decoderData) {
             Qwen3AsrFiles f;
             f.encoderFile = "encoder.onnx";
             f.decoderFile = "decoder.onnx";
@@ -459,10 +459,11 @@ const std::vector<GpuVariantRow>& GpuVariantRows()
             f.tokenizerFiles = {"merges.txt", "vocab.json", "tokenizer_config.json"};
             ModelDescriptor d{ModelArch::Qwen3Asr, f, name};
             d.gpuVariant = true;
+            d.approxSizeMb = sizeMb;
             r.push_back({kQwen3Asr.first, {qwen3GpuRepo(size), d}});
         };
-        add("0.6B", "Qwen3-ASR 0.6B (GPU)", "");
-        add("1.7B", "Qwen3-ASR 1.7B (GPU)", "decoder.onnx.data");
+        add("0.6B", "Qwen3-ASR 0.6B (GPU)", 1900, "");
+        add("1.7B", "Qwen3-ASR 1.7B (GPU)", 4700, "decoder.onnx.data");
         return r;
     }();
     return rows;
@@ -473,9 +474,6 @@ const std::pair<QString, ModelDescriptor> kWhisperBase =
 const std::pair<QString, ModelDescriptor> kOmnilingual300M =
     {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (small)"}};
-// 2026 新增：在 tools/asr_bench 测出分数前先放在各表末尾。
-// FireRedASR2 CTC 已测（中文 90.2 / RTF 0.58，粤语 92.3 / 0.66），准确度与速度都不如现有模型，未列入
-// 约 2.9 GB，CPU 上偏慢，更适合文件转录；必须指定语种，没有自动识别
 const std::pair<QString, ModelDescriptor> kCohereTranscribe =
     {"csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01", {ModelArch::CohereTranscribe}};
 const std::pair<QString, ModelDescriptor> kOmnilingual1B =

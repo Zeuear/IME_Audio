@@ -815,6 +815,7 @@ void MainWin::loadConfigToUI() {
     m_settings->loadAll();
     ui->shortcut_edit->setShortCut(cfg.hotkey);
     ui->gpu_backend_widget->setComputeMode(cfg.sherpa.useGpu ? GpuBackendWidget::ComputeMode::CUDA : GpuBackendWidget::ComputeMode::CPU);
+    ui->model_list_widget->setGpuMode(cfg.sherpa.useGpu);
     const int index = ui->language_comb->findData(cfg.sherpa.languageModel);
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);

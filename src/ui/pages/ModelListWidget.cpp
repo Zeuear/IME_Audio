@@ -214,6 +214,16 @@ void ModelListWidget::setLanguage(const QString& language)
     if (m_model->rowCount() > 0) m_list->setCurrentIndex(m_model->index(0));
 }
 
+void ModelListWidget::setGpuMode(bool gpuMode)
+{
+    const QString selected = currentModel();
+    m_model->setGpuMode(gpuMode);
+    applySort();
+    fitHeight();
+    // 选中的模型被过滤掉时记下来：列表里看不到，但当前模型没变，切回来要能恢复
+    m_hiddenSelection = setCurrentModel(selected) ? QString() : selected;
+}
+
 bool ModelListWidget::setCurrentModel(const QString& displayName)
 {
     const int row = m_model->rowOfDisplayName(displayName);
@@ -225,7 +235,7 @@ bool ModelListWidget::setCurrentModel(const QString& displayName)
 QString ModelListWidget::currentModel() const
 {
     const QModelIndex index = m_list->currentIndex();
-    return index.isValid() ? index.data(Qt::DisplayRole).toString() : QString();
+    return index.isValid() ? index.data(Qt::DisplayRole).toString() : m_hiddenSelection;
 }
 
 void ModelListWidget::refreshInstalled()

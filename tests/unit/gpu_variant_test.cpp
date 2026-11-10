@@ -68,3 +68,18 @@ TEST(GpuVariantTest, FileListDataFileSharesDirectoryWithOnnx)
     EXPECT_EQ(l[3], qMakePair(QString(), QString("decoder.onnx.data")));
     EXPECT_EQ(l[2].first, l[3].first);
 }
+
+TEST(GpuVariantTest, VisibleInModeSplitsRowsWithoutOverlap)
+{
+    // 一组行在两种模式下可见的数量之和 = 总数，且互不重叠
+    const bool flags[] = { false, true, false, false, true };
+    int cpuVisible = 0, gpuVisible = 0;
+    for (bool v : flags) {
+        EXPECT_NE(visibleInMode(v, false), visibleInMode(v, true));
+        cpuVisible += visibleInMode(v, false);
+        gpuVisible += visibleInMode(v, true);
+    }
+    EXPECT_EQ(cpuVisible, 3);
+    EXPECT_EQ(gpuVisible, 2);
+    EXPECT_EQ(cpuVisible + gpuVisible, 5);
+}

@@ -148,8 +148,18 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     case ModelDownloadTracker::State::None:
         break;
     }
+    // GPU 变体：第二行开头先画"GPU · 体积"，用强调色，三种主题下都取自 palette
+    int subLeft = c.name.left();
+    if (dlState == ModelDownloadTracker::State::None && index.data(ModelInfoModel::GpuVariantRole).toBool()) {
+        const int mb = index.data(ModelInfoModel::SizeMbRole).toInt();
+        const QString badge = mb > 0 ? tr("GPU · %1 GB").arg(mb / 1000.0, 0, 'f', 1) : tr("GPU");
+        p->setPen(pal.color(QPalette::Highlight));
+        const int w = QFontMetrics(subFont).horizontalAdvance(badge);
+        p->drawText(QRect(subLeft, nameRect.bottom() + 2, w, 18), Qt::AlignLeft | Qt::AlignVCenter, badge);
+        subLeft += w + 8;
+    }
     p->setPen(subColor);
-    const QRect langRect(c.name.left(), nameRect.bottom() + 2, c.name.width(), 18);
+    const QRect langRect(subLeft, nameRect.bottom() + 2, c.name.right() - subLeft + 1, 18);
     p->drawText(langRect, Qt::AlignLeft | Qt::AlignVCenter,
                 QFontMetrics(subFont).elidedText(subText, Qt::ElideRight, langRect.width()));
 
