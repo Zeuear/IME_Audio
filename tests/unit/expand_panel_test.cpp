@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <QAbstractButton>
+#include <QCoreApplication>
 #include <QList>
+#include <QMouseEvent>
 #include <QPoint>
 #include <QRect>
 #include <QSize>
@@ -11,6 +13,7 @@
 #include "ui/controls/ExpandPanel.h"
 #include "ui/controls/FloatingWindow.h"
 #include "ui/controls/PanelState.h"
+#include "ui/infobar/appleshadoweffect.h"
 
 // QApplication 由 support/widget_app_environment.cpp 里的全局环境提供
 
@@ -166,6 +169,30 @@ TEST(ExpandPanel, OpeningItDoesNotStealFocusFromTheDictationTarget) {
     // 点图标开面板不能把前台窗口切走；用户自己点进输入框时才拿焦点
     PanelFixture f;
     EXPECT_TRUE(f.panel.testAttribute(Qt::WA_ShowWithoutActivating));
+}
+
+TEST(ExpandPanel, UsesAppleShadowAndKeepsRoundedBody) {
+    ExpandPanel panel;
+    auto* shadow = qobject_cast<AppleShadowEffect*>(panel.graphicsEffect());
+    ASSERT_NE(shadow, nullptr);
+    EXPECT_EQ(shadow->cornerRadius(), 8);
+}
+
+TEST(ExpandPanel, ResizeCursorIsAvailableAlongRightAndBottomEdges) {
+    ExpandPanel panel;
+    panel.showPage(Page::Dictionary);
+
+    const QPoint rightEdge(panel.width() - 8, panel.height() / 2);
+    QMouseEvent rightMove(QEvent::MouseMove, rightEdge, panel.mapToGlobal(rightEdge),
+                          Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&panel, &rightMove);
+    EXPECT_EQ(panel.cursor().shape(), Qt::SizeHorCursor);
+
+    const QPoint bottomEdge(panel.width() / 2, panel.height() - 8);
+    QMouseEvent bottomMove(QEvent::MouseMove, bottomEdge, panel.mapToGlobal(bottomEdge),
+                           Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&panel, &bottomMove);
+    EXPECT_EQ(panel.cursor().shape(), Qt::SizeVerCursor);
 }
 
 // ---- 横条上的词典 / 文件转录图标 ----

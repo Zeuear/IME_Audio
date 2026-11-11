@@ -13,10 +13,10 @@
 #include <QWindow>
 
 namespace {
-constexpr int kShadowMargin = 10;
+constexpr int kShadowMargin = 16;
+constexpr int kCornerRadius = 8;
 constexpr QSize kPanelSize(780 + 2 * kShadowMargin, 520 + 2 * kShadowMargin);
 constexpr QSize kMinPanelSize(480 + 2 * kShadowMargin, 300 + 2 * kShadowMargin);
-constexpr int kGrip = 5;          // 右边和下边留给鼠标拖动的宽度
 constexpr int kCornerGrip = 16;   // 右下角判定范围放大，好抓
 const QString kSettingsGroup = QStringLiteral("ExpandPanel");
 constexpr int kTranscriptIndex = 0;
@@ -56,11 +56,18 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     shadow->setInnerDistance(kShadowMargin);
     shadow->setOffset(QPointF(0, 3));
     shadow->setColor(QColor(0, 0, 0, 90));
+    shadow->setCornerRadius(kCornerRadius);
     setGraphicsEffect(shadow);
 
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin + kGrip, kShadowMargin + kGrip);
     m_tabs = new QTabWidget(this);
+    m_tabs->setStyleSheet(QStringLiteral(
+        "QTabWidget { background: transparent; }"
+        "QTabWidget::pane { border-radius: %1px; }"
+        "QTabBar::tab:first { border-top-left-radius: %1px; }"
+        "QTabBar::tab:last { border-top-right-radius: %1px; }").arg(kCornerRadius));
+
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin, kShadowMargin);
     layout->addWidget(m_tabs);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
 
@@ -102,6 +109,7 @@ void ExpandPanel::attachTo(QWidget* anchor)
     if (m_anchor) m_anchor->removeEventFilter(this);
     m_anchor = anchor;
     if (m_anchor) m_anchor->installEventFilter(this);
+    if (parentWidget() != anchor) setParent(anchor, windowFlags());
 }
 
 void ExpandPanel::showPage(PanelState::Page page)
@@ -167,8 +175,8 @@ void ExpandPanel::resizeEvent(QResizeEvent* event)
 
 Qt::Edges ExpandPanel::resizeEdgesAt(const QPoint& pos) const
 {
-    const bool right = pos.x() >= width() - kGrip;
-    const bool bottom = pos.y() >= height() - kGrip;
+    const bool right = pos.x() >= width() - kShadowMargin;
+    const bool bottom = pos.y() >= height() - kShadowMargin;
     Qt::Edges edges;
     if (right || (bottom && pos.x() >= width() - kCornerGrip)) edges |= Qt::RightEdge;
     if (bottom || (right && pos.y() >= height() - kCornerGrip)) edges |= Qt::BottomEdge;
@@ -230,12 +238,10 @@ void ExpandPanel::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
-                                                -kShadowMargin - kGrip, -kShadowMargin - kGrip);
-    QColor border = palette().color(QPalette::WindowText);
-    border.setAlpha(60);
-    p.setPen(border);
+                                                -kShadowMargin, -kShadowMargin);
+    p.setPen(QPen(palette().color(QPalette::Mid), 1));
     p.setBrush(palette().color(QPalette::Window));
-    p.drawRoundedRect(body, 8, 8);
+    p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
 }
 
 void ExpandPanel::changeEvent(QEvent* event)
