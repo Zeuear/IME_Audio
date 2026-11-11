@@ -103,8 +103,8 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         QString dllPath = QApplication::applicationDirPath() + QDir::separator() + spec.ortCudaProviderLib;
         result.hasOrtCudaProvider = QFile::exists(dllPath);
 
-        // 只看 provider 文件在不在不够：onnxruntime.dll 若仍是 CPU 版（安装时被占用没换掉，或开发构建又拷回了 CPU 版），
-        // sherpa 会悄悄回退 CPU，日志照样写 provider=cuda。provider 必须和 onnxruntime 同一版本才能被加载
+        // 只看 provider 文件在不在不够：onnxruntime.dll 与 provider 版本不一致时（如旧版程序装过 GPU 运行库后升级），
+        // sherpa 会悄悄回退 CPU，日志照样写 provider=cuda。不一致就判为未就绪，让用户重新安装
         if (result.hasOrtCudaProvider) {
             const QString ortVersion = fileVersion(QApplication::applicationDirPath() + "/onnxruntime.dll");
             const QString providerVersion = fileVersion(dllPath);
@@ -285,12 +285,10 @@ void CudaInstaller::startInstall()
 
         ExtractOptions opts;
         opts.destinationDir = QApplication::applicationDirPath();
-        // GPU 包里的 onnxruntime 与 CPU 包版本不同，sherpa 的两个 DLL 必须一起换，否则混用会因 ORT API 版本不符而无法启动
+        // 程序自带的 onnxruntime / sherpa-onnx DLL 本来就取自这个 CUDA 包，只缺 provider；
+        // provider 启动时不加载，不存在被占用换不掉的问题
         opts.filter = [](const QFileInfo& fi) {
-            const QString name = fi.fileName();
-            return name.startsWith("onnx", Qt::CaseInsensitive)
-                || name.compare("sherpa-onnx-c-api.dll", Qt::CaseInsensitive) == 0
-                || name.compare("sherpa-onnx-cxx-api.dll", Qt::CaseInsensitive) == 0;
+            return fi.fileName().startsWith("onnxruntime_providers_", Qt::CaseInsensitive);
             };
         ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts);
         connect(sherpaTask, &ExtractExTask::extractStarted, this, [this](int total) { emit extractStarted(GROUP_ID, total); });

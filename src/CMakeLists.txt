@@ -77,12 +77,18 @@ set(SHERPA_ONNX_VERSION "1.13.4")
 
 # 标记文件:用来判断"是否已经是我们下载并整理好的目录",
 # 避免每次 configure 都重新检查/下载,同时避免和"用户自己手动放置的目录"混淆
-set(SHERPA_ONNX_STAMP_FILE "${SHERPA_ONNX_ROOT}/.sherpa_onnx_version_${SHERPA_ONNX_VERSION}")
+# Windows 用 CUDA 版运行库（见下），标记带上 -cuda，旧的 CPU 版目录会被识别为过期并重新下载
+if(WIN32)
+    set(_sherpa_stamp_suffix "-cuda")
+endif()
+set(SHERPA_ONNX_STAMP_FILE "${SHERPA_ONNX_ROOT}/.sherpa_onnx_version_${SHERPA_ONNX_VERSION}${_sherpa_stamp_suffix}")
 
 
 if(WIN32)
     set(_sherpa_platform_dir "windows")
-    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-win-x64-shared-MD-Release-no-tts-lib.tar.bz2")
+    # 统一用 CUDA 版包里的 onnxruntime / sherpa-onnx DLL：它在没有 CUDA 的机器上照样跑 CPU，
+    # GPU 安装器只需补 onnxruntime_providers_*（启动时不加载，不会因占用换不掉），CPU / GPU 永远同一版 ORT
+    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2")
 
 elseif(APPLE)
     set(_sherpa_platform_dir "macos")
@@ -188,6 +194,8 @@ if(NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
     file(MAKE_DIRECTORY "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
     
     file(GLOB_RECURSE _sherpa_libs CONFIGURE_DEPENDS ${_sherpa_match_patterns})
+    # CUDA provider（约 270 MB）不随程序发布，由"GPU 加速"按需下载
+    list(FILTER _sherpa_libs EXCLUDE REGEX "onnxruntime_providers_")
     if(NOT _sherpa_libs)
         message(FATAL_ERROR "No library files found under ${_sherpa_inner_root} matching current platform patterns")
     endif()
@@ -216,18 +224,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.so*")
 endif()
 
-if(WIN32 AND _sherpa_runtime_libs)
-    # 输出目录里装过 GPU 运行库（onnxruntime_providers_cuda.dll）时不拷：CPU 版 onnxruntime / sherpa DLL
-    # 会把 GPU 版覆盖掉，CUDA 请求随后被 sherpa 悄悄回退到 CPU
-    # 列表里的分号在自定义命令中会被拆成多个参数，换成逗号传给脚本（| 在 cmd 里是管道符）
-    string(REPLACE ";" "," _sherpa_runtime_libs_arg "${_sherpa_runtime_libs}")
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMENT "Copying sherpa-onnx runtime libraries to output directory..."
-        COMMAND ${CMAKE_COMMAND} "-DDST=$<TARGET_FILE_DIR:${TARGET_NAME}>" "-DLIBS=${_sherpa_runtime_libs_arg}"
-                -P "${CMAKE_SOURCE_DIR}/cmake/CopySherpaRuntime.cmake"
-        VERBATIM
-    )
-elseif(_sherpa_runtime_libs)
+if(_sherpa_runtime_libs)
     set(_copy_commands "")
     foreach(_lib_path IN LISTS _sherpa_runtime_libs)
         if(EXISTS "${_lib_path}")
