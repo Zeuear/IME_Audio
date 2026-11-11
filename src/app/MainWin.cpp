@@ -47,6 +47,7 @@
 #include "ui/controls/ToggleLink.h"
 #include "ui/controls/Appearance.h"
 #include "ui/controls/FirewallCard.h"
+#include "services/ForegroundWindow.h"
 #include "services/DocsBridge.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
@@ -60,7 +61,6 @@
 #include "ui/pages/AboutPage.h"
 #include "ui/pages/FileTranscribeWidget.h"
 #include "ui/pages/LiveTranscriptWidget.h"
-#include "ui/controls/TranscriptWindow.h"
 #include "ui/controls/ExpandPanel.h"
 #include "ui/models/ModelDownloadTracker.h"
 #include "ui/pages/TermWidget.h"
@@ -183,12 +183,11 @@ void MainWin::initialize() {
     // 声音控件
     m_liveOverlay = new LiveOverlay();
     m_controlBar = new ControlBar();
-    m_transcriptWindow = new TranscriptWindow();
-    m_transcriptWidget = m_transcriptWindow->transcript();
+    m_transcriptWidget = new LiveTranscriptWidget();
     m_termWidget = new TermWidget();
     m_fileWidget = new FileTranscribeWidget();
     m_panel = new ExpandPanel();
-    m_panel->setPages(m_termWidget, m_fileWidget);   // 页面归面板所有
+    m_panel->setPages(m_transcriptWidget, m_termWidget, m_fileWidget);   // 页面归面板所有
     m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
@@ -487,12 +486,6 @@ void MainWin::setupUiConnections(){
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
     connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
     connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::onShowWindow);
-    // 转录内容窗口：图标开关窗口；窗口被别处关掉（右上角 ×）时图标跟着复位
-    connect(m_controlBar, &ControlBar::transcriptToggled, this, [this](bool open) {
-        if (open) m_transcriptWindow->openAndRaise();
-        else m_transcriptWindow->hide();
-    });
-    connect(m_transcriptWindow, &TranscriptWindow::visibilityChanged, m_controlBar, &ControlBar::setTranscriptOpen);
     // 展开面板：图标只"请求"，面板变成什么样由 PanelState 决定；面板变了（含自己点 tab、被隐藏）再点亮图标
     connect(m_controlBar, &ControlBar::panelRequested, this, [this](PanelState::Page clicked) {
         m_panel->showPage(PanelState::afterClick(m_panel->page(), clicked));
@@ -629,9 +622,9 @@ void MainWin::setupUiConnections(){
     // 整句就是快捷码时，用户要的是指令按钮，不把它打进目标应用。
     // 条件与 updateSnippetSuggestions 一致：按钮出不来时仍要注入，否则这句话就丢了
     m_workflow->setInjectFilter([this](const QString& text) {
-        // 稿子窗口在前台时不注入：结果本来就会追加进稿子，再注入就会在它的输入框里出现两遍，
+        // 面板在前台时不注入：稿子页结果本来就会追加进稿子，再注入就会在它的输入框里出现两遍，
         // 和悬浮窗"不能成为焦点窗口，否则听写结果会注入到它自己身上"是同一个问题
-        if (m_transcriptWindow && m_transcriptWindow->isActiveWindow()) return true;
+        if (m_panel && m_panel->isActiveWindow()) return true;
         // 开启后不管发没发出去都不注入前台，否则文字会打进别的软件
         if (m_docsOutput) {
             if (!m_docsBridge->sendText(text) && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
@@ -694,8 +687,7 @@ MainWin::~MainWin() {
   delete m_suggestBar;
   delete m_searchPopup;
   delete m_controlBar;
-  delete m_transcriptWindow;   // 析构时稿子控件会把还没写盘的内容写掉
-  delete m_panel;              // 连同词典页和文件转录页
+  delete m_panel;              // 连同稿子页、词典页和文件转录页；稿子控件析构时会把还没写盘的内容写掉
   delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;
@@ -1717,6 +1709,9 @@ void MainWin::showControlBar()
 {
     m_controlBar->showAtSavedPosition();
     m_controlBar->raise();
+    // 横条没勾选置顶时会被别的窗口盖住；后台进程的 raise 常被系统忽略。
+    // 这是用户点托盘的主动操作，直接拿前台把横条带出来
+    ForegroundWindow::bringToFront(m_controlBar->winId());
 }
 
 void MainWin::onShowWindow()

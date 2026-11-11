@@ -5,14 +5,14 @@
 
 class QTabWidget;
 
-// @brief 横条下方展开的面板（词典、文件转录两页），页面由外部传入；横条不可激活收不到键盘，故面板是紧贴其下的独立窗口，显示但不激活。
+// @brief 横条下方展开的面板（实时转录、词典、文件转录三页），页面由外部传入；横条不可激活收不到键盘，故面板是紧贴其下的独立窗口，显示但不激活。
 class ExpandPanel : public QWidget
 {
     Q_OBJECT
 public:
     explicit ExpandPanel(QWidget* parent = nullptr);
 
-    void setPages(QWidget* dictionary, QWidget* file);
+    void setPages(QWidget* transcript, QWidget* dictionary, QWidget* file);
     // 跟随这个窗口（横条）的位置；面板可见时它移动或改变大小，面板重新摆放
     void attachTo(QWidget* anchor);
 
@@ -38,6 +38,8 @@ private:
     void retranslateUi();
     void reposition();
     void onTabChanged(int index);
+    static int indexOf(PanelState::Page page);
+    static PanelState::Page pageAt(int index);
 
     QTabWidget* m_tabs = nullptr;
     QPointer<QWidget> m_anchor;

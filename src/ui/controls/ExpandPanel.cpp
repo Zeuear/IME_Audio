@@ -9,8 +9,27 @@
 
 namespace {
 constexpr QSize kPanelSize(780, 520);
-constexpr int kDictionaryIndex = 0;
-constexpr int kFileIndex = 1;
+constexpr int kTranscriptIndex = 0;
+constexpr int kDictionaryIndex = 1;
+constexpr int kFileIndex = 2;
+}
+
+int ExpandPanel::indexOf(PanelState::Page page)
+{
+    switch (page) {
+    case PanelState::Page::Transcript: return kTranscriptIndex;
+    case PanelState::Page::Dictionary: return kDictionaryIndex;
+    default: return kFileIndex;
+    }
+}
+
+PanelState::Page ExpandPanel::pageAt(int index)
+{
+    switch (index) {
+    case kTranscriptIndex: return PanelState::Page::Transcript;
+    case kDictionaryIndex: return PanelState::Page::Dictionary;
+    default: return PanelState::Page::File;
+    }
 }
 
 ExpandPanel::ExpandPanel(QWidget* parent)
@@ -30,10 +49,11 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     resize(kPanelSize);
 }
 
-void ExpandPanel::setPages(QWidget* dictionary, QWidget* file)
+void ExpandPanel::setPages(QWidget* transcript, QWidget* dictionary, QWidget* file)
 {
-    // 加第一页时 QTabWidget 会发 currentChanged(0)，那不是用户打开了词典页，不能当成状态变化
+    // 加第一页时 QTabWidget 会发 currentChanged(0)，那不是用户打开了某一页，不能当成状态变化
     m_syncingTab = true;
+    m_tabs->addTab(transcript, QString());
     m_tabs->addTab(dictionary, QString());
     m_tabs->addTab(file, QString());
     m_syncingTab = false;
@@ -66,7 +86,7 @@ void ExpandPanel::showPage(PanelState::Page page)
     m_page = page;
 
     m_syncingTab = true;
-    m_tabs->setCurrentIndex(page == PanelState::Page::Dictionary ? kDictionaryIndex : kFileIndex);
+    m_tabs->setCurrentIndex(indexOf(page));
     m_syncingTab = false;
 
     if (!wasOpen) {
@@ -80,8 +100,7 @@ void ExpandPanel::onTabChanged(int index)
 {
     // 程序切页时 showPage 自己会报；面板收着时 tab 变了也不算打开了哪一页
     if (m_syncingTab || !isVisible()) return;
-    const PanelState::Page page = index == kDictionaryIndex ? PanelState::Page::Dictionary
-                                                            : PanelState::Page::File;
+    const PanelState::Page page = pageAt(index);
     if (page == m_page) return;
     m_page = page;
     emit pageChanged(m_page);
@@ -90,7 +109,9 @@ void ExpandPanel::onTabChanged(int index)
 void ExpandPanel::reposition()
 {
     if (!m_anchor) return;
-    move(FloatingWindow::placeBelow(m_anchor->frameGeometry(), size(),
+    // 锚点窗口四周若留了透明阴影边距，要按可见主体对齐，否则面板离横条太远
+    const int inset = m_anchor->property("visualInset").toInt();
+    move(FloatingWindow::placeBelow(m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset), size(),
                                     FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea()));
 }
 
@@ -144,7 +165,8 @@ void ExpandPanel::changeEvent(QEvent* event)
 
 void ExpandPanel::retranslateUi()
 {
-    if (m_tabs->count() < 2) return;
+    if (m_tabs->count() < 3) return;
+    m_tabs->setTabText(kTranscriptIndex, tr("Live Transcript"));
     m_tabs->setTabText(kDictionaryIndex, tr("Dictionary"));
     m_tabs->setTabText(kFileIndex, tr("File Transcription"));
 }

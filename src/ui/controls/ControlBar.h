@@ -5,6 +5,7 @@
 #include "services/WorkflowManager.h"
 #include "PanelState.h"
 
+class AppleShadowEffect;
 class QAbstractButton;
 class QAction;
 class QContextMenuEvent;
@@ -26,8 +27,6 @@ public:
     QAbstractButton* toggleButton(Toggle which) const;
     QAbstractButton* settingsButton() const;
     QAbstractButton* transcriptButton() const;
-    // 窗口被别处关掉时用它复位，不会再发 transcriptToggled
-    void setTranscriptOpen(bool open);
     QAbstractButton* dictionaryButton() const;
     QAbstractButton* fileButton() const;
     // 点击只发 panelRequested，面板状态由宿主决定后用它回写
@@ -55,7 +54,6 @@ signals:
     void startRequested();
     void stopRequested();
     void settingsRequested();
-    void transcriptToggled(bool open);
     void panelRequested(PanelState::Page page);
     // 有的桌面没有托盘，退出入口放在横条的右键菜单
     void quitRequested();
@@ -66,6 +64,7 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -90,6 +89,7 @@ private:
     QToolButton* m_fileBtn = nullptr;
     QToolButton* m_settingsBtn = nullptr;
     QLabel* m_timerLabel = nullptr;
+    AppleShadowEffect* m_shadow = nullptr;
     QTimer* m_ticker = nullptr;
     qint64 m_elapsedSec = 0;
     bool m_fileBusy = false;

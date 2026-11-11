@@ -450,18 +450,18 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="51"/>
-        <source>Allow this app through Windows Firewall so network features (model downloads, cloud services) are not blocked. Changing the rule needs administrator permission.</source>
-        <translation>Allow this app through Windows Firewall so network features (model downloads, cloud services) are not blocked. Changing the rule needs administrator permission.</translation>
+        <source>Block this app from accessing the network in Windows Firewall (outbound). Model downloads, cloud recognition, AI enhancement and update checks will stop working. Changing the rule needs administrator permission.</source>
+        <translation>Block this app from accessing the network in Windows Firewall (outbound). Model downloads, cloud recognition, AI enhancement and update checks will stop working. Changing the rule needs administrator permission.</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="60"/>
-        <source>Status: allowed</source>
-        <translation>Status: allowed</translation>
+        <source>Status: blocked</source>
+        <translation>Status: blocked</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="61"/>
-        <source>Remove rule</source>
-        <translation>Remove rule</translation>
+        <source>Unblock</source>
+        <translation>Unblock</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="64"/>
@@ -475,13 +475,13 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="68"/>
-        <source>Status: not allowed</source>
-        <translation>Status: not allowed</translation>
+        <source>Status: not blocked</source>
+        <translation>Status: not blocked</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="69"/>
-        <source>Allow</source>
-        <translation>Allow</translation>
+        <source>Block</source>
+        <translation>Block</translation>
     </message>
 </context>
 <context>

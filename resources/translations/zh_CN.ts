@@ -450,18 +450,18 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="51"/>
-        <source>Allow this app through Windows Firewall so network features (model downloads, cloud services) are not blocked. Changing the rule needs administrator permission.</source>
-        <translation>在 Windows 防火墙中放行本程序，避免模型下载、云端服务等联网功能被拦截。修改规则需要管理员权限。</translation>
+        <source>Block this app from accessing the network in Windows Firewall (outbound). Model downloads, cloud recognition, AI enhancement and update checks will stop working. Changing the rule needs administrator permission.</source>
+        <translation>在 Windows 防火墙中禁止本程序联网（出站）。模型下载、云端识别、AI 增强、检查更新都将无法使用。修改规则需要管理员权限。</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="60"/>
-        <source>Status: allowed</source>
-        <translation>状态：已放行</translation>
+        <source>Status: blocked</source>
+        <translation>状态：已禁止联网</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="61"/>
-        <source>Remove rule</source>
-        <translation>取消放行</translation>
+        <source>Unblock</source>
+        <translation>解除禁止</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="64"/>
@@ -475,13 +475,13 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="68"/>
-        <source>Status: not allowed</source>
-        <translation>状态：未放行</translation>
+        <source>Status: not blocked</source>
+        <translation>状态：未禁止联网</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="69"/>
-        <source>Allow</source>
-        <translation>放行</translation>
+        <source>Block</source>
+        <translation>禁止联网</translation>
     </message>
 </context>
 <context>

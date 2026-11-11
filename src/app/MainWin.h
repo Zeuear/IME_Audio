@@ -27,7 +27,6 @@ class SherpaInstaller;
 class SherpaManager;
 class LiveOverlay;
 class ControlBar;
-class TranscriptWindow;
 class LiveTranscriptWidget;
 class ExpandPanel;
 class ModelDownloadTracker;
@@ -148,10 +147,9 @@ private:
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
     ControlBar* m_controlBar = nullptr;                 // 常驻置顶
-    TranscriptWindow* m_transcriptWindow = nullptr;     // 转录内容独立窗口
     LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件
     ModelDownloadTracker* m_downloadTracker = nullptr;  // 模型列表行内下载进度的状态
-    ExpandPanel* m_panel = nullptr;                     // 词典 / 文件转录
+    ExpandPanel* m_panel = nullptr;                     // 实时转录 / 词典 / 文件转录
     TermWidget* m_termWidget = nullptr;                 // 词典页
     FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页
     LiveCaptionModel* m_captionModel = nullptr;
