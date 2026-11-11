@@ -324,7 +324,7 @@ void FileTranscribeWidget::retranslateUi()
 {
     m_addBtn->setText(tr("Add Files"));
     m_addLinkBtn->setText(tr("Add Links"));
-    m_addLinkBtn->setToolTip(tr("Download the audio of public Facebook links and transcribe it"));
+    m_addLinkBtn->setToolTip(tr("Download the audio of public Facebook or YouTube links and transcribe it"));
     m_exportTxtCheck->setLabelText(tr("TXT"));
     m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
     m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));

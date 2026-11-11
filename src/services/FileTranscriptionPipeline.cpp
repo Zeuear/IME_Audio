@@ -210,13 +210,14 @@ FileTranscriptionPipeline::segmentByVad(const QByteArray& pcm, const AppConfig& 
             }
         };
 
-        const auto* samples = reinterpret_cast<const int16_t*>(pcm.constData());
-        const int sampleCount = pcm.size() / 2;
-        constexpr int kChunkSamples = 512 * 8;
-        std::vector<float> buffer(kChunkSamples);
-        for (int position = 0; position < sampleCount; position += kChunkSamples) {
-            const int count = qMin(kChunkSamples, sampleCount - position);
-            for (int i = 0; i < count; ++i) buffer[i] = samples[position + i] / 32768.0f;
+        const auto* samples = reinterpret_cast<const qint16*>(pcm.constData());
+        const int sampleCount = pcm.size() / static_cast<int>(sizeof(qint16));
+        constexpr int kVadBatchSamples = 512 * 8;
+        std::vector<float> buffer(kVadBatchSamples);
+        for (int position = 0; position < sampleCount; position += kVadBatchSamples) {
+            const int count = qMin(kVadBatchSamples, sampleCount - position);
+            for (int i = 0; i < count; ++i)
+                buffer[i] = static_cast<float>(samples[position + i]) / 32768.0f;
             vad.AcceptWaveform(buffer.data(), count);
             drain();
         }
@@ -323,7 +324,8 @@ void FileTranscriptionPipeline::onSegmentFinished(bool ok, const QString&,
         const SubtitleCue cue{qRound64(segment.startSec * 1000),
                               qRound64(segment.endSec * 1000), text};
         emit segmentReady(m_job.row, cue, text);
-        requestTranslation(m_cueCount++, text);
+        requestTranslation(m_cueCount, text);
+        ++m_cueCount;
     }
 
     ++m_nextSegment;

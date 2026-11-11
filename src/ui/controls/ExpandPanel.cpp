@@ -1,5 +1,6 @@
 #include "ExpandPanel.h"
 #include "FloatingWindow.h"
+#include "ui/infobar/appleshadoweffect.h"
 #include <QEvent>
 #include <QHideEvent>
 #include <QKeyEvent>
@@ -12,8 +13,9 @@
 #include <QWindow>
 
 namespace {
-constexpr QSize kPanelSize(780, 520);
-constexpr QSize kMinPanelSize(480, 300);
+constexpr int kShadowMargin = 10;
+constexpr QSize kPanelSize(780 + 2 * kShadowMargin, 520 + 2 * kShadowMargin);
+constexpr QSize kMinPanelSize(480 + 2 * kShadowMargin, 300 + 2 * kShadowMargin);
 constexpr int kGrip = 5;          // 右边和下边留给鼠标拖动的宽度
 constexpr int kCornerGrip = 16;   // 右下角判定范围放大，好抓
 const QString kSettingsGroup = QStringLiteral("ExpandPanel");
@@ -45,11 +47,19 @@ ExpandPanel::ExpandPanel(QWidget* parent)
 {
     // 打开时不激活：前台窗口不被切走，听写注入目标不变；点进输入框时才拿焦点
     setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_QuitOnClose, false);
-    setAutoFillBackground(true);
+    setAutoFillBackground(false);
+
+    auto* shadow = new AppleShadowEffect(this);
+    shadow->setBlurRadius(kShadowMargin - 3);
+    shadow->setInnerDistance(kShadowMargin);
+    shadow->setOffset(QPointF(0, 3));
+    shadow->setColor(QColor(0, 0, 0, 90));
+    setGraphicsEffect(shadow);
 
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(1, 1, kGrip, kGrip);
+    layout->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin + kGrip, kShadowMargin + kGrip);
     m_tabs = new QTabWidget(this);
     layout->addWidget(m_tabs);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
@@ -134,8 +144,10 @@ void ExpandPanel::reposition()
     if (!m_anchor) return;
     // 锚点窗口四周若留了透明阴影边距，要按可见主体对齐，否则面板离横条太远
     const int inset = m_anchor->property("visualInset").toInt();
-    move(FloatingWindow::placeBelow(m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset), size(),
-                                    FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea()));
+    const QPoint position = FloatingWindow::placeBelow(
+        m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset), size(),
+        FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea());
+    move(position - QPoint(kShadowMargin, kShadowMargin));
 }
 
 void ExpandPanel::hideEvent(QHideEvent* event)
@@ -216,10 +228,14 @@ bool ExpandPanel::eventFilter(QObject* watched, QEvent* event)
 void ExpandPanel::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+    const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
+                                                -kShadowMargin - kGrip, -kShadowMargin - kGrip);
     QColor border = palette().color(QPalette::WindowText);
     border.setAlpha(60);
     p.setPen(border);
-    p.drawRect(rect().adjusted(0, 0, -1, -1));
+    p.setBrush(palette().color(QPalette::Window));
+    p.drawRoundedRect(body, 8, 8);
 }
 
 void ExpandPanel::changeEvent(QEvent* event)

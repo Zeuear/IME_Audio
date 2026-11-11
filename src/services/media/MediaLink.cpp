@@ -15,8 +15,14 @@ bool isSupported(const QString& url)
     if (!u.userInfo().isEmpty()) return false;
 
     const QString host = u.host().toLower();
-    if (host == QLatin1String("fb.watch")) return true;
-    return host == QLatin1String("facebook.com") || host.endsWith(QLatin1String(".facebook.com"));
+    const auto isDomainOrSubdomain = [&host](const QLatin1String& domain) {
+        return host == domain || host.endsWith(QLatin1Char('.') + QString(domain));
+    };
+    return host == QLatin1String("fb.watch")
+        || isDomainOrSubdomain(QLatin1String("facebook.com"))
+        || host == QLatin1String("youtu.be")
+        || isDomainOrSubdomain(QLatin1String("youtube.com"))
+        || isDomainOrSubdomain(QLatin1String("youtube-nocookie.com"));
 }
 
 QStringList parseLines(const QString& text, QStringList* invalid)
@@ -73,7 +79,7 @@ Failure classifyFailure(const QString& stderrText)
     const QString s = stderrText.toLower();
     auto has = [&](const char* needle) { return s.contains(QLatin1String(needle)); };
 
-    if (has("login") || has("log in") || has("private") || has("cookies") || has("registered users")
+    if (has("login") || has("log in") || has("sign in") || has("private") || has("cookies") || has("registered users")
         || has("you must be logged") || has("this video is only available for"))
         return Failure::NeedLogin;
     if (has("unable to extract") || has("cannot parse data") || has("unsupported url") || has("please report this issue")
@@ -98,7 +104,7 @@ QString failureMessage(Failure failure)
         return QStringLiteral("网络连接失败，请检查网络后重试");
     case Failure::ExtractorBroken:
         // yt-dlp 对"视频不存在 / 非公开"和"站点改版"报的是同一种错，这里不能只怪其中一种
-        return QStringLiteral("无法解析该链接：内容可能已删除或不是公开的，也可能是 Facebook 页面有变化（已检查下载组件更新）");
+        return QStringLiteral("无法解析该链接：内容可能已删除或不是公开的，也可能是平台页面有变化（已检查下载组件更新）");
     case Failure::Other:
         break;
     }

@@ -17,6 +17,7 @@ class TranscriptionService;
 class SherpaManager;
 class YtDlpManager;
 
+// @brief 协调文件下载、解码、分段转录和翻译。
 class FileTranscriptionPipeline : public QObject {
     Q_OBJECT
 public:

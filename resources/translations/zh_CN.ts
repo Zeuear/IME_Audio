@@ -301,8 +301,8 @@
     </message>
     <message>
         <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="313"/>
-        <source>Download the audio of public Facebook links and transcribe it</source>
-        <translation>下载公开 Facebook 链接中的音频并转录</translation>
+        <source>Download the audio of public Facebook or YouTube links and transcribe it</source>
+        <translation>下载公开 Facebook 或 YouTube 链接中的音频并转录</translation>
     </message>
     <message>
         <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="314"/>
@@ -1384,13 +1384,13 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/LinkInputDialog.cpp" line="64"/>
-        <source>Paste public Facebook post or video links, one per line. The audio is downloaded and transcribed automatically.</source>
-        <translation>粘贴公开的 Facebook 贴文或视频链接，每行一个。音频会自动下载并转录。</translation>
+        <source>Paste public Facebook or YouTube video links, one per line. The audio is downloaded and transcribed automatically.</source>
+        <translation>粘贴公开的 Facebook 或 YouTube 视频链接，每行一个。音频会自动下载并转录。</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/LinkInputDialog.cpp" line="65"/>
-        <source>https://www.facebook.com/...</source>
-        <translation>https://www.facebook.com/...</translation>
+        <source>https://www.youtube.com/watch?v=...</source>
+        <translation>https://www.youtube.com/watch?v=...</translation>
     </message>
     <message>
         <location filename="../../src/ui/controls/LinkInputDialog.cpp" line="66"/>

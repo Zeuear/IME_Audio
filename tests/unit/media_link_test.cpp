@@ -13,10 +13,20 @@ TEST(MediaLink, AcceptsFacebookHosts) {
     EXPECT_TRUE(isSupported("HTTP://WWW.FACEBOOK.COM/x"));
 }
 
+TEST(MediaLink, AcceptsYouTubeHosts) {
+    EXPECT_TRUE(isSupported("https://www.youtube.com/watch?v=abc123"));
+    EXPECT_TRUE(isSupported("https://youtu.be/abc123"));
+    EXPECT_TRUE(isSupported("https://music.youtube.com/watch?v=abc123"));
+    EXPECT_TRUE(isSupported("https://www.youtube-nocookie.com/embed/abc123"));
+    EXPECT_TRUE(isSupported("HTTP://YOUTUBE.COM/shorts/abc123"));
+}
+
 TEST(MediaLink, RejectsOtherHostsAndLookalikes) {
-    EXPECT_FALSE(isSupported("https://www.youtube.com/watch?v=1"));
     EXPECT_FALSE(isSupported("https://evilfacebook.com/watch"));
     EXPECT_FALSE(isSupported("https://facebook.com.evil.example/watch"));
+    EXPECT_FALSE(isSupported("https://youtube.com.evil.example/watch?v=1"));
+    EXPECT_FALSE(isSupported("https://notyoutube.com/watch?v=1"));
+    EXPECT_FALSE(isSupported("https://youtu.be.evil.example/abc123"));
     EXPECT_FALSE(isSupported("https://example.com/?u=https://facebook.com/x"));
 }
 
@@ -32,10 +42,10 @@ TEST(MediaLink, RejectsNonWebAndCredentialLinks) {
 
 TEST(MediaLink, ParseLinesTrimsDedupesAndReportsInvalid) {
     const QString text = "  https://www.facebook.com/a  \r\n\r\nhttps://fb.watch/b/\n"
-                         "https://www.facebook.com/a\nnot a link\nhttps://example.com/x\n";
+                         "https://youtu.be/abc123\nhttps://www.facebook.com/a\nnot a link\nhttps://example.com/x\n";
     QStringList invalid;
     const QStringList ok = parseLines(text, &invalid);
-    EXPECT_EQ(ok, (QStringList{"https://www.facebook.com/a", "https://fb.watch/b/"}));
+    EXPECT_EQ(ok, (QStringList{"https://www.facebook.com/a", "https://fb.watch/b/", "https://youtu.be/abc123"}));
     EXPECT_EQ(invalid, (QStringList{"not a link", "https://example.com/x"}));
 }
 
@@ -86,6 +96,7 @@ TEST(MediaLink, ParsesResultLine) {
 
 TEST(MediaLink, ClassifiesFailures) {
     EXPECT_EQ(classifyFailure("ERROR: [facebook] 1: You must be logged in to view this"), Failure::NeedLogin);
+    EXPECT_EQ(classifyFailure("ERROR: Sign in to confirm you're not a bot"), Failure::NeedLogin);
     EXPECT_EQ(classifyFailure("ERROR: This video is private"), Failure::NeedLogin);
     EXPECT_EQ(classifyFailure("ERROR: [facebook] 1: Cannot parse data"), Failure::ExtractorBroken);
     EXPECT_EQ(classifyFailure("ERROR: Unable to extract video data"), Failure::ExtractorBroken);

@@ -61,8 +61,8 @@ void LinkInputDialog::changeEvent(QEvent* event)
 void LinkInputDialog::retranslateUi()
 {
     setWindowTitle(tr("Add Links"));
-    m_hint->setText(tr("Paste public Facebook post or video links, one per line. The audio is downloaded and transcribed automatically."));
-    m_edit->setPlaceholderText(tr("https://www.facebook.com/..."));
+    m_hint->setText(tr("Paste public Facebook or YouTube video links, one per line. The audio is downloaded and transcribed automatically."));
+    m_edit->setPlaceholderText(tr("https://www.youtube.com/watch?v=..."));
     m_buttons->button(QDialogButtonBox::Ok)->setText(tr("Add"));
     m_buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
 }

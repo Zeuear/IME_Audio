@@ -11,17 +11,15 @@ class QTextEdit;
 class UpdateManager;
 class UpdateStatusModel;
 
-// @brief 设置窗口的关于页：版本、检查更新、简介与更新说明；状态逻辑在 UpdateStatusModel，本控件只做连接。
-class AboutPage : public QWidget
-{
+// @brief 设置窗口的关于页
+class AboutPage : public QWidget {
     Q_OBJECT
 public:
     explicit AboutPage(QWidget* parent = nullptr);
     ~AboutPage() override;
 
     void setUpdateManager(UpdateManager* updates);
-
-    // 用户点了检查更新或下载，结果由本页显示；宿主据此不再弹启动自动检查用的那个对话框
+    // 页面已接管更新提示时，宿主不再显示重复弹窗。
     bool isUserDriven() const;
 
 protected:

@@ -7,10 +7,9 @@
 // 链接转录的纯逻辑：链接白名单、yt-dlp 输出解析、失败归类。不碰网络和进程，便于单元测试。
 namespace MediaLink {
 
-// 只支持 Facebook 公开链接（facebook.com 及其子域、fb.watch）
+// 只接受已知平台的公开链接，避免把任意 URL 交给 yt-dlp。
 bool isSupported(const QString& url);
 
-// 按行拆分，去重并保持顺序；不合法的行放进 invalid
 QStringList parseLines(const QString& text, QStringList* invalid = nullptr);
 
 // 不是进度行返回 -1
