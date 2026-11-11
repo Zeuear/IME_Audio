@@ -22,6 +22,7 @@ public:
         QString replaceRules;
         QString aiVocab;
         int aiEngine = 0; // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama
+        bool translateOnly = false;
     };
 
     // 引擎能力：UI 据此灰显控件，服务据此决定是否真的调用引擎

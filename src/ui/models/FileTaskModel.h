@@ -22,6 +22,15 @@ struct FileTask {
     QString text;
     QList<SubtitleCue> cues;   // 按 VAD 分段记录的带时间字幕，导出 SRT 用
     QString error;
+
+    // 译文与 cues 一一对应，空串表示还没回来或翻译失败；云端译文可能乱序回来，按下标填
+    QStringList translations;
+    QString translationLang;   // 译文语言代码，导出文件名用
+    quint64 runToken = 0;      // 每次重新转录换新值，上一轮迟到的译文据此丢弃
+
+    bool hasTranslation() const;
+    QList<SubtitleCue> translatedCues() const;
+    QString translatedText() const;
 };
 
 // @brief
@@ -65,9 +74,12 @@ public:
     void appendText(int row, const QString& text);
     void appendCue(int row, const SubtitleCue& cue);
     void setFailed(int row, const QString& error);
+    // 按 runToken 找行：译文是异步回来的，行号可能已变、任务可能已删或已重转
+    void setCueTranslation(quint64 runToken, int cue, const QString& lang, const QString& text);
 
 private:
     void touch(int row);
 
     QList<FileTask> m_tasks;
+    quint64 m_nextToken = 0;
 };

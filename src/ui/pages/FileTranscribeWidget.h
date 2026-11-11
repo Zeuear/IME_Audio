@@ -27,6 +27,7 @@ struct AppConfig;
 // 转录流程：解码为 16k 单声道 PCM（有 FFmpeg 时用 AudioFileDecoder，否则 QAudioDecoder）
 // → VAD 切段 → 逐段送入转录后端，按队列依次处理各文件。
 // 转录期间 TranscriptionService 处于文件模式，结果不会走听写工作流（不会被注入前台窗口）。
+// 开启了翻译设置时，每段原文另外翻译，译文显示在预览右侧，可单独复制和导出。
 class FileTranscribeWidget : public QWidget {
     Q_OBJECT
 public:
@@ -45,6 +46,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
 private:
     struct Segment {
@@ -77,6 +79,7 @@ private:
     void clearAll();
     void showContextMenu(const QPoint& pos);
     void updatePreview();
+    void updateTranslationPreview(const FileTask* task, bool sameFile);
     void updateButtons();
     void setBusy(bool busy);
 
@@ -99,9 +102,14 @@ private:
     void transcribeNext();
     void onSegmentFinished(bool ok, const QString& rawText, const QString& finalText, const QString& err);
 
+    // 译文：每段原文出来后异步翻译，按段下标填回，不阻塞转录
+    void requestTranslation(int row, const QString& text);
+    void onTranslationFailed(const QString& cause);
+
     // 导出
     void exportResults();
     void copyPreview();
+    void copyTranslation();
     static bool writeTextFile(const QString& path, const QString& text);
     static QString uniqueExportBase(const QString& dir, const QString& base, const QStringList& exts);
 
@@ -124,6 +132,7 @@ private:
     QLabel* m_hintLabel = nullptr;
     QLabel* m_previewTitle = nullptr;
     QPlainTextEdit* m_preview = nullptr;
+    QPlainTextEdit* m_translationPreview = nullptr;
     QString m_previewPath;   // 预览当前显示的文件，用来区分"同一文件内容更新"和"换了文件"
     QLabel* m_statusLabel = nullptr;
     QPushButton* m_addBtn = nullptr;
@@ -132,7 +141,9 @@ private:
     QPushButton* m_exportBtn = nullptr;
     AnimatedCheckBox* m_exportTxtCheck = nullptr;
     AnimatedCheckBox* m_exportSrtCheck = nullptr;
+    AnimatedCheckBox* m_exportTranslationCheck = nullptr;
     QPushButton* m_copyBtn = nullptr;
+    QPushButton* m_copyTranslationBtn = nullptr;
     QPushButton* m_openFolderBtn = nullptr;
     QTimer* m_animTimer = nullptr;   // 驱动"解码中"不确定进度条的重绘
 
@@ -147,6 +158,9 @@ private:
     int m_noSpeechCount = 0;
     QString m_lastError;
     QString m_lastExportDir;
+    bool m_translationErrorShown = false;   // 同一批次翻译失败只弹一次，避免逐句弹窗
+    // 翻译设置是否生效的缓存：预览刷新很频繁，只在页面显示和批次开始时重新查询
+    bool m_translationActive = false;
 
     QNetworkAccessManager* m_nam = nullptr;
     YtDlpManager* m_downloader = nullptr;

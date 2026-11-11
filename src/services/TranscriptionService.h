@@ -36,6 +36,14 @@ public:
     void setFileMode(bool on) { m_fileMode = on; }
     bool fileMode() const { return m_fileMode; }
 
+    // 文件转录的译文：开关和目标语言沿用听写的翻译设置。
+    // 本地离线翻译引擎走 TranslationService，云端引擎（需开启 AI 增强）发只翻译的请求。
+    // 文件模式下转录结果本身保持原文，译文只经这里另外生成
+    using TranslateCallback = std::function<void(bool ok, const QString& text, const QString& error)>;
+    bool fileTranslationActive() const;
+    QString fileTranslationTarget() const { return m_config.polish.activeTargetLang(); }
+    void translateForFile(const QString& text, TranslateCallback done);
+
 signals:
     void fileSegmentFinished(bool success, const QString &rawText,
                              const QString &finalText, const QString &errorMsg);

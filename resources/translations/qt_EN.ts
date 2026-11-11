@@ -196,11 +196,6 @@
         <translation type="unfinished">Starting installation sequence...</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="255"/>
-        <source>Installation completed. Restart ImeAudio to enable GPU acceleration.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../src/installers/CudaInstaller.cpp" line="258"/>
         <source>Installation sequence failed: </source>
         <translation type="unfinished">Installation sequence failed: </translation>
@@ -227,42 +222,42 @@
 <context>
     <name>FileTaskModel</name>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="42"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="66"/>
         <source>Pending · %1</source>
         <translation>Pending · %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="44"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="68"/>
         <source>Decoding...</source>
         <translation>Decoding...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="46"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="70"/>
         <source>Transcribing %1/%2</source>
         <translation>Transcribing %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="48"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="72"/>
         <source>Done</source>
         <translation>Done</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="50"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="74"/>
         <source>Failed: %1</source>
         <translation>Failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="52"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="76"/>
         <source>No speech detected</source>
         <translation>No speech detected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="54"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="78"/>
         <source>Downloading %1%</source>
         <translation>Downloading %1%</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="54"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="78"/>
         <source>Preparing download...</source>
         <translation>Preparing download...</translation>
     </message>
@@ -270,183 +265,204 @@
 <context>
     <name>FileTranscribeWidget</name>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="257"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="311"/>
         <source>Add Files</source>
         <translation>Add Files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="533"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="593"/>
         <source>Transcribe</source>
         <translation>Transcribe</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="530"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="590"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="480"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="537"/>
         <source>Transcription</source>
         <translation>Transcription</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="264"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="318"/>
         <source>Copy</source>
         <translation>Copy</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="258"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="312"/>
         <source>Add Links</source>
         <translation>Add Links</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="259"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="313"/>
         <source>Download the audio of public Facebook links and transcribe it</source>
         <translation>Download the audio of public Facebook links and transcribe it</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="260"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="314"/>
         <source>TXT</source>
         <translation>TXT</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="261"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="315"/>
         <source>SRT subtitles</source>
         <translation>SRT subtitles</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="262"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="316"/>
         <source>Timestamps follow speech pauses, one subtitle per detected sentence</source>
         <translation>Timestamps follow speech pauses, one subtitle per detected sentence</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="263"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="317"/>
         <source>Drop audio files here, or click &quot;Add Files&quot; / &quot;Add Links&quot;</source>
         <translation>Drop audio files here, or click &quot;Add Files&quot; / &quot;Add Links&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="265"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="319"/>
         <source>Select a file to view its transcription</source>
         <translation>Select a file to view its transcription</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="266"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="320"/>
+        <source>Translation</source>
+        <translation>Translation</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="321"/>
+        <source>Also export the translation as name.&lt;language&gt;.txt / .srt</source>
+        <translation>Also export the translation as name.&lt;language&gt;.txt / .srt</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="322"/>
+        <source>Copy Translation</source>
+        <translation>Copy Translation</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="323"/>
+        <source>The translation appears here as each segment finishes</source>
+        <translation>The translation appears here as each segment finishes</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="324"/>
         <source>Open Folder</source>
         <translation>Open Folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="299"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="356"/>
         <source>Choose Audio Files</source>
         <translation>Choose Audio Files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="300"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="357"/>
         <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
         <translation>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="324"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="381"/>
         <source>%1 invalid lines ignored</source>
         <translation>%1 invalid lines ignored</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="334"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="391"/>
         <source>Downloading audio...</source>
         <translation>Downloading audio...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="358"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="415"/>
         <source>Added %1 links</source>
         <translation>Added %1 links</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="358"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="415"/>
         <source>No new links added</source>
         <translation>No new links added</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="391"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="448"/>
         <source>%1 links failed to download</source>
         <translation>%1 links failed to download</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="416"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="473"/>
         <source>No new files added</source>
         <translation>No new files added</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="421"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="478"/>
         <source>Added %1 files</source>
         <translation>Added %1 files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="462"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="519"/>
         <source>Re-transcribe</source>
         <translation>Re-transcribe</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="463"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="520"/>
         <source>Remove</source>
         <translation>Remove</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="465"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="522"/>
         <source>Clear All</source>
         <translation>Clear All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="543"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="603"/>
         <source>Export Selected (%1)</source>
         <translation>Export Selected (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="544"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="604"/>
         <source>Export All (%1)</source>
         <translation>Export All (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="630"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="692"/>
         <source>Processing file %1/%2</source>
         <translation>Processing file %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="706"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="768"/>
         <source>No audio data decoded</source>
         <translation>No audio data decoded</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="530"/>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="869"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="590"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="956"/>
         <source>Cancelling...</source>
         <translation>Cancelling...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="929"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1015"/>
         <source>Cancelled</source>
         <translation>Cancelled</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="931"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1017"/>
         <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
         <translation>Finished: %1 succeeded, %2 failed, %3 no speech</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="954"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1040"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1048"/>
         <source>Copied to clipboard</source>
         <translation>Copied to clipboard</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="984"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1078"/>
         <source>Choose Export Folder</source>
         <translation>Choose Export Folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1005"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1111"/>
         <source>Exported %1 files to %2, %3 failed</source>
         <translation>Exported %1 files to %2, %3 failed</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1006"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1112"/>
         <source>Exported %1 files to %2</source>
         <translation>Exported %1 files to %2</translation>
     </message>

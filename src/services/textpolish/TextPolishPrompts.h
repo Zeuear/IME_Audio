@@ -23,6 +23,9 @@ PolishInstructionParts buildPolishInstructionParts(const TextPolishService::Requ
 // 根据 UI 选择的风格返回系统提示词
 QString styleInstruction(const QString& style);
 
+// 只翻译请求的系统提示词：不润色、只输出译文；基础部分可在 prompts/ 目录里改
+QString translateOnlyPrompt(const QString& targetLang);
+
 // 解析 fewshot 文本（user:/assistant: 及全角冒号变体）为 [role, content, role, content, ...]
 QStringList buildFewshotMessages(const QString& fewshotText);
 

@@ -196,11 +196,6 @@
         <translation type="unfinished">开始安装序列...</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="255"/>
-        <source>Installation completed. Restart ImeAudio to enable GPU acceleration.</source>
-        <translation>安装完成，重启 ImeAudio 后启用 GPU 加速。</translation>
-    </message>
-    <message>
         <location filename="../../src/installers/CudaInstaller.cpp" line="258"/>
         <source>Installation sequence failed: </source>
         <translation type="unfinished">安装序列失败：</translation>
@@ -227,42 +222,42 @@
 <context>
     <name>FileTaskModel</name>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="42"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="66"/>
         <source>Pending · %1</source>
         <translation>待转录 · %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="44"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="68"/>
         <source>Decoding...</source>
         <translation>正在解码…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="46"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="70"/>
         <source>Transcribing %1/%2</source>
         <translation>正在转录 %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="48"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="72"/>
         <source>Done</source>
         <translation>完成</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="50"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="74"/>
         <source>Failed: %1</source>
         <translation>失败：%1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="52"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="76"/>
         <source>No speech detected</source>
         <translation>未检测到语音</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="54"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="78"/>
         <source>Downloading %1%</source>
         <translation>下载中 %1%</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/FileTaskModel.cpp" line="54"/>
+        <location filename="../../src/ui/models/FileTaskModel.cpp" line="78"/>
         <source>Preparing download...</source>
         <translation>准备下载…</translation>
     </message>
@@ -270,183 +265,204 @@
 <context>
     <name>FileTranscribeWidget</name>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="257"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="311"/>
         <source>Add Files</source>
         <translation>添加文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="533"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="593"/>
         <source>Transcribe</source>
         <translation>转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="530"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="590"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="480"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="537"/>
         <source>Transcription</source>
         <translation>转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="264"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="318"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="258"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="312"/>
         <source>Add Links</source>
         <translation>添加链接</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="259"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="313"/>
         <source>Download the audio of public Facebook links and transcribe it</source>
         <translation>下载公开 Facebook 链接中的音频并转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="260"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="314"/>
         <source>TXT</source>
         <translation>TXT 文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="261"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="315"/>
         <source>SRT subtitles</source>
         <translation>SRT 字幕</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="262"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="316"/>
         <source>Timestamps follow speech pauses, one subtitle per detected sentence</source>
         <translation>时间戳依据语音停顿划分，每个检测到的句子对应一条字幕</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="263"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="317"/>
         <source>Drop audio files here, or click &quot;Add Files&quot; / &quot;Add Links&quot;</source>
         <translation>把音频文件拖到这里，或点击“添加文件”/“添加链接”</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="265"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="319"/>
         <source>Select a file to view its transcription</source>
         <translation>选择一个文件查看转录文本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="266"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="320"/>
+        <source>Translation</source>
+        <translation>译文</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="321"/>
+        <source>Also export the translation as name.&lt;language&gt;.txt / .srt</source>
+        <translation>同时把译文导出为 名称.&lt;语言&gt;.txt / .srt</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="322"/>
+        <source>Copy Translation</source>
+        <translation>复制译文</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="323"/>
+        <source>The translation appears here as each segment finishes</source>
+        <translation>每段转录完成后，译文会显示在这里</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="324"/>
         <source>Open Folder</source>
         <translation>打开文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="299"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="356"/>
         <source>Choose Audio Files</source>
         <translation>选择音频文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="300"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="357"/>
         <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
         <translation>音频文件 (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="324"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="381"/>
         <source>%1 invalid lines ignored</source>
         <translation>已忽略 %1 行无效内容</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="334"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="391"/>
         <source>Downloading audio...</source>
         <translation>正在下载音频…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="358"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="415"/>
         <source>Added %1 links</source>
         <translation>已添加 %1 个链接</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="358"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="415"/>
         <source>No new links added</source>
         <translation>没有新增链接</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="391"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="448"/>
         <source>%1 links failed to download</source>
         <translation>%1 个链接下载失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="416"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="473"/>
         <source>No new files added</source>
         <translation>没有新增文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="421"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="478"/>
         <source>Added %1 files</source>
         <translation>已添加 %1 个文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="462"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="519"/>
         <source>Re-transcribe</source>
         <translation>重新转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="463"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="520"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="465"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="522"/>
         <source>Clear All</source>
         <translation>清空全部</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="543"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="603"/>
         <source>Export Selected (%1)</source>
         <translation>导出所选 (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="544"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="604"/>
         <source>Export All (%1)</source>
         <translation>导出全部 (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="630"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="692"/>
         <source>Processing file %1/%2</source>
         <translation>正在处理文件 %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="706"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="768"/>
         <source>No audio data decoded</source>
         <translation>没有解码出音频数据</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="530"/>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="869"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="590"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="956"/>
         <source>Cancelling...</source>
         <translation>正在取消…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="929"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1015"/>
         <source>Cancelled</source>
         <translation>已取消</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="931"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1017"/>
         <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
         <translation>完成：成功 %1 个，失败 %2 个，无语音 %3 个</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="954"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1040"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1048"/>
         <source>Copied to clipboard</source>
         <translation>已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="984"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1078"/>
         <source>Choose Export Folder</source>
         <translation>选择导出文件夹</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1005"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1111"/>
         <source>Exported %1 files to %2, %3 failed</source>
         <translation>已导出 %1 个文件到 %2，%3 个失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1006"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1112"/>
         <source>Exported %1 files to %2</source>
         <translation>已导出 %1 个文件到 %2</translation>
     </message>
@@ -951,7 +967,7 @@
     <message>
         <location filename="../../src/sherpa/LanguageCatalog.cpp" line="37"/>
         <source>Tagalog</source>
-        <translation>他加禄语</translation>
+        <translation>菲律宾语（他加禄语）</translation>
     </message>
     <message>
         <location filename="../../src/sherpa/LanguageCatalog.cpp" line="38"/>

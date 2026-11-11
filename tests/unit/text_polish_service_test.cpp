@@ -149,6 +149,52 @@ TEST_F(TextPolishServiceTest, TranslationOnlyEngineSkipsWhenNoTargetLanguage) {
     }
 }
 
+// 只翻译的请求（文件转录的译文栏）不能按"原文即结果"放行，否则译文栏里显示的是原文
+TEST_F(TextPolishServiceTest, TranslateOnlyFailsInsteadOfReturningOriginal) {
+    struct Case { bool canTranslate; QString target; };
+    for (const Case& c : { Case{ false, QStringLiteral("英文") }, Case{ true, QString() },
+                           Case{ true, QStringLiteral("不翻译") } }) {
+        useProvider(true, c.canTranslate);
+        TextPolishService::RequestParams params;
+        params.targetLang = c.target;
+        params.translateOnly = true;
+
+        bool called = false;
+        bool ok = true;
+        QString text;
+        m_service.polishText(QStringLiteral("原文"), params,
+                             [&](bool s, const QString& t, const QString&) {
+                                 called = true;
+                                 ok = s;
+                                 text = t;
+                             });
+
+        EXPECT_TRUE(called);
+        EXPECT_FALSE(ok);
+        EXPECT_TRUE(text.isEmpty());
+        EXPECT_EQ(m_state->polishCalls, 0);
+    }
+}
+
+TEST_F(TextPolishServiceTest, TranslateOnlyRunsWhenEngineCanTranslate) {
+    useProvider(false, true);
+
+    TextPolishService::RequestParams params;
+    params.targetLang = QStringLiteral("英文");
+    params.translateOnly = true;
+
+    bool ok = false;
+    m_service.polishText(QStringLiteral("原文"), params,
+                         [&](bool s, const QString&, const QString&) { ok = s; });
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(m_state->polishCalls, 1);
+}
+
+TEST(TextPolishPromptsTest, TranslateOnlyPromptNamesTargetLanguage) {
+    EXPECT_TRUE(TextPolishPrompts::translateOnlyPrompt(QStringLiteral("英文")).contains(QStringLiteral("「英文」")));
+}
+
 TEST_F(TextPolishServiceTest, CapabilitiesComeFromProvider) {
     useProvider(false, true, true, false);
 

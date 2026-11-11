@@ -106,6 +106,16 @@ QStringList buildFewshotMessages(const QString& fewshotText) {
     return result;
 }
 
+QString translateOnlyPrompt(const QString& targetLang) {
+    const QString base = loadSystemPrompt("system_prompt_translate.txt",
+        "你是一个专业翻译。请把用户给出的语音转写文本翻译为目标语言。\n"
+        "【输出规则】:\n"
+        "- 只输出译文，不要改写、增删原意，不要包含解释、Markdown 代码块、引号或原文。\n"
+        "- 人名、产品名等专有名词保持通行写法。\n"
+        "- 原文为空或无法理解时输出空字符串。");
+    return QStringLiteral("%1\n\n【目标语言】:「%2」（如果是中文请用对应的繁简体）").arg(base, targetLang);
+}
+
 bool hasTranslationTarget(const QString& targetLang) {
     return !targetLang.isEmpty() && targetLang != QStringLiteral("不翻译");
 }

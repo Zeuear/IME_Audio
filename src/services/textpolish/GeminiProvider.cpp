@@ -24,6 +24,9 @@ QString GeminiProvider::buildEndpoint(const TextPolishService::RequestParams& pa
 }
 
 QString GeminiProvider::buildPolishPrompt(const QString& inputText, const TextPolishService::RequestParams& params) {
+    if (params.translateOnly) {
+        return QStringLiteral("%1\n\n【原文】:\n\"%2\"").arg(translateOnlyPrompt(params.targetLang), inputText);
+    }
     const PolishInstructionParts p = buildPolishInstructionParts(params);
 
     QString basePrompt = loadSystemPrompt("system_prompt_gemini.txt",

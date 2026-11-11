@@ -45,8 +45,12 @@ void TextPolishService::polishText(const QString& inputText, const RequestParams
         return;
     }
 
-    // 引擎不能润色、也没有翻译任务时，原文就是结果；同步回调，保持调用方的顺序语义
     const bool hasTranslation = TextPolishPrompts::hasTranslationTarget(params.targetLang);
+    if (params.translateOnly && !(provider->canTranslate() && hasTranslation)) {
+        done(false, {}, QStringLiteral("当前 AI 引擎不支持翻译或未设置目标语言"));
+        return;
+    }
+
     if (!provider->canPolish() && !(provider->canTranslate() && hasTranslation)) {
         done(true, inputText, {});
         return;

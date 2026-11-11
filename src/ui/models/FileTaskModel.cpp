@@ -10,6 +10,30 @@ QString FileTask::displayName() const
     return QFileInfo(path).fileName();
 }
 
+bool FileTask::hasTranslation() const
+{
+    return std::any_of(translations.begin(), translations.end(), [](const QString& s) { return !s.isEmpty(); });
+}
+
+QList<SubtitleCue> FileTask::translatedCues() const
+{
+    QList<SubtitleCue> out;
+    for (int i = 0; i < cues.size() && i < translations.size(); ++i) {
+        if (translations.at(i).isEmpty()) continue;
+        out.append({cues.at(i).startMs, cues.at(i).endMs, translations.at(i)});
+    }
+    return out;
+}
+
+QString FileTask::translatedText() const
+{
+    QStringList lines;
+    for (const QString& s : translations) {
+        if (!s.isEmpty()) lines << s;
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
 FileTaskModel::FileTaskModel(QObject* parent) : QAbstractListModel(parent) {}
 
 int FileTaskModel::rowCount(const QModelIndex& parent) const
@@ -161,6 +185,9 @@ void FileTaskModel::restartDownload(int row)
     t.text.clear();
     t.cues.clear();
     t.error.clear();
+    t.translations.clear();
+    t.translationLang.clear();
+    t.runToken = ++m_nextToken;
     touch(row);
 }
 
@@ -192,6 +219,9 @@ void FileTaskModel::reset(int row)
     t.text.clear();
     t.cues.clear();
     t.error.clear();
+    t.translations.clear();
+    t.translationLang.clear();
+    t.runToken = ++m_nextToken;
     touch(row);
 }
 
@@ -221,6 +251,21 @@ void FileTaskModel::appendText(int row, const QString& text)
 void FileTaskModel::appendCue(int row, const SubtitleCue& cue)
 {
     m_tasks[row].cues.append(cue);   // 不影响卡片显示，无需 touch
+    m_tasks[row].translations.append(QString());   // 占位，译文回来后按下标填
+}
+
+void FileTaskModel::setCueTranslation(quint64 runToken, int cue, const QString& lang, const QString& text)
+{
+    if (runToken == 0) return;
+    for (int row = 0; row < m_tasks.size(); ++row) {
+        FileTask& t = m_tasks[row];
+        if (t.runToken != runToken) continue;
+        if (cue < 0 || cue >= t.translations.size()) return;
+        t.translations[cue] = text;
+        t.translationLang = lang;
+        touch(row);
+        return;
+    }
 }
 
 void FileTaskModel::setFailed(int row, const QString& error)

@@ -36,6 +36,8 @@
 #include "cxx-api.h"
 #include "config/AppConfig.h"
 #include "services/TranscriptionService.h"
+#include "translation/LanguageRouting.h"
+#include <QPointer>
 #include "sherpa/SherpaManager.h"
 #include "utils/AppPaths.h"
 #include "utils/Logger.h"
@@ -43,6 +45,28 @@
 namespace {
 constexpr int kSampleRate = 16000;
 constexpr float kMaxSegmentSec = 30.0f;   // 单段上限，云端后端也能接受
+
+// 原文和译文两个预览框共用的刷新逻辑
+void setPreviewText(QPlainTextEdit* edit, const QString& text, bool sameFile)
+{
+    const QString shown = edit->toPlainText();
+    if (shown == text) return;
+
+    QScrollBar* bar = edit->verticalScrollBar();
+    const bool atBottom = bar->value() >= bar->maximum() - 4;
+    if (sameFile && !shown.isEmpty() && text.startsWith(shown)) {
+        // 转录结果按提交顺序追加，用户的滚动位置和选区都原样保留
+        QTextCursor cursor(edit->document());
+        cursor.movePosition(QTextCursor::End);
+        cursor.insertText(text.mid(shown.size()));
+        if (atBottom) bar->setValue(bar->maximum());
+    } else {
+        // 换文件、失败、重试等内容整体变化时才整篇替换。回到顶部
+        const int pos = bar->value();
+        edit->setPlainText(text);
+        if (sameFile) bar->setValue(atBottom ? bar->maximum() : pos);
+    }
+}
 }
 
 FileTranscribeWidget::FileTranscribeWidget(QWidget* parent) : QWidget(parent)
@@ -71,6 +95,8 @@ void FileTranscribeWidget::setupUi()
     m_exportTxtCheck = new AnimatedCheckBox(this);
     m_exportTxtCheck->setChecked(true);
     m_exportSrtCheck = new AnimatedCheckBox(this);
+    m_exportTranslationCheck = new AnimatedCheckBox(this);
+    m_exportTranslationCheck->setChecked(true);
 
     auto* toolbar = new QHBoxLayout;
     toolbar->addWidget(m_addBtn);
@@ -128,6 +154,15 @@ void FileTranscribeWidget::setupUi()
     m_preview->setStyleSheet(QStringLiteral(
         "QPlainTextEdit#preview_text { border: none; border-radius: 8px; background-color: rgba(0, 0, 0, 40); padding: 8px; }"));
 
+    // 译文和原文并排，同样的底色；没开翻译时整栏隐藏
+    m_copyTranslationBtn = new QPushButton(this);
+    m_translationPreview = new QPlainTextEdit(this);
+    m_translationPreview->setReadOnly(true);
+    m_translationPreview->setObjectName("translation_preview_text");
+    m_translationPreview->setStyleSheet(QStringLiteral(
+        "QPlainTextEdit#translation_preview_text { border: none; border-radius: 8px; background-color: rgba(0, 0, 0, 40); padding: 8px; }"));
+    m_translationPreview->hide();
+
     // 标题加粗作为下半区的分组标题；导出跟着结果放在这里
     QFont titleFont = m_previewTitle->font();
     titleFont.setBold(true);
@@ -137,8 +172,19 @@ void FileTranscribeWidget::setupUi()
     previewHeader->addWidget(m_previewTitle, 1);
     previewHeader->addWidget(m_exportTxtCheck);
     previewHeader->addWidget(m_exportSrtCheck);
+    previewHeader->addWidget(m_exportTranslationCheck);
     previewHeader->addWidget(m_exportBtn);
     previewHeader->addWidget(m_copyBtn);
+    previewHeader->addWidget(m_copyTranslationBtn);
+
+    auto* textSplitter = new QSplitter(Qt::Horizontal, this);
+    textSplitter->setHandleWidth(10);
+    textSplitter->setStyleSheet(QStringLiteral("QSplitter::handle { background: transparent; }"));
+    textSplitter->addWidget(m_preview);
+    textSplitter->addWidget(m_translationPreview);
+    textSplitter->setChildrenCollapsible(false);
+    textSplitter->setStretchFactor(0, 1);
+    textSplitter->setStretchFactor(1, 1);
 
     auto* previewPanel = new QWidget(this);
     // 底色透明，否则页面底色会在卡片里露出一条比卡片亮的横带（标题行尤其明显）
@@ -149,7 +195,7 @@ void FileTranscribeWidget::setupUi()
     previewLayout->setContentsMargins(0, 0, 0, 0);
     previewLayout->setSpacing(8);
     previewLayout->addLayout(previewHeader);
-    previewLayout->addWidget(m_preview, 1);
+    previewLayout->addWidget(textSplitter, 1);
 
     const int previewMaxHeight = m_preview->fontMetrics().lineSpacing() * 10
                                + m_previewTitle->sizeHint().height() + 24;
@@ -217,6 +263,7 @@ void FileTranscribeWidget::setupUi()
     connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_exportSrtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_copyBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyPreview);
+    connect(m_copyTranslationBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyTranslation);
     connect(m_openFolderBtn, &QPushButton::clicked, this, [this]() {
         if (!m_lastExportDir.isEmpty()) QDesktopServices::openUrl(QUrl::fromLocalFile(m_lastExportDir));
     });
@@ -252,6 +299,13 @@ void FileTranscribeWidget::changeEvent(QEvent* event)
     QWidget::changeEvent(event);
 }
 
+void FileTranscribeWidget::showEvent(QShowEvent* event)
+{
+    m_translationActive = m_transcription && m_transcription->fileTranslationActive();
+    updatePreview();
+    QWidget::showEvent(event);
+}
+
 void FileTranscribeWidget::retranslateUi()
 {
     m_addBtn->setText(tr("Add Files"));
@@ -263,6 +317,10 @@ void FileTranscribeWidget::retranslateUi()
     m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\" / \"Add Links\""));
     m_copyBtn->setText(tr("Copy"));
     m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
+    m_exportTranslationCheck->setLabelText(tr("Translation"));
+    m_exportTranslationCheck->setToolTip(tr("Also export the translation as name.<language>.txt / .srt"));
+    m_copyTranslationBtn->setText(tr("Copy Translation"));
+    m_translationPreview->setPlaceholderText(tr("The translation appears here as each segment finishes"));
     m_openFolderBtn->setText(tr("Open Folder"));
 
     // 预览标题未选中时是"Transcription"；卡片状态文字由模型在绘制时 tr，重绘即可刷新
@@ -273,7 +331,6 @@ void FileTranscribeWidget::retranslateUi()
 }
 
 // ---------------------------------------------------------------- 列表与按钮
-
 void FileTranscribeWidget::dragEnterEvent(QDragEnterEvent* event)
 {
     LOG_INFO(QString("[DIAG-DND] dragEnter formats=%1 hasUrls=%2 action=%3")
@@ -481,6 +538,7 @@ void FileTranscribeWidget::updatePreview()
         m_preview->clear();
         m_previewPath.clear();
         m_copyBtn->setEnabled(false);
+        updateTranslationPreview(nullptr, false);
         return;
     }
 
@@ -488,28 +546,30 @@ void FileTranscribeWidget::updatePreview()
     m_previewTitle->setText(t.displayName());
     // 预览每行带时间戳便于对照音频；复制与导出 txt 用的是不带时间戳的 t.text
     const QString text = t.state == FileTask::State::Failed ? t.error : buildTimestampedText(t.cues);
-    const QString shown = m_preview->toPlainText();
     // 链接任务下载完成前没有路径，用链接区分"是不是同一条"
     const QString previewKey = t.path.isEmpty() ? t.url : t.path;
-    if (shown != text) {
-        QScrollBar* bar = m_preview->verticalScrollBar();
-        const bool sameFile = previewKey == m_previewPath;
-        const bool atBottom = bar->value() >= bar->maximum() - 4;
-        if (sameFile && !shown.isEmpty() && text.startsWith(shown)) {
-            // 转录结果按提交顺序追加，用户的滚动位置和选区都原样保留
-            QTextCursor cursor(m_preview->document());
-            cursor.movePosition(QTextCursor::End);
-            cursor.insertText(text.mid(shown.size()));
-            if (atBottom) bar->setValue(bar->maximum());
-        } else {
-            // 换文件、失败、重试等内容整体变化时才整篇替换。回到顶部
-            const int pos = bar->value();
-            m_preview->setPlainText(text);
-            if (sameFile) bar->setValue(atBottom ? bar->maximum() : pos);
-        }
-    }
+    const bool sameFile = previewKey == m_previewPath;
+    setPreviewText(m_preview, text, sameFile);
+    updateTranslationPreview(&t, sameFile);
     m_previewPath = previewKey;
     m_copyBtn->setEnabled(!t.text.isEmpty());
+}
+
+void FileTranscribeWidget::updateTranslationPreview(const FileTask* task, bool sameFile)
+{
+    // 翻译设置开着，或已有任务带译文（设置后来关了也要能看、能导出）时才显示译文栏
+    bool anyTranslation = false;
+    for (int row = 0; row < m_model->rowCount() && !anyTranslation; ++row)
+        anyTranslation = m_model->task(row).hasTranslation();
+    const bool visible = anyTranslation || m_translationActive;
+    m_translationPreview->setVisible(visible);
+    m_copyTranslationBtn->setVisible(visible);
+    m_exportTranslationCheck->setVisible(visible);
+    m_copyTranslationBtn->setEnabled(task && task->hasTranslation());
+
+    const QString text = task && task->state != FileTask::State::Failed
+                             ? buildTimestampedText(task->translatedCues()) : QString();
+    setPreviewText(m_translationPreview, text, sameFile);
 }
 
 void FileTranscribeWidget::updateButtons()
@@ -599,6 +659,8 @@ void FileTranscribeWidget::startRun(const QList<int>& rows)
     m_okCount = m_failedCount = m_noSpeechCount = 0;
     m_lastError.clear();
     m_cancelled = false;
+    m_translationErrorShown = false;
+    m_translationActive = m_transcription->fileTranslationActive();
     m_openFolderBtn->hide();
     setBusy(true);
     m_transcription->setFileMode(true);
@@ -857,9 +919,34 @@ void FileTranscribeWidget::onSegmentFinished(bool ok, const QString&, const QStr
         // m_nextSegment 此时仍指向刚完成的这一段（下面才自增）
         const Segment& seg = m_segments.at(m_nextSegment);
         m_model->appendCue(m_currentRow, {qRound64(seg.startSec * 1000), qRound64(seg.endSec * 1000), text});
+        requestTranslation(m_currentRow, text);
     }
     m_model->setProgress(m_currentRow, ++m_nextSegment, m_segments.size());
     transcribeNext();
+}
+
+void FileTranscribeWidget::requestTranslation(int row, const QString& text)
+{
+    if (!m_transcription->fileTranslationActive()) return;
+
+    const FileTask& task = m_model->task(row);
+    const quint64 token = task.runToken;
+    const int cue = task.cues.size() - 1;   // 刚追加的这一段
+    const QString lang = languageCodeForStored(m_transcription->fileTranslationTarget());
+    QPointer<FileTranscribeWidget> self(this);
+    m_transcription->translateForFile(text, [self, token, cue, lang](bool ok, const QString& translated, const QString& err) {
+        if (!self) return;
+        if (ok) self->m_model->setCueTranslation(token, cue, lang, translated.trimmed());
+        else self->onTranslationFailed(err);
+    });
+}
+
+void FileTranscribeWidget::onTranslationFailed(const QString& cause)
+{
+    LOG_WARN(QString("File translation failed: %1").arg(cause));
+    if (m_translationErrorShown) return;
+    m_translationErrorShown = true;
+    emit errorOccurred(QStringLiteral("部分内容翻译失败"), cause);
 }
 
 void FileTranscribeWidget::cancel()
@@ -875,7 +962,6 @@ void FileTranscribeWidget::cancel()
         // 不等后台解码返回：finishFile 会置取消标志，解码线程在下一个包处退出，结果被 onFileDecoded 丢弃
         finishFile(FileTask::State::Pending);
     }
-    // 其余阶段在当前步骤完成后由 transcribeNext / onSegmentsReady 检查标志退出
 }
 
 void FileTranscribeWidget::finishFile(FileTask::State state, const QString& error)
@@ -954,6 +1040,14 @@ void FileTranscribeWidget::copyPreview()
     m_statusLabel->setText(tr("Copied to clipboard"));
 }
 
+void FileTranscribeWidget::copyTranslation()
+{
+    const QModelIndex idx = m_list->currentIndex();
+    if (!idx.isValid()) return;
+    QGuiApplication::clipboard()->setText(m_model->task(idx.row()).translatedText());
+    m_statusLabel->setText(tr("Copied to clipboard"));
+}
+
 bool FileTranscribeWidget::writeTextFile(const QString& path, const QString& text)
 {
     QFile f(path);
@@ -991,11 +1085,22 @@ void FileTranscribeWidget::exportResults()
     // 按音频名称导出同名文件；重名时加序号，不覆盖已有文件
     int written = 0;
     int failed = 0;
+    // 隐藏时说明没有译文可导出，不看它的勾选状态
+    const bool withTranslation = m_exportTranslationCheck->isChecked() && !m_exportTranslationCheck->isHidden();
     for (int row : std::as_const(rows)) {
         const FileTask& t = m_model->task(row);
-        const QString base = uniqueExportBase(dir, exportBaseName(t), exts);
-        for (const QString& ext : std::as_const(exts)) {
-            const QString text = ext == QLatin1String("srt") ? buildSrt(t.cues) : t.text;
+        const bool translated = withTranslation && t.hasTranslation();
+        const QString lang = t.translationLang.isEmpty() ? QStringLiteral("translated") : t.translationLang;
+        QStringList allExts = exts;
+        if (translated) {
+            for (const QString& ext : std::as_const(exts)) allExts << lang + QLatin1Char('.') + ext;
+        }
+        const QString base = uniqueExportBase(dir, exportBaseName(t), allExts);
+        for (const QString& ext : std::as_const(allExts)) {
+            const bool isTranslation = ext.contains(QLatin1Char('.'));
+            const bool srt = ext.endsWith(QLatin1String("srt"));
+            const QString text = isTranslation ? (srt ? buildSrt(t.translatedCues()) : t.translatedText())
+                                               : (srt ? buildSrt(t.cues) : t.text);
             if (writeTextFile(QDir(dir).filePath(base + QLatin1Char('.') + ext), text)) ++written;
             else ++failed;
         }

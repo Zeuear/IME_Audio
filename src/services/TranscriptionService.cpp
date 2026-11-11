@@ -10,6 +10,7 @@
 #include <QTimer>
 #include "audio/AudioNormalizer.h"
 #include "textpolish/GeminiProvider.h"
+#include "textpolish/TextPolishPrompts.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/LanguageCatalog.h"
 #include "TranslationService.h"
@@ -100,7 +101,8 @@ void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, con
     params.style = m_config.polish.aiStyle;
     params.customPrompt = m_config.polish.prompt;
     params.aiVocab = m_config.polish.vocab;
-    params.targetLang = m_config.polish.cloudTargetLang();
+    // 文件转录保留原文，译文由 translateForFile 另出，润色时不能顺带翻译
+    params.targetLang = t.fileMode ? QStringLiteral("不翻译") : m_config.polish.cloudTargetLang();
 
     // 记录润色前文字：润色请求超时时用它回退，避免整句被丢弃
     m_polishOriginals.insert(t.seq, text);
@@ -126,7 +128,8 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ti
     p.apiKey = m_config.polish.apiKey;
     p.model = m_config.polish.model;
     p.customUrl = m_config.polish.apiUrl;
-    p.targetLang = m_config.polish.cloudTargetLang();
+    // 文件转录保留原文，译文由 translateForFile 另出
+    p.targetLang = t.fileMode ? QStringLiteral("不翻译") : m_config.polish.cloudTargetLang();
     p.style = m_config.polish.aiStyle;
     p.customPrompt = m_config.polish.prompt;
     p.replaceRules = m_config.replaceRules;
@@ -399,6 +402,54 @@ void TranscriptionService::testKey(AsrBackendKind backend, const QString& key, K
             done(false, QStringLiteral("无法连接服务：%1").arg(reply->errorString()));
         }
     });
+}
+
+bool TranscriptionService::fileTranslationActive() const {
+    const PolishConfig& p = m_config.polish;
+    if (!TextPolishPrompts::hasTranslationTarget(p.activeTargetLang())) return false;
+    if (p.usesLocalTranslation()) return m_translationService && m_translationService->hasBackend();
+    // 云端翻译和听写一样挂在 AI 增强开关下
+    return p.enableAiEnhancement && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
+}
+
+void TranscriptionService::translateForFile(const QString& text, TranslateCallback done) {
+    const PolishConfig& p = m_config.polish;
+    if (p.usesLocalTranslation()) {
+        // 复用听写的语言判定；fileMode 传 false，否则判定会直接跳过翻译
+        const auto stage = decideTranslationStage(false, true, p.translateSourceLang, p.activeTargetLang(),
+                                                  LanguageCatalog::codeOf(m_config.sherpa.languageModel));
+        if (!stage.shouldTranslate) {
+            done(true, text, {});   // 源语言与目标语言相同，原文即译文
+            return;
+        }
+        if (!m_translationService) {
+            done(false, {}, QStringLiteral("翻译后端不可用"));
+            return;
+        }
+        m_translationService->translate(text, stage.from, stage.to, std::move(done));
+        return;
+    }
+
+    TextPolishService::RequestParams params;
+    params.aiEngine = p.aiEngineIndex;
+    params.apiKey = p.apiKey;
+    params.customUrl = p.apiUrl;
+    params.model = p.model;
+    params.targetLang = p.activeTargetLang();
+    params.translateOnly = true;
+
+    // 云端请求没有自带超时；结果和超时谁先到用谁，回调只走一次
+    auto pending = std::make_shared<TranslateCallback>(std::move(done));
+    auto finishOnce = [pending](bool ok, const QString& result, const QString& error) {
+        if (!*pending) return;
+        TranslateCallback cb = std::move(*pending);
+        *pending = nullptr;
+        cb(ok, result, error);
+    };
+    QTimer::singleShot(kNetworkTimeoutMs, this, [finishOnce]() {
+        finishOnce(false, {}, QStringLiteral("请求超时，无响应"));
+    });
+    m_textPolishService->polishText(text, params, finishOnce);
 }
 
 QString TranscriptionService::postProcess(const QString &rawText, bool fileMode) {

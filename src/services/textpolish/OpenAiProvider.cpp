@@ -18,6 +18,17 @@ QString OpenAiProvider::buildOpenAiEndpoint(const TextPolishService::RequestPara
 }
 
 QByteArray OpenAiProvider::buildOpenAiChatBody(const QString& inputText, const TextPolishService::RequestParams& params) {
+    const QString model = params.model.isEmpty() ? QStringLiteral("gpt-3.5-turbo") : params.model;
+    // 只翻译：不带润色的 fewshot，否则模型会照着示例去改写而不是翻译
+    if (params.translateOnly) {
+        const QJsonArray messages{
+            QJsonObject{ {"role", "system"}, {"content", translateOnlyPrompt(params.targetLang)} },
+            QJsonObject{ {"role", "user"}, {"content", inputText} },
+        };
+        return QJsonDocument(QJsonObject{ {"model", model}, {"messages", messages}, {"temperature", 0.2} })
+            .toJson(QJsonDocument::Compact);
+    }
+
     const PolishInstructionParts p = buildPolishInstructionParts(params);
 
     QString basePrompt = loadSystemPrompt("system_prompt_openai.txt",
