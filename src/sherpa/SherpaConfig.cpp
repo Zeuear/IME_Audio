@@ -429,7 +429,7 @@ const std::pair<QString, ModelDescriptor> kFunasrNano =
     {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30", {ModelArch::FunasrNano}};
 // GPU 变体（fp16）所在的 Hugging Face 账号。空串 = 还没上传：不登记变体，CPU 行也不指向它们，
 // 避免列表里出现下载必然失败的选项。账号确定后只改这里
-const QString kQwen3GpuOwner;
+const QString kQwen3GpuOwner = "Sporer";
 QString qwen3GpuRepo(const QString& size)
 {
     return kQwen3GpuOwner.isEmpty() ? QString() : kQwen3GpuOwner + "/sherpa-onnx-qwen3-asr-" + size + "-fp16";
