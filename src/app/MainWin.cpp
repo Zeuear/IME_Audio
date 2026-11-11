@@ -501,7 +501,7 @@ void MainWin::setupUiConnections(){
     });
     connect(m_controlBar, &ControlBar::docsPairingCodeRequested, this, [this]() {
         QGuiApplication::clipboard()->setText(DocsBridge::pairingToken());
-        notify(NotifyLevel::Success, QStringLiteral("配对码已复制"), QStringLiteral("请粘贴到 ImeAudio 扩展的选项页"));
+        notify(NotifyLevel::Success, QStringLiteral("配对码已复制"), QStringLiteral("在文档标签页点 ImeAudio 扩展图标，粘贴到弹窗里"));
     });
     connect(m_docsBridge, &DocsBridge::boundChanged, this, [this](bool, const QString& title) {
         m_controlBar->setDocsBinding(title);

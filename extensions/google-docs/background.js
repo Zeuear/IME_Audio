@@ -1,4 +1,4 @@
-// 点击图标绑定 / 解除当前标签页；绑定后收到 text 就用调试器协议写进该标签页。
+// 弹窗里绑定 / 解除当前标签页；绑定后收到 text 就用调试器协议写进该标签页。
 // 开启焦点模拟，文档窗口不在前台也能收字。连上后须先发配对码，程序才接受其余消息。
 
 const URL = 'ws://127.0.0.1:38617';
@@ -70,8 +70,21 @@ async function unbind() {
   post({ type: 'unbound' });
 }
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if (boundTabId === tab.id) await unbind(); else await bind(tab);
+// 点图标弹出 popup.html，由它发来消息；不再有 onClicked
+chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+  (async () => {
+    if (msg.type === 'status') {
+      const { token } = await chrome.storage.local.get('token');
+      reply({ hasToken: !!token, boundTabId });
+    } else if (msg.type === 'setToken') {
+      await chrome.storage.local.set({ token: msg.token });
+      reply({});
+    } else if (msg.type === 'toggle') {
+      if (boundTabId === msg.tab.id && !msg.forceBind) await unbind(); else await bind(msg.tab);
+      reply({});
+    }
+  })();
+  return true;   // 异步回复
 });
 
 chrome.tabs.onRemoved.addListener((id) => { if (id === boundTabId) unbind(); });
@@ -80,7 +93,13 @@ chrome.debugger.onDetach.addListener((src) => {
 });
 
 // 配对码改了就断开重连
-chrome.storage.onChanged.addListener(() => { if (ws) ws.close(); ws = null; setBadge(''); connect(); });
+// 仍有绑定时保留 ON 角标，不能一律清空
+chrome.storage.onChanged.addListener(() => {
+  if (ws) ws.close();
+  ws = null;
+  setBadge(boundTabId !== null ? 'ON' : '', '#080');
+  connect();
+});
 
 chrome.alarms.create('reconnect', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(connect);

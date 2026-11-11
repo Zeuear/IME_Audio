@@ -4,8 +4,7 @@
   "version": "1.1",
   "description": "把 ImeAudio 的听写结果写进被绑定的 Google 文档标签页，不影响你当前正在用的窗口。",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq47v1gY7m2Ukd8qTfDZI57qLqG76tWwPcOjvk8V1lCvsiqHkWyzfk5kAQXQk4FRiDeXrrItzlsrI/QQzg9Dr+JT3qSeQJjdm7V99gtSDh9lXLX2duQjRYgWnjjRK+JN5k8nSZPIc8pMePVVfjwv9lw0cW76HIsSzBtcXVk8ZXj3Yc5ee4xEK99jcoC88CbiUD1dRkVNBK2nNX4gjGmwr8QkGuX+3u2aYMCFXVzFGPt1slFCh4HeWET01iS1snQJLB40C1hbfJglBfVdDeDLuZtrz7cVVz85FL6NeTAx4A125M3yUdeOax4iGTFnnTsBCnN/6J0ORMM6VDakDmhLFowIDAQAB",
-  "permissions": ["debugger", "alarms", "storage"],
+  "permissions": ["debugger", "alarms", "storage", "activeTab"],
   "background": { "service_worker": "background.js" },
-  "options_page": "options.html",
-  "action": { "default_title": "点击：把当前标签页绑定为 ImeAudio 的输出目标（再点一次解除）" }
+  "action": { "default_title": "ImeAudio：绑定 / 解除当前标签页", "default_popup": "popup.html" }
 }
