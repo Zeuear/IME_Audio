@@ -159,7 +159,13 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
         if (options.filter && !options.filter(fi)) continue;
 
         const QString dst = QDir(options.destinationDir).filePath(fi.fileName());
-        QFile::remove(dst);
+        if (QFile::exists(dst) && !QFile::remove(dst)) {
+            // Windows 上已被加载的 DLL 删不掉但能改名：挪开后放新文件，重启即生效；
+            // 否则新文件拷不进去，GPU 运行库会一直停留在旧的 CPU 版
+            const QString stale = dst + ".old";
+            QFile::remove(stale);
+            if (!QFile::rename(dst, stale)) LOG_WARN("File in use and cannot be moved aside: " + dst);
+        }
 
         bool done = options.moveInsteadOfCopy
             ? QFile::rename(fi.absoluteFilePath(), dst)

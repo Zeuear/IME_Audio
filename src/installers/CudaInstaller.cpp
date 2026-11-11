@@ -1,4 +1,5 @@
 #include "CudaInstaller.h"
+#include "utils/FileVersion.h"
 #include <QLibrary>
 
 
@@ -101,6 +102,18 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
     {
         QString dllPath = QApplication::applicationDirPath() + QDir::separator() + spec.ortCudaProviderLib;
         result.hasOrtCudaProvider = QFile::exists(dllPath);
+
+        // 只看 provider 文件在不在不够：onnxruntime.dll 若仍是 CPU 版（安装时被占用没换掉，或开发构建又拷回了 CPU 版），
+        // sherpa 会悄悄回退 CPU，日志照样写 provider=cuda。provider 必须和 onnxruntime 同一版本才能被加载
+        if (result.hasOrtCudaProvider) {
+            const QString ortVersion = fileVersion(QApplication::applicationDirPath() + "/onnxruntime.dll");
+            const QString providerVersion = fileVersion(dllPath);
+            if (!ortVersion.isEmpty() && !providerVersion.isEmpty() && ortVersion != providerVersion) {
+                LOG_WARN(QString("GPU detection: onnxruntime.dll %1 does not match %2 %3")
+                             .arg(ortVersion, spec.ortCudaProviderLib, providerVersion));
+                result.hasOrtCudaProvider = false;
+            }
+        }
 
         //QLibrary ortLib(ortCudaLib);
         //if (result.hasOrtCudaProvider) {
@@ -238,7 +251,8 @@ void CudaInstaller::startInstall()
         }
 
         if (success) {
-            finishInstallation(true, tr("Full CUDA + cuDNN installation completed."));
+            // 运行库 DLL 已被本进程加载，新文件要重启后才生效
+            finishInstallation(true, tr("Installation completed. Restart ImeAudio to enable GPU acceleration."));
         }
         else {
             finishInstallation(false, tr("Installation sequence failed: ") + msg);
@@ -271,8 +285,12 @@ void CudaInstaller::startInstall()
 
         ExtractOptions opts;
         opts.destinationDir = QApplication::applicationDirPath();
+        // GPU 包里的 onnxruntime 与 CPU 包版本不同，sherpa 的两个 DLL 必须一起换，否则混用会因 ORT API 版本不符而无法启动
         opts.filter = [](const QFileInfo& fi) {
-            return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
+            const QString name = fi.fileName();
+            return name.startsWith("onnx", Qt::CaseInsensitive)
+                || name.compare("sherpa-onnx-c-api.dll", Qt::CaseInsensitive) == 0
+                || name.compare("sherpa-onnx-cxx-api.dll", Qt::CaseInsensitive) == 0;
             };
         ExtractExTask* sherpaTask = new ExtractExTask(m_sherpaZipPath, opts);
         connect(sherpaTask, &ExtractExTask::extractStarted, this, [this](int total) { emit extractStarted(GROUP_ID, total); });

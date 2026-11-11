@@ -216,7 +216,18 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.so*")
 endif()
 
-if(_sherpa_runtime_libs)
+if(WIN32 AND _sherpa_runtime_libs)
+    # 输出目录里装过 GPU 运行库（onnxruntime_providers_cuda.dll）时不拷：CPU 版 onnxruntime / sherpa DLL
+    # 会把 GPU 版覆盖掉，CUDA 请求随后被 sherpa 悄悄回退到 CPU
+    # 列表里的分号在自定义命令中会被拆成多个参数，换成逗号传给脚本（| 在 cmd 里是管道符）
+    string(REPLACE ";" "," _sherpa_runtime_libs_arg "${_sherpa_runtime_libs}")
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMENT "Copying sherpa-onnx runtime libraries to output directory..."
+        COMMAND ${CMAKE_COMMAND} "-DDST=$<TARGET_FILE_DIR:${TARGET_NAME}>" "-DLIBS=${_sherpa_runtime_libs_arg}"
+                -P "${CMAKE_SOURCE_DIR}/cmake/CopySherpaRuntime.cmake"
+        VERBATIM
+    )
+elseif(_sherpa_runtime_libs)
     set(_copy_commands "")
     foreach(_lib_path IN LISTS _sherpa_runtime_libs)
         if(EXISTS "${_lib_path}")
