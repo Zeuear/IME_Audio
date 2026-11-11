@@ -17,5 +17,5 @@ Firewall::State Firewall::state(const QString& exePath)
     // 无规则时 netsh 返回非零；输出文字随系统语言变，不能依赖
     if (p.exitCode() != 0) return State::Missing;
     const QString out = QString::fromLocal8Bit(p.readAllStandardOutput());
-    return outputMentionsProgram(out, QDir::toNativeSeparators(exePath)) ? State::Allowed : State::StalePath;
+    return outputMentionsProgram(out, QDir::toNativeSeparators(exePath)) ? State::Blocked : State::StalePath;
 }

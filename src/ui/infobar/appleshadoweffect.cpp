@@ -481,7 +481,7 @@ QPixmap AppleShadowEffect::updateShadow(const QRectF& sourceRect)
     shadowPainter.setBrush(m_color);
     shadowPainter.setPen(Qt::NoPen);
     QRectF rect(m_blurRadius, m_blurRadius, sourceRect.width() , sourceRect.height());
-    shadowPainter.drawRoundedRect(rect.adjusted(edge, edge, -edge, -edge), 8, 8);
+    shadowPainter.drawRoundedRect(rect.adjusted(edge, edge, -edge, -edge), m_cornerRadius, m_cornerRadius);
 
     QImage blurredImage = applyBoxBlur(shadowBase, m_blurRadius, 2);
     return QPixmap::fromImage(blurredImage);

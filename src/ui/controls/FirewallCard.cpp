@@ -47,7 +47,7 @@ void FirewallCard::setupUi()
 void FirewallCard::retranslateUi()
 {
     m_title->setText(tr("Firewall"));
-    m_desc->setText(tr("Allow this app through Windows Firewall so network features (model downloads, cloud services) are not blocked. Changing the rule needs administrator permission."));
+    m_desc->setText(tr("Block this app from accessing the network in Windows Firewall (outbound). Model downloads, cloud recognition, AI enhancement and update checks will stop working. Changing the rule needs administrator permission."));
     applyState(m_state);
 }
 
@@ -55,17 +55,17 @@ void FirewallCard::applyState(Firewall::State state)
 {
     m_state = state;
     switch (state) {
-    case Firewall::State::Allowed:
-        m_status->setText(tr("Status: allowed"));
-        m_button->setText(tr("Remove rule"));
+    case Firewall::State::Blocked:
+        m_status->setText(tr("Status: blocked"));
+        m_button->setText(tr("Unblock"));
         break;
     case Firewall::State::StalePath:
         m_status->setText(tr("Status: rule points to another location"));
         m_button->setText(tr("Update rule"));
         break;
     case Firewall::State::Missing:
-        m_status->setText(tr("Status: not allowed"));
-        m_button->setText(tr("Allow"));
+        m_status->setText(tr("Status: not blocked"));
+        m_button->setText(tr("Block"));
         break;
     }
     m_button->setEnabled(!m_busy);
@@ -98,7 +98,7 @@ void FirewallCard::onButtonClicked()
     if (m_busy) return;
     const QString exe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
     switch (m_state) {
-    case Firewall::State::Allowed:   runNetsh(Firewall::removeArgs()); break;
+    case Firewall::State::Blocked:   runNetsh(Firewall::removeArgs()); break;
     case Firewall::State::StalePath: runNetsh(Firewall::updateArgs(exe)); break;
     case Firewall::State::Missing:   runNetsh(Firewall::addArgs(exe)); break;
     }

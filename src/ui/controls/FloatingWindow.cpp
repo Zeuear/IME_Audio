@@ -45,6 +45,7 @@ void setAlwaysOnTop(QWidget* window, bool on)
     if (wasVisible) {
         window->move(where);
         window->show();
+        window->raise();   // 重建后可能落在其它置顶窗口下面
     }
 }
 

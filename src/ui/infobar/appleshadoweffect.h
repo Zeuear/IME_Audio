@@ -27,6 +27,15 @@ public:
     void setColor(const QColor &color) { m_color = color; update(); }
     QColor color() const { return m_color; }
 
+    // 阴影轮廓的圆角半径；胶囊形控件要传高度的一半，否则阴影四角和控件对不上
+    void setCornerRadius(qreal radius) {
+        if (qFuzzyCompare(m_cornerRadius, radius)) return;
+        m_cornerRadius = radius;
+        m_shadowPixmap = QPixmap();   // 轮廓变了，缓存的阴影作废
+        update();
+    }
+    qreal cornerRadius() const { return m_cornerRadius; }
+
     void setOpacity(qreal opacity) { m_opacity = opacity; update(); }
     qreal opacity() const { return m_opacity; }
 
@@ -39,6 +48,7 @@ private:
 
     int m_innerDistance;
     qreal m_blurRadius;
+    qreal m_cornerRadius = 8;
     QPointF m_offset;
     QColor m_color;
     qreal m_opacity;

@@ -2,16 +2,16 @@
 #include <QString>
 #include <QStringList>
 
-// @brief 系统防火墙里本程序的放行规则。
+// @brief 系统防火墙里禁止本程序联网（出站拦截）的规则。
 namespace Firewall {
 
 enum class State {
     Missing,
-    Allowed,
+    Blocked,
     StalePath,   // 规则指向别的路径（程序挪过位置）
 };
 
-inline QString ruleName() { return QStringLiteral("ImeAudio"); }
+inline QString ruleName() { return QStringLiteral("ImeAudioBlock"); }
 
 bool isSupported();
 State state(const QString& exePath);
@@ -19,7 +19,7 @@ State state(const QString& exePath);
 // program 的值自带引号：路径可能有空格
 inline QStringList addArgs(const QString& exePath)
 {
-    return { "advfirewall", "firewall", "add", "rule", "name=" + ruleName(), "dir=in", "action=allow",
+    return { "advfirewall", "firewall", "add", "rule", "name=" + ruleName(), "dir=out", "action=block",
              "program=\"" + exePath + "\"", "enable=yes", "profile=any" };
 }
 
