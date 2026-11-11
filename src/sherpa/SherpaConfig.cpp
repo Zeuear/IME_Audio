@@ -1588,6 +1588,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     RecognizerKind kind = RecognizerKind::None;
     // 只有 GPU 变体才用 CUDA：int8 模型在 CUDA 后端没有算子内核，试了也是白试
     const bool wantCuda = ShouldUseCuda(*desc, useGpu) && cudaPlatformSpec().detectable;
+    result.requestedCuda = wantCuda;
     if (useGpu && !desc->gpuVariant) {
         LOG_INFO(QString("Model is not a GPU variant, using CPU: %1").arg(repoId));
     }
@@ -1784,10 +1785,12 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                     if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
                         auto r = std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
                         LOG_INFO("Recognizer created, provider=cuda");
+                        result.provider = GpuProvider::Cuda;
                         return r;
                     } else {
                         auto r = std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
                         LOG_INFO("Recognizer created, provider=cuda");
+                        result.provider = GpuProvider::Cuda;
                         return r;
                     }
                 }
@@ -1809,11 +1812,13 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 if constexpr (std::is_same_v<T, sherpa_onnx::cxx::OfflineRecognizerConfig>) {
                     auto r = std::make_unique<sherpa_onnx::cxx::OfflineRecognizer>(sherpa_onnx::cxx::OfflineRecognizer::Create(config));
                     LOG_INFO("Recognizer created, provider=cpu");
+                    result.provider = GpuProvider::Cpu;
                     return r;
                 }
                 else {
                     auto r = std::make_unique<sherpa_onnx::cxx::OnlineRecognizer>(sherpa_onnx::cxx::OnlineRecognizer::Create(config));
                     LOG_INFO("Recognizer created, provider=cpu");
+                    result.provider = GpuProvider::Cpu;
                     return r;
                 }
             }

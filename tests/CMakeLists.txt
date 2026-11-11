@@ -78,6 +78,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_row_action_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/media_link_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/gpu_variant_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/gpu_runtime_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/firewall_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_extension_test.cpp
@@ -115,6 +116,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.h
+    # GPU 运行时状态机：检测结果 / 计算模式 / 实际 provider 的唯一真相（Q_OBJECT 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/GpuRuntime.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/GpuRuntime.h
     # TextPolishService delegates to the provider layer; include those TUs so the
     # hermetic test links (parseOllamaTags is static, but factory/fetchModels need them).
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/TextPolishProvider.cpp

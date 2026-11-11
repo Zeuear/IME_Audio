@@ -42,6 +42,8 @@
 #include "utils/Logger.h"
 #include "utils/AppPaths.h"
 #include "sherpa/SherpaManager.h"
+#include "sherpa/GpuRuntime.h"
+#include "installers/CudaInstaller.h"
 #include "sherpa/LanguageCatalog.h"
 #include "sherpa/StreamingEngine.h"
 #include "ui/controls/LiveOverlay.h"
@@ -165,6 +167,8 @@ void MainWin::initialize() {
     m_sherpaManager = new SherpaManager(this);
     m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
     m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
+    m_gpuRuntime = new GpuRuntime(this);
+    m_gpuRuntime->setDetector([] { return CudaInstaller::detectGpuEnvironment(true); });
 
     m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService,
                                                       m_translationService, config, this);
@@ -207,6 +211,7 @@ void MainWin::initialize() {
     // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
     m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
+    ui->gpu_backend_widget->setGpuRuntime(m_gpuRuntime);
     m_termWidget->setTermsManager(m_termsManager);
     m_snippetStore = new SnippetStore(AppPaths::snippetsFile());
     if (!m_snippetStore->load()) {
@@ -326,6 +331,12 @@ void MainWin::setupUiConnections(){
     connect(m_sherpaManager, &SherpaManager::loadFailed, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
     });
+    connect(m_sherpaManager, &SherpaManager::loadProviderResolved, this,
+            [this](const QString& repoId, bool requestedCuda, bool usedCuda, bool success) {
+                m_gpuRuntime->reportLoadResult(repoId,
+                    success ? (usedCuda ? GpuProvider::Cuda : GpuProvider::Cpu) : GpuProvider::Unknown,
+                    requestedCuda);
+            });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {
         QString modelPath = ModelConfigFactory::getSherpaModel();
@@ -846,9 +857,9 @@ void MainWin::onLocalModelActivated()
 void MainWin::requestPreload()
 {
     const AppConfig& cfg = ConfigManager::instance().config();
-    // 平台没有 CUDA 时检测不会有结果可等
-    const bool detectionDone = m_gpuDetectionDone || !cudaPlatformSpec().detectable;
-    if (GpuVariant::shouldWaitForGpuDetection(cfg.sherpa.useGpu, detectionDone)) {
+    // 检测结果统一由 GpuRuntime 持有；超时后不再等
+    const bool detectionDone = m_detectionTimedOut || m_gpuRuntime->detectionDone();
+    if (GpuVariant::shouldWaitForGpuDetection(m_gpuRuntime->requestedGpu(), detectionDone)) {
         if (!m_preloadDeferred) LOG_INFO("Model load deferred until GPU detection finishes");
         m_preloadDeferred = true;
         if (!m_detectTimer) {
@@ -863,13 +874,12 @@ void MainWin::requestPreload()
         if (!m_detectTimer->isActive()) m_detectTimer->start();
         return;
     }
-    LOG_INFO(QString("Model load triggered by %1").arg(cfg.sherpa.useGpu ? "detection already finished" : "useGpu disabled"));
+    LOG_INFO(QString("Model load triggered by %1").arg(m_gpuRuntime->requestedGpu() ? "detection already finished" : "useGpu disabled"));
     m_workflow->preloadModel(cfg);
 }
 
 void MainWin::settleGpuDetection(const char* reason)
 {
-    m_gpuDetectionDone = true;
     if (m_detectTimer) m_detectTimer->stop();
     if (!m_preloadDeferred) return;
     m_preloadDeferred = false;
@@ -941,6 +951,8 @@ void MainWin::loadConfigToUI() {
     m_settings->loadAll();
     ui->shortcut_edit->setShortCut(cfg.hotkey);
     ui->gpu_backend_widget->setComputeMode(cfg.sherpa.useGpu ? GpuBackendWidget::ComputeMode::CUDA : GpuBackendWidget::ComputeMode::CPU);
+    // 平台不可检测/后端未就绪时 runtime 会把模式锁回 CPU，配置要跟着回写
+    cfg.sherpa.useGpu = m_gpuRuntime->requestedGpu();
     ui->model_list_widget->setGpuMode(cfg.sherpa.useGpu);
     const int index = ui->language_comb->findData(cfg.sherpa.languageModel);
     if (index != -1) ui->language_comb->setCurrentIndex(index);

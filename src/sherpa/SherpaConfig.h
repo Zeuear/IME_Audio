@@ -426,6 +426,8 @@ public:
 		bool isLoaded = false;
 		bool cudaFailed = false;     // GPU 变体的 CUDA 初始化失败（不回退 CPU，isLoaded 为 false）
 		QString failReason;          // cudaFailed 时的原因（来自底层异常，英文）
+		GpuProvider provider = GpuProvider::Unknown;   // 创建成功后真正使用的后端
+		bool requestedCuda = false;   // 这次加载是否要求 CUDA（模型有 GPU 变体且全局开了 GPU）
 		RecognizerKind kind = RecognizerKind::None;
         RecognizerPtrVar recognizer = std::monostate{};
 	};

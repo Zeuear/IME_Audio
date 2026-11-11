@@ -2,12 +2,11 @@
 #include <QWidget>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <QtConcurrent/QtConcurrent>
-#include <QFutureWatcher>
 #include "installers/CudaInstaller.h"
 #include "utils/DownloadText.h"
 
 class CudaInstaller;
+class GpuRuntime;
 class QLabel;
 class QPushButton;
 class QProgressBar;
@@ -18,9 +17,9 @@ class GpuBackendWidget : public QWidget {
     Q_OBJECT
 public:
     enum class GpuStatus {
-        Detecting,     
-        NoGpu,         
-        GpuAvailable,  
+        Detecting,
+        NoGpu,
+        GpuAvailable,
         Downloading,
         Installing,
         Ready,
@@ -36,11 +35,12 @@ public:
     ~GpuBackendWidget();
 
     void setBackendInstaller(CudaInstaller* cudaInstaller);
+    void setGpuRuntime(GpuRuntime* runtime);
 
     void redetect();
     bool isGpuAccelerationReady() const;
 
-    ComputeMode currentComputeMode() const { return m_computeMode; }
+    // 设置模式但不发出用户操作信号。
     void setComputeMode(ComputeMode mode);
 
 protected:
@@ -54,7 +54,7 @@ signals:
 
 private slots:
     void onDownloadClicked();
-    void onDetectionFinished(const GpuDetectionResult& result);
+    void onDetectionFinished();
 
     void onInstallerStatusChanged();
     void onInstallerFinished(bool success, const QString& msg);
@@ -64,27 +64,21 @@ private:
     void retranslateUi();
     void setupUi();
     void applyStatus(GpuStatus status);
-    void detectGpuAsync();
+    void syncFromRuntime();
+    ComputeMode currentComputeMode() const;
     void updateModeSwitchUi();
-    // CUDA 不可用时的说明文案：区分"平台没有 CUDA"与"有 CUDA 但没检测到 GPU"
     QString backendUnavailableText() const;
 
 private:
-    QFutureWatcher<GpuDetectionResult>* m_detectWatcher = nullptr;
-    GpuDetectionResult m_detail;
-
     GpuStatus m_status = GpuStatus::Detecting;
-    ComputeMode m_computeMode = ComputeMode::CPU;
-    QString m_detectedGpuName;
     QString m_backendPath;
+    GpuRuntime* m_gpuRuntime = nullptr;
 
-    // CPU 检测卡片
     QWidget   *m_cpuCard = nullptr;
     QLabel    *m_cpuIconLabel = nullptr;
     QLabel    *m_cpuTitleLabel = nullptr;
     QLabel    *m_cpuSubLabel = nullptr;
 
-    // CUDA 后端区域
     QLabel    *m_cudaSectionTitle = nullptr;
     QLabel    *m_cudaSectionDesc = nullptr;
 
@@ -93,10 +87,9 @@ private:
     QLabel    *m_downloadSizeLabel = nullptr;
     QPushButton *m_downloadButton = nullptr;
     QProgressBar *m_progressBar = nullptr;
-    DownloadGroupProgress m_downloadProgress;   // CUDA 包有几个文件，下到第几个
+    DownloadGroupProgress m_downloadProgress;
     QString m_lastDownloadError;
 
-    // 计算模式切换行(仅在 Ready 状态下显示)
     QWidget* m_modeSwitchRow = nullptr;
     QLabel* m_modeSwitchLabel = nullptr;
     QPushButton* m_modeSwitchButton = nullptr;

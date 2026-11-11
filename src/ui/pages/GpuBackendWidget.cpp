@@ -18,6 +18,7 @@
 #include <QPainter>
 #include "utils/Logger.h"
 #include "installers/CudaInstaller.h"
+#include "sherpa/GpuRuntime.h"
 
 GpuBackendWidget::GpuBackendWidget(QWidget *parent)
     : QWidget(parent)
@@ -34,7 +35,6 @@ void GpuBackendWidget::setBackendInstaller(CudaInstaller* cudaInstaller)
     connect(m_cudaInstaller, &CudaInstaller::installStarted, this, &GpuBackendWidget::onInstallerStatusChanged);
     connect(m_cudaInstaller, &CudaInstaller::installFinished, this, &GpuBackendWidget::onInstallerFinished);
 
-    // 下载进度：进度条加一行"文件名 · 第几个/共几个 · 百分比"，和模型列表、翻译卡片同一个样子
     connect(m_cudaInstaller, &CudaInstaller::installGroupStarted, this,
             [this](const QString&, const QString&, int totalFiles) {
                 m_downloadProgress.start(totalFiles);
@@ -60,7 +60,16 @@ void GpuBackendWidget::setBackendInstaller(CudaInstaller* cudaInstaller)
                 m_downloadSizeLabel->setText(m_lastDownloadError.isEmpty() ? message : message + QStringLiteral(": ") + m_lastDownloadError);
             });
 
-    detectGpuAsync();
+}
+
+void GpuBackendWidget::setGpuRuntime(GpuRuntime* runtime)
+{
+    m_gpuRuntime = runtime;
+    if (!m_gpuRuntime) return;
+
+    connect(m_gpuRuntime, &GpuRuntime::stateChanged, this, &GpuBackendWidget::syncFromRuntime);
+    connect(m_gpuRuntime, &GpuRuntime::detectionFinished, this, &GpuBackendWidget::onDetectionFinished);
+    redetect();
 }
 
 void GpuBackendWidget::setupUi()
@@ -69,7 +78,6 @@ void GpuBackendWidget::setupUi()
     m_rootLayout->setContentsMargins(24, 24, 24, 24);
     m_rootLayout->setSpacing(10);
 
-    // 顶部状态卡片(仅CPU / 检测到GPU)
     m_cpuCard = new QFrame(this);
     m_cpuCard->setObjectName("statusCard");
     auto *cardLayout = new QHBoxLayout(m_cpuCard);
@@ -95,7 +103,6 @@ void GpuBackendWidget::setupUi()
     cardLayout->addLayout(textCol, 1);
     m_rootLayout->addWidget(m_cpuCard);
 
-    // CUDA 后端标题区域
     m_cudaSectionTitle = new QLabel(tr("Inference backend"), this);
     m_cudaSectionTitle->setObjectName("cudaSectionTitle");
     m_cudaSectionDesc = new QLabel(tr("Enable NVIDIA GPU acceleration through downloadable CUDA backend."), this);
@@ -106,14 +113,12 @@ void GpuBackendWidget::setupUi()
     m_rootLayout->addWidget(m_cudaSectionTitle);
     m_rootLayout->addWidget(m_cudaSectionDesc);
 
-    // 分隔线
     auto *divider = new QFrame(this);
     divider->setObjectName("sectionDivider");
     divider->setFrameShape(QFrame::HLine);
     divider->setFixedHeight(1);
     m_rootLayout->addWidget(divider);
 
-    // 下载行
     m_downloadRow = new QWidget(this);
     m_downloadRow->setAttribute(Qt::WidgetAttribute::WA_TranslucentBackground);
     auto *downloadLayout = new QHBoxLayout(m_downloadRow);
@@ -200,7 +205,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
 
     case GpuStatus::GpuAvailable:
         m_cpuIconLabel->setText("\u26A1");
-        m_cpuTitleLabel->setText(tr("Detected GPU：%1").arg(m_detectedGpuName));
+        m_cpuTitleLabel->setText(tr("Detected GPU：%1").arg(m_gpuRuntime ? m_gpuRuntime->detection().gpuName : QString()));
         m_cpuSubLabel->setText(tr("Can download CUDA backend to enable acceleration"));
         m_cudaSectionDesc->setText(tr("Through downloadable CUDA backend Enable NVIDIA GPU acceleration."));
         m_downloadRow->setVisible(true);
@@ -225,7 +230,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
         break;
 
     case GpuStatus::Ready:
-        m_cpuTitleLabel->setText(QString(tr("Detected GPU：%1")).arg(m_detectedGpuName));
+        m_cpuTitleLabel->setText(QString(tr("Detected GPU：%1")).arg(m_gpuRuntime ? m_gpuRuntime->detection().gpuName : QString()));
         m_cpuSubLabel->setText(QString(tr("CUDA backend is ready")));
         m_downloadButton->setText(QString(tr("Downloaded")));
         m_downloadButton->setEnabled(false);
@@ -245,7 +250,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
 
 void GpuBackendWidget::updateModeSwitchUi()
 {
-    if (m_computeMode == ComputeMode::CUDA) {
+    if (currentComputeMode() == ComputeMode::CUDA) {
         m_modeSwitchLabel->setText(tr("Current Using: GPU (CUDA)"));
         m_modeSwitchButton->setText(tr("Exchange CPU"));
     }
@@ -255,108 +260,84 @@ void GpuBackendWidget::updateModeSwitchUi()
     }
 }
 
+GpuBackendWidget::ComputeMode GpuBackendWidget::currentComputeMode() const
+{
+    return (m_gpuRuntime && m_gpuRuntime->requestedGpu()) ? ComputeMode::CUDA : ComputeMode::CPU;
+}
+
 void GpuBackendWidget::onModeSwitchClicked()
 {
-    setComputeMode(m_computeMode == ComputeMode::CUDA ? ComputeMode::CPU : ComputeMode::CUDA);
+    setComputeMode(currentComputeMode() == ComputeMode::CUDA ? ComputeMode::CPU : ComputeMode::CUDA);
+    emit computeModeChanged(currentComputeMode());
 }
 
 void GpuBackendWidget::setComputeMode(ComputeMode mode)
 {
-    // 平台没有 CUDA 时锁死 CPU：旧配置里可能存着 useGpu=true，不能依赖检测流程的
-    // 时序把它改回来。
-    if (!cudaPlatformSpec().detectable) {
-        mode = ComputeMode::CPU;
-    }
-    m_computeMode = mode;
+    if (!m_gpuRuntime) return;
+    // 平台没有 CUDA / 后端没装好时由 GpuRuntime 锁死 CPU，控件不自己判断
+    m_gpuRuntime->setRequestedGpu(mode == ComputeMode::CUDA);
     updateModeSwitchUi();
-
-    emit computeModeChanged(mode);
 }
 
 
 bool GpuBackendWidget::isGpuAccelerationReady() const
 {
-    return m_status == GpuStatus::Ready && m_computeMode == ComputeMode::CUDA;
+    return m_status == GpuStatus::Ready && currentComputeMode() == ComputeMode::CUDA;
 }
 
 void GpuBackendWidget::redetect()
 {
+    if (!m_gpuRuntime) return;
     applyStatus(GpuStatus::Detecting);
-    detectGpuAsync();
+    if (m_cudaInstaller) m_cudaInstaller->setEnvironment();
+    m_gpuRuntime->redetect();
 }
 
-void GpuBackendWidget::detectGpuAsync()
+void GpuBackendWidget::syncFromRuntime()
 {
-    if (!cudaPlatformSpec().detectable) {
-        applyStatus(GpuStatus::NoGpu);
-        emit detectFinished(false);
-        return;
+    updateModeSwitchUi();
+    if (m_gpuRuntime && m_gpuRuntime->lastLoadMismatch()) {
+        LOG_WARN(QString("GPU requested but load actually used %1 (%2)")
+                     .arg(m_gpuRuntime->actualProvider() == GpuProvider::Cpu ? "cpu" : "unknown",
+                          m_gpuRuntime->actualRepoId()));
     }
-
-    m_cudaInstaller->setEnvironment();
-    applyStatus(GpuStatus::Detecting);
-    if (m_detectWatcher) {
-        m_detectWatcher->cancel();
-        m_detectWatcher->deleteLater();
-    }
-
-    m_detectWatcher = new QFutureWatcher<GpuDetectionResult>(this);
-    connect(m_detectWatcher, &QFutureWatcher<GpuDetectionResult>::finished, this, [this]() {
-        GpuDetectionResult result = m_detectWatcher->result();
-        onDetectionFinished(result);
-    });
-
-    QFuture<GpuDetectionResult> future = QtConcurrent::run([]() {
-        return CudaInstaller::detectGpuEnvironment(true);
-    });
-
-    m_detectWatcher->setFuture(future);
 }
 
-void GpuBackendWidget::onDetectionFinished(const GpuDetectionResult& result)
+void GpuBackendWidget::onDetectionFinished()
 {
-    m_detail = result;
+    if (!m_gpuRuntime) return;
+
+    const GpuDetectionResult& result = m_gpuRuntime->detection();
     LOG_INFO(QString("GPU detection: gpu=%1 (%2), cudart=%3 (%4), cudnn=%5, ortCudaProvider=%6, ready=%7, mode=%8, reason=%9")
                  .arg(result.hasNvidiaGpu).arg(result.gpuName).arg(result.hasCudaRuntime).arg(result.cudaRuntimeVersion)
                  .arg(result.hasCudnn).arg(result.hasOrtCudaProvider).arg(result.isFullyReady)
-                 .arg(m_computeMode == ComputeMode::CUDA ? "CUDA" : "CPU").arg(result.failReason));
+                 .arg(currentComputeMode() == ComputeMode::CUDA ? "CUDA" : "CPU").arg(result.failReason));
+
     if (!result.hasNvidiaGpu) {
-        m_computeMode = ComputeMode::CPU;
         applyStatus(GpuStatus::NoGpu);
-        emit detectFinished(false);
-        return;
     }
-
-    m_detectedGpuName = result.gpuName;
-
-    if (result.isFullyReady) {
+    else if (result.isFullyReady) {
         applyStatus(GpuStatus::Ready);
-        emit detectFinished(m_computeMode == ComputeMode::CUDA);
     }
     else {
-        m_computeMode = ComputeMode::CPU;
         applyStatus(GpuStatus::GpuAvailable);
         m_cudaSectionDesc->setText(result.failReason);
-        emit detectFinished(false);
     }
+    emit detectFinished(m_gpuRuntime->requestedGpu());
 }
 
 void GpuBackendWidget::onDownloadClicked()
 {
+    if (!m_cudaInstaller || !m_gpuRuntime) return;
+
     if (m_status == GpuStatus::Downloading) {
         m_cudaInstaller->cancelDownload();
         applyStatus(GpuStatus::GpuAvailable);
         return;
     }
 
-    if (m_status == GpuStatus::Failed) {
-        applyStatus(GpuStatus::Downloading);
-        m_cudaInstaller->startDownload(m_detail);
-        return;
-    }
-
     applyStatus(GpuStatus::Downloading);
-    m_cudaInstaller->startDownload(m_detail);
+    m_cudaInstaller->startDownload(m_gpuRuntime->detection());
 }
 
 void GpuBackendWidget::onInstallerStatusChanged()
@@ -367,8 +348,13 @@ void GpuBackendWidget::onInstallerStatusChanged()
 void GpuBackendWidget::onInstallerFinished(bool success, const QString& msg)
 {
     if (success) {
-        applyStatus(GpuStatus::Ready);
-        m_downloadSizeLabel->setText(msg); 
+        m_downloadSizeLabel->setText(msg);
+        // 装完不直接假定就绪：重新检测 provider 版本与硬件，结果仍由 GpuRuntime 说了算
+        applyStatus(GpuStatus::Detecting);
+        if (m_gpuRuntime) {
+            if (m_cudaInstaller) m_cudaInstaller->setEnvironment();
+            m_gpuRuntime->redetect();
+        }
     }
     else {
         applyStatus(GpuStatus::Failed);
@@ -411,5 +397,4 @@ void GpuBackendWidget::paintEvent(QPaintEvent* event)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QWidget::paintEvent(event);
 }
-
 

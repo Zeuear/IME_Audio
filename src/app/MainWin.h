@@ -44,6 +44,7 @@ class TranslationService;
 class TranslationModelInstaller;
 struct TranslationRoute;
 class CudaInstaller;
+class GpuRuntime;
 class SettingsBinder;
 class QTimer;
 class DictationHistoryModel;
@@ -168,6 +169,7 @@ private:
     SherpaManager* m_sherpaManager = nullptr;
     SherpaInstaller* m_sherpaInstaller = nullptr;
     CudaInstaller* m_cudaInstaller = nullptr;
+    GpuRuntime* m_gpuRuntime = nullptr;
     TermsLibraryManager* m_termsManager = nullptr;
     UpdateManager* m_updateManager = nullptr;
     AudioRecorderService *m_recorderService = nullptr;
@@ -186,7 +188,6 @@ private:
     QString m_autoGpuRepoId;   // 切到 GPU 模式时自动下载中的 GPU 版仓库，空 = 没有
     static constexpr int kGpuDetectionWaitMs = 5000;
     QTimer* m_detectTimer = nullptr;
-    bool m_gpuDetectionDone = false;
     bool m_preloadDeferred = false;     // 首次加载被推迟，等检测结果
     bool m_detectionTimedOut = false;
     DownloadGroupProgress m_translateProgress; 

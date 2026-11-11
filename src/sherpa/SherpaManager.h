@@ -50,6 +50,9 @@ signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
     void loadFailed(const QString& title, const QString& cause);
+    // 实际加载结果：requestedCuda 是这次是否要求 CUDA，usedCuda 是真正用上的后端，
+    // success=false 表示加载失败
+    void loadProviderResolved(const QString& repoId, bool requestedCuda, bool usedCuda, bool success);
     void idleUnloaded();
 
 private:
@@ -81,6 +84,8 @@ private:
     std::atomic<bool> m_stopWorker{ false };
 
     QString m_currentRepoId;
+    GpuProvider m_loadedProvider = GpuProvider::Unknown;
+    bool m_loadedRequestedCuda = false;
     AppConfig m_configCopy;
 
     // 空闲自动卸载
