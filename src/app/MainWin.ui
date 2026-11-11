@@ -1140,7 +1140,7 @@
         </widget>
         <widget class="QWidget" name="appearance">
          <attribute name="title">
-          <string>Appearance</string>
+          <string>Software Settings</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_appearance">
           <property name="spacing">
@@ -1204,6 +1204,9 @@
              </item>
             </layout>
            </widget>
+          </item>
+          <item>
+           <widget class="FirewallCard" name="firewall_card"/>
           </item>
           <item>
            <spacer name="verticalSpacer_appearance">
@@ -1281,6 +1284,12 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
+  <customwidget>
+   <class>FirewallCard</class>
+   <extends>QFrame</extends>
+   <header>ui/controls/FirewallCard.h</header>
+   <container>1</container>
+  </customwidget>
   <customwidget>
    <class>AnimatedCheckBox</class>
    <extends>QCheckBox</extends>

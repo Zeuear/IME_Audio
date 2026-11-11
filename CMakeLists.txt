@@ -59,6 +59,7 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS
             Multimedia
             Concurrent
             Svg
+            WebSockets
             LinguistTools REQUIRED)
 
 set(QtModules 
@@ -68,6 +69,8 @@ set(QtModules
       Qt${QT_VERSION_MAJOR}::Concurrent 
       Qt${QT_VERSION_MAJOR}::Multimedia
       Qt${QT_VERSION_MAJOR}::Svg
+      # Chrome 扩展与程序之间的本机通道（输出到 Google 文档）
+      Qt${QT_VERSION_MAJOR}::WebSockets
       # QZipReader：读 Google 表格导出的 XLSX。它是私有头，所在模块随 Qt 版本变过（6.11 在 Core，更早在 Gui），两个都链上
       Qt${QT_VERSION_MAJOR}::CorePrivate
       Qt${QT_VERSION_MAJOR}::GuiPrivate

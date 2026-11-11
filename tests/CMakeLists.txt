@@ -78,6 +78,8 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_row_action_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/media_link_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/gpu_variant_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/firewall_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -191,7 +193,7 @@ else()
     set(_test_platform_dir "linux")
     set(_test_platform_ext "cpp")
 endif()
-foreach(_mod InputInjector AudioEndpoint Elevation Permissions)
+foreach(_mod InputInjector AudioEndpoint Elevation Permissions Firewall)
     list(APPEND TEST_DEPS
         "${_test_platform_root}/${_test_platform_dir}/${_mod}_${_test_platform_dir}.${_test_platform_ext}")
 endforeach()

@@ -131,6 +131,10 @@ ControlBar::ControlBar(QWidget* parent)
     m_topAction->setCheckable(true);
     m_topAction->setChecked(true);
     connect(m_topAction, &QAction::triggered, this, &ControlBar::alwaysOnTopToggled);
+    m_docsAction = m_menu->addAction(QString());
+    m_docsAction->setCheckable(true);
+    connect(m_docsAction, &QAction::triggered, this, &ControlBar::docsOutputToggled);
+    m_docsPairAction = m_menu->addAction(QString(), this, &ControlBar::docsPairingCodeRequested);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
@@ -287,6 +291,13 @@ void ControlBar::refreshTimerLabel()
     if (widthChanged && isVisible()) adjustSize();
 }
 
+void ControlBar::setDocsBinding(const QString& title)
+{
+    m_docsTitle = title;
+    m_docsAction->setText(title.isEmpty() ? tr("Output to Google Docs")
+                                          : tr("Output to Google Docs (%1)").arg(title));
+}
+
 void ControlBar::setAlwaysOnTop(bool on)
 {
     const QSignalBlocker blocker(m_topAction);
@@ -340,6 +351,8 @@ void ControlBar::retranslateUi()
     m_settingsBtn->setToolTip(tr("Settings"));
     m_settingsAction->setText(tr("Settings"));
     m_topAction->setText(tr("Always on top"));
+    setDocsBinding(m_docsTitle);
+    m_docsPairAction->setText(tr("Copy Google Docs Pairing Code"));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }

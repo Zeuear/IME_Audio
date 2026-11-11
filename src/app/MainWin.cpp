@@ -46,6 +46,8 @@
 #include "ui/controls/ControlBar.h"
 #include "ui/controls/ToggleLink.h"
 #include "ui/controls/Appearance.h"
+#include "ui/controls/FirewallCard.h"
+#include "services/DocsBridge.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
@@ -498,6 +500,19 @@ void MainWin::setupUiConnections(){
     connect(m_panel, &ExpandPanel::pageChanged, m_controlBar, &ControlBar::setPanelPage);
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
+    m_docsBridge = new DocsBridge(this);
+    connect(m_controlBar, &ControlBar::docsOutputToggled, this, [this](bool on) {
+        m_docsOutput = on;
+        m_docsBridge->setEnabled(on);
+        if (!on) m_controlBar->setDocsBinding({});
+    });
+    connect(m_controlBar, &ControlBar::docsPairingCodeRequested, this, [this]() {
+        QGuiApplication::clipboard()->setText(DocsBridge::pairingToken());
+        notify(NotifyLevel::Success, QStringLiteral("配对码已复制"), QStringLiteral("请粘贴到 ImeAudio 扩展的选项页"));
+    });
+    connect(m_docsBridge, &DocsBridge::boundChanged, this, [this](bool, const QString& title) {
+        m_controlBar->setDocsBinding(title);
+    });
     connect(m_controlBar, &ControlBar::alwaysOnTopToggled, this, [this](bool on) {
         ConfigManager::instance().config().barAlwaysOnTop = on;
         ConfigManager::instance().save();
@@ -593,6 +608,9 @@ void MainWin::setupUiConnections(){
         ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
     });
 
+    connect(ui->firewall_card, &FirewallCard::errorOccurred, this, [this](const QString& title, const QString& cause) {
+        notify(NotifyLevel::Error, title, cause);
+    });
     connect(m_termWidget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
         NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
                             : title.contains(tr("冲突")) ? NotifyLevel::Warning
@@ -614,6 +632,15 @@ void MainWin::setupUiConnections(){
         // 稿子窗口在前台时不注入：结果本来就会追加进稿子，再注入就会在它的输入框里出现两遍，
         // 和悬浮窗"不能成为焦点窗口，否则听写结果会注入到它自己身上"是同一个问题
         if (m_transcriptWindow && m_transcriptWindow->isActiveWindow()) return true;
+        // 开启后不管发没发出去都不注入前台，否则文字会打进别的软件
+        if (m_docsOutput) {
+            if (!m_docsBridge->sendText(text) && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
+                m_docsWarnTimer.start();
+                notify(NotifyLevel::Warning, QStringLiteral("没有绑定 Google 文档"),
+                       QStringLiteral("请在 Chrome 打开文档标签页，点击 ImeAudio 扩展图标绑定"));
+            }
+            return true;
+        }
         if (!m_snippetStore->settings().voiceTrigger || !m_liveOverlay->isVisible()) return false;
         for (const SnippetItem* item : m_snippetStore->matchKeywords(text)) {
             if (!m_handledSnippetIds.contains(item->id) && SnippetSearchIndex::isExactKeyword(text, item->keyword))
