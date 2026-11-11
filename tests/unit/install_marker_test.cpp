@@ -4,7 +4,7 @@
 #include <QFileInfo>
 #include <QTemporaryDir>
 
-#include "sherpa/InstallMarker.h"
+#include "sherpa/SherpConfig.h"
 
 namespace {
 void touch(const QString& path)

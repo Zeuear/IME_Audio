@@ -38,7 +38,7 @@ class SnippetPaster;
 class SnippetSuggestBar;
 class SnippetSearchPopup;
 class PrefixWatcher;
-class StreamingCaptionEngine;
+class StreamingEngine;
 class TextPolishService;
 class TranslationService;
 class TranslationModelInstaller;
@@ -159,7 +159,7 @@ private:
     QSet<QString> m_handledSnippetIds;   
     SnippetSearchPopup* m_searchPopup = nullptr;
     PrefixWatcher* m_prefixWatcher = nullptr; 
-    StreamingCaptionEngine* m_captionEngine = nullptr;  
+    StreamingEngine* m_captionEngine = nullptr;
     bool m_liveCaptionFailNotified = false;
 
     TextPolishService* m_textPolishService = nullptr;

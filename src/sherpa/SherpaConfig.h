@@ -13,6 +13,20 @@
 #include "sherpa/GpuVariant.h"
 
 
+
+namespace InstallMarker {
+
+    bool isInstalled(const QString& modelDir);
+    // 目录存在，且带"安装中"标记：上一次下载没有完成
+    bool isIncomplete(const QString& modelDir);
+
+    // 开始下载前调用
+    bool markInstalling(const QString& modelDir);
+    // 全部下完后调用
+    void markComplete(const QString& modelDir);
+
+}
+
 enum class ModelArch {
     Paraformer,
     ParaformerStreaming,

@@ -1,5 +1,9 @@
 # ImeAudio Google 文档输出扩展
 
+扩展随程序分发，不单独打包：本目录的文件经 `src/extension.qrc` 嵌进程序，用户在横条右键菜单点
+"安装 Google 文档扩展"，程序把它导出到数据目录的 `extensions/google-docs` 并打开 [guide.html](guide.html)（给用户看的安装说明）。
+新增文件要同时加进 `src/extension.qrc`。下面是开发时直接从源码目录加载的步骤。
+
 1. Chrome 打开 `chrome://extensions`，开启"开发者模式"，"加载已解压的扩展程序"选本目录。
 2. ImeAudio 横条右键菜单勾选"输出到 Google 文档"，并点"复制 Google 文档配对码"。
 3. 打开文档标签页，点扩展图标，在弹窗里粘贴配对码，点"保存并绑定当前标签页"（配对码只需粘贴一次）。

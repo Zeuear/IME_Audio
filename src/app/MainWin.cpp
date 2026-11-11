@@ -1,9 +1,7 @@
 #include "MainWin.h"
 #include "ui_MainWin.h"
 
-#include <QActionGroup>
 #include <QMenu>
-#include <QShortcut>
 #include <QClipboard>
 #include <algorithm>
 #include <QDebug>
@@ -17,53 +15,53 @@
 #include <QThread>
 #include <QTimer>
 #include <QCheckBox>
-#include "ui/controls/AnimatedCheckbox.h"
 #include <QListWidget>
 #include <QDesktopServices>
 #include <QScreen>
 #include <QSignalBlocker>
 
+#include "config/ConfigManager.h"
 #include "config/AppConfig.h"
 #include "services/WorkflowManager.h"
 #include "services/RecorderService.h"
 #include "services/TranscriptionService.h"
 #include "services/TextPolishService.h"
 #include "services/TranslationService.h"
+#include "services/UpdateManager.h"
+#include "services/TermsLibraryManager.h"
+#include "services/ForegroundWindow.h"
+#include "services/DocsBridge.h"
+#include "services/DocsExtension.h"
+#include "snippets/SnippetStore.h"
+#include "services/PrefixWatcher.h"
+#include "services/SnippetPaster.h"
 #include "translation/BergamotWorkerClient.h"
 #include "installers/TranslationModelInstaller.h"
 #include "installers/TranslationModelStore.h"
 #include "translation/LanguageRouting.h"
+#include "utils/Logger.h"
 #include "utils/AppPaths.h"
-#include "config/ConfigManager.h"
-#include "services/UpdateManager.h"
-#include "services/TermsLibraryManager.h"
 #include "sherpa/SherpaManager.h"
 #include "sherpa/LanguageCatalog.h"
-#include "utils/Logger.h"
-
-#include "sherpa/StreamingCaptionEngine.h"
+#include "sherpa/StreamingEngine.h"
 #include "ui/controls/LiveOverlay.h"
 #include "ui/controls/ControlBar.h"
 #include "ui/controls/ToggleLink.h"
 #include "ui/controls/Appearance.h"
 #include "ui/controls/FirewallCard.h"
-#include "services/ForegroundWindow.h"
-#include "services/DocsBridge.h"
 #include "ui/controls/SnippetSuggestBar.h"
 #include "ui/controls/SnippetSearchPopup.h"
 #include "ui/pages/SnippetWidget.h"
-#include "snippets/SnippetStore.h"
-#include "services/PrefixWatcher.h"
-#include "services/SnippetPaster.h"
+#include "ui/pages/FileTranscribeWidget.h"
+#include "ui/pages/TermWidget.h"
+#include "ui/pages/AboutPage.h"
+#include "ui/pages/LiveTranscriptWidget.h"
+#include "ui/models/DictationHistoryModel.h"
+#include "ui/models/ModelDownloadTracker.h"
 #include "ui/models/LiveCaptionModel.h"
 #include "ui/controls/SettingsBinder.h"
-#include "ui/models/DictationHistoryModel.h"
-#include "ui/pages/AboutPage.h"
-#include "ui/pages/FileTranscribeWidget.h"
-#include "ui/pages/LiveTranscriptWidget.h"
 #include "ui/controls/ExpandPanel.h"
-#include "ui/models/ModelDownloadTracker.h"
-#include "ui/pages/TermWidget.h"
+#include "ui/controls/AnimatedCheckbox.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
 #include "ui/infobar/inforbar.h"
@@ -136,9 +134,6 @@ void MainWin::initialize() {
     setupAppearanceUi();
     retranslateDynamicItems();
 
-    // 原来文件菜单里的 Ctrl+Q 退出：菜单去掉后快捷键仍保留
-    new QShortcut(QKeySequence::Quit, this, [this]() { onQuitApplication(); });
-
     m_networkManager = new QNetworkAccessManager(this);
 
     const AppConfig& config = ConfigManager::instance().config();
@@ -163,6 +158,8 @@ void MainWin::initialize() {
             [installer](const QString& from, const QString& to) { return installer->isInstalled(from, to); },
             [installer](const QString& from, const QString& to) { return installer->writeConfigFile(from, to); } },
         QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(workerName), this);
+
+
     m_translationService = new TranslationService(translationBackend, this);
     m_recorderService = new AudioRecorderService(config, this);
     m_sherpaManager = new SherpaManager(this);
@@ -191,7 +188,7 @@ void MainWin::initialize() {
     m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
-    m_captionEngine = new StreamingCaptionEngine();
+    m_captionEngine = new StreamingEngine();
     m_liveOverlay->setCaptionModel(m_captionModel);
     m_captionModel->setTextFilter([](const QString& text) {
         return TermsLibraryManager::applyReplaceRules(text, ConfigManager::instance().config().replaceRules);
@@ -503,6 +500,20 @@ void MainWin::setupUiConnections(){
         QGuiApplication::clipboard()->setText(DocsBridge::pairingToken());
         notify(NotifyLevel::Success, QStringLiteral("配对码已复制"), QStringLiteral("在文档标签页点 ImeAudio 扩展图标，粘贴到弹窗里"));
     });
+    connect(m_controlBar, &ControlBar::docsExtensionRequested, this, [this]() {
+        const QString dir = DocsExtension::installDir();
+        QString error;
+        if (!DocsExtension::exportTo(dir, &error)) {
+            notify(NotifyLevel::Error, QStringLiteral("扩展导出失败"), error);
+            return;
+        }
+        // Chrome 的文件夹选择框里可以直接粘贴路径
+        QGuiApplication::clipboard()->setText(QDir::toNativeSeparators(dir));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QDir(dir).filePath(DocsExtension::guideFileName())));
+        notify(NotifyLevel::Success, QStringLiteral("扩展已准备好"),
+               QStringLiteral("已打开扩展文件夹和安装说明，文件夹路径已复制到剪贴板"));
+    });
     connect(m_docsBridge, &DocsBridge::boundChanged, this, [this](bool, const QString& title) {
         m_controlBar->setDocsBinding(title);
     });
@@ -539,8 +550,8 @@ void MainWin::setupUiConnections(){
     connect(m_recorderService, &AudioRecorderService::voiceStarted, m_liveOverlay, &LiveOverlay::onVoiceStarted);
 
     // 实时字幕：音频 → 流式引擎(独立线程) → 中间结果 → 字幕模型；正式结果到达后替换并变深色
-    connect(m_recorderService, &AudioRecorderService::audioChunk, m_captionEngine, &StreamingCaptionEngine::acceptAudio);
-    connect(m_captionEngine, &StreamingCaptionEngine::partialText, m_captionModel, &LiveCaptionModel::setPartial);
+    connect(m_recorderService, &AudioRecorderService::audioChunk, m_captionEngine, &StreamingEngine::acceptAudio);
+    connect(m_captionEngine, &StreamingEngine::partialText, m_captionModel, &LiveCaptionModel::setPartial);
     // 强制切段时切点在过去，换新流要把切点之后已经喂给旧流的音频补喂回去，否则下一句字幕开头会丢
     connect(m_captionModel, &LiveCaptionModel::epochChanged, m_captionEngine, [this](quint64 epoch) {
         const int replayMs = m_recorderService->takeCarryMs();
@@ -548,7 +559,7 @@ void MainWin::setupUiConnections(){
             engine->resetStream(epoch, replayMs);
         }, Qt::QueuedConnection);
     });
-    connect(m_captionEngine, &StreamingCaptionEngine::modelReady, this, [this](const QString&, bool ok) {
+    connect(m_captionEngine, &StreamingEngine::modelReady, this, [this](const QString&, bool ok) {
         m_recorderService->setAudioTapEnabled(ok && ConfigManager::instance().config().liveCaptionEnabled.load());
         // 每次开始录音都会重试装载，只提示一次，免得每次录音都弹窗
         if (!ok && !m_liveCaptionFailNotified) {
@@ -564,7 +575,7 @@ void MainWin::setupUiConnections(){
     connect(m_sherpaInstaller, &SherpaInstaller::streamingModelReady, this, &MainWin::syncLiveCaption);
     connect(m_sherpaManager, &SherpaManager::idleUnloaded, this, [this]() {
         m_recorderService->setAudioTapEnabled(false);
-        QMetaObject::invokeMethod(m_captionEngine, &StreamingCaptionEngine::unloadModel, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(m_captionEngine, &StreamingEngine::unloadModel, Qt::QueuedConnection);
     });
 
     // Sherpa 模型安装器：安装成功后经门面预热模型（不再直戳 m_sherpaManager）
@@ -734,7 +745,7 @@ void MainWin::syncLiveCaption()
         }, Qt::QueuedConnection);
     } else {
         m_recorderService->setAudioTapEnabled(false);
-        QMetaObject::invokeMethod(m_captionEngine, &StreamingCaptionEngine::unloadModel, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(m_captionEngine, &StreamingEngine::unloadModel, Qt::QueuedConnection);
         m_captionModel->clear();
     }
 }
@@ -1317,7 +1328,6 @@ void MainWin::setupAppearanceUi() {
 }
 
 void MainWin::retranslateAppearanceItems() {
-    // 只改文字不重建：重建会触发 currentIndexChanged，把刚选的语言又改一遍
     const QSignalBlocker blockLang(ui->ui_language_comb);
     const QSignalBlocker blockTheme(ui->theme_comb);
     ui->ui_language_comb->setItemText(0, tr("Follow system"));
@@ -1553,7 +1563,6 @@ void MainWin::notify(NotifyLevel level, const QString& titleCN, const QString& c
 }
 
 void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, const QString& notes) {
-    // 用户在关于页点了检查更新：结果已在页面里显示，不再弹这个启动自动检查用的对话框
     if (ui->about_page->isUserDriven()) return;
 
     QMessageBox msgBox(this);
@@ -1613,7 +1622,6 @@ void MainWin::onLoadConfig()
 
 void MainWin::initSystemTray()
 {
-    // 菜单内容随状态变化
     trayMenu = new QMenu(this);
     connect(trayMenu, &QMenu::aboutToShow, this, &MainWin::rebuildTrayMenu);
 
@@ -1709,8 +1717,6 @@ void MainWin::showControlBar()
 {
     m_controlBar->showAtSavedPosition();
     m_controlBar->raise();
-    // 横条没勾选置顶时会被别的窗口盖住；后台进程的 raise 常被系统忽略。
-    // 这是用户点托盘的主动操作，直接拿前台把横条带出来
     ForegroundWindow::bringToFront(m_controlBar->winId());
 }
 

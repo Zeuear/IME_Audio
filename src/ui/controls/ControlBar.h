@@ -60,6 +60,8 @@ signals:
     void alwaysOnTopToggled(bool on);
     void docsOutputToggled(bool on);
     void docsPairingCodeRequested();
+    // 导出随程序附带的 Chrome 扩展并打开安装说明
+    void docsExtensionRequested();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -98,6 +100,7 @@ private:
     QAction* m_topAction = nullptr;
     QAction* m_docsAction = nullptr;
     QAction* m_docsPairAction = nullptr;
+    QAction* m_docsInstallAction = nullptr;
     QString m_docsTitle;
     QAction* m_quitAction = nullptr;
     QString m_hints[3];   // 按 Toggle 的顺序

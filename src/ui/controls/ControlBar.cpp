@@ -163,6 +163,7 @@ ControlBar::ControlBar(QWidget* parent)
     m_docsAction->setCheckable(true);
     connect(m_docsAction, &QAction::triggered, this, &ControlBar::docsOutputToggled);
     m_docsPairAction = m_menu->addAction(QString(), this, &ControlBar::docsPairingCodeRequested);
+    m_docsInstallAction = m_menu->addAction(QString(), this, &ControlBar::docsExtensionRequested);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
@@ -396,6 +397,7 @@ void ControlBar::retranslateUi()
     m_topAction->setText(tr("Always on top"));
     setDocsBinding(m_docsTitle);
     m_docsPairAction->setText(tr("Copy Google Docs Pairing Code"));
+    m_docsInstallAction->setText(tr("Install Google Docs Extension..."));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }

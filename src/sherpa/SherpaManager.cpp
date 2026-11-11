@@ -1,5 +1,4 @@
 #include "SherpaManager.h"
-#include "InstallMarker.h"
 #include <QFileInfo>
 #include <QFile>
 #include <QCoreApplication>
@@ -13,7 +12,6 @@
 #include <QElapsedTimer>
 #include "utils/ExtractTool.h"
 #include "config/ConfigManager.h"
-
 
 
 SherpaManager::SherpaManager(QObject* parent)

@@ -1,35 +1,35 @@
-#include "StreamingCaptionEngine.h"
+#include "StreamingEngine.h"
 #include <QMetaObject>
 #include <QThread>
 #include <vector>
 #include "utils/Logger.h"
 
-StreamingCaptionEngine::StreamingCaptionEngine()
+StreamingEngine::StreamingEngine()
 {
     m_thread = new QThread();
-    m_thread->setObjectName(QStringLiteral("StreamingCaptionEngine"));
+    m_thread->setObjectName(QStringLiteral("    "));
     moveToThread(m_thread);
     m_thread->start();
 }
 
-StreamingCaptionEngine::~StreamingCaptionEngine()
+StreamingEngine::~StreamingEngine()
 {
     // 识别器必须在自己的线程里释放
     if (m_thread->isRunning()) {
-        QMetaObject::invokeMethod(this, &StreamingCaptionEngine::unloadModel, Qt::BlockingQueuedConnection);
+        QMetaObject::invokeMethod(this, &StreamingEngine::unloadModel, Qt::BlockingQueuedConnection);
         m_thread->quit();
         m_thread->wait();
     }
     delete m_thread;
 }
 
-QString StreamingCaptionEngine::loadedRepoId() const
+QString StreamingEngine::loadedRepoId() const
 {
     QMutexLocker lock(&m_repoMutex);
     return m_repoId;
 }
 
-void StreamingCaptionEngine::loadModel(const QString &repoId, int numThreads)
+void StreamingEngine::loadModel(const QString &repoId, int numThreads)
 {
     if (m_ready.load() && loadedRepoId() == repoId) return;
     unloadModel();
@@ -65,7 +65,7 @@ void StreamingCaptionEngine::loadModel(const QString &repoId, int numThreads)
     emit modelReady(repoId, true);
 }
 
-void StreamingCaptionEngine::unloadModel()
+void StreamingEngine::unloadModel()
 {
     const bool wasReady = m_ready.exchange(false);
     m_stream.reset();
@@ -79,7 +79,7 @@ void StreamingCaptionEngine::unloadModel()
     if (wasReady) LOG_DEBUG("Live caption model unloaded");
 }
 
-void StreamingCaptionEngine::acceptAudio(const QByteArray &pcm)
+void StreamingEngine::acceptAudio(const QByteArray &pcm)
 {
     if (!m_ready.load() || !m_recognizer || !m_stream || pcm.isEmpty()) return;
 
@@ -89,7 +89,7 @@ void StreamingCaptionEngine::acceptAudio(const QByteArray &pcm)
     feed(pcm);
 }
 
-void StreamingCaptionEngine::feed(const QByteArray &pcm)
+void StreamingEngine::feed(const QByteArray &pcm)
 {
     const auto *raw = reinterpret_cast<const int16_t *>(pcm.constData());
     const int count = static_cast<int>(pcm.size() / 2);
@@ -113,7 +113,7 @@ void StreamingCaptionEngine::feed(const QByteArray &pcm)
     }
 }
 
-void StreamingCaptionEngine::resetStream(quint64 epoch, int replayMs)
+void StreamingEngine::resetStream(quint64 epoch, int replayMs)
 {
     m_epoch = epoch;
     m_lastText.clear();

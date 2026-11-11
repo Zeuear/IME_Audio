@@ -18,8 +18,6 @@ CudaInstaller::CudaInstaller(QNetworkAccessManager* nam, SherpaInstaller* sherpa
 
 CudaInstaller::~CudaInstaller() {}
 
-
-
 void CudaInstaller::setEnvironment() {
     if (!cudaPlatformSpec().installable) {
         return;

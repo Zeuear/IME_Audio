@@ -139,7 +139,6 @@ void BergamotWorkerClient::failAll(const QString& cause) {
 }
 
 // ---- 真实进程；测试里这三个函数被替换
-
 void BergamotWorkerClient::startWorker() {
     if (m_process) {   // 上一个进程已退出，丢掉旧对象
         m_process->disconnect(this);

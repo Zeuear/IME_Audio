@@ -17,7 +17,7 @@ class QProcess;
 class BergamotWorkerClient : public ITranslationBackend {
     Q_OBJECT
 public:
-    // 路线和模型信息由外部提供（MainWin 接 TranslationModelInstaller），客户端不依赖下载器
+    // 路线和模型信息由外部提供，客户端不依赖下载器
     struct RouteProvider {
         std::function<TranslationRoute(const QString& from, const QString& to)> plan;
         std::function<bool(const QString& from, const QString& to)> isInstalled;

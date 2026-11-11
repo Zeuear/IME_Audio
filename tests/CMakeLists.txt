@@ -34,6 +34,7 @@ endif()
 # it to SOURCES below. AUTOMOC is on so Q_OBJECT test helpers (e.g. task_queue_async_test)
 # are moc'd correctly; it is a no-op for plain test files.
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/support/widget_app_environment.cpp
@@ -80,6 +81,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/gpu_variant_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/firewall_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_extension_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -148,8 +150,6 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/Appearance.cpp
     # 关于页的更新状态（纯逻辑）与版本比较
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/UpdateStatusModel.cpp
-    # 模型安装完整性标记（纯文件操作）
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/InstallMarker.cpp
     # 下载进度说明行与分组进度累计（纯逻辑）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/DownloadText.cpp
     # 模型行内下载：状态跟踪、行点击区域、下载管理器的取消（Q_OBJECT 的头文件交给 AUTOMOC）
@@ -179,6 +179,9 @@ set(TEST_DEPS
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
+    # 随程序附带的 Chrome 扩展：资源文件交给 AUTORCC，测试导出结果
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/DocsExtension.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/extension.qrc
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
