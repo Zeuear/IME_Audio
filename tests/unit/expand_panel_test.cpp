@@ -266,3 +266,51 @@ TEST(ExpandPanelOnTop, ToggleDoesNotCollapseOrAnnounceAnything) {
     EXPECT_TRUE(panel.isVisible());
     EXPECT_TRUE(changes.isEmpty());
 }
+
+// ---- 面板大小：可拖动调整，停下后存进配置，下次打开沿用 ----
+
+#include <QTemporaryDir>
+#include <QEventLoop>
+#include <QTimer>
+#include "config/ConfigManager.h"
+
+namespace {
+class PanelTempConfig {
+public:
+    PanelTempConfig() : m_old(ConfigManager::configFilePath()) {
+        ConfigManager::setConfigFilePath(m_dir.filePath("test.ini"));
+    }
+    ~PanelTempConfig() { ConfigManager::setConfigFilePath(m_old); }
+private:
+    QTemporaryDir m_dir;
+    QString m_old;
+};
+} // namespace
+
+TEST(ExpandPanelSize, UsesTheSavedSizeWhenThereIsOne) {
+    PanelTempConfig cfg;
+    FloatingWindow::saveSize("ExpandPanel", QSize(1000, 700));
+    ExpandPanel panel;
+    EXPECT_EQ(panel.size(), QSize(1000, 700));
+}
+
+TEST(ExpandPanelSize, ASavedSizeTooSmallToUseIsRaisedToTheMinimum) {
+    PanelTempConfig cfg;
+    FloatingWindow::saveSize("ExpandPanel", QSize(50, 40));
+    ExpandPanel panel;
+    EXPECT_EQ(panel.size(), panel.minimumSize());
+}
+
+TEST(ExpandPanelSize, ResizingIsSavedForTheNextRun) {
+    PanelTempConfig cfg;
+    {
+        ExpandPanel panel;
+        panel.setPages(new QWidget, new QWidget, new QWidget);
+        panel.showPage(Page::Transcript);
+        panel.resize(900, 640);
+        QEventLoop loop;   // 保存有防抖，等它触发
+        QTimer::singleShot(600, &loop, &QEventLoop::quit);
+        loop.exec();
+    }
+    EXPECT_EQ(FloatingWindow::loadSize("ExpandPanel"), std::optional<QSize>(QSize(900, 640)));
+}

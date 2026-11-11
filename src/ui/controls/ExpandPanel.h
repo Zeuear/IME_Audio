@@ -4,6 +4,7 @@
 #include "PanelState.h"
 
 class QTabWidget;
+class QTimer;
 
 // @brief 横条下方展开的面板（实时转录、词典、文件转录三页），页面由外部传入；横条不可激活收不到键盘，故面板是紧贴其下的独立窗口，显示但不激活。
 class ExpandPanel : public QWidget
@@ -30,6 +31,10 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void hideEvent(QHideEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void changeEvent(QEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -38,10 +43,14 @@ private:
     void retranslateUi();
     void reposition();
     void onTabChanged(int index);
+    // 左上角贴着横条，只有右边、下边和右下角能拖
+    Qt::Edges resizeEdgesAt(const QPoint& pos) const;
     static int indexOf(PanelState::Page page);
     static PanelState::Page pageAt(int index);
 
     QTabWidget* m_tabs = nullptr;
+    QTimer* m_sizeSaveTimer = nullptr;   // 拖动时大小连续变化，停下后才写一次配置
+    QSize m_savedSize;
     QPointer<QWidget> m_anchor;
     PanelState::Page m_page = PanelState::Page::None;
     bool m_syncingTab = false;   // 程序切 tab 时不当作用户操作再报一次

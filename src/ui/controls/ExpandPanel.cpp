@@ -3,12 +3,20 @@
 #include <QEvent>
 #include <QHideEvent>
 #include <QKeyEvent>
+#include <QMouseEvent>
+#include <QResizeEvent>
 #include <QPainter>
 #include <QTabWidget>
+#include <QTimer>
 #include <QVBoxLayout>
+#include <QWindow>
 
 namespace {
 constexpr QSize kPanelSize(780, 520);
+constexpr QSize kMinPanelSize(480, 300);
+constexpr int kGrip = 5;          // 右边和下边留给鼠标拖动的宽度
+constexpr int kCornerGrip = 16;   // 右下角判定范围放大，好抓
+const QString kSettingsGroup = QStringLiteral("ExpandPanel");
 constexpr int kTranscriptIndex = 0;
 constexpr int kDictionaryIndex = 1;
 constexpr int kFileIndex = 2;
@@ -41,12 +49,24 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     setAutoFillBackground(true);
 
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(1, 1, 1, 1);
+    layout->setContentsMargins(1, 1, kGrip, kGrip);
     m_tabs = new QTabWidget(this);
     layout->addWidget(m_tabs);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
 
-    resize(kPanelSize);
+    setMouseTracking(true);
+    setMinimumSize(kMinPanelSize);
+    resize(FloatingWindow::loadSize(kSettingsGroup).value_or(kPanelSize));
+    m_savedSize = size();
+
+    m_sizeSaveTimer = new QTimer(this);
+    m_sizeSaveTimer->setSingleShot(true);
+    m_sizeSaveTimer->setInterval(400);
+    connect(m_sizeSaveTimer, &QTimer::timeout, this, [this]() {
+        m_savedSize = size();
+        FloatingWindow::saveSize(kSettingsGroup, m_savedSize);
+        if (isVisible()) reposition();   // 变大后可能超出屏幕或压到横条
+    });
 }
 
 void ExpandPanel::setPages(QWidget* transcript, QWidget* dictionary, QWidget* file)
@@ -92,6 +112,9 @@ void ExpandPanel::showPage(PanelState::Page page)
     if (!wasOpen) {
         reposition();
         show();
+        // 不激活的窗口 show 不会排到最前；没开置顶时会出现在别的窗口后面，看起来像没打开
+        if (m_anchor) m_anchor->raise();
+        raise();
     }
     if (changed || !wasOpen) emit pageChanged(m_page);
 }
@@ -122,6 +145,48 @@ void ExpandPanel::hideEvent(QHideEvent* event)
     if (event->spontaneous() || m_changingFlags || m_page == PanelState::Page::None) return;
     m_page = PanelState::Page::None;
     emit pageChanged(m_page);
+}
+
+void ExpandPanel::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (size() != m_savedSize) m_sizeSaveTimer->start();
+}
+
+Qt::Edges ExpandPanel::resizeEdgesAt(const QPoint& pos) const
+{
+    const bool right = pos.x() >= width() - kGrip;
+    const bool bottom = pos.y() >= height() - kGrip;
+    Qt::Edges edges;
+    if (right || (bottom && pos.x() >= width() - kCornerGrip)) edges |= Qt::RightEdge;
+    if (bottom || (right && pos.y() >= height() - kCornerGrip)) edges |= Qt::BottomEdge;
+    return edges;
+}
+
+void ExpandPanel::mouseMoveEvent(QMouseEvent* event)
+{
+    const Qt::Edges edges = resizeEdgesAt(event->position().toPoint());
+    if (edges == (Qt::RightEdge | Qt::BottomEdge)) setCursor(Qt::SizeFDiagCursor);
+    else if (edges == Qt::RightEdge) setCursor(Qt::SizeHorCursor);
+    else if (edges == Qt::BottomEdge) setCursor(Qt::SizeVerCursor);
+    else unsetCursor();
+    QWidget::mouseMoveEvent(event);
+}
+
+void ExpandPanel::mousePressEvent(QMouseEvent* event)
+{
+    const Qt::Edges edges = resizeEdgesAt(event->position().toPoint());
+    if (event->button() == Qt::LeftButton && edges && windowHandle()) {
+        windowHandle()->startSystemResize(edges);
+        return;
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void ExpandPanel::leaveEvent(QEvent* event)
+{
+    unsetCursor();
+    QWidget::leaveEvent(event);
 }
 
 void ExpandPanel::keyPressEvent(QKeyEvent* event)
