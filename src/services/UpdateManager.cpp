@@ -1,5 +1,6 @@
 #include "UpdateManager.h"
 #include <QFile>
+#include <QTemporaryFile>
 #include "utils/Downloader.h"
 #include <QDir>
 #include <QDebug>
@@ -12,6 +13,22 @@
 #include "utils/Logger.h"
 #include "app/version.h"
 
+
+namespace {
+
+// /tmp 是多用户共享的：固定文件名可被别的用户预先放个符号链接，所以用独占创建的随机文件名，仅属主可读写执行
+bool writeUpdaterScript(const QString& script, QString* path)
+{
+    QTemporaryFile f(QDir::tempPath() + "/voice_ime_updater_XXXXXX.sh");
+    f.setAutoRemove(false);
+    if (!f.open()) return false;
+    f.write(script.toUtf8());
+    f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+    *path = f.fileName();
+    return true;
+}
+
+}   // namespace
 
 UpdateManager::UpdateManager(QNetworkAccessManager* networkManager, QObject* parent)
     : QObject(parent), m_networkManager(networkManager) {
@@ -184,15 +201,11 @@ bool UpdateManager::launchUpdaterLinux(const QString& downloadedFilePath, QStrin
         "rm -- \"$0\"\n"
     ).arg(pid).arg(downloadedFilePath, targetPath);
 
-    const QString scriptPath = QDir::tempPath() + "/voice_ime_updater.sh";
-    QFile f(scriptPath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QString scriptPath;
+    if (!writeUpdaterScript(script, &scriptPath)) {
         if (errorMessage) *errorMessage = "Could not create updater script.";
         return false;
     }
-    f.write(script.toUtf8());
-    f.close();
-    f.setPermissions(f.permissions() | QFileDevice::ExeOwner | QFileDevice::ExeGroup);
 
     return QProcess::startDetached("/bin/bash", { scriptPath });
 }
@@ -223,15 +236,11 @@ bool UpdateManager::launchUpdaterMacOS(const QString& downloadedFilePath, QStrin
         "rm -- \"$0\"\n"
     ).arg(pid).arg(downloadedFilePath, targetApp);
 
-    const QString scriptPath = QDir::tempPath() + "/voice_ime_updater.sh";
-    QFile f(scriptPath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QString scriptPath;
+    if (!writeUpdaterScript(script, &scriptPath)) {
         if (errorMessage) *errorMessage = "Could not create updater script.";
         return false;
     }
-    f.write(script.toUtf8());
-    f.close();
-    f.setPermissions(f.permissions() | QFileDevice::ExeOwner | QFileDevice::ExeGroup);
 
     return QProcess::startDetached("/bin/bash", { scriptPath });
 }
