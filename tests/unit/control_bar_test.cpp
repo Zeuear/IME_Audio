@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <QCoreApplication>
 #include <QList>
 #include <QPoint>
 #include <QRect>
@@ -138,29 +139,26 @@ TEST(ControlBarEntry, SettingsButtonStaysUsableWhileDictating) {
 
 // ---- 转录内容图标：开关式，窗口开着时高亮；宿主改状态不能再触发一次开关 ----
 
-TEST(ControlBarTranscript, ClickingTheIconAsksToOpenThenClose) {
+TEST(ControlBarTranscript, ClickingTheIconRequestsTheTranscriptPage) {
     ControlBar bar;
-    QList<bool> asked;
-    QObject::connect(&bar, &ControlBar::transcriptToggled, &bar, [&](bool open) { asked << open; });
+    QList<PanelState::Page> asked;
+    QObject::connect(&bar, &ControlBar::panelRequested, &bar, [&](PanelState::Page p) { asked << p; });
     ASSERT_NE(bar.transcriptButton(), nullptr);
 
     bar.transcriptButton()->click();
-    bar.transcriptButton()->click();
-    EXPECT_EQ(asked, (QList<bool>{ true, false }));
+    EXPECT_EQ(asked, (QList<PanelState::Page>{ PanelState::Page::Transcript }));
 }
 
-TEST(ControlBarTranscript, HostClosingTheWindowResetsTheIconWithoutAskingAgain) {
+TEST(ControlBarTranscript, HostSettingThePageLightsTheIconWithoutAskingAgain) {
     ControlBar bar;
     int emitted = 0;
-    QObject::connect(&bar, &ControlBar::transcriptToggled, &bar, [&](bool) { ++emitted; });
+    QObject::connect(&bar, &ControlBar::panelRequested, &bar, [&](PanelState::Page) { ++emitted; });
 
-    bar.transcriptButton()->click();          // 用户点开
-    ASSERT_EQ(emitted, 1);
+    bar.setPanelPage(PanelState::Page::Transcript);
     EXPECT_TRUE(bar.transcriptButton()->isChecked());
-
-    bar.setTranscriptOpen(false);             // 用户点了窗口右上角 ×，宿主通知横条
+    bar.setPanelPage(PanelState::Page::Dictionary);
     EXPECT_FALSE(bar.transcriptButton()->isChecked());
-    EXPECT_EQ(emitted, 1);                    // 不再触发一次"关闭"
+    EXPECT_EQ(emitted, 0);
 }
 
 TEST(ControlBarTranscript, IconStaysUsableWhileDictating) {
@@ -294,6 +292,8 @@ TEST(ControlBarMenu, AlwaysOnTopIsACheckableMenuItemThatTellsTheHost) {
     bool last = true;
     QObject::connect(&bar, &ControlBar::alwaysOnTopToggled, &bar, [&](bool on) { ++fired; last = on; });
     a->trigger();
+    // 改置顶会重建原生窗口，横条把通知推迟到菜单收起后的事件循环里发
+    QCoreApplication::processEvents();
     EXPECT_EQ(fired, 1);
     EXPECT_EQ(last, !a->isChecked() ? false : true);
 }

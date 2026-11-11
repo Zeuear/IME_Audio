@@ -170,7 +170,10 @@ set(TEST_DEPS
     # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.h
-    # 展开面板（Q_OBJECT）：词典与文件转录页由外部传入
+    # 横条的投影效果（Q_OBJECT）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/infobar/appleshadoweffect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/infobar/appleshadoweffect.h
+    # 展开面板（Q_OBJECT）：实时转录、词典与文件转录页由外部传入
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ExpandPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ExpandPanel.h
     # 话术表格导入：CSV / 表格解析是静态纯函数；xlsx 解压用到 QtCorePrivate 的 QZipReader
@@ -193,7 +196,8 @@ else()
     set(_test_platform_dir "linux")
     set(_test_platform_ext "cpp")
 endif()
-foreach(_mod InputInjector AudioEndpoint Elevation Permissions Firewall)
+# ForegroundWindow：横条右键菜单要记住并恢复前台窗口
+foreach(_mod InputInjector AudioEndpoint Elevation Permissions Firewall ForegroundWindow)
     list(APPEND TEST_DEPS
         "${_test_platform_root}/${_test_platform_dir}/${_mod}_${_test_platform_dir}.${_test_platform_ext}")
 endforeach()

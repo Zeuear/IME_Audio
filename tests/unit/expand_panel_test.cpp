@@ -19,6 +19,7 @@ using PanelState::Page;
 // ---- 点图标后面板该是什么状态 ----
 
 TEST(PanelState, ClosedPanelOpensTheClickedPage) {
+    EXPECT_EQ(PanelState::afterClick(Page::None, Page::Transcript), Page::Transcript);
     EXPECT_EQ(PanelState::afterClick(Page::None, Page::Dictionary), Page::Dictionary);
     EXPECT_EQ(PanelState::afterClick(Page::None, Page::File), Page::File);
 }
@@ -80,14 +81,16 @@ TEST(FloatingWindowPlaceBelow, BarOutsideEveryScreenFallsBackToPrimary) {
 namespace {
 struct PanelFixture {
     PanelFixture() {
+        transcript = new QWidget;
         dictionary = new QWidget;
         file = new QWidget;
-        panel.setPages(dictionary, file);   // 页面归面板所有
+        panel.setPages(transcript, dictionary, file);   // 页面归面板所有
         QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [this](Page p) { changes << p; });
     }
     QTabWidget* tabs() { return panel.findChild<QTabWidget*>(); }
 
     ExpandPanel panel;
+    QWidget* transcript = nullptr;
     QWidget* dictionary = nullptr;
     QWidget* file = nullptr;
     QList<Page> changes;
@@ -100,7 +103,7 @@ TEST(ExpandPanel, StartsCollapsedAndSettingPagesAnnouncesNothing) {
     ExpandPanel panel;
     QList<Page> changes;
     QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [&](Page p) { changes << p; });
-    panel.setPages(new QWidget, new QWidget);
+    panel.setPages(new QWidget, new QWidget, new QWidget);
     EXPECT_EQ(panel.page(), Page::None);
     EXPECT_FALSE(panel.isVisible());
     EXPECT_TRUE(changes.isEmpty());
@@ -109,7 +112,7 @@ TEST(ExpandPanel, StartsCollapsedAndSettingPagesAnnouncesNothing) {
 TEST(ExpandPanel, FirstClickOnADictionaryIconOpensItFromAFreshPanel) {
     // 宿主的做法：点图标 → afterClick(当前页, 点的页) → showPage
     ExpandPanel panel;
-    panel.setPages(new QWidget, new QWidget);
+    panel.setPages(new QWidget, new QWidget, new QWidget);
     panel.showPage(PanelState::afterClick(panel.page(), Page::Dictionary));
     EXPECT_TRUE(panel.isVisible());
     EXPECT_EQ(panel.page(), Page::Dictionary);
@@ -117,7 +120,7 @@ TEST(ExpandPanel, FirstClickOnADictionaryIconOpensItFromAFreshPanel) {
 
 TEST(ExpandPanel, TabChangesWhileCollapsedAreNotAnnounced) {
     PanelFixture f;
-    f.tabs()->setCurrentIndex(1);   // 面板没开时，程序或别的原因改了当前 tab
+    f.tabs()->setCurrentIndex(2);   // 面板没开时，程序或别的原因改了当前 tab
     EXPECT_EQ(f.panel.page(), Page::None);
     EXPECT_TRUE(f.changes.isEmpty());
 }
@@ -146,7 +149,7 @@ TEST(ExpandPanel, EachChangeIsAnnouncedExactlyOnce) {
     // 横条据此点亮图标；程序切页和用户点 tab 都要报，但不能重复报
     PanelFixture f;
     f.panel.showPage(Page::Dictionary);
-    f.tabs()->setCurrentIndex(1);          // 用户点了面板里的 tab
+    f.tabs()->setCurrentIndex(2);          // 用户点了面板里的 tab
     f.panel.showPage(Page::None);
     EXPECT_EQ(f.changes, (QList<Page>{ Page::Dictionary, Page::File, Page::None }));
 }
@@ -246,13 +249,13 @@ TEST(ControlBarOnTop, StaysNonActivatingAfterTheFlagChanges) {
 
 TEST(ExpandPanelOnTop, ToggleKeepsThePanelVisibleAndInPlace) {
     ExpandPanel panel;
-    panel.setPages(new QWidget, new QWidget);
+    panel.setPages(new QWidget, new QWidget, new QWidget);
     expectOnTopToggleKeepsWindowInPlace(panel);
 }
 
 TEST(ExpandPanelOnTop, ToggleDoesNotCollapseOrAnnounceAnything) {
     ExpandPanel panel;
-    panel.setPages(new QWidget, new QWidget);
+    panel.setPages(new QWidget, new QWidget, new QWidget);
     QList<Page> changes;
     QObject::connect(&panel, &ExpandPanel::pageChanged, &panel, [&](Page p) { changes << p; });
     panel.showPage(Page::File);
