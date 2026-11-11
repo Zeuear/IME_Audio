@@ -6,27 +6,16 @@ configure_file(
     "${CMAKE_SOURCE_DIR}/src/app/version.h"
 )
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp" "utils/*.cpp" "sherpa/*.cpp" "widget/*.cpp" "cuda/*.cpp")
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "*.h" "*.hpp" "utils/*.h" "sherpa/*.h" "widget/*.h" "cuda/*.h")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "*.h" "*.hpp")
 
 # platform/ 下每个平台各有一份实现，必须由构建系统挑选，不能被递归 glob 全部吞掉
 list(FILTER SOURCES EXCLUDE REGEX "/platform/")
 list(FILTER HEADERS EXCLUDE REGEX "/platform/")
 
-if(WIN32)
-    set(_platform_dir "win")
-    set(_platform_ext "cpp")
-elseif(APPLE)
-    set(_platform_dir "mac")
-    set(_platform_ext "mm")
-else()
-    set(_platform_dir "linux")
-    set(_platform_ext "cpp")
-endif()
-
-
+# IMEAUDIO_PLATFORM_DIR / _EXT 来自 cmake/Platform.cmake，tests/ 用同一组
 file(GLOB PLATFORM_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${_platform_dir}/*.${_platform_ext}")
+    "${CMAKE_CURRENT_SOURCE_DIR}/platform/${IMEAUDIO_PLATFORM_DIR}/*.${IMEAUDIO_PLATFORM_EXT}")
 list(APPEND SOURCES ${PLATFORM_SOURCES})
 file(GLOB_RECURSE UIFILES CONFIGURE_DEPENDS "*.ui")
 file(GLOB_RECURSE QRCFILES CONFIGURE_DEPENDS "*.qrc")
@@ -41,280 +30,39 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES} )
 
 
 # ============================================================
-# 设置Windows图标
+# 可执行文件与图标
 # ============================================================
-if(WIN32)
-    set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_SOURCE_DIR}/resources/app.rc")
-endif()
-
-# macOS 的 Dock / Finder 图标取自 bundle 内 Resources 下的 .icns，缺了就是白方块
 if(APPLE)
+    # macOS 的 Dock / Finder 图标取自 bundle 内 Resources 下的 .icns，缺了就是白方块
     set(APP_ICON_RESOURCE_MACOS "${CMAKE_SOURCE_DIR}/resources/app_icon.icns")
     set_source_files_properties(${APP_ICON_RESOURCE_MACOS} PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources")
-endif()
-
-
-if(APPLE)
-    add_executable(${TARGET_NAME} MACOSX_BUNDLE
-                    ${PROJECT_SOURCES}
-                    ${APP_ICON_RESOURCE_MACOS})
+    add_executable(${TARGET_NAME} MACOSX_BUNDLE ${PROJECT_SOURCES} ${APP_ICON_RESOURCE_MACOS})
 elseif(WIN32)
-    add_executable(${TARGET_NAME} WIN32 
-                    ${PROJECT_SOURCES} 
-                    ${APP_ICON_RESOURCE_WINDOWS})
+    add_executable(${TARGET_NAME} WIN32 ${PROJECT_SOURCES} "${CMAKE_SOURCE_DIR}/resources/app.rc")
 else()
-    add_executable(${TARGET_NAME}
-                    ${PROJECT_SOURCES})
+    add_executable(${TARGET_NAME} ${PROJECT_SOURCES})
 endif()
+
+target_include_directories(${TARGET_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    "${CMAKE_SOURCE_DIR}/third_party/QHotkey/QHotkey")
+target_compile_definitions(${TARGET_NAME} PRIVATE NOMINMAX)
 
 
 # ============================================================
-# 自动下载 sherpa-onnx 预编译库
+# 第三方依赖与运行时资源（各自的细节见 cmake/ 下同名文件）
 # ============================================================
-set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
-set(SHERPA_ONNX_VERSION "1.13.4")
+include(SherpaOnnx)
+include(FFmpeg)
+include(VadModel)
+include(TranslateWorker)
 
-# 标记文件:用来判断"是否已经是我们下载并整理好的目录",
-# 避免每次 configure 都重新检查/下载,同时避免和"用户自己手动放置的目录"混淆
-# Windows 用 CUDA 版运行库（见下），标记带上 -cuda，旧的 CPU 版目录会被识别为过期并重新下载
-if(WIN32)
-    set(_sherpa_stamp_suffix "-cuda")
-endif()
-set(SHERPA_ONNX_STAMP_FILE "${SHERPA_ONNX_ROOT}/.sherpa_onnx_version_${SHERPA_ONNX_VERSION}${_sherpa_stamp_suffix}")
+imeaudio_link_ffmpeg(${TARGET_NAME})
 
-
-if(WIN32)
-    set(_sherpa_platform_dir "windows")
-    # 统一用 CUDA 版包里的 onnxruntime / sherpa-onnx DLL：它在没有 CUDA 的机器上照样跑 CPU，
-    # GPU 安装器只需补 onnxruntime_providers_*（启动时不加载，不会因占用换不掉），CPU / GPU 永远同一版 ORT
-    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2")
-
-elseif(APPLE)
-    set(_sherpa_platform_dir "macos")
-    # 按目标架构选库：指定了 CMAKE_OSX_ARCHITECTURES（如在 Apple Silicon 上交叉编 x86_64）
-    # 时以它为准，否则才看构建机 CPU。sherpa 是单架构静态库，不支持一次编通用包
-    if(CMAKE_OSX_ARCHITECTURES)
-        set(_sherpa_osx_arch "${CMAKE_OSX_ARCHITECTURES}")
-    else()
-        set(_sherpa_osx_arch "${CMAKE_SYSTEM_PROCESSOR}")
-    endif()
-    if(_sherpa_osx_arch MATCHES ";")
-        message(FATAL_ERROR "sherpa-onnx static libs are single-arch; build arm64 and x86_64 separately")
-    endif()
-    if(_sherpa_osx_arch MATCHES "arm64|aarch64")
-        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-arm64-static-no-tts-lib.tar.bz2")
-    else()
-        # 上游 Intel 资产名用的是 x64，不是 x86_64
-        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-osx-x64-static-no-tts-lib.tar.bz2")
-    endif()
-
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(_sherpa_platform_dir "linux")
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
-        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-linux-x64-static-no-tts-lib.tar.bz2")
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-        set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-linux-arm64-static-no-tts-lib.tar.bz2")
-    else()
-        message(FATAL_ERROR "Unsupported Linux architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-    endif()
-
-else()
-    message(FATAL_ERROR "Unsupported platform for auto-downloading sherpa-onnx")
-endif()
-
-
-if(NOT EXISTS "${SHERPA_ONNX_STAMP_FILE}")
-    message(STATUS "======================================")
-    message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} not found or version mismatch, downloading...")
-    message(STATUS "======================================")
-
-    set(_sherpa_url "https://github.com/k2-fsa/sherpa-onnx/releases/download/v${SHERPA_ONNX_VERSION}/${_sherpa_archive_name}")
-    set(_sherpa_archive_path "${CMAKE_BINARY_DIR}/_downloads/${_sherpa_archive_name}")
-    set(_sherpa_extract_dir "${CMAKE_BINARY_DIR}/_downloads/sherpa-onnx-extracted")
-    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_downloads")
-
-    # 如果之前下载过但没下完整(比如网络中断),重新下载
-    if(NOT EXISTS "${_sherpa_archive_path}")
-        message(STATUS "Downloading: ${_sherpa_url}")
-        file(DOWNLOAD "${_sherpa_url}" "${_sherpa_archive_path}"
-             SHOW_PROGRESS
-             STATUS _sherpa_download_status
-             TLS_VERIFY ON)
-        list(GET _sherpa_download_status 0 _sherpa_download_code)
-        if(NOT _sherpa_download_code EQUAL 0)
-            list(GET _sherpa_download_status 1 _sherpa_download_msg)
-            file(REMOVE "${_sherpa_archive_path}") # 下载失败清理掉残缺文件,避免下次误判为"已存在"
-            message(FATAL_ERROR "Failed to download sherpa-onnx: ${_sherpa_download_msg}")
-        endif()
-    else()
-        message(STATUS "Using cached archive: ${_sherpa_archive_path}")
-    endif()
-
-    # 清理旧的解压目录,避免残留上次失败的中间状态
-    if(EXISTS "${_sherpa_extract_dir}")
-        file(REMOVE_RECURSE "${_sherpa_extract_dir}")
-    endif()
-    file(MAKE_DIRECTORY "${_sherpa_extract_dir}")
-
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E tar xf "${_sherpa_archive_path}"
-        WORKING_DIRECTORY "${_sherpa_extract_dir}"
-        RESULT_VARIABLE _sherpa_extract_result
-    )
-    if(NOT _sherpa_extract_result EQUAL 0)
-        message(FATAL_ERROR "Failed to extract sherpa-onnx archive at ${_sherpa_archive_path}")
-    endif()
-
-    file(GLOB _sherpa_extracted_entries "${_sherpa_extract_dir}/*")
-    list(LENGTH _sherpa_extracted_entries _sherpa_entry_count)
-    if(_sherpa_entry_count EQUAL 1)
-        list(GET _sherpa_extracted_entries 0 _sherpa_inner_root)
-    else()
-        set(_sherpa_inner_root "${_sherpa_extract_dir}")
-    endif()
-
-
-    if(WIN32)
-        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.dll" "${_sherpa_inner_root}/lib/*.lib")
-    elseif(APPLE)
-        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.a" "${_sherpa_inner_root}/lib/*.dylib")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(_sherpa_match_patterns "${_sherpa_inner_root}/lib/*.a" "${_sherpa_inner_root}/lib/*.so*")
-    else()
-        message(FATAL_ERROR "Unsupported platform for auto-downloading sherpa-onnx")
-    endif()
-
-
-    if(NOT EXISTS "${_sherpa_inner_root}/lib")
-        message(FATAL_ERROR "Unexpected sherpa-onnx archive structure, expected lib/ under ${_sherpa_inner_root}")
-    endif()
-
-    file(REMOVE_RECURSE "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
-    file(MAKE_DIRECTORY "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
-    
-    file(GLOB_RECURSE _sherpa_libs CONFIGURE_DEPENDS ${_sherpa_match_patterns})
-    # CUDA provider（约 270 MB）不随程序发布，由"GPU 加速"按需下载
-    list(FILTER _sherpa_libs EXCLUDE REGEX "onnxruntime_providers_")
-    if(NOT _sherpa_libs)
-        message(FATAL_ERROR "No library files found under ${_sherpa_inner_root} matching current platform patterns")
-    endif()
-
-    # 拷贝到目标平台的文件夹中
-    file(COPY ${_sherpa_libs} DESTINATION "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
-    
-    file(WRITE "${SHERPA_ONNX_STAMP_FILE}" "sherpa-onnx v${SHERPA_ONNX_VERSION} downloaded and prepared.\n")
-    message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} ready at ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
-else()
-    if(WIN32)
-        message(STATUS "sherpa-onnx v${SHERPA_ONNX_VERSION} already present, skip downloading.")
-    endif()
-endif()
-
-
-if(WIN32)
-    set(_sherpa_runtime_libs
-        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/sherpa-onnx-cxx-api.dll"
-        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/sherpa-onnx-c-api.dll"
-        "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/onnxruntime.dll"
-    )
-elseif(APPLE)
-    file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.dylib")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    file(GLOB _sherpa_runtime_libs "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}/*.so*")
-endif()
-
-if(_sherpa_runtime_libs)
-    set(_copy_commands "")
-    foreach(_lib_path IN LISTS _sherpa_runtime_libs)
-        if(EXISTS "${_lib_path}")
-            list(APPEND _copy_commands COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_lib_path}" "$<TARGET_FILE_DIR:${TARGET_NAME}>")
-        endif()
-    endforeach()
-
-    if(_copy_commands)
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMENT "Copying sherpa-onnx runtime libraries to output directory..."
-            ${_copy_commands}
-        )
-    endif()
-endif()
-
-set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
-target_include_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/include)
-target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_directories(${TARGET_NAME} PRIVATE ${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir})
 
 # ============================================================
-# FFmpeg：文件转录直接解码（见 third_party/ffmpeg/README.md）
-# ============================================================
-# Windows：运行时复用 Qt Multimedia 自带、由 windeployqt 部署的 FFmpeg DLL；仓库里只有头文件和 .def，
-# 导入库在构建时用 lib.exe 生成，名字必须与 Qt 自带的 DLL 一致。
-if(MSVC)
-    set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/third_party/ffmpeg")
-    set(_ffmpeg_import_dir "${CMAKE_CURRENT_BINARY_DIR}/ffmpeg")
-    set(_ffmpeg_import_libs)
-    foreach(_dll avformat-61 avcodec-61 avutil-59 swresample-5)
-        set(_def "${FFMPEG_ROOT}/def/${_dll}.def")
-        set(_lib "${_ffmpeg_import_dir}/${_dll}.lib")
-        add_custom_command(OUTPUT "${_lib}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${_ffmpeg_import_dir}"
-            COMMAND "${CMAKE_AR}" /nologo /machine:x64 "/def:${_def}" "/out:${_lib}"
-            DEPENDS "${_def}"
-            COMMENT "Generating FFmpeg import library ${_dll}.lib"
-            VERBATIM)
-        list(APPEND _ffmpeg_import_libs "${_lib}")
-    endforeach()
-    add_custom_target(ffmpeg_import_libs DEPENDS ${_ffmpeg_import_libs})
-    add_dependencies(${TARGET_NAME} ffmpeg_import_libs)
-
-    target_include_directories(${TARGET_NAME} PRIVATE "${FFMPEG_ROOT}/include")
-    target_link_libraries(${TARGET_NAME} PRIVATE ${_ffmpeg_import_libs})
-    target_compile_definitions(${TARGET_NAME} PRIVATE IMEAUDIO_HAS_FFMPEG)
-elseif(APPLE OR UNIX)
-    # macOS / Linux 的 Qt 把同一套 LGPL FFmpeg 动态库放在 <Qt>/lib，dylib/so 可以直接链接，不需要 .def。
-    # 只在 Qt 自己的 lib 目录里找，按主版本号精确匹配，避免链到系统里版本不同（或 GPL 构建）的 FFmpeg；
-    # 任何一个找不到就整体不启用，AudioFileDecoder::isAvailable() 返回 false，文件转录回退到 QAudioDecoder。
-    set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/third_party/ffmpeg")
-    get_filename_component(_qt_lib_dir "${Qt6_DIR}/../.." ABSOLUTE)
-    set(_ffmpeg_libs)
-    set(_ffmpeg_missing)
-    foreach(_spec avformat:61 avcodec:61 avutil:59 swresample:5)
-        string(REPLACE ":" ";" _parts "${_spec}")
-        list(GET _parts 0 _name)
-        list(GET _parts 1 _major)
-        if(APPLE)
-            set(_file "lib${_name}.${_major}.dylib")
-        else()
-            set(_file "lib${_name}.so.${_major}")
-        endif()
-        # 用完整路径判断而不是 find_library：后者不认 libavcodec.so.61 这类带版本号的文件名
-        if(EXISTS "${_qt_lib_dir}/${_file}")
-            list(APPEND _ffmpeg_libs "${_qt_lib_dir}/${_file}")
-        else()
-            list(APPEND _ffmpeg_missing "${_file}")
-        endif()
-    endforeach()
-
-    if(_ffmpeg_missing)
-        message(STATUS "FFmpeg: ${_ffmpeg_missing} not found in ${_qt_lib_dir}; file transcription uses QAudioDecoder")
-    else()
-        message(STATUS "FFmpeg: using Qt bundled libraries in ${_qt_lib_dir}")
-        target_include_directories(${TARGET_NAME} PRIVATE "${FFMPEG_ROOT}/include")
-        target_link_libraries(${TARGET_NAME} PRIVATE ${_ffmpeg_libs})
-        target_compile_definitions(${TARGET_NAME} PRIVATE IMEAUDIO_HAS_FFMPEG)
-    endif()
-endif()
-
-# 官方预编译的 sherpa-onnx Linux 静态库是用 libstdc++ 旧 ABI 编译的，cxx-api 里凡是把
-# std::string 直接摆上函数签名的调用（如 OfflinePunctuation::AddPunctuation）都会因为
-# 符号名不匹配导致链接期 undefined reference。这里不整体切换本 target 的 ABI（风险大、
-# 且可能牵连 Qt 互操作），而是让 SherpaPunctuator 改走纯 char* 的 C 接口
-# （SherpaOnnxCreateOfflinePunctuation / SherpaOfflinePunctuationAddPunct 等），
-# 从根源上避开这个 ABI 敏感的调用。
-
-# ============================================================
-# QT工具
+# 翻译文件
 # ============================================================
 set(TS_FILES ${PROJECT_SOURCE_DIR}/resources/translations/qt_EN.ts ${PROJECT_SOURCE_DIR}/resources/translations/zh_CN.ts)
 qt_add_translations(${TARGET_NAME}
@@ -322,199 +70,21 @@ qt_add_translations(${TARGET_NAME}
     LUPDATE_OPTIONS -locations none -no-obsolete # 传给 lupdate 的参数放这里
 )
 
-set(QHOTKEY_ROOT "${CMAKE_SOURCE_DIR}/third_party/QHotkey")
-target_include_directories(${TARGET_NAME} PRIVATE ${QHOTKEY_ROOT}/QHotkey)
-
-target_compile_definitions(${TARGET_NAME}
-  PRIVATE NOMINMAX)
-
-
 
 # ============================================================
-# VAD Model Download
+# 链接
 # ============================================================
-set(VAD_MODEL_URL "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx")
-set(VAD_MODEL_DIR "${CMAKE_BINARY_DIR}/sherpa/vad")
-set(VAD_MODEL_PATH "${VAD_MODEL_DIR}/silero_vad.onnx")
-
-# 官方发布的 silero_vad.onnx 的 SHA256（建议自己算一次填进去，防止下载损坏或被篡改）
-set(VAD_MODEL_SHA256 "" CACHE STRING "Expected SHA256 of silero_vad.onnx")
-
-if(NOT EXISTS "${VAD_MODEL_PATH}")
-    message(STATUS "Downloading silero_vad.onnx ...")
-    file(MAKE_DIRECTORY "${VAD_MODEL_DIR}")
-
-    if(VAD_MODEL_SHA256)
-        file(DOWNLOAD
-            "${VAD_MODEL_URL}"
-            "${VAD_MODEL_PATH}"
-            EXPECTED_HASH SHA256=${VAD_MODEL_SHA256}
-            SHOW_PROGRESS
-            TLS_VERIFY ON
-        )
-    else()
-        file(DOWNLOAD
-            "${VAD_MODEL_URL}"
-            "${VAD_MODEL_PATH}"
-            SHOW_PROGRESS
-            TLS_VERIFY ON
-        )
-    endif()
-
-    if(NOT EXISTS "${VAD_MODEL_PATH}")
-        message(FATAL_ERROR "Failed to download silero_vad.onnx from ${VAD_MODEL_URL}")
-    endif()
-else()
-    message(STATUS "silero_vad.onnx already exists, skip downloading.")
-endif()
-
-# 落点必须与 AppPaths::vadModelFile() 的解析结果一致：macOS 上是 bundle 的
-# Contents/Resources，其它平台是可执行文件同级目录。
-if(APPLE)
-    set(_vad_dest_dir "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}>/Resources/sherpa/vad")
-else()
-    set(_vad_dest_dir "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sherpa/vad")
-endif()
-
-
-# ============================================================
-# 本地翻译 worker：由 .github/workflows/translate-worker.yml 在 CI 上为各平台编好并发布，
-# 这里按版本自动下载，开发者不用自己编 bergamot。下载失败只是没有本地翻译，不影响其它功能。
-# 也可以用 TRANSLATE_WORKER_PATH 指定自己编的 worker（优先于下载）。
-#
-# 下载的文件必须与下面的 SHA256 一致才会使用，不一致直接中止配置：Release 里的文件即使被替换，
-# 也要改这里的代码才会生效，改动会留在提交记录里。哈希值从发布任务的摘要里复制；某个平台的值为空时不下载。
-# ============================================================
-set(TRANSLATE_WORKER_VERSION "v2")
-set(TRANSLATE_WORKER_SHA256_WINDOWS_X64 "7a7282d6eed70641a3470731ed26c659db23b8f3b676c444b74b01bc65d6a3ca")
-set(TRANSLATE_WORKER_SHA256_LINUX_X64 "b3f4bab575b835028b17a3cd33cc0f081ddfc14707fe9eca022a996d4e44d720")
-set(TRANSLATE_WORKER_SHA256_MACOS_ARM64 "06ce659ca0ea2bc16ca2cf15af590398c0cbe2aaa3be3cc001a1f0c1a6c03e46")
-set(TRANSLATE_WORKER_SHA256_MACOS_X86_64 "85fd221e78dfecd741c3c1bc060c0a1fe6b96e179ef8276f3b5f39edde913daa")
-option(DOWNLOAD_TRANSLATE_WORKER "Download the prebuilt local translation worker" ON)
-set(TRANSLATE_WORKER_PATH "" CACHE FILEPATH "Path to a self-built translate_worker (optional)")
-
-if(WIN32)
-    set(_worker_asset "windows-x64")
-    set(_worker_name "translate_worker.exe")
-elseif(APPLE)
-    if(_sherpa_osx_arch MATCHES "arm64|aarch64")
-        set(_worker_asset "macos-arm64")
-    else()
-        set(_worker_asset "macos-x86_64")
-    endif()
-    set(_worker_name "translate_worker")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
-    set(_worker_asset "linux-x64")
-    set(_worker_name "translate_worker")
-endif()
-
-set(_worker_file "")
-if(TRANSLATE_WORKER_PATH AND EXISTS "${TRANSLATE_WORKER_PATH}")
-    set(_worker_file "${TRANSLATE_WORKER_PATH}")
-elseif(DOWNLOAD_TRANSLATE_WORKER AND _worker_asset)
-    string(TOUPPER "${_worker_asset}" _worker_var)
-    string(REPLACE "-" "_" _worker_var "${_worker_var}")
-    set(_worker_sha256 "${TRANSLATE_WORKER_SHA256_${_worker_var}}")
-
-    if(NOT _worker_sha256)
-        message(WARNING "No SHA256 recorded for translate worker ${TRANSLATE_WORKER_VERSION} (${_worker_asset}); "
-                        "skipping download, local translation will be unavailable")
-    else()
-        set(_worker_dir "${CMAKE_SOURCE_DIR}/third_party/translate_worker/${_worker_asset}")
-        # 标记文件名带上哈希：换了版本或哈希都会重新下载校验
-        set(_worker_stamp "${_worker_dir}/.translate_worker_${TRANSLATE_WORKER_VERSION}_${_worker_sha256}")
-        if(NOT EXISTS "${_worker_stamp}")
-            set(_worker_zip "${CMAKE_BINARY_DIR}/_downloads/translate_worker-${_worker_asset}-${TRANSLATE_WORKER_VERSION}.zip")
-            set(_worker_url "https://github.com/Zeuear/IME_Audio/releases/download/translate-worker-${TRANSLATE_WORKER_VERSION}/translate_worker-${_worker_asset}.zip")
-            message(STATUS "Downloading translate worker: ${_worker_url}")
-            file(DOWNLOAD "${_worker_url}" "${_worker_zip}" STATUS _worker_status TLS_VERIFY ON)
-            list(GET _worker_status 0 _worker_code)
-            if(_worker_code EQUAL 0)
-                # 哈希不符可能是文件被篡改，直接中止配置而不是悄悄跳过，并删掉这个文件
-                file(SHA256 "${_worker_zip}" _worker_actual)
-                if(NOT _worker_actual STREQUAL _worker_sha256)
-                    file(REMOVE "${_worker_zip}")
-                    message(FATAL_ERROR "Translate worker SHA256 mismatch for ${_worker_url}\n"
-                                        "  expected: ${_worker_sha256}\n  actual:   ${_worker_actual}\n"
-                                        "The file may have been tampered with. Re-run to retry, or configure with "
-                                        "-DDOWNLOAD_TRANSLATE_WORKER=OFF to build without local translation.")
-                endif()
-                file(REMOVE_RECURSE "${_worker_dir}")
-                file(MAKE_DIRECTORY "${_worker_dir}")
-                execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${_worker_zip}"
-                                WORKING_DIRECTORY "${_worker_dir}" RESULT_VARIABLE _worker_extract)
-                if(_worker_extract EQUAL 0 AND EXISTS "${_worker_dir}/${_worker_name}")
-                    file(WRITE "${_worker_stamp}" "translate worker ${TRANSLATE_WORKER_VERSION} sha256 ${_worker_sha256}\n")
-                else()
-                    message(WARNING "Unexpected translate worker archive, local translation will be unavailable")
-                endif()
-            else()
-                list(GET _worker_status 1 _worker_msg)
-                message(WARNING "Failed to download translate worker (${_worker_msg}), "
-                                "local translation will be unavailable")
-            endif()
-            file(REMOVE "${_worker_zip}")   # 失败的残缺文件也删掉，下次重新下载
-        endif()
-        if(EXISTS "${_worker_stamp}")
-            set(_worker_file "${_worker_dir}/${_worker_name}")
-        endif()
-    endif()
-endif()
-
-# 放在主程序同级目录（macOS 为 Contents/MacOS），与 MainWin 里的查找路径一致；
-# macOS 放进 MacOS 目录才会被 codesign 当作 bundle 内的可执行文件签名
-if(_worker_file)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${_worker_file}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${_worker_name}"
-        COMMENT "Copying ${_worker_name} to output directory"
-    )
-endif()
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${_vad_dest_dir}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${VAD_MODEL_PATH}"
-        "${_vad_dest_dir}/silero_vad.onnx"
-    COMMENT "Copying silero_vad.onnx to output directory"
+target_link_libraries(${TARGET_NAME} PRIVATE
+    ${QtModules}
+    sherpa_onnx
+    qhotkey
+    kissfft
 )
 
-imeaudio_deploy_qt(${TARGET_NAME})
-
-
-
 if(WIN32)
-    target_link_libraries(ImeAudio PRIVATE
-        ${QtModules}
-        sherpa-onnx-cxx-api    
-        sherpa-onnx-c-api 
-        qhotkey
-        kissfft
-        Ole32
-        Shell32
-        imm32
-    )
+    target_link_libraries(${TARGET_NAME} PRIVATE Ole32 Shell32 imm32)
 elseif(APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE
-        ${QtModules}
-        # 1. 接口层（先链接）
-        sherpa-onnx-c-api
-        sherpa-onnx-cxx-api
-        # 2. 核心业务层
-        sherpa-onnx-core
-        # 3. 各种底层算法与模型解析依赖库（后链接）
-        kaldi-decoder-core
-        kaldi-native-fbank-core
-        sherpa-onnx-kaldifst-core
-        sherpa-onnx-fst
-        sherpa-onnx-fstfar
-        ssentencepiece_core
-        kissfft-float
-        # 4. 最底层的硬件/推理后端
-        onnxruntime
-        sherpa-onnx-portaudio_static
-        qhotkey
-        kissfft
         "-framework CoreAudio"
         "-framework AudioToolbox"
         "-framework AudioUnit"
@@ -524,21 +94,16 @@ elseif(APPLE)
         "-framework AVFoundation"
         "-framework AppKit"
     )
-    
-    # target_link_options(${TARGET_NAME} PRIVATE "-Wl,-all_load")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(${TARGET_NAME} PRIVATE
-        -Wl,--start-group
-        ${QtModules}
-        sherpa-onnx-c-api sherpa-onnx-cxx-api sherpa-onnx-core
-        kaldi-decoder-core kaldi-native-fbank-core sherpa-onnx-kaldifst-core
-        sherpa-onnx-fst sherpa-onnx-fstfar ssentencepiece_core kissfft-float
-        onnxruntime sherpa-onnx-portaudio_static
-        qhotkey
-        kissfft
-        -Wl,--end-group
-    )
 endif()
+
+
+# ============================================================
+# 构建后：运行库与资源复制到程序旁，最后部署 Qt
+# ============================================================
+imeaudio_copy_sherpa_runtime(${TARGET_NAME})
+imeaudio_deploy_translate_worker(${TARGET_NAME})
+imeaudio_deploy_vad_model(${TARGET_NAME})
+imeaudio_deploy_qt(${TARGET_NAME})
 
 
 set_target_properties(${TARGET_NAME} PROPERTIES

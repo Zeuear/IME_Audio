@@ -11,14 +11,16 @@ if(APPLE)
     enable_language(OBJCXX)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/debug/${platform})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/debug/${platform})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/debug)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/debug)
 else()
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/release/${platform})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/release/${platform})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/release)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/app/lib/release)
 endif()
 
 # Win32 unicode fix and msvc utf8 flag
@@ -84,7 +86,8 @@ add_subdirectory(third_party/QHotkey)
 enable_testing()
 
 # src
-include(cmake/DeployQt.cmake)
+include(Platform)
+include(DeployQt)
 add_subdirectory(src)
 
 # tests

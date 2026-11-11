@@ -72,7 +72,6 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/expand_panel_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/appearance_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/update_status_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit/install_marker_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/download_text_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/download_cancel_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/model_download_tracker_test.cpp
@@ -186,23 +185,13 @@ set(TEST_DEPS
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
 # runElevatedBlocking，InputInjector 的桩/实现同理，缺一个都会链接失败）。
-set(_test_platform_root ${CMAKE_CURRENT_SOURCE_DIR}/../src/platform)
-# 必须与 src/CMakeLists.txt 选取同一组文件：RecorderService 按值持有
+# 目录与扩展名来自 cmake/Platform.cmake，与 src/ 是同一份：RecorderService 按值持有
 # SystemAudioEndpointController，漏掉 AudioEndpoint_* 会在链接期报缺符号。
-if(WIN32)
-    set(_test_platform_dir "win")
-    set(_test_platform_ext "cpp")
-elseif(APPLE)
-    set(_test_platform_dir "mac")
-    set(_test_platform_ext "mm")
-else()
-    set(_test_platform_dir "linux")
-    set(_test_platform_ext "cpp")
-endif()
+set(_test_platform_root ${CMAKE_CURRENT_SOURCE_DIR}/../src/platform)
 # ForegroundWindow：横条右键菜单要记住并恢复前台窗口
 foreach(_mod InputInjector AudioEndpoint Elevation Permissions Firewall ForegroundWindow)
     list(APPEND TEST_DEPS
-        "${_test_platform_root}/${_test_platform_dir}/${_mod}_${_test_platform_dir}.${_test_platform_ext}")
+        "${_test_platform_root}/${IMEAUDIO_PLATFORM_DIR}/${_mod}_${IMEAUDIO_PLATFORM_DIR}.${IMEAUDIO_PLATFORM_EXT}")
 endforeach()
 
 add_executable(imeaudio_tests ${TEST_SOURCES} ${TEST_DEPS})

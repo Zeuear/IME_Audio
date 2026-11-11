@@ -47,13 +47,15 @@ Qt6 桌面语音输入法（Windows / macOS / Linux）。领域术语见 [CONTEX
 ## 跨平台
 
 - 平台相关代码放 `src/platform/{win,mac,linux}/`，每个平台一份实现，
-  由 [src/CMakeLists.txt](src/CMakeLists.txt) 按平台挑选（递归 glob 会排除 `/platform/`）。
+  由 [cmake/Platform.cmake](cmake/Platform.cmake) 定义平台目录，[src/CMakeLists.txt](src/CMakeLists.txt) 和 tests 共用（递归 glob 会排除 `/platform/`）。
   新增平台接口：在公共头声明，三个目录各写一份（mac 用 `.mm`）。
 - `SystemAudioEndpointController` 的 COM hack 是为 VoiceMeeter 虚拟声卡存在，**Windows 专属，不要移植**。
 - **sherpa-onnx**：官方预编译库在 Linux 上与 C++ API 有 ABI 不匹配（`AddPunctuation` 链接失败）。
   标点模型走 `c-api.h` 的纯 C 接口，不要改回 C++ 封装，也不要靠切 `_GLIBCXX_USE_CXX11_ABI` 解决。
   其余识别/VAD 用 `cxx-api.h` 即可（其它符号已在 CI 通过）。
 - 新增源文件不需要改 CMake：`src/` 下 `*.cpp/*.h/*.ui` 都是 `GLOB_RECURSE CONFIGURE_DEPENDS`，重新配置即可。
+- 第三方依赖与运行时资源各占一个 `cmake/*.cmake`（`SherpaOnnx`、`FFmpeg`、`VadModel`、`TranslateWorker`、`DeployQt`），
+  `src/CMakeLists.txt` 只负责目标本身；新增依赖照此另建模块，不要堆回 `src/CMakeLists.txt`。
 
 ## 代码风格
 

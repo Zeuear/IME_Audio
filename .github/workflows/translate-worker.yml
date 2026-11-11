@@ -2,11 +2,11 @@ name: Translate Worker
 
 # 本地翻译 worker（tools/translate_worker）依赖 bergamot-translator，本地编译要装一堆依赖、耗时很长。
 # 这里在 CI 上为各平台编好，打 translate-worker-v* 标签时发布到同名 Release；
-# 主工程 configure 时按 src/CMakeLists.txt 里的版本号和 SHA256 自动下载并校验，开发者不用自己编。
+# 主工程 configure 时按 cmake/TranslateWorker.cmake 里的版本号和 SHA256 自动下载并校验，开发者不用自己编。
 #
 # 发布新版本：
 #   1. 推标签，例如 git tag translate-worker-v1 && git push origin translate-worker-v1
-#   2. 等本工作流跑完，把 Release 任务摘要里打印的 SHA256 填进 src/CMakeLists.txt（同时改版本号）并提交
+#   2. 等本工作流跑完，把 Release 任务摘要里打印的 SHA256 填进 cmake/TranslateWorker.cmake（同时改版本号）并提交
 #
 # 供应链加固：
 #   - 所有源码（bergamot、OpenBLAS、pcre2）和第三方 Action 都按 commit SHA 固定，标签被改指向也不受影响
@@ -257,7 +257,7 @@ jobs:
           cd dist
           sha256sum *.zip | tee SHA256SUMS
           {
-            echo '### 填进 src/CMakeLists.txt 的 SHA256'
+            echo '### 填进 cmake/TranslateWorker.cmake 的 SHA256'
             echo '```cmake'
             while read -r hash file; do
               asset=${file#translate_worker-}; asset=${asset%.zip}

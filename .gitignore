@@ -20,6 +20,8 @@ design/
 *.lib
 *.dylib
 .scratch/*
+.codegraph/*
+.claude/*
 
 # Qt-es
 
