@@ -1,11 +1,7 @@
 #pragma once
 #include <QWidget>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include "installers/CudaInstaller.h"
 #include "utils/DownloadText.h"
 
-class CudaInstaller;
 class GpuRuntime;
 class QLabel;
 class QPushButton;
@@ -34,7 +30,6 @@ public:
     explicit GpuBackendWidget(QWidget *parent = nullptr);
     ~GpuBackendWidget();
 
-    void setBackendInstaller(CudaInstaller* cudaInstaller);
     void setGpuRuntime(GpuRuntime* runtime);
 
     void redetect();
@@ -98,6 +93,4 @@ private:
     QPushButton* m_sherpaButton = nullptr;
 
     QVBoxLayout *m_rootLayout = nullptr;
-    QScopedPointer<class QFile> m_downloadFile;
-    CudaInstaller* m_cudaInstaller = nullptr;
 };

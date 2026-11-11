@@ -1,17 +1,11 @@
 #pragma once
 #include <QWidget>
-#include <QByteArray>
 #include <QList>
-#include <QFutureWatcher>
-#include <atomic>
-#include <memory>
 #include "ui/models/FileTaskModel.h"
-#include "audio/AudioFileDecoder.h"
+#include "services/FileTranscriptionPipeline.h"
 
-class QAudioDecoder;
 class QNetworkAccessManager;
 class AnimatedCheckBox;
-class YtDlpManager;
 class QLabel;
 class QListView;
 class QPlainTextEdit;
@@ -23,17 +17,16 @@ class SherpaManager;
 struct AppConfig;
 
 // @brief
-// 文件转录页：上半部分是文件卡片列表（拖入/选择添加），下半部分预览所选文件的转录文本。
-// 转录流程：解码为 16k 单声道 PCM（有 FFmpeg 时用 AudioFileDecoder，否则 QAudioDecoder）
-// → VAD 切段 → 逐段送入转录后端，按队列依次处理各文件。
-// 转录期间 TranscriptionService 处于文件模式，结果不会走听写工作流（不会被注入前台窗口）。
+// 文件转录页：上半部分是文件卡片列表，下半部分预览所选文件的转录文本。
+// 转录流程：解码 → VAD 切段 → 逐段送入转录后端
 // 开启了翻译设置时，每段原文另外翻译，译文显示在预览右侧，可单独复制和导出。
 class FileTranscribeWidget : public QWidget {
     Q_OBJECT
 public:
     explicit FileTranscribeWidget(QWidget* parent = nullptr);
 
-    void setServices(TranscriptionService* transcription, SherpaManager* sherpa, const AppConfig* config);
+    void setServices(QNetworkAccessManager* networkManager, TranscriptionService* transcription,
+                     SherpaManager* sherpa, const AppConfig* config);
 
     bool isBusy() const { return m_busy; }
 
@@ -49,13 +42,6 @@ protected:
     void showEvent(QShowEvent* event) override;
 
 private:
-    struct Segment {
-        QByteArray pcm;
-        double startSec = 0;   // 相对原音频开头
-        double endSec = 0;
-    };
-    using Segments = QList<Segment>;
-
     void setupUi();
     void retranslateUi();
 
@@ -67,7 +53,6 @@ private:
     // 链接
     void addLinksClicked();
     void startDownloads(const QStringList& urls);
-    void ensureDownloader();
     void enqueueDownload(int row);
     void onLinkFinished(quint64 id, bool ok, const QString& path, const QString& title, const QString& error);
     void queueForTranscription(int row);
@@ -90,21 +75,13 @@ private:
     void collectAppendedRows();
     void cancel();
     void finishFile(FileTask::State state, const QString& error = {});
-    void fail(const QString& cause);
     void finishAll();
 
-    void startQtDecode();
-    void onDecodeBuffer();
-    void onDecodeFinished();
-    void onFileDecoded();
-    void startSegmenting();
-    void onSegmentsReady();
-    void transcribeNext();
-    void onSegmentFinished(bool ok, const QString& rawText, const QString& finalText, const QString& err);
-
-    // 译文：每段原文出来后异步翻译，按段下标填回，不阻塞转录
-    void requestTranslation(int row, const QString& text);
-    void onTranslationFailed(const QString& cause);
+    void onPipelineStateChanged(int row, FileTranscriptionPipeline::State state, int done, int total);
+    void onPipelineSegmentReady(int row, const SubtitleCue& cue, const QString& text);
+    void onPipelineTranslationReady(quint64 runToken, int cue, const QString& language, const QString& text);
+    void onTranslationFailed(quint64 runToken, const QString& cause);
+    void onPipelineFileFinished(int row, FileTranscriptionPipeline::Outcome outcome, const QString& error);
 
     // 导出
     void exportResults();
@@ -113,18 +90,10 @@ private:
     static bool writeTextFile(const QString& path, const QString& text);
     static QString uniqueExportBase(const QString& dir, const QString& base, const QStringList& exts);
 
-    static Segments segmentByVad(const QByteArray& pcm, const AppConfig& config, QString* error);
-
     TranscriptionService* m_transcription = nullptr;
     SherpaManager* m_sherpa = nullptr;
     const AppConfig* m_config = nullptr;
-
-    QAudioDecoder* m_decoder = nullptr;
-    QFutureWatcher<AudioFileDecoder::Result>* m_fileDecodeWatcher = nullptr;
-    // 每个文件一份：后台解码线程持有共享所有权，控件先销毁也不会读到悬空的标志
-    std::shared_ptr<std::atomic_bool> m_decodeCancel;
-    QFutureWatcher<Segments>* m_vadWatcher = nullptr;
-    QString m_vadError;
+    FileTranscriptionPipeline* m_pipeline = nullptr;
 
     FileTaskModel* m_model = nullptr;
     QStackedWidget* m_listStack = nullptr;
@@ -162,18 +131,11 @@ private:
     // 翻译设置是否生效的缓存：预览刷新很频繁，只在页面显示和批次开始时重新查询
     bool m_translationActive = false;
 
-    QNetworkAccessManager* m_nam = nullptr;
-    YtDlpManager* m_downloader = nullptr;
     int m_linkFailed = 0;          // 本轮下载失败的个数，全部下完时汇总提示一次
     QString m_lastLinkError;
 
     // 当前文件
-    QString m_path;
-    QByteArray m_pcm;
-    Segments m_segments;
-    int m_nextSegment = 0;
     bool m_busy = false;        // 整个批次进行中
     bool m_fileActive = false;  // 当前文件处理中
     bool m_cancelled = false;
-    bool m_waitingSegment = false;
 };

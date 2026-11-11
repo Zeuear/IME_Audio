@@ -1,13 +1,9 @@
 #include "FileTranscribeWidget.h"
 #include "ui/delegates/FileTaskDelegate.h"
+#include "ui/controls/AnimatedCheckbox.h"
 #include "ui/controls/LinkInputDialog.h"
-#include "services/media/YtDlpManager.h"
 #include <QNetworkAccessManager>
 #include <QStandardPaths>
-#include <QAudioDecoder>
-#include <QAudioBuffer>
-#include <QAudioFormat>
-#include "ui/controls/AnimatedCheckbox.h"
 #include <QLabel>
 #include <QListView>
 #include <QPushButton>
@@ -32,19 +28,12 @@
 #include <QGuiApplication>
 #include <QDesktopServices>
 #include <QTimer>
-#include <QtConcurrent/QtConcurrentRun>
-#include "cxx-api.h"
 #include "config/AppConfig.h"
 #include "services/TranscriptionService.h"
-#include "translation/LanguageRouting.h"
-#include <QPointer>
 #include "sherpa/SherpaManager.h"
-#include "utils/AppPaths.h"
 #include "utils/Logger.h"
 
 namespace {
-constexpr int kSampleRate = 16000;
-constexpr float kMaxSegmentSec = 30.0f;   // 单段上限，云端后端也能接受
 
 // 原文和译文两个预览框共用的刷新逻辑
 void setPreviewText(QPlainTextEdit* edit, const QString& text, bool sameFile)
@@ -75,13 +64,38 @@ FileTranscribeWidget::FileTranscribeWidget(QWidget* parent) : QWidget(parent)
     setupUi();
 }
 
-void FileTranscribeWidget::setServices(TranscriptionService* transcription, SherpaManager* sherpa, const AppConfig* config)
+void FileTranscribeWidget::setServices(QNetworkAccessManager* networkManager,
+                                       TranscriptionService* transcription,
+                                       SherpaManager* sherpa,
+                                       const AppConfig* config)
 {
     m_transcription = transcription;
     m_sherpa = sherpa;
     m_config = config;
-    connect(m_transcription, &TranscriptionService::fileSegmentFinished,
-            this, &FileTranscribeWidget::onSegmentFinished);
+    m_pipeline = new FileTranscriptionPipeline(networkManager, transcription, sherpa, this);
+    connect(m_pipeline, &FileTranscriptionPipeline::downloadToolStatus, this, [this](const QString& text) {
+        m_statusLabel->setText(text.isEmpty() ? tr("Downloading audio...") : text);
+    });
+    connect(m_pipeline, &FileTranscriptionPipeline::downloadTitle, this, [this](quint64 id, const QString& title) {
+        const int row = m_model->rowOfLink(id);
+        if (row >= 0) m_model->setTitle(row, title);
+    });
+    connect(m_pipeline, &FileTranscriptionPipeline::downloadFinished,
+            this, &FileTranscribeWidget::onLinkFinished);
+    connect(m_pipeline, &FileTranscriptionPipeline::downloadProgress, this, [this](quint64 id, int percent) {
+        const int row = m_model->rowOfLink(id);
+        if (row >= 0) m_model->setDownloadPercent(row, percent);
+    });
+    connect(m_pipeline, &FileTranscriptionPipeline::stateChanged,
+            this, &FileTranscribeWidget::onPipelineStateChanged);
+    connect(m_pipeline, &FileTranscriptionPipeline::segmentReady,
+            this, &FileTranscribeWidget::onPipelineSegmentReady);
+    connect(m_pipeline, &FileTranscriptionPipeline::translationReady,
+            this, &FileTranscribeWidget::onPipelineTranslationReady);
+    connect(m_pipeline, &FileTranscriptionPipeline::translationFailed,
+            this, &FileTranscribeWidget::onTranslationFailed);
+    connect(m_pipeline, &FileTranscriptionPipeline::fileFinished,
+            this, &FileTranscribeWidget::onPipelineFileFinished);
 }
 
 void FileTranscribeWidget::setupUi()
@@ -370,7 +384,7 @@ void FileTranscribeWidget::updateAnimTimer()
 
 void FileTranscribeWidget::addLinksClicked()
 {
-    if (!YtDlpManager::isPlatformSupported()) {
+    if (!FileTranscriptionPipeline::isDownloadSupported()) {
         emit errorOccurred(QStringLiteral("暂不支持链接下载"), QStringLiteral("当前系统没有可用的下载组件"));
         return;
     }
@@ -381,30 +395,9 @@ void FileTranscribeWidget::addLinksClicked()
         m_statusLabel->setText(tr("%1 invalid lines ignored").arg(dialog.invalidLines().size()));
 }
 
-void FileTranscribeWidget::ensureDownloader()
-{
-    if (m_downloader) return;
-    if (!m_nam) m_nam = new QNetworkAccessManager(this);
-    m_downloader = new YtDlpManager(m_nam, this);
-
-    connect(m_downloader, &YtDlpManager::toolStatus, this, [this](const QString& text) {
-        m_statusLabel->setText(text.isEmpty() ? tr("Downloading audio...") : text);
-    });
-    connect(m_downloader, &YtDlpManager::taskProgress, this, [this](quint64 id, int percent) {
-        const int row = m_model->rowOfLink(id);
-        if (row >= 0) m_model->setDownloadPercent(row, percent);
-    });
-    connect(m_downloader, &YtDlpManager::taskTitle, this, [this](quint64 id, const QString& title) {
-        const int row = m_model->rowOfLink(id);
-        if (row >= 0) m_model->setTitle(row, title);
-    });
-    connect(m_downloader, &YtDlpManager::taskFinished, this, &FileTranscribeWidget::onLinkFinished);
-}
-
 void FileTranscribeWidget::startDownloads(const QStringList& urls)
 {
-    if (urls.isEmpty()) return;
-    ensureDownloader();
+    if (urls.isEmpty() || !m_pipeline) return;
     int added = 0;
     for (const QString& url : urls) {
         const int row = m_model->addLink(url);
@@ -417,7 +410,8 @@ void FileTranscribeWidget::startDownloads(const QStringList& urls)
 
 void FileTranscribeWidget::enqueueDownload(int row)
 {
-    const quint64 id = m_downloader->enqueue(m_model->task(row).url);
+    if (!m_pipeline) return;
+    const quint64 id = m_pipeline->enqueueDownload(m_model->task(row).url);
     m_model->setLinkId(row, id);
 }
 
@@ -425,7 +419,7 @@ void FileTranscribeWidget::onLinkFinished(quint64 id, bool ok, const QString& pa
 {
     const int row = m_model->rowOfLink(id);
     if (row < 0) {   // 任务在下载期间被移除了
-        if (ok) m_downloader->release(id);
+        if (ok && m_pipeline) m_pipeline->releaseDownload(id);
         return;
     }
 
@@ -492,9 +486,9 @@ void FileTranscribeWidget::removeSelected()
     if (m_busy) return;
     const QList<int> rows = selectedRows();
     // 链接任务：同时取消下载并删除临时音频
-    if (m_downloader) {
+    if (m_pipeline) {
         for (int row : rows) {
-            if (m_model->task(row).linkId != 0) m_downloader->cancel(m_model->task(row).linkId);
+            if (m_model->task(row).linkId != 0) m_pipeline->cancelDownload(m_model->task(row).linkId);
         }
     }
     m_model->removeRows(rows);
@@ -503,7 +497,7 @@ void FileTranscribeWidget::removeSelected()
 void FileTranscribeWidget::clearAll()
 {
     if (m_busy) return;
-    if (m_downloader) m_downloader->cancelAll();
+    if (m_pipeline) m_pipeline->cancelDownloads();
     m_model->clear();
     m_statusLabel->clear();
 }
@@ -636,7 +630,6 @@ QList<int> FileTranscribeWidget::runnableRows(const QList<int>& candidates)
         const FileTask& t = m_model->task(row);
         if (t.state == FileTask::State::Done || t.state == FileTask::State::Downloading) continue;
         if (t.isLink() && t.path.isEmpty()) {   // 链接没下载下来：重新下载，成功后自动转录
-            ensureDownloader();
             m_model->restartDownload(row);
             enqueueDownload(row);
             continue;
@@ -682,271 +675,77 @@ void FileTranscribeWidget::startNextFile()
     if (m_runRows.isEmpty()) { finishAll(); return; }
 
     m_currentRow = m_runRows.takeFirst();
-    m_path = m_model->task(m_currentRow).path;
-    m_pcm.clear();
-    m_segments.clear();
-    m_nextSegment = 0;
-    m_waitingSegment = false;
     m_fileActive = true;
-    m_model->setState(m_currentRow, FileTask::State::Decoding);
     m_statusLabel->setText(tr("Processing file %1/%2").arg(m_fileDone + 1).arg(m_fileTotal));
     m_list->scrollTo(m_model->index(m_currentRow));
-
-    if (!AudioFileDecoder::isAvailable()) {
-        startQtDecode();
-        return;
-    }
-
-    if (!m_fileDecodeWatcher) {
-        m_fileDecodeWatcher = new QFutureWatcher<AudioFileDecoder::Result>(this);
-        connect(m_fileDecodeWatcher, &QFutureWatcher<AudioFileDecoder::Result>::finished,
-                this, &FileTranscribeWidget::onFileDecoded);
-    }
-    m_decodeCancel = std::make_shared<std::atomic_bool>(false);
-    const QString path = m_path;
-    const auto cancelFlag = m_decodeCancel;
-    m_fileDecodeWatcher->setFuture(QtConcurrent::run([path, cancelFlag]() {
-        return AudioFileDecoder::decode(path, kSampleRate, cancelFlag.get());
-    }));
+    const FileTask& task = m_model->task(m_currentRow);
+    FileTranscriptionPipeline::Job job{m_currentRow, task.runToken, task.path, *m_config};
+    if (!m_pipeline || !m_pipeline->start(job))
+        onPipelineFileFinished(m_currentRow, FileTranscriptionPipeline::Outcome::Failed,
+                               QStringLiteral("无法启动文件转录"));
 }
 
-void FileTranscribeWidget::onFileDecoded()
+void FileTranscribeWidget::onPipelineStateChanged(int row, FileTranscriptionPipeline::State state,
+                                                  int done, int total)
 {
-    // 取消或失败后 finishFile 已经收尾；这里收到的是被放弃的那次解码，直接丢弃
-    if (!m_fileActive) return;
-    AudioFileDecoder::Result r = m_fileDecodeWatcher->result();
-    if (m_cancelled) { finishFile(FileTask::State::Pending); return; }
-    if (!r.error.isEmpty()) { fail(r.error); return; }
-    m_pcm = std::move(r.pcm);
-    startSegmenting();
-}
-
-void FileTranscribeWidget::startQtDecode()
-{
-    // 每个文件新建解码器：复用同一个 QAudioDecoder 时，第二个文件起会立刻 finished 且没有任何数据
-    if (m_decoder) {
-        m_decoder->disconnect(this);
-        m_decoder->stop();
-        m_decoder->deleteLater();
-    }
-    m_decoder = new QAudioDecoder(this);
-    connect(m_decoder, &QAudioDecoder::bufferReady, this, &FileTranscribeWidget::onDecodeBuffer);
-    connect(m_decoder, &QAudioDecoder::finished, this, &FileTranscribeWidget::onDecodeFinished);
-    connect(m_decoder, qOverload<QAudioDecoder::Error>(&QAudioDecoder::error), this,
-            [this](QAudioDecoder::Error) {
-                if (!m_fileActive) return;
-                fail(m_decoder->errorString());
-            });
-
-    QAudioFormat fmt;
-    fmt.setSampleRate(kSampleRate);
-    fmt.setChannelCount(1);
-    fmt.setSampleFormat(QAudioFormat::Int16);
-    m_decoder->setAudioFormat(fmt);
-    m_decoder->setSource(QUrl::fromLocalFile(m_path));
-    m_decoder->start();
-}
-
-void FileTranscribeWidget::onDecodeBuffer()
-{
-    while (m_decoder->bufferAvailable()) {
-        const QAudioBuffer buf = m_decoder->read();
-        if (!buf.isValid()) break;
-        m_pcm.append(buf.constData<char>(), buf.byteCount());
+    if (row != m_currentRow || !m_fileActive) return;
+    if (state == FileTranscriptionPipeline::State::Decoding) {
+        m_model->setState(row, FileTask::State::Decoding);
+    } else if (state == FileTranscriptionPipeline::State::Transcribing) {
+        m_model->setProgress(row, done, total);
     }
 }
 
-void FileTranscribeWidget::onDecodeFinished()
+void FileTranscribeWidget::onPipelineSegmentReady(int row, const SubtitleCue& cue, const QString& text)
 {
-    if (!m_fileActive) return;
-    onDecodeBuffer();
-    if (m_cancelled) { finishFile(FileTask::State::Pending); return; }
-    if (m_pcm.isEmpty()) {
-        LOG_WARN(QString("Decoder finished with no data: error=%1 '%2' duration=%3ms source=%4")
-                     .arg(int(m_decoder->error())).arg(m_decoder->errorString())
-                     .arg(m_decoder->duration()).arg(m_decoder->source().toString()));
-        fail(tr("No audio data decoded"));
-        return;
-    }
-    startSegmenting();
+    if (row != m_currentRow || !m_fileActive) return;
+    m_model->appendText(row, text);
+    m_model->appendCue(row, cue);
 }
 
-void FileTranscribeWidget::startSegmenting()
+void FileTranscribeWidget::onPipelineTranslationReady(quint64 runToken, int cue,
+                                                       const QString& language, const QString& text)
 {
-    if (!m_vadWatcher) {
-        m_vadWatcher = new QFutureWatcher<Segments>(this);
-        connect(m_vadWatcher, &QFutureWatcher<Segments>::finished,
-                this, &FileTranscribeWidget::onSegmentsReady);
-    }
-    // 拷贝一份配置交给后台线程，避免与界面线程竞争
-    const AppConfig cfg(*m_config);
-    const QByteArray pcm = m_pcm;
-    QString* err = &m_vadError;
-    m_vadError.clear();
-    m_vadWatcher->setFuture(QtConcurrent::run([pcm, cfg, err]() {
-        return segmentByVad(pcm, cfg, err);
-    }));
+    m_model->setCueTranslation(runToken, cue, language, text);
 }
 
-FileTranscribeWidget::Segments FileTranscribeWidget::segmentByVad(const QByteArray& pcm,
-                                                                  const AppConfig& config,
-                                                                  QString* error)
+void FileTranscribeWidget::onTranslationFailed(quint64 runToken, const QString& cause)
 {
-    Segments out;
-    QString vadPath = config.sherpa.vadPath;
-    if (!QFile::exists(vadPath)) vadPath = AppPaths::vadModelFile();
-    if (!QFile::exists(vadPath)) {
-        *error = QStringLiteral("VAD 模型缺失，请先下载模型");
-        return out;
-    }
-
-    try {
-        sherpa_onnx::cxx::VadModelConfig vc;
-        vc.silero_vad.model = vadPath.toStdString();
-        vc.silero_vad.threshold = static_cast<float>(config.audio.voiceThreshold) / 1000;
-        vc.silero_vad.min_silence_duration = 0.5f;
-        vc.silero_vad.min_speech_duration = 0.25f;
-        vc.silero_vad.max_speech_duration = kMaxSegmentSec;
-        vc.sample_rate = kSampleRate;
-
-        auto vad = sherpa_onnx::cxx::VoiceActivityDetector::Create(vc, 60.0f);
-
-        // 这里只记录切分出的采样点区间 [begin, end)；补白要等整段音频切完、知道相邻段位置后再做
-        std::vector<std::pair<int, int>> spans;
-        auto drain = [&]() {
-            while (!vad.IsEmpty()) {
-                auto seg = vad.Front();
-                spans.emplace_back(seg.start, seg.start + static_cast<int>(seg.samples.size()));
-                vad.Pop();
-            }
-        };
-
-        const auto* s16 = reinterpret_cast<const int16_t*>(pcm.constData());
-        const int total = pcm.size() / 2;
-        constexpr int kChunk = 512 * 8;
-        std::vector<float> buf(kChunk);
-        for (int pos = 0; pos < total; pos += kChunk) {
-            const int n = qMin(kChunk, total - pos);
-            for (int i = 0; i < n; ++i) buf[i] = s16[pos + i] / 32768.0f;
-            vad.AcceptWaveform(buf.data(), n);
-            drain();
-        }
-        vad.Flush();
-        drain();
-
-        // VAD 遇到 0.5s 停顿就切
-        constexpr int kMergeGapSamples = kSampleRate;        // 1 s
-        constexpr int kMergeMaxSamples = kSampleRate * 10;   // 10 s
-        std::vector<std::pair<int, int>> merged;
-        for (const auto& span : spans) {
-            if (!merged.empty()
-                && span.first - merged.back().second < kMergeGapSamples
-                && span.second - merged.back().first <= kMergeMaxSamples) {
-                merged.back().second = span.second;
-            } else {
-                merged.push_back(span);
-            }
-        }
-        spans.swap(merged);
-
-        // Silero 判定语音起点有滞后，切点常落在首个音节之后，句首会被截掉。
-        // 前后各补 kEdgePadSamples 的真实音频；补白不越过相邻段，避免两段识别到同一段话。
-        constexpr int kEdgePadSamples = kSampleRate * 3 / 10;
-        for (size_t i = 0; i < spans.size(); ++i) {
-            const int lo = i > 0 ? spans[i - 1].second : 0;
-            const int hi = i + 1 < spans.size() ? spans[i + 1].first : total;
-            const int begin = qMax(lo, spans[i].first - kEdgePadSamples);
-            const int end = qMin(hi, spans[i].second + kEdgePadSamples);
-            Segment segment;
-            segment.pcm = pcm.mid(begin * 2, (end - begin) * 2);
-            segment.startSec = static_cast<double>(spans[i].first) / kSampleRate;
-            segment.endSec = static_cast<double>(spans[i].second) / kSampleRate;
-            out.append(segment);
+    bool currentRun = false;
+    for (int row = 0; row < m_model->rowCount(); ++row) {
+        if (m_model->task(row).runToken == runToken) {
+            currentRun = true;
+            break;
         }
     }
-    catch (const std::exception& e) {
-        *error = QString::fromLocal8Bit(e.what());
-    }
-    return out;
-}
-
-void FileTranscribeWidget::onSegmentsReady()
-{
-    if (!m_fileActive) return;
-    if (m_cancelled) { finishFile(FileTask::State::Pending); return; }
-    if (!m_vadError.isEmpty()) { fail(m_vadError); return; }
-
-    m_segments = m_vadWatcher->result();
-    m_pcm.clear();
-    if (m_segments.isEmpty()) { finishFile(FileTask::State::NoSpeech); return; }
-
-    m_nextSegment = 0;
-    m_model->setProgress(m_currentRow, 0, m_segments.size());
-
-    if (m_config->backend == AsrBackendKind::Sherpa) {
-        m_sherpa->pauseIdleTimer();
-        // 模型可能已被空闲卸载；加载与转录任务在 worker 队列里串行，先入队加载即可
-        if (!m_sherpa->isModelLoaded()) m_sherpa->loadModelAsync(*m_config, false);
-    }
-    transcribeNext();
-}
-
-void FileTranscribeWidget::transcribeNext()
-{
-    if (m_cancelled) { finishFile(FileTask::State::Pending); return; }
-    if (m_nextSegment >= m_segments.size()) {
-        finishFile(m_model->task(m_currentRow).text.isEmpty() ? FileTask::State::NoSpeech
-                                                              : FileTask::State::Done);
-        return;
-    }
-
-    m_waitingSegment = true;
-    m_transcription->transcribe(m_segments.at(m_nextSegment).pcm, kSampleRate, 1, 16);
-}
-
-void FileTranscribeWidget::onSegmentFinished(bool ok, const QString&, const QString& finalText, const QString& err)
-{
-    if (!m_fileActive || !m_waitingSegment) return;
-    m_waitingSegment = false;
-
-    if (!ok) {
-        fail(err);
-        return;
-    }
-    const QString text = finalText.trimmed();
-    if (!text.isEmpty()) {
-        m_model->appendText(m_currentRow, text);
-        // m_nextSegment 此时仍指向刚完成的这一段（下面才自增）
-        const Segment& seg = m_segments.at(m_nextSegment);
-        m_model->appendCue(m_currentRow, {qRound64(seg.startSec * 1000), qRound64(seg.endSec * 1000), text});
-        requestTranslation(m_currentRow, text);
-    }
-    m_model->setProgress(m_currentRow, ++m_nextSegment, m_segments.size());
-    transcribeNext();
-}
-
-void FileTranscribeWidget::requestTranslation(int row, const QString& text)
-{
-    if (!m_transcription->fileTranslationActive()) return;
-
-    const FileTask& task = m_model->task(row);
-    const quint64 token = task.runToken;
-    const int cue = task.cues.size() - 1;   // 刚追加的这一段
-    const QString lang = languageCodeForStored(m_transcription->fileTranslationTarget());
-    QPointer<FileTranscribeWidget> self(this);
-    m_transcription->translateForFile(text, [self, token, cue, lang](bool ok, const QString& translated, const QString& err) {
-        if (!self) return;
-        if (ok) self->m_model->setCueTranslation(token, cue, lang, translated.trimmed());
-        else self->onTranslationFailed(err);
-    });
-}
-
-void FileTranscribeWidget::onTranslationFailed(const QString& cause)
-{
+    if (!currentRun) return;
     LOG_WARN(QString("File translation failed: %1").arg(cause));
     if (m_translationErrorShown) return;
     m_translationErrorShown = true;
     emit errorOccurred(QStringLiteral("部分内容翻译失败"), cause);
+}
+
+void FileTranscribeWidget::onPipelineFileFinished(int row, FileTranscriptionPipeline::Outcome outcome,
+                                                  const QString& error)
+{
+    if (row != m_currentRow || !m_fileActive) return;
+    if (outcome == FileTranscriptionPipeline::Outcome::Failed)
+        LOG_ERROR(QString("File transcription failed (%1): %2").arg(m_model->task(row).path, error));
+
+    switch (outcome) {
+    case FileTranscriptionPipeline::Outcome::Done:
+        finishFile(FileTask::State::Done);
+        break;
+    case FileTranscriptionPipeline::Outcome::Failed:
+        finishFile(FileTask::State::Failed, error);
+        break;
+    case FileTranscriptionPipeline::Outcome::NoSpeech:
+        finishFile(FileTask::State::NoSpeech);
+        break;
+    case FileTranscriptionPipeline::Outcome::Cancelled:
+        finishFile(FileTask::State::Pending);
+        break;
+    }
 }
 
 void FileTranscribeWidget::cancel()
@@ -955,25 +754,13 @@ void FileTranscribeWidget::cancel()
     m_runRows.clear();
     m_statusLabel->setText(tr("Cancelling..."));
     updateButtons();
-    if (m_decoder && m_decoder->isDecoding()) {
-        m_decoder->stop();
-        finishFile(FileTask::State::Pending);
-    } else if (m_fileDecodeWatcher && m_fileDecodeWatcher->isRunning()) {
-        // 不等后台解码返回：finishFile 会置取消标志，解码线程在下一个包处退出，结果被 onFileDecoded 丢弃
-        finishFile(FileTask::State::Pending);
-    }
+    if (m_pipeline) m_pipeline->cancel();
 }
 
 void FileTranscribeWidget::finishFile(FileTask::State state, const QString& error)
 {
     if (!m_fileActive) return;
     m_fileActive = false;
-    if (m_decoder && m_decoder->isDecoding()) m_decoder->stop();
-    if (m_decodeCancel) *m_decodeCancel = true;
-
-    m_waitingSegment = false;
-    m_pcm.clear();
-    m_segments.clear();
     ++m_fileDone;
 
     switch (state) {
@@ -998,12 +785,6 @@ void FileTranscribeWidget::finishFile(FileTask::State state, const QString& erro
 
     // 延后一拍再开始下一个：避免在解码器/Future 的信号回调里重入解码器
     QTimer::singleShot(0, this, &FileTranscribeWidget::startNextFile);
-}
-
-void FileTranscribeWidget::fail(const QString& cause)
-{
-    LOG_ERROR(QString("File transcription failed (%1): %2").arg(m_path, cause));
-    finishFile(FileTask::State::Failed, cause);
 }
 
 void FileTranscribeWidget::finishAll()

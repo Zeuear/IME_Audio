@@ -86,16 +86,16 @@ TEST(GpuRuntime, MismatchOnlyWhenCudaWasRequested)
 {
     GpuRuntime runtime;
 
-    runtime.reportLoadResult(QStringLiteral("repo/gpu"), GpuProvider::Cpu, /*requestedCuda=*/true);
+    runtime.reportLoadResult({QStringLiteral("repo/gpu"), GpuProvider::Cpu, true, true});
     EXPECT_TRUE(runtime.lastLoadMismatch());
     EXPECT_EQ(runtime.actualProvider(), GpuProvider::Cpu);
 
-    runtime.reportLoadResult(QStringLiteral("repo/gpu"), GpuProvider::Cuda, /*requestedCuda=*/true);
+    runtime.reportLoadResult({QStringLiteral("repo/gpu"), GpuProvider::Cuda, true, true});
     EXPECT_FALSE(runtime.lastLoadMismatch());
     EXPECT_EQ(runtime.actualProvider(), GpuProvider::Cuda);
 
     // int8 没有 GPU 变体：本来就不请求 CUDA，用 CPU 不算回退
-    runtime.reportLoadResult(QStringLiteral("repo/cpu"), GpuProvider::Cpu, /*requestedCuda=*/false);
+    runtime.reportLoadResult({QStringLiteral("repo/cpu"), GpuProvider::Cpu, false, true});
     EXPECT_FALSE(runtime.lastLoadMismatch());
 }
 
@@ -105,7 +105,7 @@ TEST(GpuRuntime, ModeChangeClearsLastProvider)
     if (!runtime.detectable()) GTEST_SKIP() << "CUDA detection is not available on this platform";
 
     runtime.setRequestedGpu(true);
-    runtime.reportLoadResult(QStringLiteral("repo/gpu"), GpuProvider::Cuda, /*requestedCuda=*/true);
+    runtime.reportLoadResult({QStringLiteral("repo/gpu"), GpuProvider::Cuda, true, true});
     ASSERT_EQ(runtime.actualProvider(), GpuProvider::Cuda);
 
     runtime.setRequestedGpu(false);

@@ -50,9 +50,7 @@ signals:
     void utteranceTranscribed(bool success, const QString& text, const QString& errorMsg);
     void queueSizeChanged(int pendingCount);
     void loadFailed(const QString& title, const QString& cause);
-    // 实际加载结果：requestedCuda 是这次是否要求 CUDA，usedCuda 是真正用上的后端，
-    // success=false 表示加载失败
-    void loadProviderResolved(const QString& repoId, bool requestedCuda, bool usedCuda, bool success);
+    void loadProviderResolved(const GpuLoadResult& result);
     void idleUnloaded();
 
 private:

@@ -1,23 +1,17 @@
 #include "GpuBackendWidget.h"
 
+#include <QEvent>
 #include <QLabel>
 #include <QPushButton>
 #include <QProgressBar>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFrame>
-#include <QProcess>
 #include <QDir>
 #include <QFile>
-#include <QNetworkRequest>
-#include <QTimer>
-#include <QDesktopServices>
-#include <QMessageBox>
-#include <QLibrary>
 #include <QStyleOption>
 #include <QPainter>
 #include "utils/Logger.h"
-#include "installers/CudaInstaller.h"
 #include "sherpa/GpuRuntime.h"
 
 GpuBackendWidget::GpuBackendWidget(QWidget *parent)
@@ -26,41 +20,7 @@ GpuBackendWidget::GpuBackendWidget(QWidget *parent)
     setupUi();
 }
 
-GpuBackendWidget::~GpuBackendWidget()
-{}
-
-void GpuBackendWidget::setBackendInstaller(CudaInstaller* cudaInstaller)
-{
-    m_cudaInstaller = cudaInstaller;
-    connect(m_cudaInstaller, &CudaInstaller::installStarted, this, &GpuBackendWidget::onInstallerStatusChanged);
-    connect(m_cudaInstaller, &CudaInstaller::installFinished, this, &GpuBackendWidget::onInstallerFinished);
-
-    connect(m_cudaInstaller, &CudaInstaller::installGroupStarted, this,
-            [this](const QString&, const QString&, int totalFiles) {
-                m_downloadProgress.start(totalFiles);
-                m_lastDownloadError.clear();
-                m_progressBar->setValue(0);
-            });
-    connect(m_cudaInstaller, &CudaInstaller::installFileProgress, this,
-            [this](const QString&, const QString& filename, qint64, qint64, int overallPercent) {
-                m_downloadProgress.update(filename, overallPercent);
-                m_progressBar->setValue(m_downloadProgress.percent());
-                if (m_status == GpuStatus::Downloading) m_downloadSizeLabel->setText(m_downloadProgress.line());
-            });
-    connect(m_cudaInstaller, &CudaInstaller::installFileFinished, this,
-            [this]() { m_downloadProgress.fileFinished(); });
-    connect(m_cudaInstaller, &CudaInstaller::installFileError, this,
-            [this](const QString&, const QString&, const QString& error) { m_lastDownloadError = error; });
-    // 下载失败时安装器只发 installGroupFinished(false)，不发 installFinished：不接这个信号，
-    // 界面会一直停在"下载中，取消"，用户看不到失败也点不了重试
-    connect(m_cudaInstaller, &CudaInstaller::installGroupFinished, this,
-            [this](const QString&, bool success, const QString& message) {
-                if (success) return;
-                applyStatus(GpuStatus::Failed);
-                m_downloadSizeLabel->setText(m_lastDownloadError.isEmpty() ? message : message + QStringLiteral(": ") + m_lastDownloadError);
-            });
-
-}
+GpuBackendWidget::~GpuBackendWidget() = default;
 
 void GpuBackendWidget::setGpuRuntime(GpuRuntime* runtime)
 {
@@ -69,6 +29,30 @@ void GpuBackendWidget::setGpuRuntime(GpuRuntime* runtime)
 
     connect(m_gpuRuntime, &GpuRuntime::stateChanged, this, &GpuBackendWidget::syncFromRuntime);
     connect(m_gpuRuntime, &GpuRuntime::detectionFinished, this, &GpuBackendWidget::onDetectionFinished);
+    connect(m_gpuRuntime, &GpuRuntime::installStarted, this, &GpuBackendWidget::onInstallerStatusChanged);
+    connect(m_gpuRuntime, &GpuRuntime::installFinished, this, &GpuBackendWidget::onInstallerFinished);
+    connect(m_gpuRuntime, &GpuRuntime::installGroupStarted, this,
+            [this](const QString&, const QString&, int totalFiles) {
+                m_downloadProgress.start(totalFiles);
+                m_lastDownloadError.clear();
+                m_progressBar->setValue(0);
+            });
+    connect(m_gpuRuntime, &GpuRuntime::installFileProgress, this,
+            [this](const QString&, const QString& filename, qint64, qint64, int overallPercent) {
+                m_downloadProgress.update(filename, overallPercent);
+                m_progressBar->setValue(m_downloadProgress.percent());
+                if (m_status == GpuStatus::Downloading) m_downloadSizeLabel->setText(m_downloadProgress.line());
+            });
+    connect(m_gpuRuntime, &GpuRuntime::installFileFinished, this,
+            [this]() { m_downloadProgress.fileFinished(); });
+    connect(m_gpuRuntime, &GpuRuntime::installFileError, this,
+            [this](const QString&, const QString&, const QString& error) { m_lastDownloadError = error; });
+    connect(m_gpuRuntime, &GpuRuntime::installGroupFinished, this,
+            [this](const QString&, bool success, const QString& message) {
+                if (success) return;
+                applyStatus(GpuStatus::Failed);
+                m_downloadSizeLabel->setText(m_lastDownloadError.isEmpty() ? message : message + QStringLiteral(": ") + m_lastDownloadError);
+            });
     redetect();
 }
 
@@ -196,7 +180,7 @@ void GpuBackendWidget::applyStatus(GpuStatus status)
     case GpuStatus::NoGpu:
         m_cpuIconLabel->setText("\u25A3");
         m_cpuTitleLabel->setText(tr("CPU only"));
-        m_cpuSubLabel->setText(cudaPlatformSpec().detectable
+        m_cpuSubLabel->setText(m_gpuRuntime && m_gpuRuntime->detectable()
             ? tr("Can't detect GPU acceleration")
             : tr("GPU acceleration unavailable on this platform"));
         m_downloadRow->setVisible(false);
@@ -289,7 +273,6 @@ void GpuBackendWidget::redetect()
 {
     if (!m_gpuRuntime) return;
     applyStatus(GpuStatus::Detecting);
-    if (m_cudaInstaller) m_cudaInstaller->setEnvironment();
     m_gpuRuntime->redetect();
 }
 
@@ -328,16 +311,16 @@ void GpuBackendWidget::onDetectionFinished()
 
 void GpuBackendWidget::onDownloadClicked()
 {
-    if (!m_cudaInstaller || !m_gpuRuntime) return;
+    if (!m_gpuRuntime) return;
 
     if (m_status == GpuStatus::Downloading) {
-        m_cudaInstaller->cancelDownload();
+        m_gpuRuntime->cancelInstall();
         applyStatus(GpuStatus::GpuAvailable);
         return;
     }
 
     applyStatus(GpuStatus::Downloading);
-    m_cudaInstaller->startDownload(m_gpuRuntime->detection());
+    m_gpuRuntime->startInstall();
 }
 
 void GpuBackendWidget::onInstallerStatusChanged()
@@ -351,10 +334,7 @@ void GpuBackendWidget::onInstallerFinished(bool success, const QString& msg)
         m_downloadSizeLabel->setText(msg);
         // 装完不直接假定就绪：重新检测 provider 版本与硬件，结果仍由 GpuRuntime 说了算
         applyStatus(GpuStatus::Detecting);
-        if (m_gpuRuntime) {
-            if (m_cudaInstaller) m_cudaInstaller->setEnvironment();
-            m_gpuRuntime->redetect();
-        }
+        if (m_gpuRuntime) m_gpuRuntime->redetect();
     }
     else {
         applyStatus(GpuStatus::Failed);
@@ -373,7 +353,7 @@ void GpuBackendWidget::changeEvent(QEvent* event)
 
 QString GpuBackendWidget::backendUnavailableText() const
 {
-    if (!cudaPlatformSpec().detectable) {
+    if (!m_gpuRuntime || !m_gpuRuntime->detectable()) {
         return tr("This platform runs inference on the CPU. GPU acceleration is not available here.");
     }
     return tr("No supported NVIDIA GPU detected. Current implementation uses CPU for inference.");
@@ -382,7 +362,7 @@ QString GpuBackendWidget::backendUnavailableText() const
 void GpuBackendWidget::retranslateUi()
 {
     m_cudaSectionTitle->setText(tr("Inference backend"));
-    m_cudaSectionDesc->setText(cudaPlatformSpec().detectable
+    m_cudaSectionDesc->setText(m_gpuRuntime && m_gpuRuntime->detectable()
         ? tr("Enable NVIDIA GPU acceleration through downloadable CUDA backend.")
         : backendUnavailableText());
     updateModeSwitchUi();
@@ -397,4 +377,3 @@ void GpuBackendWidget::paintEvent(QPaintEvent* event)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QWidget::paintEvent(event);
 }
-

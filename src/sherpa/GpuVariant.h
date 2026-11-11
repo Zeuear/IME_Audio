@@ -7,6 +7,13 @@
 
 enum class GpuProvider { Unknown, Cpu, Cuda };
 
+struct GpuLoadResult {
+    QString repoId;
+    GpuProvider provider = GpuProvider::Unknown;
+    bool requestedCuda = false;
+    bool success = false;
+};
+
 namespace GpuVariant {
 
 struct Link {

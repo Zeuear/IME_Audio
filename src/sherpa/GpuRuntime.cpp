@@ -50,6 +50,11 @@ bool GpuRuntime::backendReady() const
     return detectionDone() && m_detection.isFullyReady;
 }
 
+bool GpuRuntime::installing() const
+{
+    return m_installing;
+}
+
 const GpuDetectionResult& GpuRuntime::detection() const
 {
     return m_detection;
@@ -89,14 +94,14 @@ bool GpuRuntime::lastLoadMismatch() const
     return m_lastLoadMismatch;
 }
 
-void GpuRuntime::reportLoadResult(const QString& repoId, GpuProvider actual, bool requestedCuda)
+void GpuRuntime::reportLoadResult(const GpuLoadResult& result)
 {
-    m_actualRepoId = repoId;
-    m_actualProvider = actual;
-    m_lastLoadMismatch = requestedCuda && actual != GpuProvider::Cuda;
+    m_actualRepoId = result.repoId;
+    m_actualProvider = result.success ? result.provider : GpuProvider::Unknown;
+    m_lastLoadMismatch = result.requestedCuda && m_actualProvider != GpuProvider::Cuda;
     if (m_lastLoadMismatch) {
         LOG_WARN(QString("GPU load mismatch: requested CUDA but actual provider for %1 is %2")
-                     .arg(repoId, actual == GpuProvider::Cpu ? "cpu" : "unknown"));
+                     .arg(result.repoId, m_actualProvider == GpuProvider::Cpu ? "cpu" : "unknown"));
     }
     emit stateChanged();
 }
@@ -126,14 +131,6 @@ void GpuRuntime::detectAsync()
 
     const Detector detector = m_detector;
     m_watcher->setFuture(QtConcurrent::run([detector]() { return detector(); }));
-}
-
-void GpuRuntime::redetect()
-{
-    // 检测完成后才有意义的重来：清掉上一次结果，避免界面在检测中沿用旧的"就绪"
-    m_detectionDone = false;
-    m_detection = {};
-    detectAsync();
 }
 
 void GpuRuntime::finishDetection(const GpuDetectionResult& result)

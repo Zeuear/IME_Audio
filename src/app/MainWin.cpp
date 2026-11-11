@@ -168,6 +168,7 @@ void MainWin::initialize() {
     m_sherpaInstaller = new SherpaInstaller(m_networkManager, this);
     m_cudaInstaller = new CudaInstaller(m_networkManager, m_sherpaInstaller, this);
     m_gpuRuntime = new GpuRuntime(this);
+    m_gpuRuntime->setInstaller(m_cudaInstaller);
     m_gpuRuntime->setDetector([] { return CudaInstaller::detectGpuEnvironment(true); });
 
     m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService,
@@ -210,7 +211,6 @@ void MainWin::initialize() {
     // VAD 模型随安装包分发；若缺失(旧安装包/被误删)则自动补下载，避免用户卡在
     // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
     m_sherpaInstaller->ensureVadModel();
-    ui->gpu_backend_widget->setBackendInstaller(m_cudaInstaller);
     ui->gpu_backend_widget->setGpuRuntime(m_gpuRuntime);
     m_termWidget->setTermsManager(m_termsManager);
     m_snippetStore = new SnippetStore(AppPaths::snippetsFile());
@@ -222,7 +222,8 @@ void MainWin::initialize() {
     m_searchPopup = new SnippetSearchPopup(m_snippetStore, m_snippetPaster);
     m_prefixWatcher = new PrefixWatcher(this);
     ui->snippet_widget->setSnippetStore(m_snippetStore);
-    m_fileWidget->setServices(m_transcriptionService, m_sherpaManager, &ConfigManager::instance().config());
+    m_fileWidget->setServices(m_networkManager, m_transcriptionService, m_sherpaManager,
+                              &ConfigManager::instance().config());
     m_transcriptWidget->setSessionFile(AppPaths::transcriptFile());
 }
 
@@ -331,11 +332,10 @@ void MainWin::setupUiConnections(){
     connect(m_sherpaManager, &SherpaManager::loadFailed, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
     });
+    qRegisterMetaType<GpuLoadResult>();
     connect(m_sherpaManager, &SherpaManager::loadProviderResolved, this,
-            [this](const QString& repoId, bool requestedCuda, bool usedCuda, bool success) {
-                m_gpuRuntime->reportLoadResult(repoId,
-                    success ? (usedCuda ? GpuProvider::Cuda : GpuProvider::Cpu) : GpuProvider::Unknown,
-                    requestedCuda);
+            [this](const GpuLoadResult& result) {
+                m_gpuRuntime->reportLoadResult(result);
             });
 
     connect(ui->open_path_btn, &QPushButton::clicked, this, [this]() {

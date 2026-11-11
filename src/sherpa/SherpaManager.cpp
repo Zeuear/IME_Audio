@@ -194,9 +194,8 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 
     if (!isReload && m_isLoaded && m_currentRepoId == repoId) {
         LOG_DEBUG(QString("Model %1 already loaded, reusing cached recognizer.").arg(repoId));
-        emit loadProviderResolved(repoId, m_loadedRequestedCuda,
-                                  m_loadedProvider == GpuProvider::Cuda,
-                                  m_loadedProvider != GpuProvider::Unknown);
+        emit loadProviderResolved({repoId, m_loadedProvider, m_loadedRequestedCuda,
+                                   m_loadedProvider != GpuProvider::Unknown});
         return;
     }
 
@@ -224,7 +223,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
 	    LOG_ERROR(QString("Load failed: recognizer not created for %1 after %2 ms (dir=%3)，"
 	                      "具体原因见上方 Failed to create recognizer 记录与 voice_ime.stderr.log")
 	                  .arg(repoId).arg(loadTimer.elapsed()).arg(modelDir));
-	    emit loadProviderResolved(repoId, result.requestedCuda, false, false);
+	    emit loadProviderResolved({repoId, GpuProvider::Unknown, result.requestedCuda, false});
 	    return;
 	}
 	if (keepOldOnFail) releaseCurrent();
@@ -261,8 +260,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         m_configCopy = config;
         LOG_DEBUG(QString("Model load | ok: %1 kind=%2 in %3 ms")
                       .arg(repoId).arg(static_cast<int>(m_kind)).arg(loadTimer.elapsed()));
-        emit loadProviderResolved(repoId, result.requestedCuda,
-                                  result.provider == GpuProvider::Cuda, true);
+        emit loadProviderResolved({repoId, result.provider, result.requestedCuda, true});
     } else {
         LOG_ERROR(QString("Model load | recognizer variant unusable for %1 (kind=%2)")
                       .arg(repoId).arg(static_cast<int>(result.kind)));
