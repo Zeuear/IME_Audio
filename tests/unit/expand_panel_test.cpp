@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <QAbstractButton>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QImage>
 #include <QLabel>
@@ -217,8 +218,23 @@ TEST(ExpandPanel, PageContentIsVisibleAndCornersAreRoundedOff) {
     EXPECT_GT(center.alpha(), 250);
     // 圆角外的页面直角不能露出来：body 左上角第一个像素在圆角之外
     EXPECT_LT(img.pixelColor(16, 16 + 1).red() * img.pixelColor(16, 16 + 1).alpha(), 200 * 255);
-    // 阴影边距不能完全透明，否则分层窗口不收鼠标
-    EXPECT_GE(img.pixelColor(2, img.height() / 2).alpha(), 1);
+}
+
+TEST(ExpandPanel, GlobalStyleSheetDoesNotHidePagesOrFillTheShadowMargin) {
+    qApp->setStyleSheet(QStringLiteral("QWidget { background-color: #333333; }"));
+    {
+        auto* page = new QWidget;
+        page->setObjectName("page");
+        page->setStyleSheet(QStringLiteral("#page { background-color: red; }"));
+        ExpandPanel panel;
+        panel.setPages(page, new QWidget, new QWidget);
+        panel.showPage(Page::Transcript);
+        QCoreApplication::processEvents();
+        const QImage img = panel.grab().toImage().convertToFormat(QImage::Format_ARGB32);
+        EXPECT_GT(img.pixelColor(img.width() / 2, img.height() / 2).red(), 200);
+        EXPECT_LT(img.pixelColor(2, img.height() / 2).alpha(), 128);   // 阴影边距仍是透明的
+    }
+    qApp->setStyleSheet(QString());
 }
 
 // ---- 横条上的词典 / 文件转录图标 ----

@@ -32,6 +32,9 @@ public:
     explicit BorderOverlay(QWidget* parent) : QWidget(parent)
     {
         setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        // 全局样式表会给所有 QWidget 铺底色，这一层只能画线，不能挡住下面的页面
+        setStyleSheet(QStringLiteral("background: transparent;"));
     }
 
 protected:
@@ -41,9 +44,10 @@ protected:
         p.setRenderHint(QPainter::Antialiasing);
         const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
                                                     -kShadowMargin, -kShadowMargin);
-        p.setPen(QPen(palette().color(QPalette::Mid), 1));
+        // 画 2px：盖住页面控件自己的直角边框（如输入框的焦点框）和蒙版的锯齿
+        p.setPen(QPen(palette().color(QPalette::Mid), 2));
         p.setBrush(Qt::NoBrush);
-        p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
+        p.drawRoundedRect(body.adjusted(1, 1, -1, -1), kCornerRadius - 1, kCornerRadius - 1);
     }
 };
 
@@ -199,7 +203,9 @@ void ExpandPanel::resizeEvent(QResizeEvent* event)
     m_border->raise();
     // 页面控件是直角的，会从圆角处探出来，按圆角裁掉
     QPainterPath clip;
-    clip.addRoundedRect(QRectF(m_tabs->rect()), kCornerRadius, kCornerRadius);
+    // 用面板自己的尺寸算：此刻布局可能还没把页面摆好，m_tabs->rect() 不可靠
+    clip.addRoundedRect(QRectF(0, 0, width() - 2 * kShadowMargin, height() - 2 * kShadowMargin),
+                        kCornerRadius, kCornerRadius);
     m_tabs->setMask(QRegion(clip.toFillPolygon().toPolygon()));
     if (size() != m_savedSize) m_sizeSaveTimer->start();
 }
@@ -270,9 +276,6 @@ void ExpandPanel::paintEvent(QPaintEvent*)
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
                                                 -kShadowMargin, -kShadowMargin);
-    // 阴影边距必须保证非零透明度：分层窗口里完全透明的像素不接收鼠标，
-    // 边缘光标和拖拽缩放会时有时无
-    p.fillRect(rect(), QColor(0, 0, 0, 1));
     p.setPen(QPen(palette().color(QPalette::Mid), 1));
     p.setBrush(palette().color(QPalette::Window));
     p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
