@@ -25,6 +25,28 @@ constexpr int kDictionaryIndex = 1;
 constexpr int kFileIndex = 2;
 }
 
+// 盖在页面上面画一圈连续的边框：页面会盖住面板自己画的边框，圆角蒙版的锯齿也靠它遮住
+class ExpandPanel::BorderOverlay : public QWidget
+{
+public:
+    explicit BorderOverlay(QWidget* parent) : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
+                                                    -kShadowMargin, -kShadowMargin);
+        p.setPen(QPen(palette().color(QPalette::Mid), 1));
+        p.setBrush(Qt::NoBrush);
+        p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
+    }
+};
+
 int ExpandPanel::indexOf(PanelState::Page page)
 {
     switch (page) {
@@ -70,6 +92,7 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin, kShadowMargin);
     layout->addWidget(m_tabs);
+    m_border = new BorderOverlay(this);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
 
     setMouseTracking(true);
@@ -172,6 +195,8 @@ void ExpandPanel::hideEvent(QHideEvent* event)
 void ExpandPanel::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    m_border->setGeometry(rect());
+    m_border->raise();
     // 页面控件是直角的，会从圆角处探出来，按圆角裁掉
     QPainterPath clip;
     clip.addRoundedRect(QRectF(m_tabs->rect()), kCornerRadius, kCornerRadius);
