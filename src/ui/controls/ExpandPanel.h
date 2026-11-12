@@ -40,6 +40,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
+    class CornerOverlay;
     void retranslateUi();
     void reposition();
     void onTabChanged(int index);
@@ -49,6 +50,7 @@ private:
     static PanelState::Page pageAt(int index);
 
     QTabWidget* m_tabs = nullptr;
+    QWidget* m_overlay = nullptr;
     QTimer* m_sizeSaveTimer = nullptr;   // 拖动时大小连续变化，停下后才写一次配置
     QSize m_savedSize;
     QPointer<QWidget> m_anchor;
