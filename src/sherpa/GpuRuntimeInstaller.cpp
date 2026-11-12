@@ -60,7 +60,11 @@ void GpuRuntime::startInstall()
 
 void GpuRuntime::cancelInstall()
 {
-    if (m_installer && m_installing) m_installer->cancelDownload();
+    if (!m_installer || !m_installing) return;
+    m_installer->cancelDownload();
+    // 取消不会有任何完成信号回来，这里自己复位，否则再也点不动下载
+    m_installing = false;
+    emit stateChanged();
 }
 
 void GpuRuntime::redetect()

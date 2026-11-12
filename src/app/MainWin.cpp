@@ -708,8 +708,8 @@ MainWin::~MainWin() {
   m_captionEngine = nullptr;
   delete m_suggestBar;
   delete m_searchPopup;
-  delete m_controlBar;
   delete m_panel;              // 连同稿子页、词典页和文件转录页；稿子控件析构时会把还没写盘的内容写掉
+  delete m_controlBar;         // 面板是横条的子窗口，必须先删面板
   delete m_snippetStore;
   ConfigManager::instance().save();
   delete ui;

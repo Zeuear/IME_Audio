@@ -153,7 +153,8 @@ void ExpandPanel::reposition()
     // 锚点窗口四周若留了透明阴影边距，要按可见主体对齐，否则面板离横条太远
     const int inset = m_anchor->property("visualInset").toInt();
     const QPoint position = FloatingWindow::placeBelow(
-        m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset), size(),
+        m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset),
+        size() - QSize(2 * kShadowMargin, 2 * kShadowMargin),   // 按可见主体摆放，阴影不算
         FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea());
     move(position - QPoint(kShadowMargin, kShadowMargin));
 }

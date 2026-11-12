@@ -264,6 +264,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     } else {
         LOG_ERROR(QString("Model load | recognizer variant unusable for %1 (kind=%2)")
                       .arg(repoId).arg(static_cast<int>(result.kind)));
+        emit loadProviderResolved({repoId, GpuProvider::Unknown, result.requestedCuda, false});
     }
 }
 
