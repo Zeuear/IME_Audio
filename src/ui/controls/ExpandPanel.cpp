@@ -25,35 +25,6 @@ constexpr int kDictionaryIndex = 1;
 constexpr int kFileIndex = 2;
 }
 
-// 盖在最上层：页面控件是直角的，会从圆角处探出来，这里把圆角外的部分擦掉，再描边
-class ExpandPanel::CornerOverlay : public QWidget
-{
-public:
-    explicit CornerOverlay(QWidget* parent) : QWidget(parent)
-    {
-        setAttribute(Qt::WA_TransparentForMouseEvents);
-    }
-
-protected:
-    void paintEvent(QPaintEvent*) override
-    {
-        QPainter p(this);
-        p.setRenderHint(QPainter::Antialiasing);
-        const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
-                                                    -kShadowMargin, -kShadowMargin);
-        QPainterPath outside;
-        outside.addRect(body);
-        QPainterPath rounded;
-        rounded.addRoundedRect(body, kCornerRadius, kCornerRadius);
-        p.setCompositionMode(QPainter::CompositionMode_Clear);
-        p.fillPath(outside.subtracted(rounded), Qt::black);
-        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        p.setPen(QPen(palette().color(QPalette::Mid), 1));
-        p.setBrush(Qt::NoBrush);
-        p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
-    }
-};
-
 int ExpandPanel::indexOf(PanelState::Page page)
 {
     switch (page) {
@@ -99,7 +70,6 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin, kShadowMargin);
     layout->addWidget(m_tabs);
-    m_overlay = new CornerOverlay(this);
     connect(m_tabs, &QTabWidget::currentChanged, this, &ExpandPanel::onTabChanged);
 
     setMouseTracking(true);
@@ -202,8 +172,10 @@ void ExpandPanel::hideEvent(QHideEvent* event)
 void ExpandPanel::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    m_overlay->setGeometry(rect());
-    m_overlay->raise();
+    // 页面控件是直角的，会从圆角处探出来，按圆角裁掉
+    QPainterPath clip;
+    clip.addRoundedRect(QRectF(m_tabs->rect()), kCornerRadius, kCornerRadius);
+    m_tabs->setMask(QRegion(clip.toFillPolygon().toPolygon()));
     if (size() != m_savedSize) m_sizeSaveTimer->start();
 }
 
@@ -276,9 +248,9 @@ void ExpandPanel::paintEvent(QPaintEvent*)
     // 阴影边距必须保证非零透明度：分层窗口里完全透明的像素不接收鼠标，
     // 边缘光标和拖拽缩放会时有时无
     p.fillRect(rect(), QColor(0, 0, 0, 1));
-    p.setPen(Qt::NoPen);
+    p.setPen(QPen(palette().color(QPalette::Mid), 1));
     p.setBrush(palette().color(QPalette::Window));
-    p.drawRoundedRect(body, kCornerRadius, kCornerRadius);
+    p.drawRoundedRect(body.adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
 }
 
 void ExpandPanel::changeEvent(QEvent* event)
