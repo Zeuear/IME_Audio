@@ -91,7 +91,6 @@ ControlBar::ControlBar(QWidget* parent)
     setAttribute(Qt::WA_AlwaysShowToolTips);   // 非激活的工具窗口默认不显示悬停提示
     setProperty("visualInset", kShadow);       // 告诉 ExpandPanel：四周这圈是透明阴影，对齐时扣掉
 
-    // 阴影轮廓内缩 kShadow 正好是主体；模糊半径和下偏量要留在这圈透明边距之内，否则被窗口边缘截断
     m_shadow = new AppleShadowEffect(this);
     m_shadow->setBlurRadius(kShadow - 3);
     m_shadow->setInnerDistance(kShadow);
