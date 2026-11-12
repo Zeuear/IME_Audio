@@ -39,8 +39,9 @@ public:
     void setToggleHint(Toggle which, const QString& hint);
 
     void setAlwaysOnTop(bool on);
-    // 听写文字发往 Google 文档的开关；绑定的文档标题显示在菜单项上
-    void setDocsBinding(const QString& title);
+    // Google 文档输出状态：未绑定时菜单项置灰，绑定或断开时可点它停止输出
+    enum class DocsLink { Unbound, Bound, Lost };
+    void setDocsLink(DocsLink link, const QString& title);
     void setWorkflowState(WorkflowState state);
 
     // 读取保存的位置并校正到屏幕内后显示（不激活）
@@ -58,8 +59,7 @@ signals:
     // 有的桌面没有托盘，退出入口放在横条的右键菜单
     void quitRequested();
     void alwaysOnTopToggled(bool on);
-    void docsOutputToggled(bool on);
-    void docsPairingCodeRequested();
+    void docsReleaseRequested();
     // 导出随程序附带的 Chrome 扩展并打开安装说明
     void docsExtensionRequested();
 
@@ -99,8 +99,8 @@ private:
     QAction* m_settingsAction = nullptr;
     QAction* m_topAction = nullptr;
     QAction* m_docsAction = nullptr;
-    QAction* m_docsPairAction = nullptr;
     QAction* m_docsInstallAction = nullptr;
+    DocsLink m_docsLink = DocsLink::Unbound;
     QString m_docsTitle;
     QAction* m_quitAction = nullptr;
     QString m_hints[3];   // 按 Toggle 的顺序

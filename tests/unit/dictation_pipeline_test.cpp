@@ -159,22 +159,22 @@ TEST_F(DictationPipelineTest, InjectingIsOnByDefault) {
     EXPECT_EQ(results, QStringList{ "hi world." });
 }
 
-TEST_F(DictationPipelineTest, InjectDisabledKeepsResultsButNeverTouchesForegroundWindow) {
+// 前台注入关掉时过滤器仍收到结果：Google 文档输出靠它把文字发往绑定的标签页
+TEST_F(DictationPipelineTest, InjectDisabledStillOffersResultToFilter) {
     wf->setInjectEnabled(false);
     wf->start();
     hear("a", "hi world");
-    // 过滤器没被调用 = 没有走向注入；结果仍发出，供实时转录页写进稿子
-    EXPECT_TRUE(injected.isEmpty());
+    EXPECT_EQ(injected, QStringList{ "hi world." });
     EXPECT_EQ(results, QStringList{ "hi world." });
 }
 
-TEST_F(DictationPipelineTest, InjectCanBeTurnedBackOnMidSession) {
+TEST_F(DictationPipelineTest, InjectToggleMidSessionKeepsEveryResult) {
     wf->start();
     wf->setInjectEnabled(false);
     hear("a", "first");
     wf->setInjectEnabled(true);
     hear("b", "second");
-    EXPECT_EQ(injected, QStringList{ "second." });
+    EXPECT_EQ(injected, (QStringList{ "first.", "second." }));
     EXPECT_EQ(results, (QStringList{ "first.", "second." }));
 }
 

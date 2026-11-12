@@ -179,7 +179,6 @@ private:
     SettingsBinder* m_settings = nullptr;
     QTimer* m_saveTimer = nullptr;   
     DocsBridge* m_docsBridge = nullptr;
-    bool m_docsOutput = false;
     QElapsedTimer m_docsWarnTimer;
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;  

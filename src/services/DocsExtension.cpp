@@ -2,6 +2,8 @@
 #include "utils/AppPaths.h"
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 namespace DocsExtension {
 
@@ -19,7 +21,12 @@ QString guideFileName()
     return QStringLiteral("guide.html");
 }
 
-bool exportTo(const QString& dir, QString* error)
+QString pairingFileName()
+{
+    return QStringLiteral("pairing.json");
+}
+
+bool exportTo(const QString& dir, const QString& token, QString* error)
 {
     const QStringList names = QDir(kResourceRoot).entryList(QDir::Files);
     if (names.isEmpty()) {
@@ -40,6 +47,13 @@ bool exportTo(const QString& dir, QString* error)
             if (error) *error = QStringLiteral("无法写入 %1，请检查磁盘空间和目录权限").arg(out.fileName());
             return false;
         }
+    }
+
+    QFile pairing(QDir(dir).filePath(pairingFileName()));
+    const QByteArray json = QJsonDocument(QJsonObject{{"token", token}}).toJson(QJsonDocument::Compact);
+    if (!pairing.open(QIODevice::WriteOnly | QIODevice::Truncate) || pairing.write(json) < 0) {
+        if (error) *error = QStringLiteral("无法写入 %1，请检查磁盘空间和目录权限").arg(pairing.fileName());
+        return false;
     }
     return true;
 }

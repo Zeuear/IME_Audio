@@ -242,8 +242,13 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
 
 void WorkflowManager::onInjectText(const QString& text) {
     if (text.isEmpty()) return;
-    if (!m_injectEnabled) return;
+    // 过滤器要先于开关：Google 文档输出写的是被绑定的标签页，不是前台窗口，
+    // "输入到前台"关掉时它仍应收到结果
     if (m_injectFilter && m_injectFilter(text)) return;
+    if (!m_injectEnabled) {
+        LOG_DEBUG("Inject skipped: inject to foreground is off");
+        return;
+    }
     m_injectQueue.enqueue(text);
     processInjectQueue();
 }

@@ -20,7 +20,7 @@ TEST(DocsExtension, ExportedFolderHasEverythingTheManifestRefersTo) {
     QTemporaryDir tmp;
     const QString dir = tmp.filePath("ext");
     QString error;
-    ASSERT_TRUE(DocsExtension::exportTo(dir, &error)) << error.toStdString();
+    ASSERT_TRUE(DocsExtension::exportTo(dir, "tok", &error)) << error.toStdString();
 
     const QJsonObject manifest = QJsonDocument::fromJson(readAll(QDir(dir).filePath("manifest.json"))).object();
     ASSERT_FALSE(manifest.isEmpty());
@@ -39,7 +39,7 @@ TEST(DocsExtension, ExportedFolderHasEverythingTheManifestRefersTo) {
 TEST(DocsExtension, ExportingAgainOverwritesOldFiles) {
     QTemporaryDir tmp;
     const QString dir = tmp.filePath("ext");
-    ASSERT_TRUE(DocsExtension::exportTo(dir, nullptr));
+    ASSERT_TRUE(DocsExtension::exportTo(dir, "tok", nullptr));
 
     const QString manifestPath = QDir(dir).filePath("manifest.json");
     const QByteArray original = readAll(manifestPath);
@@ -48,6 +48,16 @@ TEST(DocsExtension, ExportingAgainOverwritesOldFiles) {
         ASSERT_TRUE(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
         f.write("stale");
     }
-    ASSERT_TRUE(DocsExtension::exportTo(dir, nullptr));
+    ASSERT_TRUE(DocsExtension::exportTo(dir, "tok", nullptr));
     EXPECT_EQ(readAll(manifestPath), original);
+}
+
+// 扩展连接时从 pairing.json 读令牌；重新导出要换成新令牌，旧的作废
+TEST(DocsExtension, ExportWritesCurrentTokenForTheExtension) {
+    QTemporaryDir tmp;
+    const QString dir = tmp.filePath("ext");
+    const QString pairingPath = QDir(dir).filePath(DocsExtension::pairingFileName());
+    ASSERT_TRUE(DocsExtension::exportTo(dir, "first", nullptr));
+    ASSERT_TRUE(DocsExtension::exportTo(dir, "second", nullptr));
+    EXPECT_EQ(QJsonDocument::fromJson(readAll(pairingPath)).object().value("token").toString(), "second");
 }

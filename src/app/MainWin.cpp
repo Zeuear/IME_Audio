@@ -502,22 +502,17 @@ void MainWin::setupUiConnections(){
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_docsBridge = new DocsBridge(this);
-    connect(m_controlBar, &ControlBar::docsOutputToggled, this, [this](bool on) {
-        m_docsOutput = on;
-        m_docsBridge->setEnabled(on);
-        if (!on) m_controlBar->setDocsBinding({});
-    });
-    connect(m_controlBar, &ControlBar::docsPairingCodeRequested, this, [this]() {
-        QGuiApplication::clipboard()->setText(DocsBridge::pairingToken());
-        notify(NotifyLevel::Success, QStringLiteral("配对码已复制"), QStringLiteral("在文档标签页点 ImeAudio 扩展图标，粘贴到弹窗里"));
-    });
+    connect(m_controlBar, &ControlBar::docsReleaseRequested, m_docsBridge, &DocsBridge::release);
     connect(m_controlBar, &ControlBar::docsExtensionRequested, this, [this]() {
         const QString dir = DocsExtension::installDir();
+        const QString token = DocsBridge::newToken();
         QString error;
-        if (!DocsExtension::exportTo(dir, &error)) {
+        if (!DocsExtension::exportTo(dir, token, &error)) {
             notify(NotifyLevel::Error, QStringLiteral("扩展导出失败"), error);
             return;
         }
+        DocsBridge::saveToken(token);
+        m_docsBridge->setEnabled(true);
         // Chrome 的文件夹选择框里可以直接粘贴路径
         QGuiApplication::clipboard()->setText(QDir::toNativeSeparators(dir));
         QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
@@ -525,9 +520,13 @@ void MainWin::setupUiConnections(){
         notify(NotifyLevel::Success, QStringLiteral("扩展已准备好"),
                QStringLiteral("已打开扩展文件夹和安装说明，文件夹路径已复制到剪贴板"));
     });
-    connect(m_docsBridge, &DocsBridge::boundChanged, this, [this](bool, const QString& title) {
-        m_controlBar->setDocsBinding(title);
+    connect(m_docsBridge, &DocsBridge::linkChanged, this, [this]() {
+        using L = ControlBar::DocsLink;
+        m_controlBar->setDocsLink(m_docsBridge->isBound() ? L::Bound : m_docsBridge->isLost() ? L::Lost : L::Unbound,
+                                  m_docsBridge->boundTitle());
     });
+    // 没导出过扩展就不开端口
+    if (DocsBridge::hasToken()) m_docsBridge->setEnabled(true);
     connect(m_controlBar, &ControlBar::alwaysOnTopToggled, this, [this](bool on) {
         ConfigManager::instance().config().barAlwaysOnTop = on;
         ConfigManager::instance().save();
@@ -641,18 +640,18 @@ void MainWin::setupUiConnections(){
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
     connect(m_suggestBar, &SnippetSuggestBar::snippetClicked, m_snippetPaster, &SnippetPaster::paste);
     connect(m_suggestBar, &SnippetSuggestBar::visibilityChanged, m_liveOverlay, &LiveOverlay::setHideHeld);
-    // 整句就是快捷码时，用户要的是指令按钮，不把它打进目标应用。
-    // 条件与 updateSnippetSuggestions 一致：按钮出不来时仍要注入，否则这句话就丢了
+
     m_workflow->setInjectFilter([this](const QString& text) {
-        // 面板在前台时不注入：稿子页结果本来就会追加进稿子，再注入就会在它的输入框里出现两遍，
-        // 和悬浮窗"不能成为焦点窗口，否则听写结果会注入到它自己身上"是同一个问题
+        // 面板在前台时不注入
         if (m_panel && m_panel->isActiveWindow()) return true;
-        // 开启后不管发没发出去都不注入前台，否则文字会打进别的软件
-        if (m_docsOutput) {
+
+        // 输入到谷歌文档中
+        // 绑定后连接意外断开也不注入前台，否则文字会打进别的软件；用户在横条菜单停止输出后才恢复
+        if (m_docsBridge->holdsOutput()) {
             if (!m_docsBridge->sendText(text) && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
                 m_docsWarnTimer.start();
-                notify(NotifyLevel::Warning, QStringLiteral("没有绑定 Google 文档"),
-                       QStringLiteral("请在 Chrome 打开文档标签页，点击 ImeAudio 扩展图标绑定"));
+                notify(NotifyLevel::Warning, QStringLiteral("Google 文档连接已断开"),
+                       QStringLiteral("这句没有输入到前台，可在听写记录里找到。请在 Chrome 重新绑定文档，或在横条右键菜单点“停止 Google 文档输出”"));
             }
             return true;
         }

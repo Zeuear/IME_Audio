@@ -49,10 +49,8 @@ public:
     void togglePause();                      
     WorkflowState state() const;
     int pendingCount() const { return m_pending; }
-    // 返回 true 的结果不注入前台窗口，transcriptionResultReady 照常发出
+
     void setInjectFilter(std::function<bool(const QString&)> filter) { m_injectFilter = std::move(filter); }
-    // 关闭后结果一律不注入前台窗口（transcriptionResultReady 照常发出），默认开启。
-    // 用户边打字边转录时关掉，结果只进"实时转录"稿子，不会打进正在输入的软件
     void setInjectEnabled(bool enabled) { m_injectEnabled = enabled; }
     bool injectEnabled() const { return m_injectEnabled; }
 
