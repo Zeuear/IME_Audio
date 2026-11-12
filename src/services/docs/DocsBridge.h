@@ -9,7 +9,8 @@ class QWebSocketServer;
 class QWebSocket;
 
 // @brief 本机 WebSocket 服务：Chrome 扩展把听写文字写进被绑定的 Google 文档标签页。
-// 协议：扩展→程序 hello(token) 后 bound(title) / unbound / ping；程序→扩展 ready / denied / release / text(text)
+// 协议：扩展→程序 hello(token) 后 bound(title) / unbound / bindFailed(reason) / ping；
+// 程序→扩展 ready / denied / release / newDoc / bindActive / text(text)
 namespace DocsBridgeProtocol {
 inline constexpr quint16 kPort = 38617;
 // 对应 extensions/google-docs/manifest.json 的 key
@@ -55,6 +56,8 @@ public:
     ~DocsBridge() override;
 
     void setEnabled(bool on);
+    // 扩展已连上并通过令牌校验
+    bool isConnected() const { return m_authed; }
 
     // 绑定中，或绑定后连接意外断开（Lost）：两种情况听写结果都不能注入前台，否则会打进别的软件
     bool holdsOutput() const { return m_bound || m_lost; }
@@ -64,14 +67,20 @@ public:
     bool sendText(const QString& text);
     // 用户在程序里停止文档输出：通知扩展解绑，结果恢复注入前台
     void release();
+    // 让扩展新建一个 Google 文档并绑定 / 绑定 Chrome 当前标签页；扩展没连上返回 false
+    bool requestNewDoc();
+    bool requestBindActive();
 
     // 导出扩展时生成新令牌，导出成功后再 saveToken，旧令牌随之作废
     static QString newToken();
     static void saveToken(const QString& token);
     static bool hasToken();
+    static bool isCurrentToken(const QString& token);
 
 signals:
     void linkChanged();
+    // reason：notDocs（当前标签页不是 Google 文档）或扩展给出的错误信息
+    void bindFailed(const QString& reason);
 
 private:
     void onNewConnection();
@@ -79,6 +88,7 @@ private:
     void setLink(bool bound, bool lost, const QString& title);
     // 连接断开时，原先绑定着就进入 Lost
     void dropClient();
+    bool sendCommand(const QString& type);
 
     QWebSocketServer* m_server = nullptr;
     QWebSocket* m_client = nullptr;

@@ -184,7 +184,7 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
     # 随程序附带的 Chrome 扩展：资源文件交给 AUTORCC，测试导出结果
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/DocsExtension.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/docs/DocsExtension.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/extension.qrc
     # 人声分离的 STFT / ISTFT（纯 DSP，用 kissfft）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/audio/separation/MdxDsp.cpp

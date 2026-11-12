@@ -158,8 +158,7 @@ ControlBar::ControlBar(QWidget* parent)
             emit alwaysOnTopToggled(on);
         });
     });
-    m_docsAction = m_menu->addAction(QString(), this, &ControlBar::docsReleaseRequested);
-    m_docsInstallAction = m_menu->addAction(QString(), this, &ControlBar::docsExtensionRequested);
+    m_docsAction = m_menu->addAction(QString(), this, &ControlBar::docsRequested);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
@@ -322,25 +321,6 @@ void ControlBar::refreshTimerLabel()
     if (widthChanged && isVisible()) adjustSize();
 }
 
-void ControlBar::setDocsLink(DocsLink link, const QString& title)
-{
-    m_docsLink = link;
-    m_docsTitle = title;
-    m_docsAction->setEnabled(link != DocsLink::Unbound);
-    switch (link) {
-    case DocsLink::Unbound:
-        m_docsAction->setText(tr("Google Docs: Not Bound"));
-        break;
-    case DocsLink::Bound:
-        m_docsAction->setText(title.isEmpty() ? tr("Stop Google Docs Output")
-                                              : tr("Stop Google Docs Output (%1)").arg(title));
-        break;
-    case DocsLink::Lost:
-        m_docsAction->setText(tr("Stop Google Docs Output (Disconnected)"));
-        break;
-    }
-}
-
 void ControlBar::setAlwaysOnTop(bool on)
 {
     LOG_DEBUG(QString("ControlBar setAlwaysOnTop(%1) flagBefore=%2 visible=%3").arg(on).arg(bool(windowFlags() & Qt::WindowStaysOnTopHint)).arg(isVisible()));
@@ -403,8 +383,7 @@ void ControlBar::retranslateUi()
     m_settingsBtn->setToolTip(tr("Settings"));
     m_settingsAction->setText(tr("Settings"));
     m_topAction->setText(tr("Always on top"));
-    setDocsLink(m_docsLink, m_docsTitle);
-    m_docsInstallAction->setText(tr("Install Google Docs Extension..."));
+    m_docsAction->setText(tr("Google Docs..."));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }

@@ -33,7 +33,12 @@ async function render() {
 }
 
 $('toggle').onclick = async () => {
-  await ask({ type: 'toggle', tab: await currentTab() });
+  const r = await ask({ type: 'toggle', tab: await currentTab() });
+  if (r && r.error) {
+    $('err').textContent = r.error === 'notDocs' ? '当前标签页不是 Google 文档，请先打开要写入的文档。' : '绑定失败：' + r.error;
+    $('err').hidden = false;
+    return;
+  }
   window.close();
 };
 

@@ -16,11 +16,6 @@ QString installDir()
     return QDir(AppPaths::dataDir()).filePath(QStringLiteral("extensions/google-docs"));
 }
 
-QString guideFileName()
-{
-    return QStringLiteral("guide.html");
-}
-
 QString pairingFileName()
 {
     return QStringLiteral("pairing.json");
@@ -56,6 +51,13 @@ bool exportTo(const QString& dir, const QString& token, QString* error)
         return false;
     }
     return true;
+}
+
+QString readToken(const QString& dir)
+{
+    QFile f(QDir(dir).filePath(pairingFileName()));
+    if (!f.open(QIODevice::ReadOnly)) return {};
+    return QJsonDocument::fromJson(f.readAll()).object().value("token").toString();
 }
 
 } // namespace DocsExtension

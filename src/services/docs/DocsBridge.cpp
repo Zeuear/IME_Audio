@@ -73,11 +73,14 @@ void DocsBridge::onNewConnection()
 
 void DocsBridge::dropClient()
 {
+    const bool wasAuthed = m_authed;
     m_client = nullptr;
     m_authed = false;
     if (m_bound) {
         LOG_WARN("DocsBridge connection lost while a tab was bound, holding output");
         setLink(false, true, m_title);
+    } else if (wasAuthed) {
+        emit linkChanged();
     }
 }
 
@@ -97,6 +100,7 @@ void DocsBridge::onMessage(const QString& msg)
             LOG_INFO("DocsBridge pairing ok");
             // 让扩展知道配对通过，它才能在角标和弹窗里显示"已连接"
             m_client->sendTextMessage(QString::fromUtf8(DocsBridgeProtocol::typeMessage("ready")));
+            emit linkChanged();
             return;
         }
         LOG_WARN(QString("DocsBridge rejected wrong pairing token (got %1 chars)").arg(o.value("token").toString().size()));
@@ -110,6 +114,11 @@ void DocsBridge::onMessage(const QString& msg)
     }
     if (type == "bound") setLink(true, false, o.value("title").toString());
     else if (type == "unbound") setLink(false, false, {});
+    else if (type == "bindFailed") {
+        const QString reason = o.value("reason").toString().left(200);
+        LOG_WARN(QString("DocsBridge extension failed to bind: %1").arg(reason));
+        emit bindFailed(reason);
+    }
     else if (type == "ping") return;
     else LOG_DEBUG(QString("DocsBridge ignored unknown message type \"%1\"").arg(type.left(20)));
 }
@@ -134,6 +143,12 @@ bool DocsBridge::hasToken()
     return !s.value(kTokenHashKey).toByteArray().isEmpty();
 }
 
+bool DocsBridge::isCurrentToken(const QString& token)
+{
+    QSettings s(ConfigManager::configFilePath(), QSettings::IniFormat);
+    return DocsBridgeProtocol::tokenMatches(token, s.value(kTokenHashKey).toByteArray());
+}
+
 void DocsBridge::setLink(bool bound, bool lost, const QString& title)
 {
     if (m_bound == bound && m_lost == lost && m_title == title) return;
@@ -151,6 +166,18 @@ void DocsBridge::release()
         m_client->sendTextMessage(QString::fromUtf8(DocsBridgeProtocol::typeMessage("release")));
     setLink(false, false, {});
 }
+
+bool DocsBridge::sendCommand(const QString& type)
+{
+    if (!m_client || !m_authed) return false;
+    LOG_INFO(QString("DocsBridge command sent: %1").arg(type));
+    m_client->sendTextMessage(QString::fromUtf8(DocsBridgeProtocol::typeMessage(type)));
+    return true;
+}
+
+bool DocsBridge::requestNewDoc() { return sendCommand(QStringLiteral("newDoc")); }
+
+bool DocsBridge::requestBindActive() { return sendCommand(QStringLiteral("bindActive")); }
 
 bool DocsBridge::sendText(const QString& text)
 {

@@ -30,8 +30,8 @@
 #include "services/UpdateManager.h"
 #include "services/TermsLibraryManager.h"
 #include "services/ForegroundWindow.h"
-#include "services/DocsBridge.h"
-#include "services/DocsExtension.h"
+#include "services/docs/DocsBridge.h"
+#include "ui/controls/DocsSetupDialog.h"
 #include "snippets/SnippetStore.h"
 #include "services/PrefixWatcher.h"
 #include "services/SnippetPaster.h"
@@ -502,28 +502,16 @@ void MainWin::setupUiConnections(){
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_docsBridge = new DocsBridge(this);
-    connect(m_controlBar, &ControlBar::docsReleaseRequested, m_docsBridge, &DocsBridge::release);
-    connect(m_controlBar, &ControlBar::docsExtensionRequested, this, [this]() {
-        const QString dir = DocsExtension::installDir();
-        const QString token = DocsBridge::newToken();
-        QString error;
-        if (!DocsExtension::exportTo(dir, token, &error)) {
-            notify(NotifyLevel::Error, QStringLiteral("扩展导出失败"), error);
-            return;
+    connect(m_controlBar, &ControlBar::docsRequested, this, [this]() {
+        if (!m_docsDialog) {
+            m_docsDialog = new DocsSetupDialog(this);
+            m_docsDialog->setBridge(m_docsBridge);
+            connect(m_docsDialog, &DocsSetupDialog::errorOccurred, this,
+                    [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
         }
-        DocsBridge::saveToken(token);
-        m_docsBridge->setEnabled(true);
-        // Chrome 的文件夹选择框里可以直接粘贴路径
-        QGuiApplication::clipboard()->setText(QDir::toNativeSeparators(dir));
-        QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-        QDesktopServices::openUrl(QUrl::fromLocalFile(QDir(dir).filePath(DocsExtension::guideFileName())));
-        notify(NotifyLevel::Success, QStringLiteral("扩展已准备好"),
-               QStringLiteral("已打开扩展文件夹和安装说明，文件夹路径已复制到剪贴板"));
-    });
-    connect(m_docsBridge, &DocsBridge::linkChanged, this, [this]() {
-        using L = ControlBar::DocsLink;
-        m_controlBar->setDocsLink(m_docsBridge->isBound() ? L::Bound : m_docsBridge->isLost() ? L::Lost : L::Unbound,
-                                  m_docsBridge->boundTitle());
+        m_docsDialog->show();
+        m_docsDialog->raise();
+        m_docsDialog->activateWindow();
     });
     // 没导出过扩展就不开端口
     if (DocsBridge::hasToken()) m_docsBridge->setEnabled(true);
@@ -651,7 +639,7 @@ void MainWin::setupUiConnections(){
             if (!m_docsBridge->sendText(text) && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
                 m_docsWarnTimer.start();
                 notify(NotifyLevel::Warning, QStringLiteral("Google 文档连接已断开"),
-                       QStringLiteral("这句没有输入到前台，可在听写记录里找到。请在 Chrome 重新绑定文档，或在横条右键菜单点“停止 Google 文档输出”"));
+                       QStringLiteral("这句没有输入到前台，可在听写记录里找到。请重新绑定文档，或在横条右键菜单打开“Google 文档”点“停止输出”"));
             }
             return true;
         }

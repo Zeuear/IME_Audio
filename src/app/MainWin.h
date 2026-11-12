@@ -49,6 +49,7 @@ class SettingsBinder;
 class QTimer;
 class DictationHistoryModel;
 class DocsBridge;
+class DocsSetupDialog;
 
 
 namespace Ui {
@@ -179,6 +180,7 @@ private:
     SettingsBinder* m_settings = nullptr;
     QTimer* m_saveTimer = nullptr;   
     DocsBridge* m_docsBridge = nullptr;
+    DocsSetupDialog* m_docsDialog = nullptr;
     QElapsedTimer m_docsWarnTimer;
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;  

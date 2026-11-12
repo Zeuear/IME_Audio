@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include "services/DocsBridge.h"
+#include "services/docs/DocsBridge.h"
 
 TEST(DocsBridgeTest, OnlyPinnedExtensionOriginAllowed)
 {

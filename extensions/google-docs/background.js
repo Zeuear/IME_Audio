@@ -20,6 +20,15 @@ let lastError = '';
 const log = (...a) => console.log('[ImeAudio]', ...a);
 const post = (obj) => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); };
 const cmd = (tabId, method, params) => chrome.debugger.sendCommand({ tabId }, method, params || {});
+const DOCS_PREFIX = 'https://docs.google.com/document/';
+const cleanTitle = (t) => (t || '').replace(/ - Google (文档|Docs)$/i, '');
+
+// 没有 tabs 权限读不到标签页的地址和标题，调试器附加后从页面里取
+async function pageInfo(tabId) {
+  const r = await cmd(tabId, 'Runtime.evaluate', { expression: '[location.href, document.title]', returnByValue: true });
+  const [url, title] = (r && r.result && r.result.value) || ['', ''];
+  return { url, title };
+}
 
 function setBadge(text, color) {
   chrome.action.setBadgeText({ text });
@@ -102,6 +111,12 @@ async function connect() {
     } else if (msg.type === 'release') {
       log('ImeAudio asked to release the tab');
       await unbind();
+    } else if (msg.type === 'newDoc') {
+      await bindNewDoc();
+    } else if (msg.type === 'bindActive') {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const err = tab ? await bind(tab.id, true) : 'notDocs';
+      if (err) post({ type: 'bindFailed', reason: err });
     } else if (msg.type === 'text' && boundTabId === null) {
       log('text received but no tab bound, dropped');
     } else if (msg.type === 'text') {
@@ -130,23 +145,55 @@ async function connect() {
   };
 }
 
-async function bind(tab) {
+// 返回空串表示成功，否则是失败原因：notDocs 或调试器的错误信息
+async function bind(tabId, requireDocs) {
+  if (boundTabId === tabId) return '';
   if (boundTabId !== null) await unbind();
   try {
-    await chrome.debugger.attach({ tabId: tab.id }, DEBUGGER_VERSION);
-    await cmd(tab.id, 'Emulation.setFocusEmulationEnabled', { enabled: true });
+    await chrome.debugger.attach({ tabId }, DEBUGGER_VERSION);
   } catch (e) {
-    lastError = '绑定失败：' + e.message;
     log('attach failed', e.message);
-    setBadge('ERR', '#c00');
-    return;
+    return e.message;
   }
-  boundTabId = tab.id;
-  titleCache = (tab.title || '').replace(/ - Google (文档|Docs)$/i, '');
+  try {
+    titleCache = '';
+    if (requireDocs) {
+      const info = await pageInfo(tabId);
+      if (!info.url.startsWith(DOCS_PREFIX)) {
+        try { await chrome.debugger.detach({ tabId }); } catch (_) {}
+        log('tab is not a Google Doc, not bound');
+        return 'notDocs';
+      }
+      titleCache = cleanTitle(info.title);
+    }
+    await cmd(tabId, 'Emulation.setFocusEmulationEnabled', { enabled: true });
+  } catch (e) {
+    try { await chrome.debugger.detach({ tabId }); } catch (_) {}
+    log('bind failed', e.message);
+    return e.message;
+  }
+  boundTabId = tabId;
   await saveBinding();
   refreshBadge();
   await connect();
   post({ type: 'bound', title: titleCache });
+  return '';
+}
+
+// 新文档还在加载，标题要等一会儿才有
+async function bindNewDoc() {
+  const tab = await chrome.tabs.create({ url: 'https://docs.new', active: true });
+  try { await chrome.windows.update(tab.windowId, { focused: true }); } catch (_) {}
+  const err = await bind(tab.id, false);
+  if (err) { post({ type: 'bindFailed', reason: err }); return; }
+  setTimeout(async () => {
+    if (boundTabId !== tab.id) return;
+    try {
+      titleCache = cleanTitle((await pageInfo(tab.id)).title);
+      await saveBinding();
+      post({ type: 'bound', title: titleCache });
+    } catch (_) {}
+  }, 4000);
 }
 
 async function unbind() {
@@ -171,8 +218,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     if (msg.type === 'status') {
       reply({ boundTabId, link, recvCount, lastRecvAt, lastRecvLen, lastError });
     } else if (msg.type === 'toggle') {
-      if (boundTabId === msg.tab.id) await unbind(); else await bind(msg.tab);
-      reply({});
+      if (boundTabId === msg.tab.id) { await unbind(); reply({}); }
+      else reply({ error: await bind(msg.tab.id, true) });
     }
   })();
   return true;   // 异步回复

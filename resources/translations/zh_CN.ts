@@ -76,89 +76,69 @@
 <context>
     <name>ControlBar</name>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="400"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="380"/>
         <source>Start</source>
         <translation>开始</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="401"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="381"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="402"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="382"/>
         <source>Live Transcript</source>
         <translation>实时转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="403"/>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="404"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="383"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="384"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="405"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="385"/>
         <source>Always on top</source>
         <translation>始终置顶</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="332"/>
-        <source>Google Docs: Not Bound</source>
-        <translation>Google 文档：未绑定</translation>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="386"/>
+        <source>Google Docs...</source>
+        <translation>Google 文档...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="335"/>
-        <source>Stop Google Docs Output</source>
-        <translation>停止 Google 文档输出</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="336"/>
-        <source>Stop Google Docs Output (%1)</source>
-        <translation>停止 Google 文档输出（%1）</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="339"/>
-        <source>Stop Google Docs Output (Disconnected)</source>
-        <translation>停止 Google 文档输出（已断开）</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="407"/>
-        <source>Install Google Docs Extension...</source>
-        <translation>安装 Google 文档扩展...</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="408"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="387"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="414"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="393"/>
         <source>AI Enhancement</source>
         <translation>AI 增强</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="414"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="393"/>
         <source>AI Translation</source>
         <translation>AI 翻译</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="414"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="393"/>
         <source>Type into the foreground window</source>
         <translation>同时输入到前台窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="419"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="398"/>
         <source>Dictionary</source>
         <translation>词典</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="420"/>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="421"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="399"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="400"/>
         <source>File Transcription</source>
         <translation>文件转录</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="420"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="399"/>
         <source>Transcribing...</source>
         <translation>转录中...</translation>
     </message>
@@ -209,6 +189,124 @@
         <location filename="../../src/installers/CudaInstaller.cpp" line="256"/>
         <source>Installation sequence failed: </source>
         <translation type="unfinished">安装序列失败：</translation>
+    </message>
+</context>
+<context>
+    <name>DocsSetupDialog</name>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="24"/>
+        <source>Google Docs</source>
+        <translation>Google 文档</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="43"/>
+        <source>1. Install the Chrome extension (once)</source>
+        <translation>1. 安装 Chrome 扩展（只需一次）</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="55"/>
+        <source>Open chrome://extensions in Chrome&apos;s address bar</source>
+        <translation>在 Chrome 地址栏打开 chrome://extensions</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="56"/>
+        <source>Copy Address</source>
+        <translation>复制地址</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="57"/>
+        <source>Turn on &quot;Developer mode&quot; at the top right</source>
+        <translation>打开右上角的“开发者模式”</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="58"/>
+        <source>Click &quot;Load unpacked&quot; and paste the folder path</source>
+        <translation>点“加载已解压的扩展程序”，粘贴文件夹路径</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="59"/>
+        <source>Copy Path</source>
+        <translation>复制路径</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="63"/>
+        <source>2. Choose the document to write into</source>
+        <translation>2. 选择要写入的文档</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="66"/>
+        <source>New Document</source>
+        <translation>新建文档</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="67"/>
+        <source>Use Current Chrome Tab</source>
+        <translation>用 Chrome 当前标签页</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="80"/>
+        <source>Stop Output</source>
+        <translation>停止输出</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="81"/>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="121"/>
+        <source>Copied</source>
+        <translation>已复制</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="155"/>
+        <source>✓ Installed</source>
+        <translation>✓ 已安装</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="155"/>
+        <source>Waiting for the extension…</source>
+        <translation>等待扩展连接…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="161"/>
+        <source>✓ Bound</source>
+        <translation>✓ 已绑定</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="161"/>
+        <source>✓ Bound: %1</source>
+        <translation>✓ 已绑定：%1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="164"/>
+        <source>Disconnected</source>
+        <translation>已断开</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="166"/>
+        <source>Dictation is held and not typed into other apps. Bind a document again, or click &quot;Stop Output&quot; to type into the active window.</source>
+        <translation>听写结果暂不输入，以免打进别的软件。请重新绑定文档，或点“停止输出”恢复输入到前台窗口。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="169"/>
+        <source>Not bound</source>
+        <translation>未绑定</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="173"/>
+        <source>Dictation now goes into this document.</source>
+        <translation>听写的文字会写进这个文档。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="182"/>
+        <source>The current Chrome tab is not a Google Doc. Open the document in Chrome first.</source>
+        <translation>Chrome 当前标签页不是 Google 文档，请先在 Chrome 打开要写入的文档。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DocsSetupDialog.cpp" line="183"/>
+        <source>Could not bind: %1</source>
+        <translation>绑定失败：%1</translation>
     </message>
 </context>
 <context>
@@ -1608,7 +1706,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="940"/>
-        <location filename="../../src/app/MainWin.cpp" line="1240"/>
+        <location filename="../../src/app/MainWin.cpp" line="1228"/>
         <source>Polishing</source>
         <translation>润色</translation>
     </message>
@@ -1671,7 +1769,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="1016"/>
-        <location filename="../../src/app/MainWin.cpp" line="1241"/>
+        <location filename="../../src/app/MainWin.cpp" line="1229"/>
         <source>Translation</source>
         <translation>翻译</translation>
     </message>
@@ -1747,7 +1845,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="581"/>
-        <location filename="../../src/app/MainWin.cpp" line="1420"/>
+        <location filename="../../src/app/MainWin.cpp" line="1408"/>
         <source>Idle</source>
         <translation>空闲</translation>
     </message>
@@ -1762,22 +1860,22 @@
         <translation>软件设置</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1347"/>
+        <location filename="../../src/app/MainWin.cpp" line="1335"/>
         <source>Light</source>
         <translation>亮色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1349"/>
+        <location filename="../../src/app/MainWin.cpp" line="1337"/>
         <source>Dark</source>
         <translation>暗色</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1028"/>
+        <location filename="../../src/app/MainWin.cpp" line="1016"/>
         <source>English</source>
         <translation>英文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1348"/>
+        <location filename="../../src/app/MainWin.cpp" line="1336"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
@@ -1802,7 +1900,7 @@
         <translation type="unfinished">关于</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="844"/>
+        <location filename="../../src/app/MainWin.cpp" line="832"/>
         <source>该模型正在安装....</source>
         <translation>该模型正在安装....</translation>
     </message>
@@ -1847,145 +1945,145 @@
         <translation>请检查网络后重试，或前往 &quot;下载列表&quot; 查看进度</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1710"/>
+        <location filename="../../src/app/MainWin.cpp" line="1698"/>
         <source>已复制</source>
         <translation>已复制</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="545"/>
+        <location filename="../../src/app/MainWin.cpp" line="533"/>
         <source>润色失败，已使用原文</source>
         <translation>润色失败，已使用原文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="549"/>
+        <location filename="../../src/app/MainWin.cpp" line="537"/>
         <source>翻译模型安装失败</source>
         <translation>翻译模型安装失败</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="553"/>
+        <location filename="../../src/app/MainWin.cpp" line="541"/>
         <source>翻译失败，已使用原文</source>
         <translation>翻译失败，已使用原文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="577"/>
+        <location filename="../../src/app/MainWin.cpp" line="565"/>
         <source>实时字幕不可用</source>
         <translation>实时字幕不可用</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="577"/>
+        <location filename="../../src/app/MainWin.cpp" line="565"/>
         <source>流式识别模型加载或解码失败，听写不受影响</source>
         <translation>流式识别模型加载或解码失败，听写不受影响</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="596"/>
+        <location filename="../../src/app/MainWin.cpp" line="584"/>
         <source>模型加载成功</source>
         <translation>模型加载成功</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="629"/>
-        <location filename="../../src/app/MainWin.cpp" line="637"/>
+        <location filename="../../src/app/MainWin.cpp" line="617"/>
+        <location filename="../../src/app/MainWin.cpp" line="625"/>
         <source>成功</source>
         <translation>成功</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="630"/>
+        <location filename="../../src/app/MainWin.cpp" line="618"/>
         <source>冲突</source>
         <translation>冲突</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1005"/>
+        <location filename="../../src/app/MainWin.cpp" line="993"/>
         <source>Local (Sherpa)</source>
         <translation>本地识别(Sherpa)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1006"/>
+        <location filename="../../src/app/MainWin.cpp" line="994"/>
         <source>Gemini voice input</source>
         <translation>Gemini 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1007"/>
+        <location filename="../../src/app/MainWin.cpp" line="995"/>
         <source>Groq voice input</source>
         <translation>Groq 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1008"/>
+        <location filename="../../src/app/MainWin.cpp" line="996"/>
         <source>Gladia voice input</source>
         <translation>Gladia 语音直输</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1012"/>
+        <location filename="../../src/app/MainWin.cpp" line="1000"/>
         <source>Google Gemini API</source>
         <translation>Google Gemini API</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1013"/>
+        <location filename="../../src/app/MainWin.cpp" line="1001"/>
         <source>Local / custom (OpenAI compatible)</source>
         <translation>本地/自订 (OpenAI 兼容)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1014"/>
+        <location filename="../../src/app/MainWin.cpp" line="1002"/>
         <source>Ollama (local)</source>
         <translation>Ollama (本地)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1015"/>
+        <location filename="../../src/app/MainWin.cpp" line="1003"/>
         <source>Local model (offline translation)</source>
         <translation>本地模型（离线翻译）</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1019"/>
+        <location filename="../../src/app/MainWin.cpp" line="1007"/>
         <source>Smart default</source>
         <translation>智慧预设</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1020"/>
+        <location filename="../../src/app/MainWin.cpp" line="1008"/>
         <source>Business formal</source>
         <translation>商务正式</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1021"/>
+        <location filename="../../src/app/MainWin.cpp" line="1009"/>
         <source>Casual spoken</source>
         <translation>日常口语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1022"/>
+        <location filename="../../src/app/MainWin.cpp" line="1010"/>
         <source>Concise</source>
         <translation>简洁扼要</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1023"/>
+        <location filename="../../src/app/MainWin.cpp" line="1011"/>
         <source>Custom prompt</source>
         <translation>自订 Prompt</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1231"/>
+        <location filename="../../src/app/MainWin.cpp" line="1219"/>
         <source>Enable polishing first, or switch to the local model</source>
         <translation>请先开启润色，或改用本地模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1029"/>
+        <location filename="../../src/app/MainWin.cpp" line="1017"/>
         <source>Japanese</source>
         <translation type="unfinished">日语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1030"/>
+        <location filename="../../src/app/MainWin.cpp" line="1018"/>
         <source>Korean</source>
         <translation type="unfinished">韩语</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1031"/>
-        <location filename="../../src/app/MainWin.cpp" line="1060"/>
+        <location filename="../../src/app/MainWin.cpp" line="1019"/>
+        <location filename="../../src/app/MainWin.cpp" line="1048"/>
         <source>Traditional Chinese</source>
         <translation>繁体中文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1032"/>
-        <location filename="../../src/app/MainWin.cpp" line="1059"/>
+        <location filename="../../src/app/MainWin.cpp" line="1020"/>
+        <location filename="../../src/app/MainWin.cpp" line="1047"/>
         <source>Simplified Chinese</source>
         <translation>简体中文</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1239"/>
+        <location filename="../../src/app/MainWin.cpp" line="1227"/>
         <source>Recognition</source>
         <translation>声音识别</translation>
     </message>
@@ -1995,193 +2093,193 @@
         <translation>已取消下载</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="925"/>
+        <location filename="../../src/app/MainWin.cpp" line="913"/>
         <source>当前模型不支持 GPU</source>
         <translation>当前模型不支持 GPU</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="925"/>
+        <location filename="../../src/app/MainWin.cpp" line="913"/>
         <source>继续使用 CPU 运行</source>
         <translation>继续使用 CPU 运行</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="936"/>
+        <location filename="../../src/app/MainWin.cpp" line="924"/>
         <source>正在下载 GPU 版</source>
         <translation>正在下载 GPU 版</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="937"/>
+        <location filename="../../src/app/MainWin.cpp" line="925"/>
         <source>约 %1 GB，下载期间继续使用 CPU，完成后自动切换</source>
         <translation>约 %1 GB，下载期间继续使用 CPU，完成后自动切换</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1111"/>
+        <location filename="../../src/app/MainWin.cpp" line="1099"/>
         <source>Quality not evaluated</source>
         <translation>质量未评测</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1128"/>
+        <location filename="../../src/app/MainWin.cpp" line="1116"/>
         <source>Auto</source>
         <translation>自动</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1154"/>
+        <location filename="../../src/app/MainWin.cpp" line="1142"/>
         <source>Source and target are the same language</source>
         <translation>源语言和目标语言相同</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1157"/>
+        <location filename="../../src/app/MainWin.cpp" line="1145"/>
         <source>Cannot detect the source language; choose one manually</source>
         <translation>无法确定源语言，请手动选择</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1158"/>
+        <location filename="../../src/app/MainWin.cpp" line="1146"/>
         <source>This language pair is not supported</source>
         <translation>不支持该语言方向</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1161"/>
+        <location filename="../../src/app/MainWin.cpp" line="1149"/>
         <source>Model ready</source>
         <translation>模型已就绪</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1167"/>
-        <location filename="../../src/app/MainWin.cpp" line="1167"/>
+        <location filename="../../src/app/MainWin.cpp" line="1155"/>
+        <location filename="../../src/app/MainWin.cpp" line="1155"/>
         <source>Downloading model...</source>
         <translation>正在下载模型...</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1171"/>
+        <location filename="../../src/app/MainWin.cpp" line="1159"/>
         <source>Model download required: %1 MB</source>
         <translation>需要下载模型：%1 MB</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1198"/>
+        <location filename="../../src/app/MainWin.cpp" line="1186"/>
         <source>Not available in this version yet</source>
         <translation>当前版本暂未提供</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1242"/>
+        <location filename="../../src/app/MainWin.cpp" line="1230"/>
         <source>Output</source>
         <translation>输出</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1250"/>
+        <location filename="../../src/app/MainWin.cpp" line="1238"/>
         <source>Not available with the local translation engine</source>
         <translation>本地翻译引擎下不可用</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1253"/>
+        <location filename="../../src/app/MainWin.cpp" line="1241"/>
         <source>Turn on AI Enhancement first, or switch to the local model</source>
         <translation>请先开启 AI 增强，或切换到本地模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1344"/>
+        <location filename="../../src/app/MainWin.cpp" line="1332"/>
         <source>Follow system</source>
         <translation>跟随系统</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1420"/>
+        <location filename="../../src/app/MainWin.cpp" line="1408"/>
         <source>Recording</source>
         <translation>录音中</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1437"/>
+        <location filename="../../src/app/MainWin.cpp" line="1425"/>
         <source>本地模型未安装</source>
         <translation>本地模型未安装</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1437"/>
+        <location filename="../../src/app/MainWin.cpp" line="1425"/>
         <source>请先在&quot;本地识别&quot;页下载当前语言的模型</source>
         <translation>请先在&quot;本地识别&quot;页下载当前语言的模型</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1443"/>
+        <location filename="../../src/app/MainWin.cpp" line="1431"/>
         <source>模型正在下载</source>
         <translation>模型正在下载</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1443"/>
+        <location filename="../../src/app/MainWin.cpp" line="1431"/>
         <source>下载完成后即可开始听写</source>
         <translation>下载完成后即可开始听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1580"/>
+        <location filename="../../src/app/MainWin.cpp" line="1568"/>
         <source>Update Available</source>
         <translation type="unfinished">更新可用</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1581"/>
+        <location filename="../../src/app/MainWin.cpp" line="1569"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">新版本（%1）已发布！</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1582"/>
+        <location filename="../../src/app/MainWin.cpp" line="1570"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">您现在想下载并安装吗？</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1591"/>
+        <location filename="../../src/app/MainWin.cpp" line="1579"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">不要再提醒我了</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1609"/>
+        <location filename="../../src/app/MainWin.cpp" line="1597"/>
         <source>Restart Required</source>
         <translation type="unfinished">需要重启</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1610"/>
+        <location filename="../../src/app/MainWin.cpp" line="1598"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">更新已成功下载。应用程序即将关闭并重新启动以应用更新。是否继续？</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1619"/>
+        <location filename="../../src/app/MainWin.cpp" line="1607"/>
         <source>更新失败</source>
         <translation type="unfinished">更新失败</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1660"/>
+        <location filename="../../src/app/MainWin.cpp" line="1648"/>
         <source>开始听写</source>
         <translation>开始听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1661"/>
+        <location filename="../../src/app/MainWin.cpp" line="1649"/>
         <source>停止听写</source>
         <translation>停止听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1665"/>
+        <location filename="../../src/app/MainWin.cpp" line="1653"/>
         <source>识别语言</source>
         <translation>识别语言</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1686"/>
+        <location filename="../../src/app/MainWin.cpp" line="1674"/>
         <source>识别后端</source>
         <translation>识别后端</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1696"/>
+        <location filename="../../src/app/MainWin.cpp" line="1684"/>
         <source>实时字幕</source>
         <translation>实时字幕</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1703"/>
+        <location filename="../../src/app/MainWin.cpp" line="1691"/>
         <source>最近听写</source>
         <translation>最近听写</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1713"/>
+        <location filename="../../src/app/MainWin.cpp" line="1701"/>
         <source>暂无记录</source>
         <translation>暂无记录</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1716"/>
+        <location filename="../../src/app/MainWin.cpp" line="1704"/>
         <source>设置</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1717"/>
+        <location filename="../../src/app/MainWin.cpp" line="1705"/>
         <source>退出</source>
         <translation>退出</translation>
     </message>

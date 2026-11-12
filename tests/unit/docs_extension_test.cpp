@@ -5,7 +5,7 @@
 #include <QJsonObject>
 #include <QTemporaryDir>
 
-#include "services/DocsExtension.h"
+#include "services/docs/DocsExtension.h"
 
 namespace {
 QByteArray readAll(const QString& path)
@@ -15,7 +15,7 @@ QByteArray readAll(const QString& path)
 }
 }
 
-// 导出的文件夹必须能被 Chrome 直接加载：manifest 引用到的文件都在，安装说明也在
+// 导出的文件夹必须能被 Chrome 直接加载：manifest 引用到的文件都在
 TEST(DocsExtension, ExportedFolderHasEverythingTheManifestRefersTo) {
     QTemporaryDir tmp;
     const QString dir = tmp.filePath("ext");
@@ -32,7 +32,6 @@ TEST(DocsExtension, ExportedFolderHasEverythingTheManifestRefersTo) {
     EXPECT_TRUE(QFile::exists(QDir(dir).filePath(popup)));
     // 弹窗页面引用的脚本
     EXPECT_TRUE(QFile::exists(QDir(dir).filePath("popup.js")));
-    EXPECT_TRUE(QFile::exists(QDir(dir).filePath(DocsExtension::guideFileName())));
 }
 
 // 程序升级后再点一次菜单就是原地更新，旧文件必须能被覆盖
@@ -56,8 +55,7 @@ TEST(DocsExtension, ExportingAgainOverwritesOldFiles) {
 TEST(DocsExtension, ExportWritesCurrentTokenForTheExtension) {
     QTemporaryDir tmp;
     const QString dir = tmp.filePath("ext");
-    const QString pairingPath = QDir(dir).filePath(DocsExtension::pairingFileName());
     ASSERT_TRUE(DocsExtension::exportTo(dir, "first", nullptr));
     ASSERT_TRUE(DocsExtension::exportTo(dir, "second", nullptr));
-    EXPECT_EQ(QJsonDocument::fromJson(readAll(pairingPath)).object().value("token").toString(), "second");
+    EXPECT_EQ(DocsExtension::readToken(dir), "second");
 }

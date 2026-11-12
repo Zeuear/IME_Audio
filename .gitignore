@@ -4,7 +4,7 @@ build*/
 app/*
 
 etc/
-docs/
+/docs/
 design/
 
 # C++ objects and libs
