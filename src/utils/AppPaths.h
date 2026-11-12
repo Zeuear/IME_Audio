@@ -26,6 +26,8 @@ QString transcriptFile();
 QString toolsDir();
 // 链接转录下载的音频
 QString linkDownloadsDir();
+// 人声分离输出的临时 WAV；程序启动和退出时清空
+QString separatedDir();
 
 QString sherpaRoot();
 // 目录不存在时会创建

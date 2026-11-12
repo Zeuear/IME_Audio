@@ -33,6 +33,44 @@ AudioFileDecoder::Result failed(const QString& cause, int code = 0)
     return {{}, cause};
 }
 
+struct OpenedAudio {
+    std::unique_ptr<AVFormatContext, FormatCloser> fmt;
+    std::unique_ptr<AVCodecContext, CodecFreer> dec;
+    int streamIndex = -1;
+    QString error;
+};
+
+// 打开文件并准备好音频流解码器；其它流（m4a 的封面图、视频画面）直接丢弃，省去无用的解复用
+OpenedAudio openAudio(const QString& path)
+{
+    OpenedAudio r;
+    // FFmpeg 在 Windows 上按 UTF-8 解释路径，中文文件名可直接打开
+    AVFormatContext* rawFmt = nullptr;
+    int ret = avformat_open_input(&rawFmt, path.toUtf8().constData(), nullptr, nullptr);
+    if (ret < 0) { r.error = failed(QStringLiteral("无法打开文件"), ret).error; return r; }
+    r.fmt.reset(rawFmt);
+
+    if ((ret = avformat_find_stream_info(r.fmt.get(), nullptr)) < 0) {
+        r.error = failed(QStringLiteral("无法识别文件格式"), ret).error;
+        return r;
+    }
+
+    const AVCodec* codec = nullptr;
+    r.streamIndex = av_find_best_stream(r.fmt.get(), AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
+    if (r.streamIndex < 0) { r.error = failed(QStringLiteral("文件中没有音频"), r.streamIndex).error; return r; }
+
+    r.dec.reset(avcodec_alloc_context3(codec));
+    avcodec_parameters_to_context(r.dec.get(), r.fmt->streams[r.streamIndex]->codecpar);
+    if ((ret = avcodec_open2(r.dec.get(), codec, nullptr)) < 0) {
+        r.error = failed(QStringLiteral("不支持该音频编码"), ret).error;
+        return r;
+    }
+
+    for (unsigned i = 0; i < r.fmt->nb_streams; ++i)
+        if (int(i) != r.streamIndex) r.fmt->streams[i]->discard = AVDISCARD_ALL;
+    return r;
+}
+
 }
 
 bool AudioFileDecoder::isAvailable()
@@ -43,27 +81,12 @@ bool AudioFileDecoder::isAvailable()
 AudioFileDecoder::Result AudioFileDecoder::decode(const QString& path, int targetSampleRate,
                                                   const std::atomic_bool* cancel)
 {
-    // FFmpeg 在 Windows 上按 UTF-8 解释路径，中文文件名可直接打开
-    AVFormatContext* rawFmt = nullptr;
-    int ret = avformat_open_input(&rawFmt, path.toUtf8().constData(), nullptr, nullptr);
-    if (ret < 0) return failed(QStringLiteral("无法打开文件"), ret);
-    std::unique_ptr<AVFormatContext, FormatCloser> fmt(rawFmt);
-
-    if ((ret = avformat_find_stream_info(fmt.get(), nullptr)) < 0)
-        return failed(QStringLiteral("无法识别文件格式"), ret);
-
-    const AVCodec* codec = nullptr;
-    const int streamIndex = av_find_best_stream(fmt.get(), AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
-    if (streamIndex < 0) return failed(QStringLiteral("文件中没有音频"), streamIndex);
-
-    std::unique_ptr<AVCodecContext, CodecFreer> dec(avcodec_alloc_context3(codec));
-    avcodec_parameters_to_context(dec.get(), fmt->streams[streamIndex]->codecpar);
-    if ((ret = avcodec_open2(dec.get(), codec, nullptr)) < 0)
-        return failed(QStringLiteral("不支持该音频编码"), ret);
-
-    // 只读音频流，其它流（m4a 的封面图、视频文件的画面）直接丢弃，省去无用的解复用
-    for (unsigned i = 0; i < fmt->nb_streams; ++i)
-        if (int(i) != streamIndex) fmt->streams[i]->discard = AVDISCARD_ALL;
+    OpenedAudio in = openAudio(path);
+    if (!in.error.isEmpty()) return {{}, in.error};
+    int streamIndex = in.streamIndex;
+    auto& dec = in.dec;
+    auto& fmt = in.fmt;
+    int ret = 0;
 
     AVChannelLayout mono = AV_CHANNEL_LAYOUT_MONO;
     SwrContext* rawSwr = nullptr;
@@ -112,6 +135,65 @@ AudioFileDecoder::Result AudioFileDecoder::decode(const QString& path, int targe
     return r;
 }
 
+AudioFileDecoder::StereoResult AudioFileDecoder::decodeStereo(const QString& path, int sampleRate,
+                                                              const std::atomic_bool* cancel)
+{
+    StereoResult r;
+    OpenedAudio in = openAudio(path);
+    if (!in.error.isEmpty()) { r.error = in.error; return r; }
+
+    AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
+    SwrContext* rawSwr = nullptr;
+    int ret = swr_alloc_set_opts2(&rawSwr, &stereo, AV_SAMPLE_FMT_FLTP, sampleRate,
+                                  &in.dec->ch_layout, in.dec->sample_fmt, in.dec->sample_rate, 0, nullptr);
+    std::unique_ptr<SwrContext, SwrFreer> swr(rawSwr);
+    if (ret < 0 || (ret = swr_init(swr.get())) < 0) {
+        r.error = failed(QStringLiteral("音频重采样初始化失败"), ret).error;
+        return r;
+    }
+
+    if (in.fmt->duration > 0) {
+        const size_t expect = size_t(double(in.fmt->duration) / AV_TIME_BASE * sampleRate) + sampleRate;
+        r.left.reserve(expect);
+        r.right.reserve(expect);
+    }
+
+    std::unique_ptr<AVPacket, PacketFreer> pkt(av_packet_alloc());
+    std::unique_ptr<AVFrame, FrameFreer> frame(av_frame_alloc());
+
+    auto convert = [&](const uint8_t** inData, int inCount) {
+        const int maxOut = swr_get_out_samples(swr.get(), inCount);
+        if (maxOut <= 0) return;
+        const size_t old = r.left.size();
+        r.left.resize(old + maxOut);
+        r.right.resize(old + maxOut);
+        uint8_t* planes[2] = {reinterpret_cast<uint8_t*>(r.left.data() + old),
+                              reinterpret_cast<uint8_t*>(r.right.data() + old)};
+        const int got = swr_convert(swr.get(), planes, maxOut, inData, inCount);
+        r.left.resize(old + qMax(0, got));
+        r.right.resize(old + qMax(0, got));
+    };
+    auto drainFrames = [&]() {
+        while (avcodec_receive_frame(in.dec.get(), frame.get()) == 0) {
+            convert(const_cast<const uint8_t**>(frame->extended_data), frame->nb_samples);
+            av_frame_unref(frame.get());
+        }
+    };
+
+    while (av_read_frame(in.fmt.get(), pkt.get()) >= 0) {
+        if (cancel && cancel->load()) { r.left.clear(); r.right.clear(); r.error = QStringLiteral("已取消"); return r; }
+        if (pkt->stream_index == in.streamIndex && avcodec_send_packet(in.dec.get(), pkt.get()) == 0)
+            drainFrames();
+        av_packet_unref(pkt.get());
+    }
+    avcodec_send_packet(in.dec.get(), nullptr);
+    drainFrames();
+    convert(nullptr, 0);
+
+    if (r.left.empty()) r.error = QStringLiteral("没有解码出音频数据");
+    return r;
+}
+
 #else
 
 bool AudioFileDecoder::isAvailable()
@@ -122,6 +204,13 @@ bool AudioFileDecoder::isAvailable()
 AudioFileDecoder::Result AudioFileDecoder::decode(const QString&, int, const std::atomic_bool*)
 {
     return {{}, QStringLiteral("当前平台未启用 FFmpeg 解码")};
+}
+
+AudioFileDecoder::StereoResult AudioFileDecoder::decodeStereo(const QString&, int, const std::atomic_bool*)
+{
+    StereoResult r;
+    r.error = QStringLiteral("当前平台未启用 FFmpeg 解码");
+    return r;
 }
 
 #endif

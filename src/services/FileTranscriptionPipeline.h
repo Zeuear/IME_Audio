@@ -16,6 +16,7 @@ class QNetworkAccessManager;
 class TranscriptionService;
 class SherpaManager;
 class YtDlpManager;
+class SeparationModelManager;
 
 // @brief 协调文件下载、解码、分段转录和翻译。
 class FileTranscriptionPipeline : public QObject {
@@ -24,6 +25,8 @@ public:
     enum class State {
         Idle,
         Decoding,
+        DownloadingModel,   // done = 下载百分比，total = 100
+        Separating,         // done / total = 已处理块数 / 总块数
         Segmenting,
         Transcribing,
         Completed,
@@ -44,12 +47,14 @@ public:
         quint64 runToken = 0;
         QString path;
         AppConfig config;
+        bool separateVocals = false;   // 先分离人声，再转录人声
     };
 
     explicit FileTranscriptionPipeline(QNetworkAccessManager* networkManager,
                                        TranscriptionService* transcription,
                                        SherpaManager* sherpa,
                                        QObject* parent = nullptr);
+    ~FileTranscriptionPipeline() override;
 
     static bool isDownloadSupported();
     quint64 enqueueDownload(const QString& url);
@@ -71,6 +76,8 @@ signals:
     void segmentReady(int row, const SubtitleCue& cue, const QString& text);
     void translationReady(quint64 runToken, int cue, const QString& language, const QString& text);
     void translationFailed(quint64 runToken, const QString& cause);
+    // 人声分离完成：path 是临时 WAV，所有权交给界面（用完需删除）
+    void vocalsReady(int row, const QString& path);
     void fileFinished(int row, FileTranscriptionPipeline::Outcome outcome, const QString& error);
 
 private:
@@ -86,6 +93,7 @@ private:
     };
 
     void startDecode();
+    void startSeparateDecode();
     void startQtDecode();
     void readQtDecodeBuffer();
     void finishQtDecode();
@@ -104,6 +112,8 @@ private:
     TranscriptionService* m_transcription = nullptr;
     SherpaManager* m_sherpa = nullptr;
     YtDlpManager* m_downloader = nullptr;
+    SeparationModelManager* m_separationModel = nullptr;
+    QString m_vocalsPath;   // 本次分离输出；非空表示解码结果来自人声
     QAudioDecoder* m_decoder = nullptr;
     QFutureWatcher<AudioFileDecoder::Result> m_decodeWatcher;
     QFutureWatcher<SegmentationResult> m_segmentationWatcher;

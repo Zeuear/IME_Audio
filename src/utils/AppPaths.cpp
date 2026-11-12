@@ -71,6 +71,11 @@ QString linkDownloadsDir()
     return QDir(dataDir()).absoluteFilePath("link_downloads");
 }
 
+QString separatedDir()
+{
+    return QDir(dataDir()).absoluteFilePath("separated");
+}
+
 QString sherpaRoot()
 {
     return QDir(dataDir()).absoluteFilePath("sherpa");

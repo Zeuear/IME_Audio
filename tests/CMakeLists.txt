@@ -82,6 +82,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/firewall_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_extension_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/mdx_dsp_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -185,6 +186,8 @@ set(TEST_DEPS
     # 随程序附带的 Chrome 扩展：资源文件交给 AUTORCC，测试导出结果
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/DocsExtension.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/extension.qrc
+    # 人声分离的 STFT / ISTFT（纯 DSP，用 kissfft）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/audio/separation/MdxDsp.cpp
 )
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
@@ -212,6 +215,7 @@ if(WIN32)
         Qt6::Concurrent
         Qt6::CorePrivate
         Qt6::Svg
+        kissfft
         imm32
     )
 elseif(APPLE)
@@ -226,6 +230,7 @@ elseif(APPLE)
         Qt6::Concurrent
         Qt6::CorePrivate
         Qt6::Svg
+        kissfft
         "-framework ApplicationServices"
         "-framework AVFoundation"
         "-framework AppKit"
@@ -243,6 +248,7 @@ else()
         Qt6::Concurrent
         Qt6::CorePrivate
         Qt6::Svg
+        kissfft
     )
 endif()
 

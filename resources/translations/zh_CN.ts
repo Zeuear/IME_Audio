@@ -266,6 +266,18 @@
         <source>Preparing download...</source>
         <translation>准备下载…</translation>
     </message>
+    <message>
+        <source>Downloading vocal model... %1%</source>
+        <translation>正在下载人声分离模型… %1%</translation>
+    </message>
+    <message>
+        <source>Separating vocals %1%</source>
+        <translation>正在分离人声 %1%</translation>
+    </message>
+    <message>
+        <source>Separating vocals...</source>
+        <translation>正在分离人声…</translation>
+    </message>
 </context>
 <context>
     <name>FileTranscribeWidget</name>
@@ -470,6 +482,26 @@
         <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1111"/>
         <source>Exported %1 files to %2</source>
         <translation>已导出 %1 个文件到 %2</translation>
+    </message>
+    <message>
+        <source>Separate vocals</source>
+        <translation>分离人声</translation>
+    </message>
+    <message>
+        <source>Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files</source>
+        <translation>转录前先去掉音乐和背景声。首次使用会下载约 67 MB 的模型；长音频会比较慢</translation>
+    </message>
+    <message>
+        <source>Vocal separation is not available on this platform</source>
+        <translation>当前平台不支持分离人声</translation>
+    </message>
+    <message>
+        <source>Vocals</source>
+        <translation>人声</translation>
+    </message>
+    <message>
+        <source>Also export the separated vocals as name.vocals.wav</source>
+        <translation>同时导出分离出的人声，文件名为 名称.vocals.wav</translation>
     </message>
 </context>
 <context>

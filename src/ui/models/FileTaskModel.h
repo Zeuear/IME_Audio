@@ -7,7 +7,7 @@
 // 一个待转录文件及其进度/结果。链接任务先处于 Downloading，下载完成后 path 指向本地音频，之后与普通文件一样
 struct FileTask {
     // Downloading 放在最后，保持其余状态的数值不变
-    enum class State { Pending, Decoding, Transcribing, Done, Failed, NoSpeech, Downloading };
+    enum class State { Pending, Decoding, Transcribing, Done, Failed, NoSpeech, Downloading, DownloadingModel, Separating };
 
     QString path;
     QString url;          // 非空表示链接任务
@@ -22,6 +22,7 @@ struct FileTask {
     QString text;
     QList<SubtitleCue> cues;   // 按 VAD 分段记录的带时间字幕，导出 SRT 用
     QString error;
+    QString vocalsPath;   // 分离出的人声 WAV（临时文件）；没开分离或还没分离完时为空
 
     // 译文与 cues 一一对应，空串表示还没回来或翻译失败；云端译文可能乱序回来，按下标填
     QStringList translations;
@@ -71,6 +72,9 @@ public:
     void reset(int row);
     void setState(int row, FileTask::State state);
     void setProgress(int row, int done, int total);
+    // 分离人声阶段（下载模型 / 分离）的进度
+    void setStageProgress(int row, FileTask::State state, int done, int total);
+    void setVocalsPath(int row, const QString& path);
     void appendText(int row, const QString& text);
     void appendCue(int row, const SubtitleCue& cue);
     void setFailed(int row, const QString& error);

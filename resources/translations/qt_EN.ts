@@ -266,6 +266,18 @@
         <source>Preparing download...</source>
         <translation>Preparing download...</translation>
     </message>
+    <message>
+        <source>Downloading vocal model... %1%</source>
+        <translation>Downloading vocal model... %1%</translation>
+    </message>
+    <message>
+        <source>Separating vocals %1%</source>
+        <translation>Separating vocals %1%</translation>
+    </message>
+    <message>
+        <source>Separating vocals...</source>
+        <translation>Separating vocals...</translation>
+    </message>
 </context>
 <context>
     <name>FileTranscribeWidget</name>
@@ -470,6 +482,26 @@
         <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="1111"/>
         <source>Exported %1 files to %2</source>
         <translation>Exported %1 files to %2</translation>
+    </message>
+    <message>
+        <source>Separate vocals</source>
+        <translation>Separate vocals</translation>
+    </message>
+    <message>
+        <source>Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files</source>
+        <translation>Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files</translation>
+    </message>
+    <message>
+        <source>Vocal separation is not available on this platform</source>
+        <translation>Vocal separation is not available on this platform</translation>
+    </message>
+    <message>
+        <source>Vocals</source>
+        <translation>Vocals</translation>
+    </message>
+    <message>
+        <source>Also export the separated vocals as name.vocals.wav</source>
+        <translation>Also export the separated vocals as name.vocals.wav</translation>
     </message>
 </context>
 <context>

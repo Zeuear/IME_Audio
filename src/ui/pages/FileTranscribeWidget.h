@@ -61,6 +61,8 @@ private:
     void updateAnimTimer();
     static QString exportBaseName(const FileTask& task);
     void removeSelected();
+    // 分离出的人声是临时大文件，任务被清掉或重跑时立刻删除
+    void discardVocals(int row);
     void clearAll();
     void showContextMenu(const QPoint& pos);
     void updatePreview();
@@ -110,6 +112,8 @@ private:
     QPushButton* m_exportBtn = nullptr;
     AnimatedCheckBox* m_exportTxtCheck = nullptr;
     AnimatedCheckBox* m_exportSrtCheck = nullptr;
+    AnimatedCheckBox* m_exportVocalsCheck = nullptr;
+    AnimatedCheckBox* m_separateCheck = nullptr;   // 转录前先分离人声
     AnimatedCheckBox* m_exportTranslationCheck = nullptr;
     QPushButton* m_copyBtn = nullptr;
     QPushButton* m_copyTranslationBtn = nullptr;

@@ -54,6 +54,8 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     case State::Pending:      glyph = QStringLiteral("○"); break;
     case State::Decoding:
     case State::Downloading:
+    case State::DownloadingModel:
+    case State::Separating:
     case State::Transcribing: break;
     }
     constexpr int kPad = 10;
@@ -62,7 +64,9 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     bool percent = false;
     // 下载和转录都是"已完成/总数"；下载在拿到第一条进度前 total 为 0，按未知进度处理
     const int progressTotal = index.data(FileTaskModel::TotalRole).toInt();
-    const bool determinate = state == State::Transcribing || (state == State::Downloading && progressTotal > 0);
+    const bool determinate = state == State::Transcribing
+                             || ((state == State::Downloading || state == State::DownloadingModel
+                                  || state == State::Separating) && progressTotal > 0);
     if (determinate) {
         const int total = progressTotal;
         const int done = index.data(FileTaskModel::ProgressRole).toInt();
@@ -103,7 +107,8 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     p->drawText(QRect(left, card.top() + 50, subWidth, 18), Qt::AlignLeft | Qt::AlignVCenter, sub);
 
     // 进度条（仅处理中显示）
-    if (state == State::Decoding || state == State::Transcribing || state == State::Downloading) {
+    if (state == State::Decoding || state == State::Transcribing || state == State::Downloading
+        || state == State::DownloadingModel || state == State::Separating) {
         const QRectF track(left, card.bottom() - 14, fullWidth, 5);
         QPainterPath trackPath;
         trackPath.addRoundedRect(track, 2.5, 2.5);

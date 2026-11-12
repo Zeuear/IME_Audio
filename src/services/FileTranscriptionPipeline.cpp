@@ -5,12 +5,16 @@
 #include <QAudioFormat>
 #include <QFile>
 #include <QPointer>
+#include <QDir>
 #include <QUrl>
+#include <QUuid>
 #include <QtConcurrent/QtConcurrentRun>
 #include <utility>
 #include <vector>
 
 #include "services/TranscriptionService.h"
+#include "audio/separation/MdxSeparator.h"
+#include "services/media/SeparationModelManager.h"
 #include "services/media/YtDlpManager.h"
 #include "sherpa/SherpaManager.h"
 #include "utils/AppPaths.h"
@@ -31,7 +35,11 @@ FileTranscriptionPipeline::FileTranscriptionPipeline(QNetworkAccessManager* netw
     , m_transcription(transcription)
     , m_sherpa(sherpa)
     , m_downloader(new YtDlpManager(networkManager, this))
+    , m_separationModel(new SeparationModelManager(networkManager, this))
 {
+    // 上次异常退出残留的人声文件已没有任务引用
+    QDir(AppPaths::separatedDir()).removeRecursively();
+
     connect(m_downloader, &YtDlpManager::toolStatus, this, &FileTranscriptionPipeline::downloadToolStatus);
     connect(m_downloader, &YtDlpManager::taskTitle, this, &FileTranscriptionPipeline::downloadTitle);
     connect(m_downloader, &YtDlpManager::taskFinished, this,
@@ -40,12 +48,29 @@ FileTranscriptionPipeline::FileTranscriptionPipeline(QNetworkAccessManager* netw
             });
     connect(m_downloader, &YtDlpManager::taskProgress, this, &FileTranscriptionPipeline::downloadProgress);
 
+    connect(m_separationModel, &SeparationModelManager::progress, this, [this](int percent) {
+        if (m_active && !m_cancelled) setState(State::DownloadingModel, percent, 100);
+    });
+    connect(m_separationModel, &SeparationModelManager::ready, this, [this]() {
+        if (m_active && !m_cancelled) startSeparateDecode();
+    });
+    connect(m_separationModel, &SeparationModelManager::failed, this, [this](const QString& error) {
+        if (m_active && !m_cancelled) finish(Outcome::Failed, error);
+    });
+
     connect(&m_decodeWatcher, &QFutureWatcher<AudioFileDecoder::Result>::finished,
             this, &FileTranscriptionPipeline::onFileDecoded);
     connect(&m_segmentationWatcher, &QFutureWatcher<SegmentationResult>::finished,
             this, &FileTranscriptionPipeline::onSegmentsReady);
     connect(m_transcription, &TranscriptionService::fileSegmentFinished,
             this, &FileTranscriptionPipeline::onSegmentFinished);
+}
+
+FileTranscriptionPipeline::~FileTranscriptionPipeline()
+{
+    if (m_decodeCancel) *m_decodeCancel = true;
+    m_decodeWatcher.waitForFinished();
+    QDir(AppPaths::separatedDir()).removeRecursively();
 }
 
 quint64 FileTranscriptionPipeline::enqueueDownload(const QString& url)
@@ -85,6 +110,17 @@ bool FileTranscriptionPipeline::start(const Job& job)
     m_segments.clear();
     m_nextSegment = 0;
     m_cueCount = 0;
+    m_vocalsPath.clear();
+
+    if (job.separateVocals) {
+        if (!AudioFileDecoder::isAvailable()) {
+            m_active = false;
+            return false;
+        }
+        setState(State::Separating, 0, 0);
+        m_separationModel->ensure();
+        return true;
+    }
     setState(State::Decoding);
     startDecode();
     return true;
@@ -102,6 +138,51 @@ void FileTranscriptionPipeline::startDecode()
     const auto cancelFlag = m_decodeCancel;
     m_decodeWatcher.setFuture(QtConcurrent::run([path, cancelFlag]() {
         return AudioFileDecoder::decode(path, kSampleRate, cancelFlag.get());
+    }));
+}
+
+void FileTranscriptionPipeline::startSeparateDecode()
+{
+    setState(State::Separating, 0, 0);
+    QDir().mkpath(AppPaths::separatedDir());
+    m_vocalsPath = QDir(AppPaths::separatedDir())
+                       .absoluteFilePath(QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".wav"));
+
+    m_decodeCancel = std::make_shared<std::atomic_bool>(false);
+    const QString path = m_job.path;
+    const QString vocalsPath = m_vocalsPath;
+    const QString modelPath = SeparationModelManager::modelPath();
+    const int threads = m_job.config.sherpa.threads;
+    const auto cancelFlag = m_decodeCancel;
+    QPointer<FileTranscriptionPipeline> self(this);
+
+    // 解码 → 分离 → 写 WAV → 把人声降采样成转录用的 16 kHz 单声道。
+    // 全程在一个后台任务里完成，之后与普通文件走同一条路径
+    m_decodeWatcher.setFuture(QtConcurrent::run([=]() -> AudioFileDecoder::Result {
+        constexpr double kMaxSeparateSec = 90 * 60;   // 双声道浮点 + 人声两份，限制内存占用
+        AudioFileDecoder::StereoResult decoded =
+            AudioFileDecoder::decodeStereo(path, MdxSeparator::kSampleRate, cancelFlag.get());
+        if (!decoded.error.isEmpty()) return {{}, decoded.error};
+        if (double(decoded.left.size()) / MdxSeparator::kSampleRate > kMaxSeparateSec)
+            return {{}, QStringLiteral("音频超过 90 分钟，无法分离人声")};
+
+        MdxSeparator::Stereo mix{std::move(decoded.left), std::move(decoded.right)};
+        MdxSeparator::Result separated = MdxSeparator::separateVocals(
+            modelPath, mix, threads, cancelFlag.get(), [self](int done, int total) {
+                QMetaObject::invokeMethod(self.data(), [self, done, total]() {
+                    if (self && self->m_active && !self->m_cancelled)
+                        self->setState(State::Separating, done, total);
+                }, Qt::QueuedConnection);
+            });
+        mix = {};
+        if (!separated.error.isEmpty()) return {{}, separated.error};
+
+        if (!MdxSeparator::writeStereoWav(vocalsPath, separated.vocals, MdxSeparator::kSampleRate)) {
+            QFile::remove(vocalsPath);
+            return {{}, QStringLiteral("无法写入分离出的人声文件")};
+        }
+        separated = {};
+        return AudioFileDecoder::decode(vocalsPath, kSampleRate, cancelFlag.get());
     }));
 }
 
@@ -160,12 +241,14 @@ void FileTranscriptionPipeline::onFileDecoded()
 {
     if (!m_active) return;
     const AudioFileDecoder::Result result = m_decodeWatcher.result();
-    if (m_cancelled) {
-        finish(Outcome::Cancelled);
-    } else if (!result.error.isEmpty()) {
-        finish(Outcome::Failed, result.error);
+    if (m_cancelled || !result.error.isEmpty()) {
+        // 没成功就不会交给界面，分离出的临时文件在这里清掉
+        if (!m_vocalsPath.isEmpty()) QFile::remove(m_vocalsPath);
+        if (m_cancelled) finish(Outcome::Cancelled);
+        else finish(Outcome::Failed, result.error);
     } else {
         m_pcm = result.pcm;
+        if (!m_vocalsPath.isEmpty()) emit vocalsReady(m_job.row, m_vocalsPath);
         startSegmenting();
     }
 }
@@ -357,7 +440,10 @@ void FileTranscriptionPipeline::cancel()
     m_cancelled = true;
     if (m_decodeCancel) *m_decodeCancel = true;
 
-    if (m_decoder && m_decoder->isDecoding()) {
+    if (m_separationModel->isDownloading()) {
+        m_separationModel->cancel();
+        finish(Outcome::Cancelled);
+    } else if (m_decoder && m_decoder->isDecoding()) {
         m_decoder->stop();
         finish(Outcome::Cancelled);
     } else if (!m_decodeWatcher.isRunning() && !m_segmentationWatcher.isRunning() && !m_waitingSegment) {

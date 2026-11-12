@@ -66,6 +66,11 @@ QVariant FileTaskModel::data(const QModelIndex& index, int role) const
             return tr("Pending · %1").arg(QLocale().formattedDataSize(t.size));
         case FileTask::State::Decoding:
             return tr("Decoding...");
+        case FileTask::State::DownloadingModel:
+            return tr("Downloading vocal model... %1%").arg(t.segDone);
+        case FileTask::State::Separating:
+            return t.segTotal > 0 ? tr("Separating vocals %1%").arg(t.segDone * 100 / t.segTotal)
+                                  : tr("Separating vocals...");
         case FileTask::State::Transcribing:
             return tr("Transcribing %1/%2").arg(t.segDone).arg(t.segTotal);
         case FileTask::State::Done:
@@ -219,6 +224,7 @@ void FileTaskModel::reset(int row)
     t.text.clear();
     t.cues.clear();
     t.error.clear();
+    t.vocalsPath.clear();
     t.translations.clear();
     t.translationLang.clear();
     t.runToken = ++m_nextToken;
@@ -237,6 +243,21 @@ void FileTaskModel::setProgress(int row, int done, int total)
     t.state = FileTask::State::Transcribing;
     t.segDone = done;
     t.segTotal = total;
+    touch(row);
+}
+
+void FileTaskModel::setStageProgress(int row, FileTask::State state, int done, int total)
+{
+    FileTask& t = m_tasks[row];
+    t.state = state;
+    t.segDone = done;
+    t.segTotal = total;
+    touch(row);
+}
+
+void FileTaskModel::setVocalsPath(int row, const QString& path)
+{
+    m_tasks[row].vocalsPath = path;
     touch(row);
 }
 

@@ -94,6 +94,14 @@ void FileTranscribeWidget::setServices(QNetworkAccessManager* networkManager,
             this, &FileTranscribeWidget::onPipelineTranslationReady);
     connect(m_pipeline, &FileTranscriptionPipeline::translationFailed,
             this, &FileTranscribeWidget::onTranslationFailed);
+    connect(m_pipeline, &FileTranscriptionPipeline::vocalsReady, this, [this](int row, const QString& path) {
+        if (row < 0 || row >= m_model->rowCount()) {
+            QFile::remove(path);   // 任务已被移除，没人会用这个文件
+            return;
+        }
+        discardVocals(row);
+        m_model->setVocalsPath(row, path);
+    });
     connect(m_pipeline, &FileTranscriptionPipeline::fileFinished,
             this, &FileTranscribeWidget::onPipelineFileFinished);
 }
@@ -109,6 +117,9 @@ void FileTranscribeWidget::setupUi()
     m_exportTxtCheck = new AnimatedCheckBox(this);
     m_exportTxtCheck->setChecked(true);
     m_exportSrtCheck = new AnimatedCheckBox(this);
+    m_exportVocalsCheck = new AnimatedCheckBox(this);
+    m_separateCheck = new AnimatedCheckBox(this);
+    if (!AudioFileDecoder::isAvailable()) m_separateCheck->setEnabled(false);
     m_exportTranslationCheck = new AnimatedCheckBox(this);
     m_exportTranslationCheck->setChecked(true);
 
@@ -116,6 +127,7 @@ void FileTranscribeWidget::setupUi()
     toolbar->addWidget(m_addBtn);
     toolbar->addWidget(m_addLinkBtn);
     toolbar->addWidget(m_transcribeBtn);
+    toolbar->addWidget(m_separateCheck);
     toolbar->addStretch();
 
     // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
@@ -186,6 +198,7 @@ void FileTranscribeWidget::setupUi()
     previewHeader->addWidget(m_previewTitle, 1);
     previewHeader->addWidget(m_exportTxtCheck);
     previewHeader->addWidget(m_exportSrtCheck);
+    previewHeader->addWidget(m_exportVocalsCheck);
     previewHeader->addWidget(m_exportTranslationCheck);
     previewHeader->addWidget(m_exportBtn);
     previewHeader->addWidget(m_copyBtn);
@@ -276,6 +289,7 @@ void FileTranscribeWidget::setupUi()
     // 两种格式都没勾时无可导出内容，按钮随勾选状态启停
     connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_exportSrtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
+    connect(m_exportVocalsCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_copyBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyPreview);
     connect(m_copyTranslationBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyTranslation);
     connect(m_openFolderBtn, &QPushButton::clicked, this, [this]() {
@@ -328,6 +342,12 @@ void FileTranscribeWidget::retranslateUi()
     m_exportTxtCheck->setLabelText(tr("TXT"));
     m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
     m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));
+    m_separateCheck->setLabelText(tr("Separate vocals"));
+    m_separateCheck->setToolTip(AudioFileDecoder::isAvailable()
+        ? tr("Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files")
+        : tr("Vocal separation is not available on this platform"));
+    m_exportVocalsCheck->setLabelText(tr("Vocals"));
+    m_exportVocalsCheck->setToolTip(tr("Also export the separated vocals as name.vocals.wav"));
     m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\" / \"Add Links\""));
     m_copyBtn->setText(tr("Copy"));
     m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
@@ -491,13 +511,21 @@ void FileTranscribeWidget::removeSelected()
             if (m_model->task(row).linkId != 0) m_pipeline->cancelDownload(m_model->task(row).linkId);
         }
     }
+    for (int row : rows) discardVocals(row);
     m_model->removeRows(rows);
+}
+
+void FileTranscribeWidget::discardVocals(int row)
+{
+    const QString path = m_model->task(row).vocalsPath;
+    if (!path.isEmpty()) QFile::remove(path);
 }
 
 void FileTranscribeWidget::clearAll()
 {
     if (m_busy) return;
     if (m_pipeline) m_pipeline->cancelDownloads();
+    for (int row = 0; row < m_model->rowCount(); ++row) discardVocals(row);
     m_model->clear();
     m_statusLabel->clear();
 }
@@ -596,7 +624,8 @@ void FileTranscribeWidget::updateButtons()
     const int exportCount = selectedDone > 0 ? selectedDone : m_model->count(FileTask::State::Done);
     m_exportBtn->setText(selectedDone > 0 ? tr("Export Selected (%1)").arg(exportCount)
                                           : tr("Export All (%1)").arg(exportCount));
-    m_exportBtn->setEnabled(exportCount > 0 && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()));
+    m_exportBtn->setEnabled(exportCount > 0 && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()
+                                                || m_exportVocalsCheck->isChecked()));
 }
 
 void FileTranscribeWidget::setBusy(bool busy)
@@ -643,7 +672,10 @@ void FileTranscribeWidget::startRun(const QList<int>& rows)
 {
     if (m_busy || !m_transcription || rows.isEmpty()) return;
 
-    for (int row : rows) m_model->reset(row);
+    for (int row : rows) {
+        discardVocals(row);
+        m_model->reset(row);
+    }
 
     m_runRows = rows;
     m_runWatermark = m_model->rowCount();
@@ -679,7 +711,8 @@ void FileTranscribeWidget::startNextFile()
     m_statusLabel->setText(tr("Processing file %1/%2").arg(m_fileDone + 1).arg(m_fileTotal));
     m_list->scrollTo(m_model->index(m_currentRow));
     const FileTask& task = m_model->task(m_currentRow);
-    FileTranscriptionPipeline::Job job{m_currentRow, task.runToken, task.path, *m_config};
+    FileTranscriptionPipeline::Job job{m_currentRow, task.runToken, task.path, *m_config,
+                                       m_separateCheck->isChecked()};
     if (!m_pipeline || !m_pipeline->start(job))
         onPipelineFileFinished(m_currentRow, FileTranscriptionPipeline::Outcome::Failed,
                                QStringLiteral("无法启动文件转录"));
@@ -691,6 +724,10 @@ void FileTranscribeWidget::onPipelineStateChanged(int row, FileTranscriptionPipe
     if (row != m_currentRow || !m_fileActive) return;
     if (state == FileTranscriptionPipeline::State::Decoding) {
         m_model->setState(row, FileTask::State::Decoding);
+    } else if (state == FileTranscriptionPipeline::State::DownloadingModel) {
+        m_model->setStageProgress(row, FileTask::State::DownloadingModel, done, total);
+    } else if (state == FileTranscriptionPipeline::State::Separating) {
+        m_model->setStageProgress(row, FileTask::State::Separating, done, total);
     } else if (state == FileTranscriptionPipeline::State::Transcribing) {
         m_model->setProgress(row, done, total);
     }
@@ -862,6 +899,7 @@ void FileTranscribeWidget::exportResults()
     QStringList exts;
     if (m_exportTxtCheck->isChecked()) exts << QStringLiteral("txt");
     if (m_exportSrtCheck->isChecked()) exts << QStringLiteral("srt");
+    const bool withVocals = m_exportVocalsCheck->isChecked();
 
     // 按音频名称导出同名文件；重名时加序号，不覆盖已有文件
     int written = 0;
@@ -876,7 +914,16 @@ void FileTranscribeWidget::exportResults()
         if (translated) {
             for (const QString& ext : std::as_const(exts)) allExts << lang + QLatin1Char('.') + ext;
         }
-        const QString base = uniqueExportBase(dir, exportBaseName(t), allExts);
+        const bool vocals = withVocals && !t.vocalsPath.isEmpty() && QFile::exists(t.vocalsPath);
+        // 人声文件参与重名检查，但不进文本循环
+        QStringList checkExts = allExts;
+        if (vocals) checkExts << QStringLiteral("vocals.wav");
+        const QString base = uniqueExportBase(dir, exportBaseName(t), checkExts);
+        if (vocals) {
+            const QString target = QDir(dir).filePath(base + QStringLiteral(".vocals.wav"));
+            if (QFile::copy(t.vocalsPath, target)) ++written;
+            else ++failed;
+        }
         for (const QString& ext : std::as_const(allExts)) {
             const bool isTranslation = ext.contains(QLatin1Char('.'));
             const bool srt = ext.endsWith(QLatin1String("srt"));

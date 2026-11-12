@@ -56,6 +56,7 @@ target_compile_definitions(${TARGET_NAME} PRIVATE NOMINMAX)
 include(SherpaOnnx)
 include(FFmpeg)
 include(VadModel)
+include(OnnxRuntime)
 include(TranslateWorker)
 
 imeaudio_link_ffmpeg(${TARGET_NAME})
@@ -77,6 +78,7 @@ qt_add_translations(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME} PRIVATE
     ${QtModules}
     sherpa_onnx
+    onnxruntime_headers
     qhotkey
     kissfft
 )
