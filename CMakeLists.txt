@@ -4,7 +4,7 @@ if(APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "13.4" CACHE STRING "Minimum macOS version")
 endif()
 
-project(ImeAudio VERSION 1.1.0 LANGUAGES CXX)
+project(ImeAudio VERSION 2.0.0 LANGUAGES CXX)
 
 # macOS 平台层用 Objective-C++（.mm）实现；不启用 OBJCXX 时 CMake 不认识 .mm 扩展名，
 if(APPLE)
