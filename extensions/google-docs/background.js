@@ -16,6 +16,10 @@ let recvCount = 0;
 let lastRecvAt = 0;
 let lastRecvLen = 0;
 let lastError = '';
+// 已写进文档的最后一句：程序补发时按它去重。session 变了说明程序重启过，id 重新计数
+let written = { session: '', id: 0 };
+// 文字一句写完再写下一句，保证顺序
+let writeChain = Promise.resolve();
 
 const log = (...a) => console.log('[ImeAudio]', ...a);
 const post = (obj) => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); };
@@ -53,13 +57,35 @@ async function readToken() {
   }
 }
 
+// 只接受下一个连续 id：中间缺句时先不写，等程序重新绑定后从缺的那句补发
+async function writeOne(msg) {
+  if (msg.session !== written.session) written = { session: msg.session, id: msg.id - 1 };
+  if (msg.id <= written.id) { post({ type: 'ack', id: written.id }); return; }
+  if (msg.id !== written.id + 1 || boundTabId === null) return;
+  try {
+    await cmd(boundTabId, 'Input.insertText', { text: msg.text });
+  } catch (e) {
+    lastError = '写入文档失败：' + e.message;
+    log('insertText failed', e.message);
+    await unbind(false);
+    post({ type: 'insertFailed', id: msg.id, reason: e.message });
+    return;
+  }
+  written = { session: msg.session, id: msg.id };
+  // 只记次数和长度，不记内容
+  recvCount++; lastRecvAt = Date.now(); lastRecvLen = (msg.text || '').length;
+  await chrome.storage.session.set({ written });
+  post({ type: 'ack', id: msg.id });
+}
+
 // 后台脚本被停掉再启动时，内存里的绑定没了，从会话存储找回
 function saveBinding() {
   return chrome.storage.session.set({ boundTabId, titleCache });
 }
 
 async function restoreBinding() {
-  const s = await chrome.storage.session.get(['boundTabId', 'titleCache']);
+  const s = await chrome.storage.session.get(['boundTabId', 'titleCache', 'written']);
+  if (s.written) written = s.written;
   if (s.boundTabId == null || boundTabId !== null) return;
   const id = s.boundTabId;
   try {
@@ -117,19 +143,16 @@ async function connect() {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       const err = tab ? await bind(tab.id, true) : 'notDocs';
       if (err) post({ type: 'bindFailed', reason: err });
-    } else if (msg.type === 'text' && boundTabId === null) {
-      log('text received but no tab bound, dropped');
+    } else if (msg.type === 'resume') {
+      // 补发从 from 开始：比已写的下一句还靠后，说明中间几句程序因队列满丢弃了，跳过缺口
+      writeChain = writeChain.then(() => {
+        if (msg.session === written.session && msg.from > written.id + 1) {
+          log('skip dropped sentences', written.id + 1, '..', msg.from - 1);
+          written = { session: msg.session, id: msg.from - 1 };
+        }
+      });
     } else if (msg.type === 'text') {
-      // 只记次数和长度，不记内容
-      recvCount++; lastRecvAt = Date.now(); lastRecvLen = (msg.text || '').length;
-      log('text received, length', lastRecvLen);
-      try {
-        await cmd(boundTabId, 'Input.insertText', { text: msg.text });
-      } catch (e) {
-        lastError = '写入文档失败：' + e.message;
-        log('insertText failed', e.message);
-        await unbind();
-      }
+      writeChain = writeChain.then(() => writeOne(msg)).catch((e) => log('write failed', e.message));
     }
   };
   // 连不上时 onerror 不带原因，只能提示常见原因；不要打印令牌
@@ -147,7 +170,7 @@ async function connect() {
 
 // 返回空串表示成功，否则是失败原因：notDocs 或调试器的错误信息
 async function bind(tabId, requireDocs) {
-  if (boundTabId === tabId) return '';
+  if (boundTabId === tabId) { post({ type: 'bound', title: titleCache }); return ''; }
   if (boundTabId !== null) await unbind();
   try {
     await chrome.debugger.attach({ tabId }, DEBUGGER_VERSION);
@@ -196,7 +219,8 @@ async function bindNewDoc() {
   }, 4000);
 }
 
-async function unbind() {
+// notify 为 false 时不发 unbound：写入失败要让程序保留没写进去的句子，由 insertFailed 告知
+async function unbind(notify = true) {
   const id = boundTabId;
   boundTabId = null;
   await chrome.storage.session.remove(['boundTabId', 'titleCache']);
@@ -205,7 +229,7 @@ async function unbind() {
     try { await cmd(id, 'Emulation.setFocusEmulationEnabled', { enabled: false }); } catch (_) {}
     try { await chrome.debugger.detach({ tabId: id }); } catch (_) {}
   }
-  post({ type: 'unbound' });
+  if (notify) post({ type: 'unbound' });
 }
 
 // 启动时先找回绑定再连接，否则连上后报的绑定状态不对

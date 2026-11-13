@@ -502,6 +502,10 @@ void MainWin::setupUiConnections(){
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
     m_docsBridge = new DocsBridge(this);
+    connect(m_docsBridge, &DocsBridge::insertFailed, this, [this](const QString& reason) {
+        notify(NotifyLevel::Warning, QStringLiteral("写入 Google 文档失败"),
+               QStringLiteral("没写进去的句子已暂存，重新绑定文档后会自动补写。原因：%1").arg(reason));
+    });
     connect(m_controlBar, &ControlBar::docsRequested, this, [this]() {
         if (!m_docsDialog) {
             m_docsDialog = new DocsSetupDialog(this);
@@ -636,10 +640,11 @@ void MainWin::setupUiConnections(){
         // 输入到谷歌文档中
         // 绑定后连接意外断开也不注入前台，否则文字会打进别的软件；用户在横条菜单停止输出后才恢复
         if (m_docsBridge->holdsOutput()) {
-            if (!m_docsBridge->sendText(text) && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
+            m_docsBridge->sendText(text);
+            if (!m_docsBridge->isBound() && (!m_docsWarnTimer.isValid() || m_docsWarnTimer.elapsed() > 10000)) {
                 m_docsWarnTimer.start();
                 notify(NotifyLevel::Warning, QStringLiteral("Google 文档连接已断开"),
-                       QStringLiteral("这句没有输入到前台，可在听写记录里找到。请重新绑定文档，或在横条右键菜单打开“Google 文档”点“停止输出”"));
+                       QStringLiteral("听写结果已暂存，重新绑定文档后会自动补写进去；不想等可以在横条右键菜单打开“Google 文档”点“停止输出”"));
             }
             return true;
         }

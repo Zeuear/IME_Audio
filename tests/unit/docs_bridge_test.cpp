@@ -14,8 +14,10 @@ TEST(DocsBridgeTest, OnlyPinnedExtensionOriginAllowed)
 
 TEST(DocsBridgeTest, TextMessageIsJsonWithTypeAndText)
 {
-    const QJsonObject o = QJsonDocument::fromJson(DocsBridgeProtocol::textMessage("你好\n\"x\"")).object();
+    const QJsonObject o = QJsonDocument::fromJson(DocsBridgeProtocol::textMessage("s1", 42, "你好\n\"x\"")).object();
     EXPECT_EQ(o.value("type").toString(), "text");
+    EXPECT_EQ(o.value("session").toString(), "s1");
+    EXPECT_EQ(o.value("id").toDouble(), 42);
     EXPECT_EQ(o.value("text").toString(), "你好\n\"x\"");
 }
 

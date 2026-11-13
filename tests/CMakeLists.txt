@@ -82,6 +82,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/firewall_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_extension_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_delivery_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/mdx_dsp_test.cpp
 )
 
@@ -185,6 +186,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/GoogleSheetsService.h
     # 随程序附带的 Chrome 扩展：资源文件交给 AUTORCC，测试导出结果
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/docs/DocsExtension.cpp
+    # 文档输出的本机 WebSocket 服务：送达确认与补发
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/docs/DocsBridge.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/docs/DocsBridge.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/extension.qrc
     # 人声分离的 STFT / ISTFT（纯 DSP，用 kissfft）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/audio/separation/MdxDsp.cpp
@@ -211,6 +215,7 @@ if(WIN32)
         Qt6::Core 
         Qt6::Widgets 
         Qt6::Network 
+        Qt6::WebSockets
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
@@ -226,6 +231,7 @@ elseif(APPLE)
         Qt6::Core 
         Qt6::Widgets 
         Qt6::Network 
+        Qt6::WebSockets
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
@@ -244,6 +250,7 @@ else()
         Qt6::Core 
         Qt6::Widgets 
         Qt6::Network 
+        Qt6::WebSockets
         Qt6::Multimedia 
         Qt6::Concurrent
         Qt6::CorePrivate
