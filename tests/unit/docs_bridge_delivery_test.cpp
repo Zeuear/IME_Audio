@@ -188,8 +188,16 @@ TEST(DocsBridgeDelivery, SoakWithRealExtensionScript)
         ASSERT_TRUE(proc.waitForStarted(5000));
 
         ASSERT_TRUE(waitFor([&]() { return bridge.isConnected(); }, 10000));
-        bridge.requestBindActive();
-        ASSERT_TRUE(waitFor([&]() { return bridge.isBound(); }, 10000));
+        // 后台脚本随时会被重启，还没处理完的 bindActive 跟着丢，程序这边仍以为连着；
+        // 只发一次在高重启概率下会一直等不到绑定，像用户再点一次那样隔 300ms 重发
+        QElapsedTimer bindRetry;
+        ASSERT_TRUE(waitFor([&]() {
+            if (bridge.isConnected() && (!bindRetry.isValid() || bindRetry.elapsed() > 300)) {
+                bindRetry.start();
+                bridge.requestBindActive();
+            }
+            return bridge.isBound();
+        }, 10000));
 
         // 断开后扩展会自己重连并恢复绑定；写入失败后扩展已解绑，模拟用户在窗口里点"用 Chrome 当前标签页"
         QElapsedTimer lastRebind;
