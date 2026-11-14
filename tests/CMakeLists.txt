@@ -84,6 +84,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_extension_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/docs_bridge_delivery_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/mdx_dsp_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/prompt_hotwords_test.cpp
 )
 
 # Production translation units needed by the hermetic tests (logic decoupling:
@@ -118,6 +119,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/translation/BergamotWorkerClient.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/LanguageCatalog.h
+    # Qwen3-ASR / FunASR-Nano 的提示词热词整理（纯逻辑）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/PromptHotwords.cpp
     # GPU 运行时状态机：检测结果 / 计算模式 / 实际 provider 的唯一真相（Q_OBJECT 交给 AUTOMOC）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/GpuRuntime.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/sherpa/GpuRuntime.h

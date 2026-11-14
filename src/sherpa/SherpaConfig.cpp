@@ -8,6 +8,7 @@
 #include <QtConcurrent> 
 #include "installers/CudaInstaller.h"
 #include "sherpa/LanguageCatalog.h"
+#include "sherpa/PromptHotwords.h"
 #include "sherpa/GpuVariant.h"
 #include "utils/AppPaths.h"
 #include "utils/Logger.h"
@@ -1560,6 +1561,19 @@ QStringList ModelRegistry::GetLanguagesByRepo(const QString& repoId)
     return langs;
 }
 
+// 大模型类识别器：热词写进提示词，不走 hotwords_buf 的上下文偏置
+static bool ArchTakesPromptHotwords(ModelArch arch) {
+    return arch == ModelArch::Qwen3Asr || arch == ModelArch::FunasrNano;
+}
+
+static QString promptHotwordsFor(const QString& lines, const QString& repoId) {
+    if (lines.trimmed().isEmpty()) return {};
+    const PromptHotwords::Result r = PromptHotwords::build(lines);
+    LOG_INFO(QString("Prompt hotwords for %1: used %2, dropped %3, ~%4 tokens (budget %5)")
+                 .arg(repoId).arg(r.used).arg(r.dropped).arg(r.tokens).arg(PromptHotwords::kMaxTokens));
+    return r.csv;
+}
+
 static bool ArchSupportsHotwords(ModelArch arch) {
     switch (arch) {
     case ModelArch::TransducerOnline:
@@ -1706,6 +1720,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }
     case ModelArch::FunasrNano: {
         auto files = std::get<FunasrFiles>(desc->files);
+        files.hotwords = promptHotwordsFor(hotwords, repoId);
         configVar = ModelConfigFactory::buildFunasrNano(repoId, files, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
@@ -1745,6 +1760,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
             return result; 
         }
 
+        files.hotwords = promptHotwordsFor(hotwords, repoId);
         configVar = ModelConfigFactory::buildQwen3Asr(repoId, files, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
@@ -1772,7 +1788,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
                 }
                 LOG_DEBUG(tr("Hotwords applied for arch=%1, score=%2").arg(int(desc->arch)).arg(hotscores));
             }
-            else if (!hotwords.isEmpty()) {
+            else if (!hotwords.isEmpty() && !ArchTakesPromptHotwords(desc->arch)) {
                 LOG_WARN(tr("Hotwords configured but architecture does not support contextual biasing, ignored: %1").arg(repoId));
             }
 
