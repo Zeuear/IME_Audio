@@ -88,7 +88,9 @@ void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, con
         return;
     }
     const Ticket t = m_sherpaTickets.dequeue();
-    if (!ok || !m_config.polish.enableAiEnhancement || m_config.polish.usesLocalTranslation()) {
+    // 没配置好的引擎直接用原文，不当作失败：否则听写时每句都弹一次"润色失败"
+    if (!ok || !m_config.polish.enableAiEnhancement || m_config.polish.usesLocalTranslation()
+        || !m_config.polish.cloudEngineConfigured()) {
         finish(t, ok, text, err);
         return;
     }
@@ -409,7 +411,8 @@ bool TranscriptionService::fileTranslationActive() const {
     if (!TextPolishPrompts::hasTranslationTarget(p.activeTargetLang())) return false;
     if (p.usesLocalTranslation()) return m_translationService && m_translationService->hasBackend();
     // 云端翻译和听写一样挂在 AI 增强开关下
-    return p.enableAiEnhancement && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
+    return p.enableAiEnhancement && p.cloudEngineConfigured()
+        && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
 }
 
 void TranscriptionService::translateForFile(const QString& text, TranslateCallback done) {

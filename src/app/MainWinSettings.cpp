@@ -137,6 +137,15 @@ void MainWin::registerSettings()
         [](const AppConfig& c) { return c.polish.enableAiEnhancement; },
         [](AppConfig& c, bool v) { c.polish.enableAiEnhancement = v; },
         Opt{ Apply::Instant });
+    // 引擎没配置好时听写会静默用原文；只在打开开关时提醒一次，不逐句弹窗
+    connect(ui->enable_enhancement_checkbox, &QAbstractButton::toggled, this, [this](bool on) {
+        if (!on || m_loadingSettings) return;
+        const PolishConfig& p = ConfigManager::instance().config().polish;
+        if (p.usesLocalTranslation() || p.cloudEngineConfigured()) return;
+        notify(NotifyLevel::Warning, QStringLiteral("AI 增强尚未配置"),
+               p.aiEngineIndex == 0 ? QStringLiteral("还没有填写 Gemini API Key，润色和翻译不会生效，听写结果保持原文")
+                                    : QStringLiteral("还没有填写 API 地址，润色和翻译不会生效，听写结果保持原文"));
+    });
     s->bindIndex(ui->ai_engine_comb,
         [](const AppConfig& c) { return c.polish.aiEngineIndex; },
         [](AppConfig& c, int v) { c.polish.aiEngineIndex = v; },

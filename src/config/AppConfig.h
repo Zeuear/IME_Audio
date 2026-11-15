@@ -67,6 +67,12 @@ struct PolishConfig {
         return translateEnabled ? targetLang : QStringLiteral("不翻译");
     }
     bool usesLocalTranslation() const { return aiEngineIndex == kLocalTranslationEngine; }
+    // 云端引擎缺必填项时请求注定失败：Gemini 要 Key，OpenAI 兼容要地址；Ollama 有默认地址
+    bool cloudEngineConfigured() const {
+        if (aiEngineIndex == 0) return !apiKey.trimmed().isEmpty();
+        if (aiEngineIndex == 1) return !apiUrl.trimmed().isEmpty();
+        return true;
+    }
     // 云端请求的目标语言
     QString cloudTargetLang() const {
         return usesLocalTranslation() ? QStringLiteral("不翻译") : activeTargetLang();
