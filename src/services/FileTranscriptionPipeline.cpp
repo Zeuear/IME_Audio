@@ -14,6 +14,7 @@
 
 #include "services/TranscriptionService.h"
 #include "audio/separation/MdxSeparator.h"
+#include "installers/CudaPlatform.h"
 #include "services/media/SeparationModelManager.h"
 #include "services/media/YtDlpManager.h"
 #include "sherpa/SherpaManager.h"
@@ -153,6 +154,8 @@ void FileTranscriptionPipeline::startSeparateDecode()
     const QString vocalsPath = m_vocalsPath;
     const QString modelPath = SeparationModelManager::modelPath();
     const int threads = m_job.config.sherpa.threads;
+    // useGpu 已由 GpuRuntime 校正过：CUDA 环境没装好时不会为真
+    const bool useCuda = m_job.config.sherpa.useGpu && cudaPlatformSpec().detectable;
     const auto cancelFlag = m_decodeCancel;
     QPointer<FileTranscriptionPipeline> self(this);
 
@@ -168,7 +171,7 @@ void FileTranscriptionPipeline::startSeparateDecode()
 
         MdxSeparator::Stereo mix{std::move(decoded.left), std::move(decoded.right)};
         MdxSeparator::Result separated = MdxSeparator::separateVocals(
-            modelPath, mix, threads, cancelFlag.get(), [self](int done, int total) {
+            modelPath, mix, threads, useCuda, cancelFlag.get(), [self](int done, int total) {
                 QMetaObject::invokeMethod(self.data(), [self, done, total]() {
                     if (self && self->m_active && !self->m_cancelled)
                         self->setState(State::Separating, done, total);

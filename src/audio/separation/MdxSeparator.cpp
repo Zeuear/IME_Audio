@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include <memory>
 #include <string>
 
 #include "MdxDsp.h"
@@ -53,7 +54,7 @@ struct Session {
 };
 
 // 创建会话并从输入形状读出 dim_f / dim_t，不写死，换同族模型时不用改代码
-QString openSession(Session& s, const QString& modelPath, int threads)
+QString openSession(Session& s, const QString& modelPath, int threads, bool useCuda)
 {
     s.api = OrtRuntime::api();
     if (!s.api) return QStringLiteral("找不到 ONNX Runtime，无法分离人声");
@@ -64,6 +65,13 @@ QString openSession(Session& s, const QString& modelPath, int threads)
     if (!(err = takeError(api, api->CreateSessionOptions(&s.options))).isEmpty()) return err;
     api->SetIntraOpNumThreads(s.options, threads);
     api->SetSessionGraphOptimizationLevel(s.options, ORT_ENABLE_ALL);
+    if (useCuda) {
+        OrtCUDAProviderOptions cuda;
+        // 输入形状固定，启发式选卷积算法即可；穷举要多占显存、首块明显变慢
+        cuda.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
+        if (!(err = takeError(api, api->SessionOptionsAppendExecutionProvider_CUDA(s.options, &cuda))).isEmpty())
+            return err;
+    }
 
 #ifdef Q_OS_WIN
     const std::wstring path = modelPath.toStdWString();
@@ -108,7 +116,7 @@ QString openSession(Session& s, const QString& modelPath, int threads)
 
 }
 
-Result separateVocals(const QString& modelPath, const Stereo& mix, int threads,
+Result separateVocals(const QString& modelPath, const Stereo& mix, int threads, bool useCuda,
                       const std::atomic_bool* cancel, const Progress& progress)
 {
     Result result;
@@ -118,9 +126,20 @@ Result separateVocals(const QString& modelPath, const Stereo& mix, int threads,
         return result;
     }
 
-    Session s;
-    result.error = openSession(s, modelPath, std::max(1, threads));
+    threads = std::max(1, threads);
+    auto session = std::make_unique<Session>();
+    bool onCuda = useCuda;
+    result.error = openSession(*session, modelPath, threads, onCuda);
+    if (!result.error.isEmpty() && onCuda) {
+        // CPU 版运行库、缺 cuDNN 或显存不足都会走到这里；分离照样能做，只是慢
+        LOG_WARN(QString("MdxSeparator: CUDA session failed, falling back to CPU: %1").arg(result.error));
+        onCuda = false;
+        session = std::make_unique<Session>();
+        result.error = openSession(*session, modelPath, threads, false);
+    }
     if (!result.error.isEmpty()) return result;
+    LOG_INFO(QString("MdxSeparator: separating on %1").arg(onCuda ? "cuda" : "cpu"));
+    Session& s = *session;
     const OrtApi* api = s.api;
 
     const int chunk = kHop * (s.dimT - 1);     // 一块输入对应的样本数
