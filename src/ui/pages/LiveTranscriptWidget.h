@@ -7,13 +7,14 @@
 
 class QCheckBox;
 class QLabel;
-class QPlainTextEdit;
+class QListView;
 class QPushButton;
 class QTimer;
-class TranscriptDocument;
+class TranscriptLineDelegate;
+class TranscriptLineModel;
 class TranscriptStore;
 
-// @brief 实时转录页：听写结果连续写成整篇稿子；不依赖服务，开始/停止与注入开关经信号交宿主，结果由宿主调 appendUtterance。
+// @brief 实时转录页：听写结果每句一行，可逐行复制；不依赖服务，开始/停止与注入开关经信号交宿主，结果由宿主调 appendUtterance。
 class LiveTranscriptWidget : public QWidget
 {
     Q_OBJECT
@@ -42,16 +43,20 @@ signals:
 
 protected:
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     void setupUi();
     void retranslateUi();
     void updateButtons();
     void copyAll();
+    void copySelected();
+    void copyRow(int row);
     void exportText();
     void scheduleSave();
     void flushSave();
     void clearAll();
+    bool withTime() const;
 
     QPushButton* m_toggleBtn = nullptr;
     AnimatedCheckBox* m_injectCheck = nullptr;
@@ -59,8 +64,10 @@ private:
     QPushButton* m_copyBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     QPushButton* m_clearBtn = nullptr;
-    QPlainTextEdit* m_edit = nullptr;
-    std::unique_ptr<TranscriptDocument> m_transcript;
+    QListView* m_list = nullptr;
+    QLabel* m_placeholder = nullptr;
+    TranscriptLineModel* m_model = nullptr;
+    TranscriptLineDelegate* m_delegate = nullptr;
     std::unique_ptr<TranscriptStore> m_store;
     QTimer* m_saveTimer = nullptr;
 

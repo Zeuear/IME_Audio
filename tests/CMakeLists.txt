@@ -64,7 +64,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/google_sheets_parse_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictation_pipeline_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/audio_normalizer_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_document_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_line_model_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_store_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/tool_icon_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/control_bar_test.cpp
@@ -143,8 +143,9 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/SettingsBinder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictationHistoryModel.h
-    # 实时转录稿子的追加规则，只依赖 QTextDocument
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptDocument.cpp
+    # 实时转录稿子：每句一行的列表模型（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptLineModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptLineModel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptStore.cpp
     # 横条图标：按状态取色并把线条 SVG 渲染成指定颜色，用到 Qt6::Svg
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToolIcon.cpp
