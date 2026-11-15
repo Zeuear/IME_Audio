@@ -1,4 +1,5 @@
 #include "ControlBar.h"
+#include "BubbleTip.h"
 #include "ControlBarState.h"
 #include "FloatingWindow.h"
 #include "ToolIcon.h"
@@ -109,6 +110,9 @@ ControlBar::ControlBar(QWidget* parent)
     m_transcriptBtn = makeButton(this);
     m_dictionaryBtn = makeButton(this);
     m_fileBtn = makeButton(this);
+    m_topBtn = makeButton(this);
+    m_topBtn->setCheckable(true);
+    m_topBtn->setChecked(true);
     m_settingsBtn = makeButton(this);
 
     m_timerLabel = new QLabel(this);
@@ -138,6 +142,7 @@ ControlBar::ControlBar(QWidget* parent)
     layout->addSpacing(kGroupGap);
     layout->addWidget(makeDivider(this));
     layout->addSpacing(kGroupGap);
+    layout->addWidget(m_topBtn);
     layout->addWidget(m_settingsBtn);
 
     m_ticker = new QTimer(this);
@@ -151,13 +156,16 @@ ControlBar::ControlBar(QWidget* parent)
     m_topAction->setChecked(true);
     // 改置顶标志会销毁重建原生窗口；此刻菜单的 exec 还没返回，在里面重建会让菜单挂在已销毁的窗口上，
     // 表现为菜单错位、关不掉或置顶丢失。推迟到菜单收起、事件循环空闲后再发
-    connect(m_topAction, &QAction::triggered, this, [this](bool on) {
-        LOG_DEBUG(QString("ControlBar topAction triggered checked=%1 flagOn=%2").arg(on).arg(bool(windowFlags() & Qt::WindowStaysOnTopHint)));
+    auto requestTop = [this](bool on) {
+        LOG_DEBUG(QString("ControlBar top toggled checked=%1 flagOn=%2").arg(on).arg(bool(windowFlags() & Qt::WindowStaysOnTopHint)));
         QTimer::singleShot(0, this, [this, on]() {
             setAlwaysOnTop(on);   // 之前只发信号，横条自己的窗口标志没人改，取消勾选后仍然置顶
             emit alwaysOnTopToggled(on);
         });
-    });
+    };
+    connect(m_topAction, &QAction::triggered, this, requestTop);
+    // 按钮同样推迟：点击事件还在本窗口里分发，此时重建原生窗口不安全
+    connect(m_topBtn, &QToolButton::clicked, this, requestTop);
     m_docsAction = m_menu->addAction(QString(), this, &ControlBar::docsRequested);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
@@ -183,6 +191,11 @@ ControlBar::ControlBar(QWidget* parent)
     connect(m_fileBtn, &QToolButton::toggled, this, [this]() { emit panelRequested(PanelState::Page::File); });
     connect(m_dictionaryBtn, &QToolButton::toggled, this, &ControlBar::refreshIcons);
     connect(m_fileBtn, &QToolButton::toggled, this, &ControlBar::refreshIcons);
+
+    for (QToolButton* b : { m_startBtn, m_stopBtn, m_enhanceBtn, m_translateBtn, m_injectBtn,
+                            m_transcriptBtn, m_dictionaryBtn, m_fileBtn, m_topBtn, m_settingsBtn }) {
+        BubbleTip::install(b);
+    }
 
     retranslateUi();
     setWorkflowState(WorkflowState::Idle);
@@ -326,7 +339,9 @@ void ControlBar::setAlwaysOnTop(bool on)
     LOG_DEBUG(QString("ControlBar setAlwaysOnTop(%1) flagBefore=%2 visible=%3").arg(on).arg(bool(windowFlags() & Qt::WindowStaysOnTopHint)).arg(isVisible()));
     const QSignalBlocker blocker(m_topAction);
     m_topAction->setChecked(on);
+    m_topBtn->setChecked(on);
     FloatingWindow::setAlwaysOnTop(this, on);
+    refreshIcons();
 }
 
 void ControlBar::showAtSavedPosition()
@@ -341,7 +356,7 @@ void ControlBar::refreshIcons()
     const QPalette& pal = palette();
     const QString style = QLatin1String(kButtonStyle);
     for (QToolButton* b : { m_startBtn, m_stopBtn, m_enhanceBtn, m_translateBtn, m_injectBtn,
-                            m_transcriptBtn, m_dictionaryBtn, m_fileBtn, m_settingsBtn }) {
+                            m_transcriptBtn, m_dictionaryBtn, m_fileBtn, m_topBtn, m_settingsBtn }) {
         if (b->styleSheet() != style) b->setStyleSheet(style);
     }
 
@@ -372,6 +387,7 @@ void ControlBar::refreshIcons()
     m_transcriptBtn->setIcon(panelIcon(QStringLiteral(":/tool_transcript"), m_transcriptBtn, kBlue));
     m_dictionaryBtn->setIcon(panelIcon(QStringLiteral(":/tool_dictionary"), m_dictionaryBtn, kBlue));
     m_fileBtn->setIcon(panelIcon(QStringLiteral(":/tool_file"), m_fileBtn, kBlue));
+    m_topBtn->setIcon(toggleIcon(QStringLiteral(":/tool_pin"), m_topBtn, kBlue));
     m_settingsBtn->setIcon(tile(QStringLiteral(":/tool_settings"), pal, none, S::Normal));
 }
 
@@ -383,6 +399,7 @@ void ControlBar::retranslateUi()
     m_settingsBtn->setToolTip(tr("Settings"));
     m_settingsAction->setText(tr("Settings"));
     m_topAction->setText(tr("Always on top"));
+    m_topBtn->setToolTip(tr("Always on top"));
     m_docsAction->setText(tr("Google Docs..."));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();

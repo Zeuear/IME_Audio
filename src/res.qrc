@@ -22,6 +22,7 @@
         <file alias="tool_transcript">../resources/icons/tool_transcript.svg</file>
         <file alias="tool_dictionary">../resources/icons/tool_dictionary.svg</file>
         <file alias="tool_file">../resources/icons/tool_file.svg</file>
+        <file alias="tool_pin">../resources/icons/tool_pin.svg</file>
         <file alias="tool_settings">../resources/icons/tool_settings.svg</file>
         <file alias="info_close">../resources/icons/info_close.svg</file>    
         <file alias="info_error">../resources/icons/info_error.svg</file>        

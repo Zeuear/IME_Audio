@@ -176,6 +176,8 @@ set(TEST_DEPS
     # 横条本体是 Q_OBJECT，头文件交给 AUTOMOC
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBar.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/BubbleTip.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/BubbleTip.h
     # 横条的投影效果（Q_OBJECT）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/infobar/appleshadoweffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/infobar/appleshadoweffect.h

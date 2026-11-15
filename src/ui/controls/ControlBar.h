@@ -85,6 +85,7 @@ private:
     QToolButton* m_transcriptBtn = nullptr;
     QToolButton* m_dictionaryBtn = nullptr;
     QToolButton* m_fileBtn = nullptr;
+    QToolButton* m_topBtn = nullptr;
     QToolButton* m_settingsBtn = nullptr;
     QLabel* m_timerLabel = nullptr;
     AppleShadowEffect* m_shadow = nullptr;
