@@ -727,16 +727,19 @@ void SherpaInstaller::onGroupFinished(const QString& groupId, bool success)
     QObject::connect(task, &ExtractTask::extractFinished, this,
         [this, groupId](bool ok) { emit extractFinished(groupId, ok); });
     QObject::connect(task, &BaseTask::taskFinished, this,
-        [this, groupId](TaskResult result, const QString&) {
-            onSherpaExtractFinished(groupId, result == TaskResult::Success);
+        [this, groupId](TaskResult result, const QString& message) {
+            onSherpaExtractFinished(groupId, result == TaskResult::Success, message);
         });
 
     m_extractQueue->addTask(task);
 }
 
-void SherpaInstaller::onSherpaExtractFinished(const QString& groupId, bool ok)
+void SherpaInstaller::onSherpaExtractFinished(const QString& groupId, bool ok, const QString& error)
 {
     if (!ok) {
+        LOG_ERROR(QString("Model extract failed: %1 (%2)").arg(groupId, error));
+        // 先发原因再发"组失败"：界面在后者里用前者给出真实原因，而不是笼统的"请检查网络"
+        emit extractFailed(groupId, error);
         emit installGroupFinished(groupId, false, tr("Extract Error"));
         return;
     }
@@ -786,11 +789,12 @@ void SherpaDependencyManager::onDownloadFinished(const QString& path)
     opts.filter = [](const QFileInfo& fi) {
         return fi.fileName().startsWith("onnx", Qt::CaseInsensitive);
         };
-    if (ExtractTool::extractAndDeploy(path, opts)) {
+    QString error;
+    if (ExtractTool::extractAndDeploy(path, opts, &error)) {
         m_currentIndex++;
         startNext();
     }else {
-        emit finished(false, "Extraction failed. Please check disk space or permissions.");
+        emit finished(false, "Extraction failed: " + error);
     }
 }
 

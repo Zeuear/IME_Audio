@@ -224,6 +224,7 @@ if(WIN32)
         Qt6::CorePrivate
         Qt6::Svg
         kissfft
+        imeaudio_archive
         imm32
     )
 elseif(APPLE)
@@ -240,6 +241,7 @@ elseif(APPLE)
         Qt6::CorePrivate
         Qt6::Svg
         kissfft
+        imeaudio_archive
         "-framework ApplicationServices"
         "-framework AVFoundation"
         "-framework AppKit"
@@ -259,6 +261,7 @@ else()
         Qt6::CorePrivate
         Qt6::Svg
         kissfft
+        imeaudio_archive
     )
 endif()
 

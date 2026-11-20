@@ -313,11 +313,16 @@ void MainWin::setupUiConnections(){
         notify(NotifyLevel::Info, tr("开始下载模型..."));
     });
     connect(m_sherpaInstaller, &SherpaInstaller::installCancelled, this, [this](const QString&) { m_userCancelledInstall = true; });
+    connect(m_sherpaInstaller, &SherpaInstaller::extractFailed, this, [this](const QString& repoId, const QString& cause) {
+        m_installFailCause.insert(repoId, cause);
+    });
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupFinished, this, [=](const QString& repoId, bool success, const QString&) {
         if (repoId == m_autoGpuRepoId) m_autoGpuRepoId.clear();
         ui->model_list_widget->refreshInstalled();
+        const QString extractCause = m_installFailCause.take(repoId);
         if (success) notify(NotifyLevel::Success, tr("模型下载完成"));
         else if (m_userCancelledInstall) notify(NotifyLevel::Info, tr("已取消下载"));   // 取消不是失败，不弹错误
+        else if (!extractCause.isEmpty()) notify(NotifyLevel::Error, tr("模型解压失败"), extractCause);
         else notify(NotifyLevel::Error, tr("模型下载失败"), tr("请检查网络后重试"));
         m_userCancelledInstall = false;
     });

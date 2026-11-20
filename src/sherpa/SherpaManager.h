@@ -140,6 +140,8 @@ signals:
     void extractStarted(const QString& repoId, int totalLines);
     void extractProgress(const QString& repoId, int current, int total);
     void extractFinished(const QString& repoId, bool success);
+    // 解压失败的原因（先于 installGroupFinished 发出）
+    void extractFailed(const QString& repoId, const QString& cause);
 
     void loadModel(const QString& repoId, bool success, const QString& msg);
 
@@ -154,7 +156,7 @@ private slots:
     void onGroupFileFinished(const QString& groupId, const QString& taskId, const QString& filename);
     void onGroupFileError(const QString& groupId, const QString& taskId, const QString& filename, const QString& error);
     void onGroupFinished(const QString& groupId, bool success);
-    void onSherpaExtractFinished(const QString& groupId, bool ok);
+    void onSherpaExtractFinished(const QString& groupId, bool ok, const QString& error = QString());
 
 private:
     DownloadManager* m_downloadManager = nullptr;

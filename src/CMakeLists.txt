@@ -81,6 +81,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE
     onnxruntime_headers
     qhotkey
     kissfft
+    imeaudio_archive
 )
 
 if(WIN32)

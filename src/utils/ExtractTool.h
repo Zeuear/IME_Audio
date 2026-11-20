@@ -6,8 +6,8 @@
 
 
 struct ExtractProgress {
-    int current = 0;       // 已解压条目数（从 0 递增）
-    int total = -1;        // 压缩包内条目总数；-1 表示未知（tar -tf 失败时的降级）
+    int current = 0;       // 进度分子：压缩包已读字节折算的千分比（0..1000）
+    int total = 1000;      // 进度分母，恒为 1000（条目总数要通读压缩包才知道，不值得）
     QString currentFile;   // 当前正在解压的文件名（仅末级，已去路径前缀）
 };
 
@@ -31,22 +31,20 @@ struct ExtractOptions
     // 解压完成后是否删除原始压缩包
     bool removeArchiveAfterExtract = true;
 
-    // tar 等待超时时间（毫秒）
-    int timeoutMs = 60000;
-
-    int stallTimeoutMs = 30000;
-
     // 结构化解压进度回调（current/total/currentFile）。为 nullptr 时不回报。
     ExtractProgressCb onProgress = nullptr;
 };
 
+// @brief 基于 libarchive 的进程内解压（tar.bz2 / tar.gz / zip），不依赖系统 tar。
+//        失败原因通过 error 带回，供界面直接展示。
 class ExtractTool {
 public:
-    static bool extractAndDeploy(const QString& archivePath, const ExtractOptions& options);
+    static bool extractAndDeploy(const QString& archivePath, const ExtractOptions& options,
+                                 QString* error = nullptr);
 
     static bool extractAll(const QString& archivePath,
                            const QString& destinationDir,
                            bool removeArchiveAfterExtract = true,
                            const ExtractProgressCb& onProgress = nullptr,
-                           int stallTimeoutMs = 90000);
+                           QString* error = nullptr);
 };

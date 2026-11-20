@@ -5,6 +5,7 @@
 #include <QPropertyAnimation>
 #include <QMessageBox>
 #include <QSet>
+#include <QHash>
 #include <QSettings>
 #include <QTranslator>
 #include <qprocess.h>
@@ -186,6 +187,7 @@ private:
     bool m_indicatorRecording = false;  
     bool m_loadingSettings = false;
     bool m_userCancelledInstall = false;
+    QHash<QString, QString> m_installFailCause;   // repoId -> 解压失败原因，用于覆盖笼统的"检查网络"提示
     QString m_autoGpuRepoId;   // 切到 GPU 模式时自动下载中的 GPU 版仓库，空 = 没有
     static constexpr int kGpuDetectionWaitMs = 5000;
     QTimer* m_detectTimer = nullptr;

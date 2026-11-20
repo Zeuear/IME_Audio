@@ -88,6 +88,7 @@ enable_testing()
 # src
 include(Platform)
 include(DeployQt)
+include(LibArchive)
 add_subdirectory(src)
 
 # tests

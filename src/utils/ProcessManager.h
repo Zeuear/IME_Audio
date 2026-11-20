@@ -104,14 +104,16 @@ public:
         : BaseTask(), m_archive(archive), m_target(target) {}
 
     void run() override {
+        bool started = false;
+        QString error;
         bool ok = ExtractTool::extractAll(m_archive, m_target, true,
-            [this](const ExtractProgress& p) {
-                if (p.total > 0 && p.current == 1) emit extractStarted(p.total);
+            [this, &started](const ExtractProgress& p) {
+                if (!started) { started = true; emit extractStarted(p.total); }
                 emit extractProgress(p.current, p.total);
-            });
+            }, &error);
         emit extractFinished(ok);
         if (ok) emit taskFinished(TaskResult::Success, "Extraction successful");
-        else emit taskFinished(TaskResult::Failed, "Extraction failed");
+        else emit taskFinished(TaskResult::Failed, error);
     }
 
 private:
@@ -128,14 +130,16 @@ public:
     }
 
     void run() override {
-        m_opts.onProgress = [this](const ExtractProgress& p) {
-            if (p.total > 0 && p.current == 1) emit extractStarted(p.total);
+        bool started = false;
+        QString error;
+        m_opts.onProgress = [this, &started](const ExtractProgress& p) {
+            if (!started) { started = true; emit extractStarted(p.total); }
             emit extractProgress(p.current, p.total);
         };
-        bool ok = ExtractTool::extractAndDeploy(m_archive, m_opts);
+        bool ok = ExtractTool::extractAndDeploy(m_archive, m_opts, &error);
         emit extractFinished(ok);
         if (ok) emit taskFinished(TaskResult::Success, "Extraction successful");
-        else emit taskFinished(TaskResult::Failed, "Extraction failed");
+        else emit taskFinished(TaskResult::Failed, error);
     }
 
 private:
