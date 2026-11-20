@@ -74,7 +74,9 @@ void ConfigManager::applyDefaults() {
 bool ConfigManager::load() {
     QSettings s(m_configPath, QSettings::IniFormat);
 
-    m_config.hotkey = s.value("hotkey", "").toString();
+    // 缺键或存成空串都回到默认：空快捷键等于听写无法触发，且之后任何一次保存都会把空值固化下来
+    m_config.hotkey = s.value("hotkey", kDefaultHotkey).toString();
+    if (m_config.hotkey.isEmpty()) m_config.hotkey = kDefaultHotkey;
     m_config.hotkeyHold = s.value("hotkeyHold", false).toBool();
     m_config.backend = static_cast<AsrBackendKind>(s.value("backend").toInt());
     m_config.groqKey = s.value("groqKey").toString();

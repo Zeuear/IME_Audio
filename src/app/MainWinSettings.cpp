@@ -106,6 +106,8 @@ void MainWin::registerSettings()
         Opt{ Apply::Instant, 0, false });
     s->addLockedWidget(ui->shortcut_edit);
     connect(ui->shortcut_edit, &ShortcutEdit::shortcutChanged, this, [this](const QString& hotkey) {
+        // 只勾了修饰键、还没填按键时拼出来是空串，不能写进配置，否则重启后整组快捷键都丢了
+        if (hotkey.isEmpty()) return;
         ConfigManager::instance().config().hotkey = hotkey;
         applySettings(0);
     });
