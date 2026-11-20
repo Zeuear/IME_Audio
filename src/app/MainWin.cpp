@@ -126,10 +126,6 @@ void MainWin::initialize() {
     auto items = AudioRecorderService::availableMicrophones();
     ui->recording_equ_comb->addItems(items);
 
-    ui->source_equipment_comb->clear();
-    auto speakers = AudioRecorderService::availableSpeakers();
-    ui->source_equipment_comb->addItems(speakers);
-
     setupLanguageCombo();
     ui->model_list_widget->setLanguage(currentLanguageKey());
 
@@ -274,12 +270,6 @@ void MainWin::setupUiConnections(){
             });
         });
     }
-
-    // 输出设备测试播放
-    connect(ui->test_output_btn, &QPushButton::clicked, this, [this]() {
-        QString name = ui->source_equipment_comb->currentText();
-        m_workflow->playTestTone();
-    });
 
     // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {

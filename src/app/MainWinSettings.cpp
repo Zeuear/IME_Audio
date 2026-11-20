@@ -40,10 +40,6 @@ void MainWin::registerSettings()
             c.audio.deviceName = ui->recording_equ_comb->itemText(v);
         },
         Opt{ Apply::Instant, kRecorder, true });
-    s->bindText(ui->source_equipment_comb,
-        [](const AppConfig& c) { return c.audio.outputDeviceName; },
-        [](AppConfig& c, const QString& v) { c.audio.outputDeviceName = v; },
-        Opt{ Apply::Instant, kRecorder, true });
     s->bind(ui->grop_key_edit,
         [](const AppConfig& c) { return c.groqKey; },
         [](AppConfig& c, const QString& v) { c.groqKey = v; },

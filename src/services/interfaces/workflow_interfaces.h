@@ -20,7 +20,6 @@ public:
     virtual void pause() = 0;
     virtual void resume() = 0;
     virtual void updateConfig() = 0;
-    virtual void playTestTone() = 0;
 
 signals:
     void utteranceReady(const QByteArray &pcmData, int sampleRate);

@@ -49,7 +49,6 @@ Qt6 桌面语音输入法（Windows / macOS / Linux）。领域术语见 [CONTEX
 - 平台相关代码放 `src/platform/{win,mac,linux}/`，每个平台一份实现，
   由 [cmake/Platform.cmake](cmake/Platform.cmake) 定义平台目录，[src/CMakeLists.txt](src/CMakeLists.txt) 和 tests 共用（递归 glob 会排除 `/platform/`）。
   新增平台接口：在公共头声明，三个目录各写一份（mac 用 `.mm`）。
-- `SystemAudioEndpointController` 的 COM hack 是为 VoiceMeeter 虚拟声卡存在，**Windows 专属，不要移植**。
 - **sherpa-onnx**：官方预编译库在 Linux 上与 C++ API 有 ABI 不匹配（`AddPunctuation` 链接失败）。
   标点模型走 `c-api.h` 的纯 C 接口，不要改回 C++ 封装，也不要靠切 `_GLIBCXX_USE_CXX11_ABI` 解决。
   其余识别/VAD 用 `cxx-api.h` 即可（其它符号已在 CI 通过）。

@@ -199,11 +199,10 @@ set(TEST_DEPS
 
 # 平台层实现按宿主平台选取，与主程序一致（ProcessManager.h 的 moc 代码引用
 # runElevatedBlocking，InputInjector 的桩/实现同理，缺一个都会链接失败）。
-# 目录与扩展名来自 cmake/Platform.cmake，与 src/ 是同一份：RecorderService 按值持有
-# SystemAudioEndpointController，漏掉 AudioEndpoint_* 会在链接期报缺符号。
+# 目录与扩展名来自 cmake/Platform.cmake，与 src/ 是同一份。
 set(_test_platform_root ${CMAKE_CURRENT_SOURCE_DIR}/../src/platform)
 # ForegroundWindow：横条右键菜单要记住并恢复前台窗口
-foreach(_mod InputInjector AudioEndpoint Elevation Permissions Firewall ForegroundWindow)
+foreach(_mod InputInjector Elevation Permissions Firewall ForegroundWindow)
     list(APPEND TEST_DEPS
         "${_test_platform_root}/${IMEAUDIO_PLATFORM_DIR}/${_mod}_${IMEAUDIO_PLATFORM_DIR}.${IMEAUDIO_PLATFORM_EXT}")
 endforeach()

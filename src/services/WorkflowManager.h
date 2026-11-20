@@ -43,7 +43,6 @@ public:
     void stop();
     // 停止且丢弃还没送出的录音（按住说话时按得太短，视为误触）
     void cancel();
-    void playTestTone();                      
     void applyRecorderConfig();               
     void preloadModel(const AppConfig& cfg);  
     void togglePause();                      

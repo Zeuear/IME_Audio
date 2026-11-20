@@ -87,11 +87,6 @@ void WorkflowManager::cancel()
     m_discarding = false;
 }
 
-void WorkflowManager::playTestTone()
-{
-    if (m_recorder) m_recorder->playTestTone();
-}
-
 void WorkflowManager::applyRecorderConfig()
 {
     if (m_recorder) m_recorder->updateConfig();

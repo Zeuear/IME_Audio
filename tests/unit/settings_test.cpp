@@ -32,7 +32,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     w.continuousMode = true;
     w.liveCaptionEnabled = false; w.liveCaptionFontSize = 21; w.liveCaptionAtTop = true;
     w.hotkey = "Ctrl+Shift+K"; w.hotkeyHold = true;
-    w.audio.deviceId = 3; w.audio.deviceName = "mic"; w.audio.outputDeviceName = "spk";
+    w.audio.deviceId = 3; w.audio.deviceName = "mic";
     w.audio.voiceThreshold = 901; w.audio.silenceTimeoutMs = 1234; w.audio.minRecordMs = 456; w.audio.maxRecordMs = 7890;
     w.sherpa.useGpu = true; w.sherpa.threads = 7; w.sherpa.languageModel = "Spanish"; w.sherpa.localModelRepoId = "a/b";
     w.polish.aiEngineIndex = 2; w.polish.enableAiEnhancement = true; w.polish.apiKey = "k"; w.polish.apiUrl = "u";
@@ -50,7 +50,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_TRUE(r.continuousMode.load());
     EXPECT_FALSE(r.liveCaptionEnabled.load()); EXPECT_EQ(r.liveCaptionFontSize, 21); EXPECT_TRUE(r.liveCaptionAtTop);
     EXPECT_EQ(r.hotkey, "Ctrl+Shift+K"); EXPECT_TRUE(r.hotkeyHold);
-    EXPECT_EQ(r.audio.deviceId, 3); EXPECT_EQ(r.audio.deviceName, "mic"); EXPECT_EQ(r.audio.outputDeviceName, "spk");
+    EXPECT_EQ(r.audio.deviceId, 3); EXPECT_EQ(r.audio.deviceName, "mic");
     EXPECT_EQ(r.audio.voiceThreshold, 901); EXPECT_EQ(r.audio.silenceTimeoutMs, 1234);
     EXPECT_EQ(r.audio.minRecordMs, 456); EXPECT_EQ(r.audio.maxRecordMs, 7890);
     EXPECT_TRUE(r.sherpa.useGpu); EXPECT_EQ(r.sherpa.threads, 7);

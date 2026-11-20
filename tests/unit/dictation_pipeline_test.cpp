@@ -26,7 +26,6 @@ public:
     void pause() override {}
     void resume() override {}
     void updateConfig() override {}
-    void playTestTone() override {}
 
     // pcm 内容即"说的话"的标识，假 ASR 据此查表
     void speak(const QByteArray& pcm) { emit utteranceReady(pcm, 16000); }

@@ -7,11 +7,8 @@
 
 #include "config/AppConfig.h"
 #include "interfaces/workflow_interfaces.h"
-#include "utils/SystemAudioEndpointController.h"
 
-class QAudioSink;
 class QAudioSource;
-class QBuffer;
 class QIODevice;
 class QThread;
 class SpectrumWorker;
@@ -52,10 +49,6 @@ public:
     int takeCarryMs() { return std::exchange(m_carryMs, 0); }
 
     static QStringList availableMicrophones();
-    static QStringList availableSpeakers();
-
-public slots:
-    void playTestTone() override;
 
 signals:
     void audioChunk(const QByteArray& pcm);
@@ -103,9 +96,4 @@ private:
     SpeechSegmenter* m_segmenter = nullptr;
     QThread* m_segmenterThread = nullptr;
 
-    // 测试音播放
-    QAudioSink* m_audioSink = nullptr;
-    QBuffer* m_audioBuffer = nullptr;
-
-    SystemAudioEndpointController m_endpointController;
 };

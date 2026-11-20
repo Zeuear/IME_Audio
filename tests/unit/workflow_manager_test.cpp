@@ -15,7 +15,6 @@ public:
     void pause() override { paused = true; }
     void resume() override { paused = false; }
     void updateConfig() override { ++updateConfigCalls; }
-    void playTestTone() override { ++playTestToneCalls; }
 
     // 测试侧驱动上行信号
     void emitUtteranceReady(const QByteArray& pcm = QByteArray("x"), int sr = 16000) {
@@ -27,7 +26,6 @@ public:
     int startListeningCalls = 0;
     int stopListeningCalls = 0;
     int updateConfigCalls = 0;
-    int playTestToneCalls = 0;
     bool listening = false;
     bool paused = false;
     bool emitUtteranceOnStop = false;   // 模拟非连续模式 stopListening 产出最终 utterance
@@ -117,9 +115,6 @@ TEST_F(WorkflowManagerTest, Basic_RecordingToTranscribingToRecording) {
 
 // T3 门面透传
 TEST_F(WorkflowManagerTest, Facade_CommandsForwardToCollaborators) {
-    wf->playTestTone();
-    EXPECT_EQ(rec->playTestToneCalls, 1);
-
     wf->applyRecorderConfig();
     EXPECT_EQ(rec->updateConfigCalls, 1);
 

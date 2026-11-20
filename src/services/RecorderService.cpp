@@ -1,11 +1,8 @@
 #include "RecorderService.h"
 #include <QMediaDevices>
 #include <QAudioDevice>
-#include <QAudioSink>
 #include <QAudioSource>
-#include <QBuffer>
 #include <QCoreApplication>
-#include <QPointer>
 #include <QThread>
 #include <QtMath>
 #include <cmath>
@@ -61,7 +58,6 @@ AudioRecorderService::AudioRecorderService(const AppConfig& config, QObject* par
 
 AudioRecorderService::~AudioRecorderService()
 {
-    if (m_audioSink) { m_audioSink->stop(); delete m_audioSink; m_audioSink = nullptr; }
     m_spectrumThread->quit();
     m_spectrumThread->wait();
     m_segmenterThread->quit();
@@ -96,8 +92,6 @@ void AudioRecorderService::stopListening()
 
     readAndDispatch();
 
-    // 恢复系统原来的默认播放/输入设备
-    m_endpointController.restore();
     if (m_config.continuousMode) {
         emitUnfinishedSentences();
     } else {
@@ -180,15 +174,6 @@ bool AudioRecorderService::openMicrophone()
 
     const QAudioDevice device = findDevice(QMediaDevices::audioInputs(),
         QMediaDevices::defaultAudioInput(), m_config.audio.deviceName);
-
-    if (isCustomDevice(m_config.audio.outputDeviceName)) {
-        const QAudioDevice outputDevice = findDevice(QMediaDevices::audioOutputs(),
-            QMediaDevices::defaultAudioOutput(), m_config.audio.outputDeviceName);
-        m_endpointController.setDefaultOutput(outputDevice.id().toStdString());
-    }
-    if (isCustomDevice(m_config.audio.deviceName)) {
-        m_endpointController.setDefaultInput(device.id().toStdString());
-    }
 
     LOG_DEBUG(QString("Recorder | input device: %1 (id=%2, null=%3), configured name='%4'")
                   .arg(device.description(), QString::fromUtf8(device.id())).arg(device.isNull()).arg(m_config.audio.deviceName));
@@ -314,56 +299,4 @@ QStringList AudioRecorderService::availableMicrophones()
     for (const auto& dev : QMediaDevices::audioInputs())
         names << dev.description();
     return names;
-}
-
-QStringList AudioRecorderService::availableSpeakers()
-{
-    QStringList names;
-    names << AudioConfig::kDefaultDeviceName;
-    for (const auto& dev : QMediaDevices::audioOutputs())
-        names << dev.description();
-    return names;
-}
-
-void AudioRecorderService::playTestTone()
-{
-    const QAudioDevice outputDevice = findDevice(QMediaDevices::audioOutputs(),
-        QMediaDevices::defaultAudioOutput(), m_config.audio.outputDeviceName);
-
-    QAudioFormat fmt;
-    fmt.setSampleRate(44100);
-    fmt.setChannelCount(1);
-    fmt.setSampleFormat(QAudioFormat::Int16);
-
-    // 清理上一次的 sink 与 buffer
-    if (m_audioSink) { m_audioSink->stop(); delete m_audioSink; m_audioSink = nullptr; }
-    if (m_audioBuffer) { delete m_audioBuffer; m_audioBuffer = nullptr; }
-
-    m_audioSink = new QAudioSink(outputDevice, fmt, this);
-
-    // 生成 0.3s 1kHz 正弦波
-    const int sampleRate = fmt.sampleRate();
-    const int n = sampleRate * 3 / 10;
-    QByteArray data;
-    data.resize(n * 2);
-    int16_t* p = reinterpret_cast<int16_t*>(data.data());
-    for (int i = 0; i < n; ++i) {
-        double t = double(i) / sampleRate;
-        p[i] = static_cast<int16_t>(0.3 * 32767 * std::sin(2.0 * M_PI * 1000.0 * t));
-    }
-    m_audioBuffer = new QBuffer(this);
-    m_audioBuffer->setData(data);
-    m_audioBuffer->open(QIODevice::ReadOnly);
-
-    QPointer<QBuffer> bufPtr(m_audioBuffer);
-    QObject::connect(m_audioSink, &QAudioSink::stateChanged, this,
-    [this, bufPtr](QAudio::State s) mutable {
-        if ((s == QAudio::IdleState || s == QAudio::StoppedState) && bufPtr) {
-            bufPtr->deleteLater();
-            m_audioBuffer = nullptr;
-            if (m_audioSink) m_audioSink->deleteLater();
-            m_audioSink = nullptr;
-        }
-    });
-    m_audioSink->start(m_audioBuffer);
 }
