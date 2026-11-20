@@ -25,7 +25,6 @@ struct AudioConfig {
 
     int deviceId = kInvalidDeviceId;
     QString deviceName = kDefaultDeviceName;
-    QString outputDeviceName;
     int sampleRate = 16000;
     int channels = 1;
     int bitsPerSample = 16;
@@ -109,6 +108,8 @@ struct AppConfig {
     bool injectToForeground = true;
     // 横条（和它下方的面板）是否始终盖在别的软件上面。默认开
     bool barAlwaysOnTop = true;
+    // 上次停留的形态：false = 设置窗口（首次安装默认），true = 横条。见 ADR 0005
+    bool barMode = false;
 
     QString hotkey;
     bool hotkeyHold = false;    
@@ -138,6 +139,7 @@ struct AppConfig {
         liveCaptionAtTop = other.liveCaptionAtTop;
         injectToForeground = other.injectToForeground;
         barAlwaysOnTop = other.barAlwaysOnTop;
+        barMode = other.barMode;
         hotkey = other.hotkey;
         hotkeyHold = other.hotkeyHold;
         style = other.style;

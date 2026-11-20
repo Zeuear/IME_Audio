@@ -2,6 +2,7 @@
 #include "ui_MainWin.h"
 
 #include <QMenu>
+#include <QToolButton>
 #include <QClipboard>
 #include <algorithm>
 #include <QDebug>
@@ -63,6 +64,7 @@
 #include "ui/models/LiveCaptionModel.h"
 #include "ui/controls/SettingsBinder.h"
 #include "ui/controls/ExpandPanel.h"
+#include "ui/controls/FloatingWindow.h"
 #include "ui/controls/AnimatedCheckbox.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
@@ -186,6 +188,11 @@ void MainWin::initialize() {
     m_fileWidget = new FileTranscribeWidget();
     m_panel = new ExpandPanel();
     m_panel->setPages(m_transcriptWidget, m_termWidget, m_fileWidget);   // 页面归面板所有
+    m_formSwitchBtn = new QToolButton(ui->tabWidget);   // Designer 不能设置标签栏角落控件，只能在代码里加
+    m_formSwitchBtn->setAutoRaise(true);
+    m_formSwitchBtn->setText(tr("Switch to toolbar"));
+    ui->tabWidget->setCornerWidget(m_formSwitchBtn, Qt::TopRightCorner);
+    connect(m_formSwitchBtn, &QToolButton::clicked, this, &MainWin::switchToBar);
     m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
@@ -483,12 +490,14 @@ void MainWin::setupUiConnections(){
     // 点图标就是点那个复选框，已有的配置绑定、保存和界面联动照常触发
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Enhance), ui->enable_enhancement_checkbox);
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Translate), ui->translate_enabled_checkbox);
-    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), m_transcriptWidget->injectCheckBox());
+    // 「输入到前台窗口」以设置卡片里的复选框为准；稿子页里那个复选框也只是遥控器
+    ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), ui->inject_checkbox);
+    ToggleLink::connect(m_transcriptWidget->injectCheckBox(), ui->inject_checkbox);
 
     // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
     connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
-    connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::onShowWindow);
+    connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::switchToSettings);
     // 展开面板：图标只"请求"，面板变成什么样由 PanelState 决定；面板变了（含自己点 tab、被隐藏）再点亮图标
     connect(m_controlBar, &ControlBar::panelRequested, this, [this](PanelState::Page clicked) {
         m_panel->showPage(PanelState::afterClick(m_panel->page(), clicked));
@@ -496,6 +505,9 @@ void MainWin::setupUiConnections(){
     connect(m_panel, &ExpandPanel::pageChanged, m_controlBar, &ControlBar::setPanelPage);
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
+    connect(m_controlBar, &ControlBar::hideRequested, this, &MainWin::hideControlBar);
+    // 没有托盘的桌面隐藏后就找不回来了，此时不提供隐藏
+    m_controlBar->hideAction()->setEnabled(QSystemTrayIcon::isSystemTrayAvailable());
     m_docsBridge = new DocsBridge(this);
     connect(m_docsBridge, &DocsBridge::insertFailed, this, [this](const QString& reason) {
         notify(NotifyLevel::Warning, QStringLiteral("写入 Google 文档失败"),
@@ -519,7 +531,7 @@ void MainWin::setupUiConnections(){
         ConfigManager::instance().save();
         m_panel->setAlwaysOnTop(on);
     });
-    m_controlBar->showAtSavedPosition();
+    showCurrentForm();
 
     connect(m_workflow, &WorkflowManager::stateChanged, this, &MainWin::onStateChanged);
     connect(m_workflow, &WorkflowManager::errorOccurred, this, [this](const QString& title, const QString& cause) {
@@ -758,8 +770,9 @@ void MainWin::changeEvent(QEvent* event)
         alignSettingsCards();
     }
     else if (event->type() == QEvent::WindowStateChange) {
-        if (windowState() & Qt::WindowMinimized) {
-            hide();  
+        // 没有托盘时隐藏就找不回来了，退回系统的最小化
+        if ((windowState() & Qt::WindowMinimized) && QSystemTrayIcon::isSystemTrayAvailable()) {
+            hide();
         }
     }
     QMainWindow::changeEvent(event);
@@ -768,10 +781,14 @@ void MainWin::changeEvent(QEvent* event)
 
 void MainWin::closeEvent(QCloseEvent* event)
 {
-    // 主窗口现在是设置窗口，横条才是常驻入口：关窗口只隐藏，不退出程序。
-    // 退出走横条右键菜单或托盘菜单，所以没有托盘的桌面也能退出
-    hide();
-    setWindowState(Qt::WindowMinimized);
+    // 关窗口只隐藏，不退出程序；退出走托盘右键菜单，没有托盘的桌面走横条右键菜单。
+    // 没有托盘时隐藏就找不回来，改为切到横条
+    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+        hide();
+        setWindowState(Qt::WindowMinimized);
+    } else {
+        switchToBar();
+    }
     event->ignore();
 }
 
@@ -946,7 +963,6 @@ void MainWin::loadConfigToUI() {
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
     ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
     rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
-    m_transcriptWidget->setInjectToForeground(cfg.injectToForeground);
     m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
     // loadAll 期间设置项的改动不会发通知，启动时的置顶状态要在这里按配置应用一次
@@ -1033,6 +1049,11 @@ void fillCombo(QComboBox* combo, const ComboEntry (&entries)[N]) {
 } // namespace
 
 void MainWin::retranslateDynamicItems() {
+    if (m_formSwitchBtn) m_formSwitchBtn->setText(tr("Switch to toolbar"));
+    if (m_pagesInSettings) {
+        ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_termWidget), tr("Dictionary"));
+        ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_fileWidget), tr("File Transcription"));
+    }
     fillCombo(ui->identification_backend_comb, kBackendItems);
     fillCombo(ui->ai_engine_comb, kAiEngineItems);
     fillCombo(ui->ai_style_comb, kStyleItems);
@@ -1641,75 +1662,77 @@ void MainWin::initSystemTray()
 
 void MainWin::rebuildTrayMenu()
 {
+    // 托盘只管显示与隐藏和退出，其余功能都在横条和设置窗口里
     trayMenu->clear();
-    const AppConfig& cfg = ConfigManager::instance().config();
-    const bool idle = m_workflow->state() == WorkflowState::Idle;
-
-    if (idle) trayMenu->addAction(tr("开始听写"), this, [this]() { startDictation(); });
-    else trayMenu->addAction(tr("停止听写"), this, &MainWin::stopDictation);
-    trayMenu->addSeparator();
-
-    // 锁定状态，与设置页一致
-    QMenu* langMenu = trayMenu->addMenu(tr("识别语言"));
-    langMenu->setEnabled(idle);
-    
-    // 托盘里只列已下载模型的
-    for (const QString& lang : ModelRegistry::GetLanguages()) {
-        QString installedModel;
-        for (const ModelEntry& e : ModelRegistry::GetModelEntriesByLanguage(lang)) {
-            if (SherpaInstaller::isInstalled(e.repoPath)) { installedModel = e.displayName; break; }
-        }
-        if (installedModel.isEmpty() && lang != cfg.sherpa.languageModel) continue;
-        QAction* a = langMenu->addAction(LanguageCatalog::displayName(lang), this, [this, lang, installedModel]() {
-            ui->language_comb->setCurrentIndex(ui->language_comb->findData(lang));
-            if (!installedModel.isEmpty()) ui->model_list_widget->setCurrentModel(installedModel);
-            ConfigManager::instance().config().sherpa.localModelRepoId = ui->model_list_widget->currentModel();
-            applySettings(SettingsBinder::LiveCaption);
-            m_workflow->preloadModel(ConfigManager::instance().config());
-        });
-        a->setCheckable(true);
-        a->setChecked(lang == cfg.sherpa.languageModel);
-    }
-
-    QMenu* backendMenu = trayMenu->addMenu(tr("识别后端"));
-    backendMenu->setEnabled(idle);
-    for (int i = 0; i < ui->identification_backend_comb->count(); ++i) {
-        QAction* a = backendMenu->addAction(ui->identification_backend_comb->itemText(i), this, [this, i]() {
-            ui->identification_backend_comb->setCurrentIndex(i); 
-        });
-        a->setCheckable(true);
-        a->setChecked(i == int(cfg.backend));
-    }
-
-    QAction* caption = trayMenu->addAction(tr("实时字幕"), this, [this](bool on) {
-        ui->live_caption_checkbox->setChecked(on); 
-    });
-    caption->setCheckable(true);
-    caption->setChecked(cfg.liveCaptionEnabled.load());
-
-    // 最近听写：点一下复制
-    QMenu* recent = trayMenu->addMenu(tr("最近听写"));
-    constexpr int kTrayRecent = 5;
-    for (int i = 0; i < std::min(kTrayRecent, m_history->rowCount()); ++i) {
-        const QString text = m_history->textAt(i);
-        const QString label = QFontMetrics(recent->font()).elidedText(text.simplified(), Qt::ElideRight, 320);
-        recent->addAction(label, this, [this, text]() {
-            QGuiApplication::clipboard()->setText(text);
-            trayIcon->showMessage(tr("已复制"), text.left(80), QSystemTrayIcon::Information, 1500);
-        });
-    }
-    if (recent->isEmpty()) recent->addAction(tr("暂无记录"))->setEnabled(false);
-
-    trayMenu->addSeparator();
-    trayMenu->addAction(tr("设置"), this, &MainWin::onShowWindow);
+    const bool shown = isVisible() || m_controlBar->isVisible();
+    trayMenu->addAction(shown ? tr("隐藏") : tr("显示"), this, &MainWin::toggleCurrentForm);
     trayMenu->addAction(tr("退出"), this, &MainWin::onQuitApplication);
 }
 
 void MainWin::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
-        showControlBar();
+        toggleCurrentForm();
     }
+}
+
+void MainWin::toggleCurrentForm()
+{
+    if (isVisible()) onHideWindow();
+    else if (m_controlBar->isVisible()) hideControlBar();
+    else showCurrentForm();
+}
+
+void MainWin::showCurrentForm()
+{
+    if (ConfigManager::instance().config().barMode) {
+        movePagesTo(false);
+        showControlBar();
+    } else {
+        movePagesTo(true);
+        onShowWindow();
+    }
+}
+
+void MainWin::movePagesTo(bool settingsWindow)
+{
+    // 词典、文件转录页只有一个实例，在面板和设置窗口的标签页之间借用；状态（文件转录进度等）留在实例里
+    if (m_pagesInSettings == settingsWindow) return;
+    if (settingsWindow) {
+        m_panel->showPage(PanelState::Page::None);
+        m_panel->releaseSharedPages();
+        const int at = ui->tabWidget->indexOf(ui->logs);
+        ui->tabWidget->insertTab(at, m_termWidget, tr("Dictionary"));
+        ui->tabWidget->insertTab(at + 1, m_fileWidget, tr("File Transcription"));
+    } else {
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(m_termWidget));
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(m_fileWidget));
+        m_panel->takeBackSharedPages(m_termWidget, m_fileWidget);
+    }
+    m_pagesInSettings = settingsWindow;
+}
+
+void MainWin::switchToBar()
+{
+    const QPoint at = pos();
+    ConfigManager::instance().config().barMode = true;
+    ConfigManager::instance().save();
+    movePagesTo(false);
+    hide();
+    m_controlBar->showAt(at);
+    m_controlBar->raise();
+    ForegroundWindow::bringToFront(m_controlBar->winId());
+}
+
+void MainWin::switchToSettings()
+{
+    const QPoint at = m_controlBar->pos();
+    ConfigManager::instance().config().barMode = false;
+    ConfigManager::instance().save();
+    hideControlBar();
+    movePagesTo(true);
+    move(FloatingWindow::place(at, size(), FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea()));
+    onShowWindow();
 }
 
 void MainWin::showControlBar()
@@ -1717,6 +1740,13 @@ void MainWin::showControlBar()
     m_controlBar->showAtSavedPosition();
     m_controlBar->raise();
     ForegroundWindow::bringToFront(m_controlBar->winId());
+}
+
+void MainWin::hideControlBar()
+{
+    // 面板紧贴横条，横条藏起来时面板不能留在原地
+    m_panel->showPage(PanelState::Page::None);
+    m_controlBar->hide();
 }
 
 void MainWin::onShowWindow()

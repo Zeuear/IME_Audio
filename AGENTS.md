@@ -6,6 +6,7 @@ Qt6 桌面语音输入法（Windows / macOS / Linux）。领域术语见 [CONTEX
 ## 界面（UI）
 
 - **标签页/页面写在 [src/app/MainWin.ui](src/app/MainWin.ui) 里**，不要在 C++ 里 `addTab` 或手工拼主窗口页面。
+  - 例外（[ADR 0005](docs/adr/0005-control-bar-settings-switch.md)）：词典、文件转录页由代码创建，在横条展开面板与设置窗口标签页之间借用（`MainWin::movePagesTo`）；标签栏右侧的切换按钮是角落控件，Designer 不支持，只能在代码里加。
 - 自定义控件在 .ui 中**提升（`<customwidget>`）**，参照 `TermWidget`、`NavListWidget`：
   - 控件提供 `explicit X(QWidget* parent = nullptr)` 默认构造，内部 `setupUi()` 用代码搭内部布局。
   - 依赖（服务、配置）由 `MainWin` 通过 setter 注入，例如 `ui->terms_widget->setTermsManager(...)`、

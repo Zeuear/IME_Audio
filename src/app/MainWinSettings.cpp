@@ -99,6 +99,11 @@ void MainWin::registerSettings()
         [](const AppConfig& c) { return c.hotkeyHold ? 1 : 0; },
         [](AppConfig& c, int v) { c.hotkeyHold = v == 1; },
         Opt{ Apply::Instant, 0, true });
+    // 「输入到前台窗口」以这个复选框为唯一来源，横条图标和稿子页里的复选框都连它（见 MainWin.cpp 的 ToggleLink）
+    s->bind(ui->inject_checkbox,
+        [](const AppConfig& c) { return c.injectToForeground; },
+        [](AppConfig& c, const bool& v) { c.injectToForeground = v; },
+        Opt{ Apply::Instant, 0, false });
     s->addLockedWidget(ui->shortcut_edit);
     connect(ui->shortcut_edit, &ShortcutEdit::shortcutChanged, this, [this](const QString& hotkey) {
         ConfigManager::instance().config().hotkey = hotkey;

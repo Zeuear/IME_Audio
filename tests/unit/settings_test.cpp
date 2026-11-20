@@ -40,6 +40,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     w.polish.translateEnabled = true; w.polish.translateSourceLang = "ja";
     w.injectToForeground = false;   // 默认是开，设成关才能证明读写了这一项
     w.barAlwaysOnTop = false;
+    w.barMode = true;               // 默认是设置窗口，设成横条才能证明读写了这一项
     ASSERT_TRUE(writer.save());
 
     ConfigManager reader;
@@ -61,6 +62,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_TRUE(r.polish.translateEnabled); EXPECT_EQ(r.polish.translateSourceLang, "ja");
     EXPECT_FALSE(r.injectToForeground);
     EXPECT_FALSE(r.barAlwaysOnTop);
+    EXPECT_TRUE(r.barMode);
 
     // 赋值运算符同样要拷贝全部字段
     AppConfig copy;
@@ -68,6 +70,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
     EXPECT_EQ(copy.geminiKey, "gemini"); EXPECT_TRUE(copy.hotkeyHold); EXPECT_EQ(copy.liveCaptionFontSize, 21);
     EXPECT_FALSE(copy.injectToForeground);
     EXPECT_FALSE(copy.barAlwaysOnTop);
+    EXPECT_TRUE(copy.barMode);
 
     ConfigManager::setConfigFilePath(oldPath);
 }
@@ -75,6 +78,7 @@ TEST(ConfigRoundTrip, EveryUserSettingSurvivesSaveAndLoad) {
 // 同时输入到前台默认开启；没有配置文件的新用户、旧版本配置文件里没这一项，都应是开
 TEST(ConfigRoundTrip, InjectToForegroundDefaultsToOn) {
     EXPECT_TRUE(AppConfig{}.injectToForeground);
+    EXPECT_FALSE(AppConfig{}.barMode);   // 首次安装默认显示设置窗口
 
     QTemporaryDir dir;
     const QString oldPath = ConfigManager::configFilePath();

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     MainWin w;
     QObject::connect(&guard, &SingleInstanceGuard::anotherInstanceStarted,
-                     &w, &MainWin::onShowWindow);
+                     &w, &MainWin::showCurrentForm);
 
     // 缺少必需授权时引导授权（目前只有 macOS）；
     if (PermissionGuideDialog::isNeeded()) {

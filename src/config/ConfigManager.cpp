@@ -48,7 +48,6 @@ void ConfigManager::applyDefaults() {
     m_config.backend = AsrBackendKind::Sherpa;
     m_config.audio.deviceId = AudioConfig::kInvalidDeviceId;
     m_config.audio.deviceName = AudioConfig::kDefaultDeviceName;
-    m_config.audio.outputDeviceName.clear();
     m_config.audio.sampleRate = 16000;
     m_config.audio.channels = 1;
     m_config.audio.bitsPerSample = 16;
@@ -87,6 +86,7 @@ bool ConfigManager::load() {
     m_config.liveCaptionAtTop = s.value("liveCaptionAtTop", false).toBool();
     m_config.injectToForeground = s.value("injectToForeground", true).toBool();
     m_config.barAlwaysOnTop = s.value("barAlwaysOnTop", true).toBool();
+    m_config.barMode = s.value("barMode", false).toBool();
     m_config.geminiKey = s.value("geminiKey").toString();
     m_config.gladiaKey = s.value("gladiaKey").toString();
     m_config.groqKey = s.value("groqKey").toString();
@@ -95,7 +95,6 @@ bool ConfigManager::load() {
     s.beginGroup("audio");
     m_config.audio.deviceId = s.value("deviceId", -1).toInt();
     m_config.audio.deviceName = s.value("deviceName").toString();
-    m_config.audio.outputDeviceName = s.value("outputDeviceName").toString();
     m_config.audio.sampleRate = s.value("sampleRate", 16000).toInt();
     m_config.audio.channels = s.value("channels", 1).toInt();
     m_config.audio.bitsPerSample = s.value("bitsPerSample", 16).toInt();
@@ -153,6 +152,7 @@ bool ConfigManager::save() {
     s.setValue("liveCaptionAtTop", m_config.liveCaptionAtTop);
     s.setValue("injectToForeground", m_config.injectToForeground);
     s.setValue("barAlwaysOnTop", m_config.barAlwaysOnTop);
+    s.setValue("barMode", m_config.barMode);
     s.setValue("geminiKey", m_config.geminiKey);
     s.setValue("gladiaKey", m_config.gladiaKey);
     s.setValue("groqKey", m_config.groqKey);
@@ -161,7 +161,6 @@ bool ConfigManager::save() {
     s.beginGroup("audio");
     s.setValue("deviceId", m_config.audio.deviceId);
     s.setValue("deviceName", m_config.audio.deviceName);
-    s.setValue("outputDeviceName", m_config.audio.outputDeviceName);
     s.setValue("sampleRate", m_config.audio.sampleRate);
     s.setValue("channels", m_config.audio.channels);
     s.setValue("bitsPerSample", m_config.audio.bitsPerSample);

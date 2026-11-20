@@ -17,6 +17,10 @@ public:
     // 跟随这个窗口（横条）的位置；面板可见时它移动或改变大小，面板重新摆放
     void attachTo(QWidget* anchor);
 
+    // 词典、文件转录页在设置窗口形态下借给设置窗口的标签页：同一个实例，借出时面板必须是收起的
+    void releaseSharedPages();
+    void takeBackSharedPages(QWidget* dictionary, QWidget* file);
+
     // 和横条的置顶设置保持一致：横条不置顶时面板也不该盖在别的软件上面
     void setAlwaysOnTop(bool on);
 

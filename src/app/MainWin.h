@@ -30,6 +30,7 @@ class LiveOverlay;
 class ControlBar;
 class LiveTranscriptWidget;
 class ExpandPanel;
+class QToolButton;
 class ModelDownloadTracker;
 class TermWidget;
 class FileTranscribeWidget;
@@ -77,10 +78,18 @@ protected:
 
 public slots:
     void onShowWindow();
+    // 按上次的形态显示：横条或设置窗口（启动、再次启动程序时用）
+    void showCurrentForm();
 
 private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void showControlBar();
+    void hideControlBar();
+    // 横条与设置窗口二选一，位置继承；见 ADR 0005
+    void switchToBar();
+    void switchToSettings();
+    void toggleCurrentForm();
+    void movePagesTo(bool settingsWindow);
     void onHideWindow();
     void onQuitApplication();
 	void onNewLogEntry(const QString& logEntry);
@@ -145,6 +154,8 @@ private:
     Ui::MainWin *ui;
 
     QSystemTrayIcon* trayIcon;
+    QToolButton* m_formSwitchBtn = nullptr;   // 设置窗口标签栏右侧，切到横条
+    bool m_pagesInSettings = false;           // 词典 / 文件转录页现在挂在谁身上
     QMenu* trayMenu;
 
     QNetworkAccessManager* m_networkManager = nullptr;

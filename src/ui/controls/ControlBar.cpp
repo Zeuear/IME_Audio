@@ -167,6 +167,7 @@ ControlBar::ControlBar(QWidget* parent)
     // 按钮同样推迟：点击事件还在本窗口里分发，此时重建原生窗口不安全
     connect(m_topBtn, &QToolButton::clicked, this, requestTop);
     m_docsAction = m_menu->addAction(QString(), this, &ControlBar::docsRequested);
+    m_hideAction = m_menu->addAction(QString(), this, &ControlBar::hideRequested);
     m_menu->addSeparator();
     m_quitAction = m_menu->addAction(QString(), this, &ControlBar::quitRequested);
 
@@ -351,6 +352,14 @@ void ControlBar::showAtSavedPosition()
     show();
 }
 
+void ControlBar::showAt(const QPoint& topLeft)
+{
+    adjustSize();
+    move(FloatingWindow::place(topLeft, size(), FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea()));
+    FloatingWindow::savePosition(kPositionGroup, pos());
+    show();
+}
+
 void ControlBar::refreshIcons()
 {
     const QPalette& pal = palette();
@@ -401,6 +410,7 @@ void ControlBar::retranslateUi()
     m_topAction->setText(tr("Always on top"));
     m_topBtn->setToolTip(tr("Always on top"));
     m_docsAction->setText(tr("Google Docs..."));
+    m_hideAction->setText(tr("Hide toolbar"));
     m_quitAction->setText(tr("Quit"));
     refreshToggleTips();
 }
