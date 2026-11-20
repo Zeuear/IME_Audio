@@ -42,6 +42,10 @@ public:
     static bool extractAndDeploy(const QString& archivePath, const ExtractOptions& options,
                                  QString* error = nullptr);
 
+    // 目录里（忽略以 "." 开头的标记文件）只有一个子目录时，把它的内容上移一层并删掉该目录。
+    // wrapperName 非空时，只有子目录恰好叫这个名字才处理（用于修复已经装成 X/X 的旧安装）。
+    static bool flattenWrapper(const QString& dir, const QString& wrapperName = QString());
+
     static bool extractAll(const QString& archivePath,
                            const QString& destinationDir,
                            bool removeArchiveAfterExtract = true,

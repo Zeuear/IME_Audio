@@ -171,6 +171,9 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         LOG_WARN(QString("Model not installed: %1").arg(modelDir));
         return;
     }
+    // 旧版本解压压缩包类模型时没摊平，留下 X/X/：sherpa 在外层找不到文件，识别器悄悄失效、转录恒为空
+    if (ExtractTool::flattenWrapper(modelDir, repoId.split("/").last()))
+        LOG_WARN("Repaired nested model directory: " + modelDir);
     Diagnostics::logDirectoryListing("Model load | files", modelDir);
 
     const ModelDescriptor* desc = ModelRegistry::Find(repoId);

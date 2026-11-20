@@ -127,6 +127,36 @@ namespace {
 } // namespace
 
 
+bool ExtractTool::flattenWrapper(const QString& dir, const QString& wrapperName)
+{
+    QDir root(dir);
+    // 以 "." 开头的是安装标记（.installing）：它和包裹目录同时存在，不能算作"目录里还有别的东西"，
+    // 否则单层包裹目录不会被剥掉，模型文件留在 X/X/ 下，sherpa 找不到文件、识别器悄悄失效、转录恒为空
+    QFileInfoList top;
+    for (const QFileInfo& e : root.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries | QDir::Hidden))
+        if (!e.fileName().startsWith('.')) top << e;
+    if (top.size() != 1 || !top.first().isDir()) return false;
+    if (!wrapperName.isEmpty() && top.first().fileName() != wrapperName) return false;
+
+    // 先把包裹目录改成临时名：里面可能有和它同名的子项，直接上移会冲突
+    const QString tmpPath = root.filePath(QStringLiteral(".flatten_") + QUuid::createUuid().toString(QUuid::Id128));
+    if (!QDir().rename(top.first().absoluteFilePath(), tmpPath)) {
+        LOG_WARN("Cannot flatten wrapper directory (rename failed): " + top.first().absoluteFilePath());
+        return false;
+    }
+    QDir wrapper(tmpPath);
+    bool allMoved = true;
+    for (const QFileInfo& c : wrapper.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries | QDir::Hidden)) {
+        if (!QDir().rename(c.absoluteFilePath(), root.filePath(c.fileName()))) {
+            LOG_WARN("Cannot move out of wrapper directory: " + c.absoluteFilePath());
+            allMoved = false;
+        }
+    }
+    if (allMoved) wrapper.removeRecursively();
+    else QDir().rename(tmpPath, top.first().absoluteFilePath());   // 没移干净就还原，不留半截状态
+    return allMoved;
+}
+
 bool ExtractTool::extractAll(const QString& archivePath,
     const QString& destinationDir,
     bool removeArchiveAfterExtract,
@@ -151,16 +181,7 @@ bool ExtractTool::extractAll(const QString& archivePath,
         return false;
     }
 
-    // 剥掉单层包裹目录
-    QDir root(destinationDir);
-    const QFileInfoList top = root.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries);
-    if (top.size() == 1 && top.first().isDir()) {
-        QDir wrapper(top.first().absoluteFilePath());
-        for (const QFileInfo& c : wrapper.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries)) {
-            QDir().rename(c.absoluteFilePath(), root.filePath(c.fileName()));
-        }
-        wrapper.removeRecursively();
-    }
+    flattenWrapper(destinationDir);
 
     if (removeArchiveAfterExtract) QFile::remove(archivePath);
     LOG_DEBUG(QString("Extracted %1 -> %2").arg(archivePath, destinationDir));

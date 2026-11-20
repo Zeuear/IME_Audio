@@ -160,3 +160,60 @@ TEST_F(ExtractProgressTest, DeployFiltersByNameAndPrefix) {
     EXPECT_FALSE(QFileInfo::exists(opts.destinationDir + "/other.dll"));
     EXPECT_FALSE(QFileInfo::exists(opts.destinationDir + "/readme.txt"));
 }
+
+// 模型安装的真实形态：目标目录 models/X 事先建好，压缩包顶层目录也叫 X，里面还有子目录。
+// 必须摊平成 models/X/<文件>，否则 sherpa 在 models/X 下找不到模型文件，识别器悄悄失效、转录恒为空。
+TEST_F(ExtractProgressTest, PrecreatedTargetWithSameNamedWrapperIsFlattened) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString archive = tmp.filePath("m.tar.bz2");
+    const QByteArray payload(2 * 1024 * 1024, 'q');
+    ASSERT_TRUE(writeArchive(archive, Pack::TarBz2, {
+        { "model-x/conv_frontend.onnx", payload }, { "model-x/decoder.int8.onnx", payload },
+        { "model-x/tokenizer/vocab.json", "{}" }, { "model-x/test_wavs/a.wav", "w" }, { "model-x/README.md", "r" } }));
+
+    const QString dest = tmp.filePath("models/model-x");
+    ASSERT_TRUE(QDir().mkpath(dest));
+    QString error;
+    ASSERT_TRUE(ExtractTool::extractAll(archive, dest, true, nullptr, &error)) << error.toStdString();
+    EXPECT_TRUE(QFileInfo::exists(dest + "/conv_frontend.onnx"));
+    EXPECT_TRUE(QFileInfo::exists(dest + "/tokenizer/vocab.json"));
+    EXPECT_FALSE(QFileInfo::exists(dest + "/model-x")) << "wrapper directory must not remain nested";
+}
+
+// 回归：安装流程会先在目标目录建 .installing 标记，解压时它和包裹目录同时存在。
+// 标记不能算作"目录里还有别的东西"，否则不摊平，模型留在 X/X/ 下，转录恒为空。
+TEST_F(ExtractProgressTest, InstallMarkerDoesNotPreventFlatteningWrapper) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString archive = tmp.filePath("m.tar.bz2");
+    ASSERT_TRUE(writeArchive(archive, Pack::TarBz2, { { "model-x/conv_frontend.onnx", "c" }, { "model-x/tokenizer/vocab.json", "{}" } }));
+
+    const QString dest = tmp.filePath("models/model-x");
+    ASSERT_TRUE(QDir().mkpath(dest));
+    { QFile marker(dest + "/.installing"); ASSERT_TRUE(marker.open(QIODevice::WriteOnly)); }
+    QString error;
+    ASSERT_TRUE(ExtractTool::extractAll(archive, dest, true, nullptr, &error)) << error.toStdString();
+    EXPECT_TRUE(QFileInfo::exists(dest + "/conv_frontend.onnx"));
+    EXPECT_TRUE(QFileInfo::exists(dest + "/tokenizer/vocab.json"));
+    EXPECT_FALSE(QFileInfo::exists(dest + "/model-x"));
+    EXPECT_TRUE(QFileInfo::exists(dest + "/.installing")) << "marker belongs to the installer, must stay until markComplete";
+}
+
+TEST_F(ExtractProgressTest, FlattenRepairsAlreadyNestedInstallButOnlyForMatchingName) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString dir = tmp.filePath("model-x");
+    ASSERT_TRUE(QDir().mkpath(dir + "/model-x/tokenizer"));
+    { QFile f(dir + "/model-x/conv_frontend.onnx"); ASSERT_TRUE(f.open(QIODevice::WriteOnly)); f.write("c"); }
+    { QFile f(dir + "/model-x/tokenizer/vocab.json"); ASSERT_TRUE(f.open(QIODevice::WriteOnly)); f.write("{}"); }
+
+    EXPECT_FALSE(ExtractTool::flattenWrapper(dir, "other-name")) << "legit single sub-directory layouts must be left alone";
+    EXPECT_TRUE(QFileInfo::exists(dir + "/model-x/conv_frontend.onnx"));
+
+    EXPECT_TRUE(ExtractTool::flattenWrapper(dir, "model-x"));
+    EXPECT_TRUE(QFileInfo::exists(dir + "/conv_frontend.onnx"));
+    EXPECT_TRUE(QFileInfo::exists(dir + "/tokenizer/vocab.json"));
+    EXPECT_FALSE(QFileInfo::exists(dir + "/model-x"));
+    EXPECT_FALSE(ExtractTool::flattenWrapper(dir, "model-x")) << "already flat: nothing to do";
+}
