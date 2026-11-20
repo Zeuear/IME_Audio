@@ -90,6 +90,7 @@ private slots:
     void switchToSettings();
     void toggleCurrentForm();
     void movePagesTo(bool settingsWindow);
+    void refreshFormSwitchIcon();
     void onHideWindow();
     void onQuitApplication();
 	void onNewLogEntry(const QString& logEntry);

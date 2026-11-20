@@ -103,10 +103,13 @@ public:
         auto addModifier = [&](const QString& name, AnimatedCheckBox*& box) {
             QLabel* label = new QLabel(name, this);
             label->setFixedHeight(30);
+            label->setContentsMargins(0, 0, 5, 0);   // 名称与方框的可见间距约 8px
             box = new AnimatedCheckBox(this);
             layout->addWidget(label);
             layout->addWidget(box);
-            layout->addSpacing(22);
+            // 勾选框控件宽 30px、方框只占左侧 18px，右侧约 12px 空白也算进组间距，
+            // 所以这里只补 6px，使可见组间距约 24px，且最后一组到输入框的间距与组间一致
+            layout->addSpacing(6);
         };
         addModifier(ctrlName, chkCtrl);
         addModifier(shiftName, chkShift);

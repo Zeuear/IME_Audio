@@ -65,6 +65,7 @@
 #include "ui/controls/SettingsBinder.h"
 #include "ui/controls/ExpandPanel.h"
 #include "ui/controls/FloatingWindow.h"
+#include "ui/controls/ToolIcon.h"
 #include "ui/controls/AnimatedCheckbox.h"
 #include "ui/infobar/inforbarmanager.h"
 #include "ui/infobar/inforposmanager.h"
@@ -190,7 +191,12 @@ void MainWin::initialize() {
     m_panel->setPages(m_transcriptWidget, m_termWidget, m_fileWidget);   // 页面归面板所有
     m_formSwitchBtn = new QToolButton(ui->tabWidget);   // Designer 不能设置标签栏角落控件，只能在代码里加
     m_formSwitchBtn->setAutoRaise(true);
-    m_formSwitchBtn->setText(tr("Switch to toolbar"));
+    m_formSwitchBtn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_formSwitchBtn->setIconSize(QSize(22, 22));
+    m_formSwitchBtn->setCursor(Qt::PointingHandCursor);
+    m_formSwitchBtn->setText(tr("Compact mode"));
+    m_formSwitchBtn->setToolTip(tr("Switch to the compact toolbar"));
+    refreshFormSwitchIcon();
     ui->tabWidget->setCornerWidget(m_formSwitchBtn, Qt::TopRightCorner);
     connect(m_formSwitchBtn, &QToolButton::clicked, this, &MainWin::switchToBar);
     m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
@@ -769,6 +775,9 @@ void MainWin::changeEvent(QEvent* event)
         refreshLanguageComboTexts();
         alignSettingsCards();
     }
+    else if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) {
+        refreshFormSwitchIcon();   // 图标底板和线条色取自调色板，切主题要重画
+    }
     else if (event->type() == QEvent::WindowStateChange) {
         // 没有托盘时隐藏就找不回来了，退回系统的最小化
         if ((windowState() & Qt::WindowMinimized) && QSystemTrayIcon::isSystemTrayAvailable()) {
@@ -1049,7 +1058,10 @@ void fillCombo(QComboBox* combo, const ComboEntry (&entries)[N]) {
 } // namespace
 
 void MainWin::retranslateDynamicItems() {
-    if (m_formSwitchBtn) m_formSwitchBtn->setText(tr("Switch to toolbar"));
+    if (m_formSwitchBtn) {
+        m_formSwitchBtn->setText(tr("Compact mode"));
+        m_formSwitchBtn->setToolTip(tr("Switch to the compact toolbar"));
+    }
     if (m_pagesInSettings) {
         ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_termWidget), tr("Dictionary"));
         ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_fileWidget), tr("File Transcription"));
@@ -1710,6 +1722,22 @@ void MainWin::movePagesTo(bool settingsWindow)
         m_panel->takeBackSharedPages(m_termWidget, m_fileWidget);
     }
     m_pagesInSettings = settingsWindow;
+}
+
+void MainWin::refreshFormSwitchIcon()
+{
+    if (!m_formSwitchBtn) return;
+    // 和横条上的图标同一套底板；悬停时 Qt 取 Active 模式的图
+    const QPalette pal = palette();
+    const QColor glyph = ToolIcon::stateColor(pal, ToolIcon::State::Normal);
+    constexpr int kSize = 22;
+    QIcon icon;
+    for (const bool hover : { false, true }) {
+        QPixmap pm = QPixmap::fromImage(ToolIcon::renderTile(QStringLiteral(":/tool_compact"), kSize * 2, pal, QColor(), glyph, hover));
+        pm.setDevicePixelRatio(2.0);
+        icon.addPixmap(pm, hover ? QIcon::Active : QIcon::Normal);
+    }
+    m_formSwitchBtn->setIcon(icon);
 }
 
 void MainWin::switchToBar()

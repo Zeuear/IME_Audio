@@ -397,7 +397,7 @@ void ControlBar::refreshIcons()
     m_dictionaryBtn->setIcon(panelIcon(QStringLiteral(":/tool_dictionary"), m_dictionaryBtn, kBlue));
     m_fileBtn->setIcon(panelIcon(QStringLiteral(":/tool_file"), m_fileBtn, kBlue));
     m_topBtn->setIcon(toggleIcon(QStringLiteral(":/tool_pin"), m_topBtn, kBlue));
-    m_settingsBtn->setIcon(tile(QStringLiteral(":/tool_settings"), pal, none, S::Normal));
+    m_settingsBtn->setIcon(tile(QStringLiteral(":/tool_full"), pal, none, S::Normal));
 }
 
 void ControlBar::retranslateUi()
@@ -405,7 +405,7 @@ void ControlBar::retranslateUi()
     m_startBtn->setToolTip(tr("Start"));
     m_stopBtn->setToolTip(tr("Stop"));
     m_transcriptBtn->setToolTip(tr("Live Transcript"));
-    m_settingsBtn->setToolTip(tr("Settings"));
+    m_settingsBtn->setToolTip(tr("Settings (Full mode)"));
     m_settingsAction->setText(tr("Settings"));
     m_topAction->setText(tr("Always on top"));
     m_topBtn->setToolTip(tr("Always on top"));

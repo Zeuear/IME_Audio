@@ -40,8 +40,8 @@ void AnimatedCheckBox::paintEvent(QPaintEvent* event)
     painter.setRenderHint(QPainter::Antialiasing);
 
     int boxSize = qMin(width(), height()) * 0.6;
-    // 无文字时方框居中；带文字时靠左，文字画在右侧
-    const qreal boxX = text().isEmpty() ? (width() - boxSize) / 2 : 4;
+    // 无文字时贴左边缘，与同列的下拉框、状态点左对齐（居中会多出约 6px 缩进）；带文字时留 4px，文字画在右侧
+    const qreal boxX = text().isEmpty() ? 0 : 4;
     QRectF boxRect(boxX, (height() - boxSize) / 2, boxSize, boxSize);
 
     painter.setPen(Qt::NoPen);

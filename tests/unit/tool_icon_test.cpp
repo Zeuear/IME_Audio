@@ -9,7 +9,7 @@
 namespace {
 const QStringList kToolIcons = {
     "tool_record", "tool_stop", "tool_ai_enhance", "tool_translate",
-    "tool_inject", "tool_transcript", "tool_dictionary", "tool_file", "tool_settings",
+    "tool_inject", "tool_transcript", "tool_dictionary", "tool_file", "tool_compact", "tool_full",
 };
 
 QString iconPath(const QString& name)
