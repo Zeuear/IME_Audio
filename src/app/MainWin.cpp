@@ -484,12 +484,11 @@ void MainWin::setupUiConnections(){
     connect(m_transcriptWidget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
     connect(m_transcriptWidget, &LiveTranscriptWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
-    connect(m_transcriptWidget, &LiveTranscriptWidget::injectToggled, this, [this](bool on) {
-        m_workflow->setInjectEnabled(on);
-        if (m_loadingSettings) return;   // 启动时按配置恢复，不回写
-        ConfigManager::instance().config().injectToForeground = on;
-        ConfigManager::instance().save();
-    });
+    // 只通知工作流，不写配置：持久化归设置页复选框上的绑定器（唯一来源）。
+    // 这里曾经自己 save()，而启动时 ToggleLink 的初始同步也会走到这里——此刻配置还没载入，
+    // 内存里是默认值，一保存就把用户的快捷键、API 密钥等整份覆盖掉
+    connect(m_transcriptWidget, &LiveTranscriptWidget::injectToggled, this,
+            [this](bool on) { m_workflow->setInjectEnabled(on); });
     m_workflow->setInjectEnabled(m_transcriptWidget->injectToForeground());
 
     // 横条上的三个开关不自己存状态：直接连到设置页里已有的复选框，
@@ -1677,12 +1676,14 @@ void MainWin::rebuildTrayMenu()
     // 托盘只管显示与隐藏和退出，其余功能都在横条和设置窗口里
     trayMenu->clear();
     const bool shown = isVisible() || m_controlBar->isVisible();
+    LOG_DEBUG(QString("Tray | menu about to show, settings=%1 bar=%2").arg(isVisible()).arg(m_controlBar->isVisible()));
     trayMenu->addAction(shown ? tr("隐藏") : tr("显示"), this, &MainWin::toggleCurrentForm);
     trayMenu->addAction(tr("退出"), this, &MainWin::onQuitApplication);
 }
 
 void MainWin::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
+    LOG_DEBUG(QString("Tray | activated reason=%1").arg(int(reason)));
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
         toggleCurrentForm();
     }
@@ -1690,6 +1691,7 @@ void MainWin::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void MainWin::toggleCurrentForm()
 {
+    LOG_DEBUG(QString("Tray | toggleCurrentForm settings=%1 bar=%2").arg(isVisible()).arg(m_controlBar->isVisible()));
     if (isVisible()) onHideWindow();
     else if (m_controlBar->isVisible()) hideControlBar();
     else showCurrentForm();
@@ -1713,7 +1715,7 @@ void MainWin::movePagesTo(bool settingsWindow)
     if (settingsWindow) {
         m_panel->showPage(PanelState::Page::None);
         m_panel->releaseSharedPages();
-        const int at = ui->tabWidget->indexOf(ui->logs);
+        const int at = ui->tabWidget->indexOf(ui->appearance);
         ui->tabWidget->insertTab(at, m_termWidget, tr("Dictionary"));
         ui->tabWidget->insertTab(at + 1, m_fileWidget, tr("File Transcription"));
     } else {
@@ -1792,6 +1794,7 @@ void MainWin::onHideWindow()
 
 void MainWin::onQuitApplication()
 {
+    LOG_DEBUG("Quit requested");
     if (trayIcon) {
         trayIcon->hide();
     }

@@ -35,5 +35,7 @@ private:
     AppConfig m_config;
     mutable QReadWriteLock m_lock;
     inline static QString m_configPath;
+    // 本实例载入或保存过之后，内存里的配置才是权威；在此之前不能覆盖已存在的配置文件
+    bool m_synced = false;
 
 };

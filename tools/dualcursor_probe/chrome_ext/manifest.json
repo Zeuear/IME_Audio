@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Dual Cursor Probe (test only)",
+  "version": "0.1",
+  "description": "验证：能否在后台窗口里往 Google 文档写字，且不影响另一个窗口的输入。仅用于本地测试。",
+  "permissions": ["debugger"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Dual Cursor Probe：对当前标签页运行测试" }
+}

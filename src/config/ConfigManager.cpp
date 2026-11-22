@@ -1,5 +1,7 @@
 #include "ConfigManager.h"
 #include <QSettings>
+#include <QFile>
+#include "utils/Logger.h"
 #include <QStandardPaths>
 #include <QDir>
 #include <QFileInfo>
@@ -73,6 +75,7 @@ void ConfigManager::applyDefaults() {
 
 bool ConfigManager::load() {
     QSettings s(m_configPath, QSettings::IniFormat);
+    m_synced = true;
 
     // 缺键或存成空串都回到默认：空快捷键等于听写无法触发，且之后任何一次保存都会把空值固化下来
     m_config.hotkey = s.value("hotkey", kDefaultHotkey).toString();
@@ -141,6 +144,13 @@ bool ConfigManager::load() {
 }
 
 bool ConfigManager::save() {
+    // 还没载入过就保存，写出去的是未载入的默认值，会把用户已有的快捷键、密钥等整份覆盖。
+    // 文件不存在（首次运行）不受限：那时本来就要写出默认配置
+    if (!m_synced && QFile::exists(m_configPath)) {
+        LOG_WARN("Refused to save configuration before it was loaded (would overwrite the existing file with defaults)");
+        return false;
+    }
+    m_synced = true;
     QSettings s(m_configPath, QSettings::IniFormat);
 
     s.setValue("hotkey", m_config.hotkey);

@@ -1862,8 +1862,8 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="626"/>
-        <source>Type into the foreground window</source>
-        <translation>输入到前台窗口</translation>
+        <source>Inject to Foreground</source>
+        <translation>输入前台</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="1120"/>

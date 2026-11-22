@@ -129,6 +129,7 @@ TEST(ConfigRoundTrip, PolishSwitchAndEngineAreIndependent) {
 
     for (const bool enabled : { false, true }) {
         ConfigManager writer;
+        writer.load();   // 与真实使用一致：先载入再改；未载入的实例不允许覆盖已存在的配置
         writer.config().polish.enableAiEnhancement = enabled;
         writer.config().polish.aiEngineIndex = 2;
         ASSERT_TRUE(writer.save());

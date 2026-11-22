@@ -304,7 +304,10 @@ void GpuBackendWidget::onDetectionFinished()
     }
     else {
         applyStatus(GpuStatus::GpuAvailable);
-        m_cudaSectionDesc->setText(result.failReason);
+        // failReason 为空时（如 provider 还没下载，属正常待下载状态）保留 applyStatus 设好的默认说明，不要覆盖成空白
+        if (!result.failReason.isEmpty()) {
+            m_cudaSectionDesc->setText(result.failReason);
+        }
     }
     emit detectFinished(m_gpuRuntime->requestedGpu());
 }

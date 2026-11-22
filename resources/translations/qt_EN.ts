@@ -1862,8 +1862,8 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="626"/>
-        <source>Type into the foreground window</source>
-        <translation>Type into the foreground window</translation>
+        <source>Inject to Foreground</source>
+        <translation>Inject to Foreground</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="1120"/>
