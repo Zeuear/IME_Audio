@@ -50,6 +50,26 @@ TEST_F(TextPostProcessorTest, DetectsAskingQuestionByAskingWordsChinese) {
     EXPECT_EQ(result, "今天几点？");
 }
 
+// 回归：西语等带重音符号的拉丁文字之前被 ">127 字节" 的粗糙判断误当成中文，
+// 补的是中文全角句号「。」而不是西式句点，这里锁死按 language 分支而不是猜字节
+TEST_F(TextPostProcessorTest, AppendsAsciiPeriodForIncompleteSpanishSentence) {
+    TextPostProcessor proc;
+    QString result = proc.addAutoPunctuation("Hola qué tal estás", "es");
+    EXPECT_EQ(result, "Hola qué tal estás.");
+}
+
+TEST_F(TextPostProcessorTest, AppendsAsciiPeriodForIncompleteFrenchSentence) {
+    TextPostProcessor proc;
+    QString result = proc.addAutoPunctuation("Ça va bien", "fr");
+    EXPECT_EQ(result, "Ça va bien.");
+}
+
+TEST_F(TextPostProcessorTest, AppendsFullwidthFullStopForIncompleteJapanese) {
+    TextPostProcessor proc;
+    QString result = proc.addAutoPunctuation("今日は天気がいい", "ja");
+    EXPECT_EQ(result, "今日は天気がいい。");
+}
+
 TEST_F(TextPostProcessorTest, EmptyInputReturnsEmpty) {
     TextPostProcessor proc;
     QString result = proc.addAutoPunctuation("", "zh");

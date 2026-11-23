@@ -17,7 +17,7 @@ public:
     QString addAutoPunctuation(const QString& text, const QString& language);
 
     bool endsWithSentencePunctuation(const QString& text) const;
-    QString pickSuffix(const QString& text) const;
+    QString pickSuffix(const QString& text, const QString& language) const;
 
 private:
     QString m_replaceRules;

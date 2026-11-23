@@ -30,7 +30,7 @@ QString TextPostProcessor::addAutoPunctuation(const QString& text, const QString
         return text;
     }
 
-    QString suffix = pickSuffix(text);
+    QString suffix = pickSuffix(text, language);
     finalText.append(suffix);
     return finalText;
 }
@@ -62,7 +62,7 @@ bool TextPostProcessor::endsWithSentencePunctuation(const QString& text) const {
     return false;
 }
 
-QString TextPostProcessor::pickSuffix(const QString& text) const {
+QString TextPostProcessor::pickSuffix(const QString& text, const QString& language) const {
     if (text.isEmpty()) {
         return QStringLiteral(".");
     }
@@ -72,19 +72,16 @@ QString TextPostProcessor::pickSuffix(const QString& text) const {
         return QStringLiteral(".");
     }
 
-    bool hasNonAscii = false;
-    for (const QChar& ch : cleanText) {
-        if (ch.unicode() > 127) {
-            hasNonAscii = true;
-            break;
-        }
-    }
+    // 根因修复：以前用"文本里有没有 >127 的字符"猜是不是中文——西语/法语/德语等带重音符号
+    // （á é ñ ü ...）同样会被判成"非 ASCII"，误落进下面的中文分支，最终兜底吐出中文的「。」。
+    // 应该按识别语言 m_language（"zh"/"ja"/"en"/"es"...）走分支，而不是猜字节。
+    // 中日用全角标点（。！？），其余语言（含西语等拉丁文字、韩语、俄语、阿拉伯语等）用西式 ASCII 标点。
+    const bool useFullwidthPunctuation = (language == QStringLiteral("zh") || language == QStringLiteral("ja"));
 
-    // English question detection
-    if (!hasNonAscii) {
-        if (cleanText.endsWith("?")) return QStringLiteral("?");
-        if (cleanText.endsWith("!")) return QStringLiteral("!");
-        if (cleanText.endsWith(".")) return QStringLiteral(".");
+    if (!useFullwidthPunctuation) {
+        if (cleanText.endsWith(QStringLiteral("?"))) return QStringLiteral("?");
+        if (cleanText.endsWith(QStringLiteral("!"))) return QStringLiteral("!");
+        if (cleanText.endsWith(QStringLiteral("."))) return QStringLiteral(".");
 
         QString lower = cleanText.toLower();
         static const QStringList enQuestionKeywords = {
