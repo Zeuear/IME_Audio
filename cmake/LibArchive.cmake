@@ -33,11 +33,15 @@ set(_zlib_dir  "${imeaudio_zlib_src_SOURCE_DIR}")
 set(_bzip2_dir "${imeaudio_bzip2_src_SOURCE_DIR}")
 set(_la_src    "${imeaudio_libarchive_src_SOURCE_DIR}")
 
-# ---- zlib（只要 deflate/inflate/crc32，不要 gz* 文件接口）----
+# ---- zlib（deflate/inflate/crc32 + compress/uncompress：libarchive 在 macOS 的
+#      HFS+ 资源分支压缩路径（hfs_write_decmpfs_block/hfs_decompress）会用到
+#      compressBound/uncompress，既然已声明 HAVE_ZLIB_H=1 就要把完整 API 面补全，
+#      否则只在 macOS 链接时才会炸：Windows/Linux 代码路径不触发这两个符号）----
 add_library(imeaudio_zlib STATIC
     "${_zlib_dir}/adler32.c" "${_zlib_dir}/crc32.c" "${_zlib_dir}/deflate.c"
     "${_zlib_dir}/inffast.c" "${_zlib_dir}/inflate.c" "${_zlib_dir}/inftrees.c"
-    "${_zlib_dir}/trees.c" "${_zlib_dir}/zutil.c")
+    "${_zlib_dir}/trees.c" "${_zlib_dir}/zutil.c"
+    "${_zlib_dir}/compress.c" "${_zlib_dir}/uncompr.c")
 target_include_directories(imeaudio_zlib PUBLIC "${_zlib_dir}")
 set_target_properties(imeaudio_zlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
