@@ -59,6 +59,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/subtitle_format_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/single_instance_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/live_caption_model_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/hotword_selector_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ordered_results_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/settings_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/hotkey_persistence_test.cpp
@@ -96,6 +97,8 @@ set(TEST_SOURCES
 set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/SnippetSearchIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TermsLibraryManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/PinyinTable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/HotwordSelector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/audio/AudioNormalizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ExtractTool.cpp

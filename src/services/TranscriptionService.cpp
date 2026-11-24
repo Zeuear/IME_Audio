@@ -9,6 +9,7 @@
 #include <QBuffer>
 #include <QTimer>
 #include "audio/AudioNormalizer.h"
+#include "sherpa/HotwordPrompt.h"
 #include "textpolish/AiStagePlan.h"
 #include "textpolish/GeminiProvider.h"
 #include "textpolish/TextPolishPrompts.h"
@@ -69,7 +70,17 @@ void TranscriptionService::transcribe(const QByteArray& rawPcm, int sampleRate, 
 
     if (m_config.backend == AsrBackendKind::Sherpa) {
         m_sherpaTickets.enqueue(t);
-        m_sherpaManager->transcribeAsync(pcmData, sampleRate);
+        // 文件转录没有实时字幕可参考，沿用全局热词
+        std::optional<QString> hotwords;
+        if (!t.fileMode && m_hotwordHint && m_hotwordSelector.entryCount() > 0 && m_sherpaManager->supportsUtteranceHotwords()) {
+            const QString hint = m_hotwordHint();
+            if (!hint.isEmpty()) {
+                const QStringList picked = m_hotwordSelector.select(hint);
+                hotwords = HotwordPrompt::build(picked);
+                LOG_DEBUG(QString("Hotwords picked for utterance: %1").arg(hotwords->isEmpty() ? QStringLiteral("(none)") : *hotwords));
+            }
+        }
+        m_sherpaManager->transcribeAsync(pcmData, sampleRate, hotwords);
         return;
     }
 

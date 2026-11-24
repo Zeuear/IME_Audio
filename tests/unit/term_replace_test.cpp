@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "sherpa/HotwordPrompt.h"
 #include <QString>
 #include <QVector>
 #include <QPair>
@@ -193,4 +194,22 @@ TEST_F(TermRulesTest, ConflictsAreFoundAcrossAliases) {
     EXPECT_EQ(mgr.checkConflicts().size(), 1);
     EXPECT_EQ(mgr.duplicateHeard({"K8S"}, 1), "K8S");
     EXPECT_TRUE(mgr.duplicateHeard({"新词"}).isEmpty());
+}
+
+TEST(HotwordPrompt, JoinsWithAsciiCommaDedupesAndKeepsOrder) {
+    EXPECT_EQ(HotwordPrompt::build("Kubernetes\n李韬\nKubernetes\n"), "Kubernetes,李韬");
+    EXPECT_EQ(HotwordPrompt::build(""), "");
+}
+
+TEST(HotwordPrompt, CommaInsideAWordIsNotSplitIntoTwoWords) {
+    EXPECT_EQ(HotwordPrompt::build("a,b\nc，d"), "a b,c d");
+}
+
+TEST(HotwordPrompt, CapsWordCountAndLengthKeepingTheEarlierWords) {
+    QString many;
+    for (int i = 0; i < 100; ++i) many += QString("w%1\n").arg(i);
+    const QString csv = HotwordPrompt::build(many);
+    EXPECT_EQ(HotwordPrompt::count(csv), HotwordPrompt::kMaxWords);
+    EXPECT_TRUE(csv.startsWith("w0,w1,"));
+    EXPECT_LE(HotwordPrompt::count(HotwordPrompt::build("一二三四五六\n七八九十一二", 10, 8)), 1);   // 字数上限
 }

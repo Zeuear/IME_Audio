@@ -2,6 +2,7 @@
     #include <QObject>
     #include <QString>
     #include <QVector>
+    #include "hotword/HotwordSelector.h"
 
     // 一条词条 = "听成"（可多个）→ "写成"。听成留空表示只提示识别器有这个词。
     // wrong / aliases 分两列只是为了兼容 terms.tsv：第一个听成写进 wrong，其余写进 aliases。
@@ -58,6 +59,7 @@
             QString replaceRules;
             QString aiVocab;
             QStringList hotwords;
+            QList<HotwordSelector::Entry> hotwordEntries;
             int enabledCount = 0;
             int replaceCount = 0;
             int aiCount = 0;

@@ -213,6 +213,8 @@ TermsLibraryManager::TermsRuleSet TermsLibraryManager::buildAllRules() const {
     TermsRuleSet result;
     QStringList replaceRules, aiRules;
     QSet<QString> hotwordSeen;
+    // 有"听成了什么"的词条是确实被听错过的，价值最高，排在前面；热词名额有限（见 HotwordPrompt）时先保它们
+    QList<HotwordSelector::Entry> withHeard, withoutHeard;
 
     for (const auto& item : m_items) {
         if (!item.enabled) continue;
@@ -233,10 +235,13 @@ TermsLibraryManager::TermsRuleSet TermsLibraryManager::buildAllRules() const {
         // 热词只放正确写法：放进听错的词等于让识别器更倾向于识别出错词
         if (!hotwordSeen.contains(correct)) {
             hotwordSeen.insert(correct);
-            result.hotwords << correct;
+            (heard.isEmpty() ? withoutHeard : withHeard).push_back({ correct, heard });
             result.hotwordCount++;
         }
     }
+
+    result.hotwordEntries = withHeard + withoutHeard;
+    for (const auto& e : result.hotwordEntries) result.hotwords << e.text;
 
     result.replaceRules = replaceRules.join(';');
     result.aiVocab = aiRules.join(';');

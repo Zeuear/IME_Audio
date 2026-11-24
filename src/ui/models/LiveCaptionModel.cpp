@@ -187,6 +187,12 @@ QVector<LiveCaptionModel::Segment> LiveCaptionModel::segments() const
     return out;
 }
 
+QString LiveCaptionModel::pendingText() const
+{
+    if (m_sentences.isEmpty() || m_sentences.last().state != State::Pending) return {};
+    return m_sentences.last().text;
+}
+
 QString LiveCaptionModel::plainText() const
 {
     QString all;

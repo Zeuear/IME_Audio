@@ -11,6 +11,7 @@
 #include <QWaitCondition>
 #include <memory>
 #include <functional>
+#include <optional>
 #include <variant>
 
 #include "config/AppConfig.h"
@@ -42,7 +43,9 @@ public:
 
 public slots:
     void loadModelAsync(const AppConfig& config, bool isReload);
-    void transcribeAsync(const QByteArray& pcmData, int sampleRate);
+    void transcribeAsync(const QByteArray& pcmData, int sampleRate, std::optional<QString> hotwords = std::nullopt);
+    // 当前模型是否支持按句设置热词；不支持时调用方不必再费力挑词
+    bool supportsUtteranceHotwords() const { return m_streamHotwords; }
     void shutdown(); 
     void workerLoop(); 
 
@@ -55,8 +58,8 @@ signals:
 
 private:
     void armIdleTimer();
-    bool transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError);
-    bool transcribeOffline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
+    bool transcribeSync(const QByteArray& pcmData, int sampleRate, const std::optional<QString>& hotwords, QString* outText, QString* outError);
+    bool transcribeOffline(const std::vector<float>& samples, int sampleRate, const std::optional<QString>& hotwords, QString* outText, QString* outError);
     bool transcribeOnline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError);
 
     enum class TaskType { Transcribe, Load, Unload };
@@ -70,9 +73,11 @@ private:
         // Load
         AppConfig config;   
         bool isReload = false;
+        std::optional<QString> hotwords;
     };
 
     RecognizerKind m_kind = RecognizerKind::None;
+    std::atomic<bool> m_streamHotwords{ false };   // 当前模型是否支持按句设置热词
     std::unique_ptr<sherpa_onnx::cxx::OfflineRecognizer> m_offlineRecognizer;
     std::unique_ptr<sherpa_onnx::cxx::OnlineRecognizer>  m_onlineRecognizer;
 

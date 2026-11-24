@@ -1,3 +1,4 @@
+#include "HotwordPrompt.h"
 #include "SherpaConfig.h"
 #include <QFileInfo>
 #include <QFile>
@@ -1561,6 +1562,17 @@ QStringList ModelRegistry::GetLanguagesByRepo(const QString& repoId)
     return langs;
 }
 
+// LLM 型识别器的热词写进提示词，超出上限的会被截掉，记一条日志方便用户理解为什么后面的词不生效
+static void logPromptHotwords(const QString& repoId, const QString& all, const QString& used) {
+    if (used.isEmpty()) return;
+    const int total = all.split('\n', Qt::SkipEmptyParts).size();
+    const int kept = HotwordPrompt::count(used);
+    if (kept < total)
+        LOG_WARN(QString("Hotwords truncated for prompt-based model %1: using %2 of %3").arg(repoId).arg(kept).arg(total));
+    else
+        LOG_DEBUG(QString("Hotwords passed in prompt for %1: %2 words").arg(repoId).arg(kept));
+}
+
 static bool ArchSupportsHotwords(ModelArch arch) {
     switch (arch) {
     case ModelArch::TransducerOnline:
@@ -1707,6 +1719,8 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }
     case ModelArch::FunasrNano: {
         auto files = std::get<FunasrFiles>(desc->files);
+        files.hotwords = HotwordPrompt::build(hotwords);
+        logPromptHotwords(repoId, hotwords, files.hotwords);
         configVar = ModelConfigFactory::buildFunasrNano(repoId, files, numThreads);
         result.kind = RecognizerKind::Offline;
         break;
@@ -1738,6 +1752,8 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }
     case ModelArch::Qwen3Asr: {
         auto files = std::get<Qwen3AsrFiles>(desc->files);
+        files.hotwords = HotwordPrompt::build(hotwords);
+        logPromptHotwords(repoId, hotwords, files.hotwords);
 
         QString folderName = repoId.split("/")[1];
         QString modelDir = ModelConfigFactory::getSherpaModel() + "/" + folderName;

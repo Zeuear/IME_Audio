@@ -6,6 +6,7 @@
 #include "sherpa/SherpaManager.h"
 #include "TextPostProcessor.h"
 #include "interfaces/workflow_interfaces.h"
+#include "hotword/HotwordSelector.h"
 #include "textpolish/AiJobTracker.h"
 #include "utils/OrderedResults.h"
 #include <QQueue>
@@ -32,6 +33,11 @@ public:
     // 用一个只读请求验证云端识别的 Key，不上传音频；cause 为中文失败原因
     using KeyTestCallback = std::function<void(bool ok, const QString& cause)>;
     void testKey(AsrBackendKind backend, const QString& key, KeyTestCallback done);
+
+    // 词典里的热词：识别前用实时字幕已识别出的这句话，按读音挑出相关的几个交给识别器（见 HotwordSelector）。
+    // provider 返回这一句的流式文字；字幕没开时返回空，这一句就沿用加载时的全局热词
+    void setHotwordEntries(const QList<HotwordSelector::Entry>& entries) { m_hotwordSelector.setEntries(entries); }
+    void setHotwordHintProvider(std::function<QString()> provider) { m_hotwordHint = std::move(provider); }
 
     // 文件转录模式
     void setFileMode(bool on) { m_fileMode = on; }
@@ -101,6 +107,8 @@ private:
     bool m_fileMode = false;
     OrderedResults<Result> m_results;
     QQueue<Ticket> m_sherpaTickets;
+    HotwordSelector m_hotwordSelector;
+    std::function<QString()> m_hotwordHint;
 
     // 云端 AI 阶段进行中的句子：回调与超时兜底谁先 take 谁收尾，迟到的一方直接忽略
     AiJobTracker m_aiJobs;

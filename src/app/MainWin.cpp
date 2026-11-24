@@ -620,6 +620,8 @@ void MainWin::setupUiConnections(){
     });
     connect(m_recorderService, &AudioRecorderService::voiceStarted, m_captionModel, [this]() { m_captionModel->setSpeaking(true); });
     connect(m_recorderService, &AudioRecorderService::voiceStopped, m_captionModel, [this]() { m_captionModel->setSpeaking(false); });
+    // 切出一句后，用字幕已识别出的这句话按读音挑词典里的热词；utteranceAccepted 先于 transcribe 触发，这时这句已是 Pending
+    m_transcriptionService->setHotwordHintProvider([this]() { return m_captionModel->pendingText(); });
     connect(m_workflow, &WorkflowManager::utteranceAccepted, m_captionModel, [this](quint64 id) { m_captionModel->onUtteranceReady(id); });
     connect(m_workflow, &WorkflowManager::utteranceFinished, m_captionModel,
             [this](const QString& text, quint64 id) { m_captionModel->onTranscribed(id, text); });
@@ -658,10 +660,13 @@ void MainWin::setupUiConnections(){
         QString hotwords;
         for (const QString& w : rules.hotwords) hotwords += w + '\n';
         appConfig.sherpa.hotwords = hotwords;
+        m_transcriptionService->setHotwordEntries(rules.hotwordEntries);
 		ConfigManager::instance().save();
 
         ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
     });
+    // 词典在构造时就读完了，termsReloaded 当时没人接；启动后要补一次，否则改过词典前热词挑选是空的
+    m_transcriptionService->setHotwordEntries(m_termsManager->buildAllRules().hotwordEntries);
 
     connect(ui->firewall_card, &FirewallCard::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);

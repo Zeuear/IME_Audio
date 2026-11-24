@@ -75,6 +75,9 @@
   同时属于多个 mode。
 - **applyReplaceRules** — 静态方法：解析 `wrong=>correct;...` 字符串，按 wrong
   长度降序排序，占位符法一次性替换，避免二次替换。
+- **HotwordSelector** — 按读音从词典里挑出和一句话最相关的热词（services/hotword/）。输入是实时字幕对这句的流式文字，
+  不是离线识别结果；只有 Qwen3-ASR 能按句换热词（`OfflineStream::SetOption("hotwords")`），其余模型沿用加载时的全局热词。
+  热词是 LLM 提示词的一部分，数量受序列长度限制，见 `HotwordPrompt`。
 - **buildAllRules** — 从 TSV 构建 replaceRules + aiVocab + hotwords 三类规则串。
 
 ## 性能 (Performance / Resource)

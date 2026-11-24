@@ -207,6 +207,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         m_offlineRecognizer.reset();
         m_onlineRecognizer.reset();
         m_kind = RecognizerKind::None;
+        m_streamHotwords = false;
         m_currentRepoId.clear();
     };
     // GPU 变体用 CUDA 且不回退 CPU：创建失败时要保住已加载的模型，所以成功后才释放旧的
@@ -257,6 +258,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     }
 
     if (m_isLoaded) {
+        m_streamHotwords = desc->arch == ModelArch::Qwen3Asr;
         m_currentRepoId = repoId;
         m_loadedProvider = result.provider;
         m_loadedRequestedCuda = result.requestedCuda;
@@ -271,7 +273,7 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
     }
 }
 
-bool SherpaManager::transcribeSync(const QByteArray& pcmData, int sampleRate, QString* outText, QString* outError)
+bool SherpaManager::transcribeSync(const QByteArray& pcmData, int sampleRate, const std::optional<QString>& hotwords, QString* outText, QString* outError)
 {
     QMutexLocker locker(&m_recognizerMutex);
     if (!m_isLoaded || m_kind == RecognizerKind::None) {
@@ -294,7 +296,7 @@ bool SherpaManager::transcribeSync(const QByteArray& pcmData, int sampleRate, QS
 
     switch (m_kind) {
     case RecognizerKind::Offline:
-        return transcribeOffline(samples, sampleRate, outText, outError);
+        return transcribeOffline(samples, sampleRate, hotwords, outText, outError);
     case RecognizerKind::Online:
         return transcribeOnline(samples, sampleRate, outText, outError);
     default:
@@ -303,7 +305,7 @@ bool SherpaManager::transcribeSync(const QByteArray& pcmData, int sampleRate, QS
     }
 }
 
-bool SherpaManager::transcribeOffline(const std::vector<float>& samples, int sampleRate, QString* outText, QString* outError)
+bool SherpaManager::transcribeOffline(const std::vector<float>& samples, int sampleRate, const std::optional<QString>& hotwords, QString* outText, QString* outError)
 {
     if (!m_offlineRecognizer) {
         if (outError) *outError = QStringLiteral("离线识别器未初始化");
@@ -312,6 +314,9 @@ bool SherpaManager::transcribeOffline(const std::vector<float>& samples, int sam
 
     try {
         auto stream = m_offlineRecognizer->CreateStream();
+        // 空串也要设：流上的选项优先于加载时的全局热词，"这句没有相关词"就该不带热词，提示词更短也更快
+        if (hotwords && m_streamHotwords)
+            stream.SetOption("hotwords", hotwords->toUtf8().constData());
         stream.AcceptWaveform(sampleRate, samples.data(), static_cast<int32_t>(samples.size()));
 
         m_offlineRecognizer->Decode(&stream);
@@ -370,14 +375,14 @@ bool SherpaManager::transcribeOnline(const std::vector<float>& samples, int samp
     }
 }
 
-void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate)
+void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate, std::optional<QString> hotwords)
 {
     if (pcmData.isEmpty()) return;
     // 不再因模型未加载而丢弃：utterance 入队后排在 Load 任务之后，
     // worker 串行执行，加载完成后再转录，避免 Loading 态说话被抛弃。
     {
         QMutexLocker locker(&m_queueMutex);
-        m_queue.enqueue({ TaskType::Transcribe, pcmData, sampleRate });
+        m_queue.enqueue({ TaskType::Transcribe, pcmData, sampleRate, {}, false, std::move(hotwords) });
         m_queueNotEmpty.wakeOne(); // 唤醒可能正在休眠等待任务的 worker 线程
     }
     emit queueSizeChanged(pendingCount());
@@ -434,7 +439,7 @@ void SherpaManager::workerLoop()
             break;
         case TaskType::Transcribe: {
             QString text, error;
-            bool success = transcribeSync(task.pcmData, task.sampleRate, &text, &error);
+            bool success = transcribeSync(task.pcmData, task.sampleRate, task.hotwords, &text, &error);
 
             if (success && m_punctuator->isLoaded()) {
                 text = m_punctuator->punctuate(text);

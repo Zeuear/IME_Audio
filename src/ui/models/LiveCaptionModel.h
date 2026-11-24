@@ -47,6 +47,8 @@ public:
 
     QVector<Segment> segments() const;
     QString plainText() const;
+    // 刚切出、正送去转录的那一句的流式文字；没有（字幕没开、流式模型没出字）返回空。供按读音挑热词用
+    QString pendingText() const;
     bool isEmpty() const;
     quint64 epoch() const { return m_epoch; }
 
