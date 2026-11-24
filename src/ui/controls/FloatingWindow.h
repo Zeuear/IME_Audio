@@ -32,6 +32,7 @@ QRect primaryScreenArea();
 // 位置和大小存在 ini 的 group 分组下，不动 AppConfig；没存过返回空
 std::optional<QPoint> loadPosition(const QString& group);
 void savePosition(const QString& group, const QPoint& pos);
+void clearPosition(const QString& group);   // 回到默认位置
 std::optional<QSize> loadSize(const QString& group);
 void saveSize(const QString& group, const QSize& size);
 

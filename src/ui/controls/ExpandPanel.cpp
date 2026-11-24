@@ -130,12 +130,14 @@ void ExpandPanel::releaseSharedPages()
     m_syncingTab = true;
     m_tabs->removeTab(kFileIndex);   // 先删后面的，前面的序号才不变
     m_tabs->removeTab(kDictionaryIndex);
+    m_tabs->removeTab(kTranscriptIndex);
     m_syncingTab = false;
 }
 
-void ExpandPanel::takeBackSharedPages(QWidget* dictionary, QWidget* file)
+void ExpandPanel::takeBackSharedPages(QWidget* transcript, QWidget* dictionary, QWidget* file)
 {
     m_syncingTab = true;
+    m_tabs->insertTab(kTranscriptIndex, transcript, QString());
     m_tabs->insertTab(kDictionaryIndex, dictionary, QString());
     m_tabs->insertTab(kFileIndex, file, QString());
     m_syncingTab = false;

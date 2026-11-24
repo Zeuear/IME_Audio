@@ -56,6 +56,9 @@ public:
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
+    // 要翻译的句子先把原文交出来，译文好了再发补上
+    void utterancePending(quint64 seq, const QString &sourceText);
+    void utteranceTranslated(quint64 seq, const QString &sourceText, const QString &finalText);
     // id 供实时字幕把正式结果对回原来那一句；对不上号的结果 id 为 0
     void utteranceAccepted(quint64 id);
     void utteranceFinished(const QString &finalText, quint64 id);

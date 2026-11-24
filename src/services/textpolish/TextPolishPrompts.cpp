@@ -3,8 +3,10 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QHash>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QUrl>
 
 #include "utils/AppPaths.h"
@@ -152,6 +154,54 @@ QString autocompleteApiUrl(const QString& input) {
         url += suffix;
     }
     return url;
+}
+
+QString stripThinking(const QString& reply) {
+    QString text = reply;
+    // 成对的思考段整体去掉；Gemma 4 用 <|channel>thought … <channel|> 表示同一件事
+    static const QRegularExpression kThinkBlock(
+        QStringLiteral("<think>.*?</think>|<\\|channel>thought.*?<channel\\|>"),
+        QRegularExpression::DotMatchesEverythingOption);
+    text.remove(kThinkBlock);
+    // 只剩结束标签（开头被服务端吃掉）时，结束标签之前都是思考内容
+    for (const QString& closer : { QStringLiteral("</think>"), QStringLiteral("<channel|>") }) {
+        const int at = text.lastIndexOf(closer);
+        if (at >= 0) text = text.mid(at + closer.size());
+    }
+    return text.trimmed();
+}
+
+bool isTranslationModel(const QString& model) {
+    const QString name = model.toLower();
+    static const QStringList kMarkers = {
+        QStringLiteral("translate"),   // Index-Translate、PLaMo Translate、TranslateGemma
+        QStringLiteral("hy-mt"),       // 腾讯混元 Hy-MT
+        QStringLiteral("hunyuan-mt"),
+    };
+    for (const QString& m : kMarkers) {
+        if (name.contains(m)) return true;
+    }
+    return false;
+}
+
+QString promptLanguageName(const QString& storedTargetLang) {
+    // 翻译模型按"英语/日语"这类说法训练，界面存的"英文/日文"换成对应叫法
+    static const QHash<QString, QString> kNames{
+        { QStringLiteral("英文"), QStringLiteral("英语") },
+        { QStringLiteral("日文"), QStringLiteral("日语") },
+        { QStringLiteral("韩文"), QStringLiteral("韩语") },
+        { QStringLiteral("en"), QStringLiteral("英语") },
+        { QStringLiteral("ja"), QStringLiteral("日语") },
+        { QStringLiteral("ko"), QStringLiteral("韩语") },
+        { QStringLiteral("zh-Hans"), QStringLiteral("简体中文") },
+        { QStringLiteral("zh-Hant"), QStringLiteral("繁体中文") },
+    };
+    return kNames.value(storedTargetLang, storedTargetLang);
+}
+
+QString translationModelPrompt(const QString& storedTargetLang, const QString& text) {
+    return QStringLiteral("请将以下文本翻译为%1，直接输出翻译结果，不要进行任何解释。\n\n%2")
+        .arg(promptLanguageName(storedTargetLang), text);
 }
 
 } // namespace TextPolishPrompts

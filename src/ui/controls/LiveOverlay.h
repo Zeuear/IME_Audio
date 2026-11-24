@@ -1,5 +1,8 @@
 #pragma once
 #include <QElapsedTimer>
+#include <QHash>
+#include <QImage>
+#include <QPoint>
 #include <QPointer>
 #include <QRectF>
 #include <QScreen>
@@ -7,6 +10,7 @@
 #include <QTimer>
 #include <QVector>
 #include <QWidget>
+#include <optional>
 
 class LiveCaptionModel;
 
@@ -34,6 +38,17 @@ public:
     QSizeF targetCardSize() const { return QSizeF(m_targetW, m_targetH); }
     bool isSettled() const;
 
+    // 悬停时卡片右侧出现「隐藏」「拖动」两个图标按钮；隐藏后只能经托盘菜单重新显示
+    bool userHidden() const { return m_userHidden; }
+    void setHideButtonEnabled(bool enabled) { m_hideButtonEnabled = enabled; }
+    void restoreFromUserHide();
+    // 悬停按钮的位置（窗口坐标）：绘制、命中判断和测试共用
+    QRectF hideButtonRect() const { return buttonRect(Btn::Hide); }
+    QRectF dragButtonRect() const { return buttonRect(Btn::Drag); }
+    bool buttonsAreVertical() const { return buttonsVertical(); }
+    // 拖动后的位置（卡片贴屏幕那条边的中点），存 ini；无则用默认的屏幕居中
+    void loadSavedPosition();
+
 public slots:
     void setSpectrumLevels(const QVector<float>& bands);
     void setLevel(float normalizedLevel);
@@ -52,10 +67,16 @@ public slots:
 
 signals:
     void sphereClicked();
+    void hiddenByUser();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void hideEvent(QHideEvent *event) override;
 
@@ -74,6 +95,16 @@ private:
     void paintCaptionContent(QPainter &p, const QRectF &card, qreal opacity) const;
     void paintDots(QPainter &p, const QPointF &center, const QColor &color, qreal opacity) const;
     void paintIcon(QPainter &p, const QPointF &center) const;
+
+    enum class Btn { None, Hide, Drag };
+    // 按钮排在卡片右侧：卡片够高就竖排，否则横排
+    bool buttonsVertical() const;
+    QRectF buttonRect(Btn b) const;
+    Btn buttonAt(const QPointF &pos) const;
+    void paintButtons(QPainter &p) const;
+    QImage buttonIcon(Btn b, const QColor &color, int px) const;
+    void updateInputMask();
+    QPoint currentAnchor() const;
 
     State m_state = Loading;
     Theme m_theme = Theme::Dark;
@@ -99,6 +130,19 @@ private:
     QTimer *m_idleFadeTimer = nullptr;
     bool m_hideHeld = false;
     bool m_hideDeferred = false;
+
+    // 悬停按钮、拖动、用户隐藏
+    bool m_hover = false;
+    qreal m_btnOpacity = 0.0;
+    Btn m_hoverBtn = Btn::None;
+    Btn m_pressBtn = Btn::None;
+    bool m_dragging = false;
+    QPoint m_dragStartGlobal, m_dragStartAnchor;
+    std::optional<QPoint> m_anchor;           // 用户拖过的位置；空 = 默认居中
+    bool m_userHidden = false;
+    bool m_hideButtonEnabled = true;
+    QRect m_lastMaskRect;
+    mutable QHash<QString, QImage> m_iconCache;
 
     QPointer<QScreen> m_screen;               // 本次显示所在的屏幕，拔掉显示器时自动置空
     QPointer<LiveCaptionModel> m_caption;

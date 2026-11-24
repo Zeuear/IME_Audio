@@ -865,7 +865,31 @@
                 </widget>
                </item>
                <item row="0" column="3">
-                <widget class="QComboBox" name="ai_model_comb"/>
+                <widget class="QWidget" name="ai_model_row">
+                 <layout class="QHBoxLayout" name="ai_model_row_layout" stretch="1,0">
+                  <property name="spacing">
+                   <number>6</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QComboBox" name="ai_model_comb"/>
+                  </item>
+                  <item>
+                   <widget class="OllamaModelButton" name="ollama_model_btn"/>
+                  </item>
+                 </layout>
+                </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_13">
@@ -1085,6 +1109,26 @@
                  </property>
                 </widget>
                </item>
+               <item row="5" column="0">
+                <widget class="QLabel" name="translate_model_label">
+                 <property name="text">
+                  <string>Translation model</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="1" colspan="3">
+                <layout class="QHBoxLayout" name="translate_model_row" stretch="1,0">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <item>
+                  <widget class="QComboBox" name="translate_model_comb"/>
+                 </item>
+                 <item>
+                  <widget class="OllamaModelButton" name="ollama_translate_btn"/>
+                 </item>
+                </layout>
+               </item>
               </layout>
              </widget>
             </item>
@@ -1286,6 +1330,11 @@
    <extends>QFrame</extends>
    <header>ui/controls/FirewallCard.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>OllamaModelButton</class>
+   <extends>QPushButton</extends>
+   <header>ui/controls/OllamaModelButton.h</header>
   </customwidget>
   <customwidget>
    <class>AnimatedCheckBox</class>

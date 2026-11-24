@@ -6,7 +6,7 @@
 
 namespace {
 constexpr int kTileWidth = 176;
-constexpr int kTileHeight = 116;
+constexpr int kTileHeight = 130;
 constexpr int kTileGap = 10;
 constexpr int kCardRadius = 8;
 const QColor kSuccessColor(46, 160, 67);
@@ -105,6 +105,17 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     const int subWidth = fullWidth - (glyph.isEmpty() ? 0 : kIconWidth + 4);
     const QString sub = QFontMetrics(subFont).elidedText(index.data(FileTaskModel::StatusTextRole).toString(), Qt::ElideRight, subWidth);
     p->drawText(QRect(left, card.top() + 50, subWidth, 18), Qt::AlignLeft | Qt::AlignVCenter, sub);
+
+    // 第三行：耗时（进行中是已用 + 预计剩余，结束后是总耗时）
+    const QString timing = index.data(FileTaskModel::TimingTextRole).toString();
+    if (!timing.isEmpty()) {
+        QFont tf = opt.font;
+        tf.setPointSizeF(tf.pointSizeF() * 0.85);
+        p->setFont(tf);
+        p->setPen(pal.color(QPalette::PlaceholderText));
+        p->drawText(QRect(left, card.top() + 68, fullWidth, 16), Qt::AlignLeft | Qt::AlignVCenter,
+                    QFontMetrics(tf).elidedText(timing, Qt::ElideRight, fullWidth));
+    }
 
     // 进度条（仅处理中显示）
     if (state == State::Decoding || state == State::Transcribing || state == State::Downloading

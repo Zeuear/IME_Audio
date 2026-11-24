@@ -72,6 +72,8 @@ void WorkflowManager::initialize(IRecorder *recorder,
     // 一句话缓冲完成，交给识别服务
     connect(m_recorder, &IRecorder::utteranceReady, this, &WorkflowManager::onUtteranceReady);
     connect(m_transcription, &ITranscription::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
+    connect(m_transcription, &ITranscription::transcriptionPending, this, &WorkflowManager::utterancePending);
+    connect(m_transcription, &ITranscription::transcriptionTranslated, this, &WorkflowManager::utteranceTranslated);
     // 识别结果打印
     connect(this, &WorkflowManager::transcriptionResultReady, this, &WorkflowManager::onInjectText);
 }

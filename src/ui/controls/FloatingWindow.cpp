@@ -124,6 +124,14 @@ void savePosition(const QString& group, const QPoint& pos)
     s.setValue(QStringLiteral("y"), pos.y());
 }
 
+void clearPosition(const QString& group)
+{
+    QSettings s = openSettings();
+    s.beginGroup(group);
+    s.remove(QStringLiteral("x"));
+    s.remove(QStringLiteral("y"));
+}
+
 std::optional<QSize> loadSize(const QString& group)
 {
     QSettings s = openSettings();

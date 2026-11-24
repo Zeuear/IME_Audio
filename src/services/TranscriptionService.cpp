@@ -9,12 +9,14 @@
 #include <QBuffer>
 #include <QTimer>
 #include "audio/AudioNormalizer.h"
+#include "textpolish/AiStagePlan.h"
 #include "textpolish/GeminiProvider.h"
 #include "textpolish/TextPolishPrompts.h"
 #include "TermsLibraryManager.h"
 #include "sherpa/LanguageCatalog.h"
 #include "TranslationService.h"
 #include "translation/TranslationStage.h"
+#include "ollama/OllamaErrors.h"
 #include "utils/EnhancementFallback.h"
 #include "utils/Logger.h"
 
@@ -88,41 +90,119 @@ void TranscriptionService::onSherpaTranscribed(bool ok, const QString& text, con
         return;
     }
     const Ticket t = m_sherpaTickets.dequeue();
-    // 没配置好的引擎直接用原文，不当作失败：否则听写时每句都弹一次"润色失败"
-    if (!ok || !m_config.polish.enableAiEnhancement || m_config.polish.usesLocalTranslation()
-        || !m_config.polish.cloudEngineConfigured()) {
+    if (!ok) {
         finish(t, ok, text, err);
         return;
     }
+    runAiStages(t, text);
+}
 
+TextPolishService::RequestParams TranscriptionService::aiRequestParams() const {
+    const PolishConfig& pc = m_config.polish;
     TextPolishService::RequestParams params;
-    params.aiEngine = m_config.polish.aiEngineIndex;
-    params.apiKey = m_config.polish.apiKey;
-    params.customUrl = m_config.polish.apiUrl;
-    params.model = m_config.polish.model;
-    params.style = m_config.polish.aiStyle;
-    params.customPrompt = m_config.polish.prompt;
-    params.aiVocab = m_config.polish.vocab;
-    // 文件转录保留原文，译文由 translateForFile 另出，润色时不能顺带翻译
-    params.targetLang = t.fileMode ? QStringLiteral("不翻译") : m_config.polish.cloudTargetLang();
+    params.aiEngine = pc.aiEngineIndex;
+    params.apiKey = pc.apiKey;
+    params.customUrl = pc.apiUrl;
+    params.model = pc.model;
+    params.style = pc.aiStyle;
+    params.customPrompt = pc.prompt;
+    params.aiVocab = pc.vocab;
+    return params;
+}
 
-    // 记录润色前文字：润色请求超时时用它回退，避免整句被丢弃
-    m_polishOriginals.insert(t.seq, text);
+void TranscriptionService::runAiStages(const Ticket& t, const QString& text) {
+    const PolishConfig& pc = m_config.polish;
+    // 没配置好的引擎直接用原文，不当作失败：否则听写时每句都弹一次"润色失败"；本地翻译在 finish 里做
+    if (text.isEmpty() || pc.usesLocalTranslation() || !pc.cloudEngineConfigured()) {
+        finish(t, true, text, {});
+        return;
+    }
+    // 文件转录保留原文，译文由 translateForFile 另出，这里不能顺带翻译
+    const QString target = t.fileMode ? QStringLiteral("不翻译") : pc.cloudTargetLang();
+    const auto caps = m_textPolishService->capabilities(pc.aiEngineIndex);
+    const AiStagePlan plan = planAiStages(pc.enableAiEnhancement, target, caps.canPolish, caps.canTranslate,
+                                          pc.model, pc.effectiveTranslateModel());
+    if (!plan.polish && !plan.translate) {
+        finish(t, true, text, {});
+        return;
+    }
+
+    // 要翻译的句子：识别原文先给界面显示（此时还没经过润色 / 翻译），译文回来后补上
+    if (plan.translate) showSourceFirst(t.seq, text);
+
+    // 从这里开始这一句归 m_aiJobs 管：回调和超时兜底谁先 take 谁收尾
+    m_aiJobs.begin(t.seq, text, plan, target);
     armTimeout(t);
-    m_textPolishService->polishText(text, params, [this, t, text](bool success, const QString& polished, const QString& error) {
-        // 超时已经按原文完成过，迟到的真实结果直接忽略，避免重复提示
-        if (m_polishOriginals.remove(t.seq) == 0) return;
+    if (plan.polish) runAiPolish(t);
+    else runAiTranslation(t);
+}
 
-        if (success) {
-            finish(t, true, polished, {});
+void TranscriptionService::runAiPolish(const Ticket& t) {
+    const AiJob* job = m_aiJobs.find(t.seq);
+    if (!job) return;
+    TextPolishService::RequestParams params = aiRequestParams();
+    // 同一个通用模型时润色和翻译合成一次请求；否则润色只润色，翻译交给下一段
+    params.targetLang = job->plan.combined ? job->target : QStringLiteral("不翻译");
+    m_textPolishService->polishText(job->current, params,
+        [this, t](bool ok, const QString& polished, const QString& error) { onAiPolishDone(t, ok, polished, error); });
+}
+
+void TranscriptionService::onAiPolishDone(const Ticket& t, bool ok, const QString& polished, const QString& error) {
+    const AiJob* job = m_aiJobs.find(t.seq);
+    if (!job) return;   // 超时已经按原文结束过，迟到的真实结果直接忽略，避免重复提示
+
+    QString next = polished;
+    if (!ok) {
+        LOG_WARN(QString("Text polish failed: %1").arg(error));
+        const auto outcome = decideEnhancementOutcome(false, job->source, polished);
+        if (outcome.usedFallback) emit enhancementFailed(explainOllamaError(error), t.fileMode);
+        if (!outcome.success) {
+            m_aiJobs.take(t.seq);
+            finish(t, false, {}, error);
             return;
         }
+        next = outcome.text;
+    }
 
-        LOG_WARN(QString("Text polish failed: %1").arg(error));
-        const auto outcome = decideEnhancementOutcome(false, text, polished);
-        if (outcome.usedFallback) emit enhancementFailed(error, t.fileMode);
-        finish(t, outcome.success, outcome.text, outcome.success ? QString() : error);
-    });
+    if (job->plan.translate && !job->plan.combined) {
+        m_aiJobs.advance(t.seq, next);   // 润色结果交给翻译模型
+        runAiTranslation(t);
+        return;
+    }
+    finishAiJob(t, next, job->plan.translate && job->plan.combined);
+}
+
+void TranscriptionService::runAiTranslation(const Ticket& t) {
+    const AiJob* job = m_aiJobs.find(t.seq);
+    if (!job) return;
+    TextPolishService::RequestParams params = aiRequestParams();
+    params.model = job->plan.translateModel;
+    params.targetLang = job->target;
+    params.translateOnly = true;
+    m_textPolishService->polishText(job->current, params,
+        [this, t](bool ok, const QString& translated, const QString& error) { onAiTranslateDone(t, ok, translated, error); });
+}
+
+void TranscriptionService::onAiTranslateDone(const Ticket& t, bool ok, const QString& translated, const QString& error) {
+    const auto job = m_aiJobs.take(t.seq);
+    if (!job) return;   // 同上：已被超时兜底结束
+    // 翻译失败或返回空串时保留翻译前的文字，不能把一整句吞掉
+    const auto outcome = decideTranslationOutcome(ok && !translated.trimmed().isEmpty(), translated, job->current);
+    if (outcome.usedFallback) {
+        LOG_WARN(QString("AI translation failed, fallback to untranslated text: %1").arg(error));
+        emit translationFailed(error.isEmpty() ? QStringLiteral("翻译结果为空") : explainOllamaError(error));
+    } else {
+        m_translationSources.insert(t.seq, job->current);
+    }
+    finish(t, true, outcome.text, {});
+}
+
+// 正常结束：取走状态，需要时记下翻译前原文（合并请求时译文就在 text 里，原文是识别原文），再交给 finish
+void TranscriptionService::finishAiJob(const Ticket& t, const QString& text, bool translated) {
+    const auto job = m_aiJobs.take(t.seq);
+    if (!job) return;
+    if (translated) m_translationSources.insert(t.seq, job->source);
+    finish(t, true, text, {});
 }
 
 void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ticket& t) {
@@ -184,7 +264,7 @@ void TranscriptionService::transcribeGroq(const QByteArray &wavBytes, const Tick
         }
         QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
         QString text = obj.value("text").toString();
-        finish(t, true, text, {});
+        runAiStages(t, text);
     });
 }
 
@@ -278,7 +358,7 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
             QString text = obj.value("result").toObject()
                                 .value("transcription").toObject()
                                 .value("full_transcript").toString();
-            finish(t, true, text, {});
+            runAiStages(t, text);
             return;
         }
         if (status == QStringLiteral("error")) {
@@ -296,6 +376,7 @@ void TranscriptionService::finish(const Ticket& t, bool success, const QString& 
     // 同一序号只处理一次；翻译中的超时交给 TranslationService 自己的超时
     if (!m_results.isPending(t.seq) || m_translating.contains(t.seq)) return;
 
+    const QString cloudSource = m_translationSources.take(t.seq);
     if (!success) {
         completeResult(t, false, rawText, {}, errorMsg);
         return;
@@ -308,10 +389,12 @@ void TranscriptionService::finish(const Ticket& t, bool success, const QString& 
                                               m_config.polish.activeTargetLang(),
                                               LanguageCatalog::codeOf(m_config.sherpa.languageModel));
     if (!stage.shouldTranslate || processed.isEmpty() || !m_translationService || !m_translationService->hasBackend()) {
-        completeResult(t, true, rawText, processed, {});
+        completeResult(t, true, rawText, processed, {}, cloudSource);
         return;
     }
 
+    // 先把原文交给界面显示，翻译好了再补译文
+    showSourceFirst(t.seq, processed);
     m_translating.insert(t.seq);
     m_translationService->translate(processed, stage.from, stage.to,
         [this, t, rawText, processed](bool ok, const QString& translated, const QString& error) {
@@ -321,20 +404,35 @@ void TranscriptionService::finish(const Ticket& t, bool success, const QString& 
                 LOG_WARN(QString("Translation failed, fallback to original: %1").arg(error));
                 emit translationFailed(error);
             }
-            completeResult(t, true, rawText, outcome.text, {});
+            completeResult(t, true, rawText, outcome.text, {}, outcome.usedFallback ? QString() : processed);
         });
 }
 
+void TranscriptionService::showSourceFirst(quint64 seq, const QString& text) {
+    m_pendingShown.insert(seq);
+    emit transcriptionPending(seq, text);
+}
+
 void TranscriptionService::completeResult(const Ticket& t, bool success, const QString& rawText,
-                                           const QString& finalText, const QString& errorMsg) {
-    const Result r{ success, rawText, finalText, errorMsg, t.fileMode };
+                                           const QString& finalText, const QString& errorMsg,
+                                           const QString& sourceText) {
+    const Result r{ success, rawText, finalText, errorMsg, t.fileMode, sourceText, t.seq };
     if (!m_results.complete(t.seq, r)) return;
 
     for (const Result& ready : m_results.takeReady()) {
         if (ready.fileMode)
             emit fileSegmentFinished(ready.success, ready.rawText, ready.finalText, ready.errorMsg);
-        else
+        else {
+            // 先于结果发出：之前已先显示过原文的句子，这里补上译文（或回退 / 失败的结局）；
+            // 没先显示过但翻译成功的，也带着原文和译文一起给界面
+            const bool shown = m_pendingShown.remove(ready.seq);
+            const bool translated = ready.success && !ready.sourceText.isEmpty() && ready.sourceText != ready.finalText;
+            if (shown || translated) {
+                emit transcriptionTranslated(ready.seq, ready.sourceText.isEmpty() ? ready.finalText : ready.sourceText,
+                                             ready.success ? ready.finalText : QString());
+            }
             emit transcriptionFinished(ready.success, ready.rawText, ready.finalText, ready.errorMsg);
+        }
     }
 }
 
@@ -343,15 +441,11 @@ void TranscriptionService::armTimeout(const Ticket& t) {
         // 翻译阶段由 TranslationService 的独立超时兜底，别被这个更长的识别超时抢先判失败
         if (m_translating.contains(t.seq)) return;
 
-        // 润色阶段超时：识别原文已经拿到，回退原文继续，不能当成识别失败
-        auto it = m_polishOriginals.find(t.seq);
-        if (it != m_polishOriginals.end()) {
-            const QString original = it.value();
-            m_polishOriginals.erase(it);
-
+        // 润色 / 翻译阶段超时：识别原文已经拿到，回退当前阶段的输入继续，不能当成识别失败
+        if (const auto job = m_aiJobs.take(t.seq)) {
             const QString cause = QStringLiteral("请求超时，无响应");
             LOG_WARN(QString("Text polish timeout, fallback to original: %1").arg(cause));
-            const auto outcome = decideEnhancementOutcome(false, original, {});
+            const auto outcome = decideEnhancementOutcome(false, job->current, {});
             if (outcome.usedFallback) {
                 emit enhancementFailed(cause, t.fileMode);
                 finish(t, true, outcome.text, {});
@@ -410,12 +504,32 @@ bool TranscriptionService::fileTranslationActive() const {
     const PolishConfig& p = m_config.polish;
     if (!TextPolishPrompts::hasTranslationTarget(p.activeTargetLang())) return false;
     if (p.usesLocalTranslation()) return m_translationService && m_translationService->hasBackend();
-    // 云端翻译和听写一样挂在 AI 增强开关下
-    return p.enableAiEnhancement && p.cloudEngineConfigured()
-        && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
+    // 翻译开关独立生效，不依附 AI 增强（润色）开关
+    return p.cloudEngineConfigured() && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
 }
 
 void TranscriptionService::translateForFile(const QString& text, TranslateCallback done) {
+    m_fileTranslateQueue.enqueue({text, std::move(done)});
+    pumpFileTranslations();
+}
+
+void TranscriptionService::pumpFileTranslations() {
+    // 本地翻译后端是单进程串行；云端并发 3 路，既不拖慢也不触发限流
+    const int limit = m_config.polish.usesLocalTranslation() ? 1 : 3;
+    while (m_fileTranslateInFlight < limit && !m_fileTranslateQueue.isEmpty()) {
+        FileTranslateJob job = m_fileTranslateQueue.dequeue();
+        ++m_fileTranslateInFlight;
+        // 回调可能同步触发（源语言与目标语言相同），所以先计数再发；结束时补位继续发下一条
+        dispatchFileTranslation(job.text, [this, done = std::move(job.done)](bool ok, const QString& result,
+                                                                          const QString& error) {
+            --m_fileTranslateInFlight;
+            done(ok, result, error);
+            pumpFileTranslations();
+        });
+    }
+}
+
+void TranscriptionService::dispatchFileTranslation(const QString& text, TranslateCallback done) {
     const PolishConfig& p = m_config.polish;
     if (p.usesLocalTranslation()) {
         // 复用听写的语言判定；fileMode 传 false，否则判定会直接跳过翻译
@@ -437,7 +551,7 @@ void TranscriptionService::translateForFile(const QString& text, TranslateCallba
     params.aiEngine = p.aiEngineIndex;
     params.apiKey = p.apiKey;
     params.customUrl = p.apiUrl;
-    params.model = p.model;
+    params.model = p.effectiveTranslateModel();
     params.targetLang = p.activeTargetLang();
     params.translateOnly = true;
 

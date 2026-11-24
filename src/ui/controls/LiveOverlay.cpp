@@ -1,6 +1,9 @@
 #include "LiveOverlay.h"
 #include "FloatingWindow.h"
 #include "ui/models/LiveCaptionModel.h"
+#include "ToolIcon.h"
+#include <QEnterEvent>
+#include <QRegion>
 #include <QFontMetricsF>
 #include <QCursor>
 #include <QGuiApplication>
@@ -27,6 +30,10 @@ constexpr qreal kBarMargin = 12.0;
 constexpr qreal kMinBarHeight = 5.0;
 constexpr qreal kDotCycleMs = 1120.0;
 constexpr qreal kIconHoldSec = 1.5;
+constexpr int kSideGutter = 64;           // 卡片左右各留的空白，悬停按钮画在右侧；左右对称，卡片才保持居中
+constexpr qreal kBtnSize = 24.0, kBtnGap = 4.0, kBtnOffset = 8.0;
+constexpr qreal kBtnVerticalNeed = 2 * kBtnSize + kBtnGap + 16.0;   // 卡片至少这么高才竖排
+const QString kPosGroup = QStringLiteral("LiveOverlay");
 
 qreal approach(qreal cur, qreal target, qreal tauSec, qreal dtSec)
 {
@@ -103,7 +110,8 @@ LiveOverlay::LiveOverlay(QWidget *parent)
     // 只做状态显示，不能成为焦点窗口，否则听写结果会注入到它自己身上
     FloatingWindow::applyToolWindowFlags(this);
     setCursor(Qt::PointingHandCursor);
-    resize(kBallSize, kBallSize);
+    setMouseTracking(true);   // 悬停在按钮上要高亮，不按键也得收到 move
+    resize(kBallSize + 2 * kSideGutter, kBallSize);
 
     m_barEnergy.fill(0.0, kBarCount);
 
@@ -115,6 +123,10 @@ LiveOverlay::LiveOverlay(QWidget *parent)
     m_idleFadeTimer->setSingleShot(true);
     m_idleFadeTimer->setInterval(4000);
     connect(m_idleFadeTimer, &QTimer::timeout, this, [this]() {
+        if (m_hover || m_dragging) {   // 用户正在操作按钮，别在手下消失
+            m_idleFadeTimer->start();
+            return;
+        }
         if (m_state != Paused) {
             hideOverlay();
         }
@@ -156,6 +168,18 @@ QScreen *LiveOverlay::targetScreen() const
 
 void LiveOverlay::positionOnScreen()
 {
+    if (m_anchor) {
+        QScreen *screen = QGuiApplication::screenAt(*m_anchor);
+        if (!screen) screen = targetScreen();
+        if (!screen) return;
+        const QRect geo = screen->availableGeometry();
+        // 用户拖过的位置：锚点是窗口中线与卡片贴边那条线的交点，窗口大小变化时锚点不动，卡片就不会跳
+        const int nx = std::clamp(m_anchor->x() - width() / 2, geo.left(), std::max(geo.left(), geo.right() - width() + 1));
+        const int ay = m_atTop ? m_anchor->y() - int(kEdgeInset) : m_anchor->y() - height() + int(kEdgeInset);
+        const int ny = std::clamp(ay, geo.top() - int(kEdgeInset), std::max(geo.top(), geo.bottom() - height() + int(kEdgeInset) + 1));
+        move(nx, ny);
+        return;
+    }
     QScreen *screen = targetScreen();
     if (!screen) return;
     QRect geo = screen->availableGeometry();
@@ -187,6 +211,7 @@ qreal LiveOverlay::cardTop(qreal cardH) const
 void LiveOverlay::showOnScreen()
 {
     m_hideDeferred = false;
+    if (m_userHidden) return;   // 用户点了隐藏：直到托盘里选「显示」之前都不再弹出
     if (!isVisible()) {
         m_screen = QGuiApplication::screenAt(QCursor::pos());
         relayoutCaption();
@@ -244,6 +269,10 @@ void LiveOverlay::hideEvent(QHideEvent *event)
 {
     QWidget::hideEvent(event);
     m_animTimer->stop();
+    m_hover = false;
+    m_dragging = false;
+    m_hoverBtn = Btn::None;
+    m_btnOpacity = 0.0;
 }
 
 QRectF LiveOverlay::cardRect() const
@@ -328,13 +357,14 @@ void LiveOverlay::syncWindowSize()
 {
     // 动画中窗口取当前和目标的较大者，落定后一次性收缩；按 8 对齐，避免每帧都改窗口大小
     auto quantize = [](qreal v, qreal floorV) { return v <= floorV ? int(floorV) : int(std::ceil((v + 4) / 8.0) * 8); };
-    const qreal needW = std::max(m_cardW, m_targetW);
+    const qreal needW = std::max(m_cardW, m_targetW) + 2 * kSideGutter;
     const qreal needH = std::max(m_cardH, m_targetH) + kEdgeInset + 4;
 
-    int w = std::max(width(), quantize(needW, kBallSize));
+    const int minW = kBallSize + 2 * kSideGutter;
+    int w = std::max(width(), quantize(needW, minW));
     int h = std::max(height(), quantize(needH, kBallSize));
     if (isSettled()) {
-        w = quantize(m_targetW, kBallSize);
+        w = quantize(m_targetW + 2 * kSideGutter, minW);
         h = quantize(m_targetH + kEdgeInset + 4, kBallSize);
     }
     if (w != width() || h != height()) {
@@ -382,12 +412,156 @@ void LiveOverlay::tick()
     }
     step(m_iconOpacity, fade(m_iconOpacity, m_iconHoldSec > 0, 0.3, dt));
 
+    step(m_btnOpacity, fade(m_btnOpacity, m_hover || m_dragging, 0.15, dt));
+
     syncWindowSize();
+    updateInputMask();
     if (moving) update();
+}
+
+// 只让卡片和（悬停时的）按钮接收鼠标：左右留白不挡住下面的窗口
+void LiveOverlay::updateInputMask()
+{
+    QRect r = cardRect().toAlignedRect();
+    if (m_hover || m_dragging || m_btnOpacity > 0.01) {
+        r = r.united(buttonRect(Btn::Drag).toAlignedRect());
+        if (m_hideButtonEnabled) r = r.united(buttonRect(Btn::Hide).toAlignedRect());
+        r.adjust(-2, -2, 2, 2);
+    }
+    r = r.intersected(rect());
+    if (r == m_lastMaskRect) return;
+    m_lastMaskRect = r;
+    setMask(QRegion(r));
+}
+
+bool LiveOverlay::buttonsVertical() const
+{
+    return cardRect().height() >= kBtnVerticalNeed;
+}
+
+QRectF LiveOverlay::buttonRect(Btn b) const
+{
+    const QRectF card = cardRect();
+    const int index = (b == Btn::Hide || !m_hideButtonEnabled) ? 0 : 1;
+    const int count = m_hideButtonEnabled ? 2 : 1;
+    const qreal span = count * kBtnSize + (count - 1) * kBtnGap;
+    const qreal x0 = card.right() + kBtnOffset;
+    if (buttonsVertical()) {
+        const qreal y0 = card.center().y() - span / 2.0;
+        return QRectF(x0, y0 + index * (kBtnSize + kBtnGap), kBtnSize, kBtnSize);
+    }
+    return QRectF(x0 + index * (kBtnSize + kBtnGap), card.center().y() - kBtnSize / 2.0, kBtnSize, kBtnSize);
+}
+
+LiveOverlay::Btn LiveOverlay::buttonAt(const QPointF &pos) const
+{
+    if (m_btnOpacity < 0.3) return Btn::None;
+    if (m_hideButtonEnabled && buttonRect(Btn::Hide).contains(pos)) return Btn::Hide;
+    if (buttonRect(Btn::Drag).contains(pos)) return Btn::Drag;
+    return Btn::None;
+}
+
+QPoint LiveOverlay::currentAnchor() const
+{
+    return QPoint(x() + width() / 2, m_atTop ? y() + int(kEdgeInset) : y() + height() - int(kEdgeInset));
+}
+
+void LiveOverlay::loadSavedPosition()
+{
+    m_anchor.reset();
+    const auto saved = FloatingWindow::loadPosition(kPosGroup);
+    if (!saved) return;
+    for (const QRect &s : FloatingWindow::availableScreens()) {
+        if (s.contains(*saved)) { m_anchor = saved; return; }   // 屏幕拔掉了就回默认位置
+    }
+}
+
+void LiveOverlay::restoreFromUserHide()
+{
+    m_userHidden = false;
+}
+
+void LiveOverlay::enterEvent(QEnterEvent *event)
+{
+    QWidget::enterEvent(event);
+    m_hover = true;
+    update();
+}
+
+void LiveOverlay::leaveEvent(QEvent *event)
+{
+    QWidget::leaveEvent(event);
+    m_hover = false;
+    m_hoverBtn = Btn::None;
+    if (!m_dragging) setCursor(Qt::PointingHandCursor);
+    update();
+}
+
+void LiveOverlay::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_dragging) {
+        // 按拖动起点的全局坐标算增量，窗口大小变化不会累积误差
+        m_anchor = m_dragStartAnchor + (event->globalPosition().toPoint() - m_dragStartGlobal);
+        positionOnScreen();
+        return;
+    }
+    const Btn b = buttonAt(event->position());
+    if (b != m_hoverBtn) {
+        m_hoverBtn = b;
+        setCursor(b == Btn::Drag ? Qt::SizeAllCursor : Qt::PointingHandCursor);
+        update();
+    }
+    QWidget::mouseMoveEvent(event);
+}
+
+void LiveOverlay::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (m_dragging && event->button() == Qt::LeftButton) {
+        m_dragging = false;
+        m_anchor = currentAnchor();
+        FloatingWindow::savePosition(kPosGroup, *m_anchor);
+        setCursor(m_hoverBtn == Btn::Drag ? Qt::SizeAllCursor : Qt::PointingHandCursor);
+        return;
+    }
+    if (event->button() == Qt::LeftButton && m_pressBtn == Btn::Hide && buttonAt(event->position()) == Btn::Hide) {
+        m_pressBtn = Btn::None;
+        m_userHidden = true;
+        m_hover = false;
+        m_btnOpacity = 0.0;
+        hide();
+        emit hiddenByUser();
+        return;
+    }
+    m_pressBtn = Btn::None;
+    QWidget::mouseReleaseEvent(event);
+}
+
+// 双击拖动按钮：回到默认位置
+void LiveOverlay::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && buttonAt(event->position()) == Btn::Drag) {
+        m_dragging = false;
+        m_anchor.reset();
+        FloatingWindow::clearPosition(kPosGroup);
+        positionOnScreen();
+        return;
+    }
+    QWidget::mouseDoubleClickEvent(event);
 }
 
 void LiveOverlay::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::LeftButton) {
+        m_pressBtn = buttonAt(event->position());
+        if (m_pressBtn == Btn::Drag) {
+            m_dragging = true;
+            m_dragStartGlobal = event->globalPosition().toPoint();
+            m_dragStartAnchor = currentAnchor();
+            setCursor(Qt::ClosedHandCursor);
+            return;
+        }
+        if (m_pressBtn == Btn::Hide) return;   // 松开时才算点击
+    }
     if (event->button() != Qt::LeftButton || !cardRect().contains(event->position())) {
         QWidget::mousePressEvent(event);
         return;
@@ -426,6 +600,40 @@ void LiveOverlay::paintEvent(QPaintEvent *)
     if (m_iconOpacity > 0.01) {
         paintIcon(p, card.center());
     }
+    if (m_btnOpacity > 0.01) paintButtons(p);
+}
+
+QImage LiveOverlay::buttonIcon(Btn b, const QColor &color, int px) const
+{
+    const QString name = b == Btn::Hide ? QStringLiteral(":/overlay_hide") : QStringLiteral(":/overlay_drag");
+    const QString key = name + color.name(QColor::HexArgb) + QString::number(px);
+    auto it = m_iconCache.find(key);
+    if (it == m_iconCache.end()) it = m_iconCache.insert(key, ToolIcon::render(name, color, px));
+    return it.value();
+}
+
+void LiveOverlay::paintButtons(QPainter &p) const
+{
+    const OverlayStyle &st = styleFor(m_theme);
+    const qreal dpr = devicePixelRatioF();
+    const Btn list[] = { Btn::Hide, Btn::Drag };
+    p.save();
+    p.setOpacity(m_btnOpacity);
+    for (Btn b : list) {
+        if (b == Btn::Hide && !m_hideButtonEnabled) continue;
+        const QRectF r = buttonRect(b);
+        const bool hot = (m_hoverBtn == b) || (m_dragging && b == Btn::Drag);
+        QColor fill = st.bgTop;
+        fill.setAlpha(255);
+        p.setPen(QPen(st.border, 1));
+        p.setBrush(hot ? mix(fill, st.finalText, 0.16) : fill);
+        p.drawRoundedRect(r, 8, 8);
+        const qreal icon = 14.0;
+        const QImage img = buttonIcon(b, hot ? st.finalText : st.pendingText, int(std::ceil(icon * dpr)));
+        if (img.isNull()) continue;
+        p.drawImage(QRectF(r.center().x() - icon / 2, r.center().y() - icon / 2, icon, icon), img);
+    }
+    p.restore();
 }
 
 void LiveOverlay::paintCard(QPainter &p, const QPointF &center, qreal opacity) const

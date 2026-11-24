@@ -62,6 +62,10 @@
 #include "ui/models/DictationHistoryModel.h"
 #include "ui/models/ModelDownloadTracker.h"
 #include "ui/models/LiveCaptionModel.h"
+#include "services/ollama/OllamaClient.h"
+#include "services/textpolish/AiStagePlan.h"
+#include "services/ollama/OllamaCatalog.h"
+#include "ui/controls/OllamaModelButton.h"
 #include "ui/controls/SettingsBinder.h"
 #include "ui/controls/ExpandPanel.h"
 #include "ui/controls/FloatingWindow.h"
@@ -139,6 +143,8 @@ void MainWin::initialize() {
 
     const AppConfig& config = ConfigManager::instance().config();
     m_textPolishService = new TextPolishService(m_networkManager, this);
+    m_ollamaClient = new OllamaClient(m_networkManager, this);
+    m_ollamaClient->setBaseUrl(config.polish.apiUrl);
     {
         QFile manifestFile(QStringLiteral(":/translation_models.json"));
         manifestFile.open(QIODevice::ReadOnly);
@@ -183,6 +189,12 @@ void MainWin::initialize() {
 
     // 声音控件
     m_liveOverlay = new LiveOverlay();
+    m_liveOverlay->loadSavedPosition();
+    // 没有托盘的桌面隐藏后没有地方能再叫出来，那就不给隐藏按钮
+    m_liveOverlay->setHideButtonEnabled(QSystemTrayIcon::isSystemTrayAvailable());
+    connect(m_liveOverlay, &LiveOverlay::hiddenByUser, this, [this]() {
+        notify(NotifyLevel::Info, QStringLiteral("语音识别窗口已隐藏"), QStringLiteral("可在系统托盘图标的右键菜单中重新显示"));
+    });
     m_controlBar = new ControlBar();
     m_transcriptWidget = new LiveTranscriptWidget();
     m_termWidget = new TermWidget();
@@ -367,19 +379,27 @@ void MainWin::setupUiConnections(){
     // gemini
     connect(ui->check_connection_btn, &QPushButton::clicked, this, [this]() {
         const int engine = ui->ai_engine_comb->currentIndex();
+        // Ollama 下同时重新检测服务：装好 Ollama 后点这里即可
+        if (engine == 2) m_ollamaClient->checkService();
         if (!m_textPolishService->capabilities(engine).canTest) return;
 
         const AppConfig& config = ConfigManager::instance().config();
         TextPolishService::RequestParams params;
         params.aiEngine = engine;
-        params.apiKey = config.polish.apiKey;
-        params.customUrl = config.polish.apiUrl;
+        // 地址、密钥直接取输入框当前内容：它们是"提交时才写进配置"，刚输入完就点测试时配置里还是旧值
+        params.apiKey = ui->api_key_edit->isVisible() ? ui->api_key_edit->text() : config.polish.apiKey;
+        params.customUrl = ui->api_url_edit->text();
         params.model = config.polish.model;
         params.style = config.polish.aiStyle;
         params.customPrompt = config.polish.prompt;
         params.aiVocab = config.polish.vocab;
         params.targetLang = config.polish.cloudTargetLang();
         m_textPolishService->testConnection(params);
+    });
+
+    // 测试结果必须让用户看到：以前只写了日志，点了"测试连接"界面上没有任何反应
+    connect(m_textPolishService, &TextPolishService::connectionTested, this, [this](bool ok, const QString& message) {
+        notify(ok ? NotifyLevel::Success : NotifyLevel::Error, ok ? QStringLiteral("连接成功") : QStringLiteral("连接失败"), message);
     });
 
     connect(ui->enable_enhancement_checkbox, &QCheckBox::toggled, this, [this]() { updateAiEngineUi(); });
@@ -430,40 +450,38 @@ void MainWin::setupUiConnections(){
     connect(ui->ai_engine_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         // 目标语言列表随引擎变（云端几种常用语言 / 本地按已有模型）；载入设置时由 loadConfigToUI 统一重建
         if (!m_loadingSettings) rebuildTranslationLanguages();
+        if (!m_loadingSettings) swapPolishModelForEngine(index);
         updateAiEngineUi();
         // 载入设置时由 loadConfigToUI 在末尾统一拉取，避免重复请求
         if (m_loadingSettings) return;
-        if (!m_textPolishService->capabilities(index).canFetchModels) return;
-
-        const AppConfig& config = ConfigManager::instance().config();
-        TextPolishService::RequestParams params;
-        params.aiEngine = index;
-        params.apiKey = config.polish.apiKey;
-        params.customUrl = config.polish.apiUrl;
-        m_textPolishService->fetchModels(params);
+        if (index == 2) {
+            m_ollamaClient->setBaseUrl(ConfigManager::instance().config().polish.apiUrl);
+            m_ollamaClient->checkService();
+        }
+        requestModelList();
     });
 
     connect(m_textPolishService, &TextPolishService::modelsFetched, this, [this](bool success, const QStringList& models, const QString&) {
-        if (!success || models.isEmpty()) {
+        const bool ollama = ui->ai_engine_comb->currentIndex() == 2;
+        const bool listed = success && !models.isEmpty();
+        if (!listed) {
             LOG_ERROR("Failed to fetch model list");
-            ui->ai_model_comb->clear();
-            return;
+            // Ollama 没开时仍列出推荐模型和已保存的模型，旁边的按钮提示安装 / 下载
+            if (!ollama) {
+                ui->ai_model_comb->clear();
+                rebuildTranslateModelCombo({});
+                return;
+            }
+        } else {
+            LOG_INFO("Fetched model list successfully");
         }
-
-        LOG_INFO("Fetched model list successfully");
-        // 重建列表时不能让下拉框的改动信号把已保存的模型名冲掉
-        AppConfig& config = ConfigManager::instance().config();
-        {
-            const QSignalBlocker block(ui->ai_model_comb);
-            ui->ai_model_comb->clear();
-            ui->ai_model_comb->addItems(models);
-            ui->ai_model_comb->setCurrentIndex(std::max(0, ui->ai_model_comb->findText(config.polish.model)));
+        if (ollama && success) {
+            ui->ollama_model_btn->setInstalled(models);
+            ui->ollama_translate_btn->setInstalled(models);
         }
-        // 已保存的模型不在新列表里（如换了引擎）时，改用列表第一项
-        if (config.polish.model != ui->ai_model_comb->currentText()) {
-            config.polish.model = ui->ai_model_comb->currentText();
-            applySettings(0);
-        }
+        const QStringList installed = success ? models : QStringList();
+        rebuildTranslateModelCombo(installed);
+        rebuildPolishModelCombo(installed, listed);
     });
 
     // 更新检查
@@ -478,10 +496,29 @@ void MainWin::setupUiConnections(){
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, m_history, [this](const QString& text) { m_history->add(text); });
 
     // 实时转录页：所有听写结果连续写成稿子；"同时输入到前台"关掉时结果只留在稿子里
+    // 要翻译的句子：识别出来先显示原文，译文好了再补到同一行（翻译慢也不用干等）。
+    // 同一句的 utteranceTranslated 在 transcriptionResultReady 之前同步发出：先把这句补完整并记下最终文字，
+    // 结果到了发现已经显示过就不再另起一行；没经过翻译的句子仍按原来的方式直接追加
+    connect(m_workflow, &WorkflowManager::utterancePending, this,
+            [this](quint64 seq, const QString& source) { m_transcriptWidget->appendPending(seq, source); });
+    connect(m_workflow, &WorkflowManager::utteranceTranslated, this,
+            [this](quint64 seq, const QString& source, const QString& finalText) {
+                m_transcriptWidget->completePending(seq, source, finalText);
+                m_liveShownText = finalText;
+                m_liveShownValid = true;
+            });
     connect(m_workflow, &WorkflowManager::transcriptionResultReady,
-            m_transcriptWidget, [this](const QString& text) { m_transcriptWidget->appendUtterance(text); });
+            m_transcriptWidget, [this](const QString& text) {
+                const bool alreadyShown = m_liveShownValid && m_liveShownText == text;
+                m_liveShownValid = false;
+                m_liveShownText.clear();
+                if (!alreadyShown) m_transcriptWidget->appendUtterance(text);
+            });
+
     connect(m_transcriptWidget, &LiveTranscriptWidget::startRequested, this, [this]() { startDictation(); });
     connect(m_transcriptWidget, &LiveTranscriptWidget::stopRequested, this, [this]() { stopDictation(); });
+    connect(m_transcriptWidget, &LiveTranscriptWidget::copied, this,
+            [this](const QString& title) { notify(NotifyLevel::Success, title); });
     connect(m_transcriptWidget, &LiveTranscriptWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
     // 只通知工作流，不写配置：持久化归设置页复选框上的绑定器（唯一来源）。
@@ -628,6 +665,34 @@ void MainWin::setupUiConnections(){
 
     connect(ui->firewall_card, &FirewallCard::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
+    });
+
+    // Ollama：模型仍在下拉框里选，下拉框旁的按钮负责下载所选模型；两个按钮共用一个 client
+    for (OllamaModelButton* btn : { ui->ollama_model_btn, ui->ollama_translate_btn }) {
+        btn->setClient(m_ollamaClient);
+        connect(btn, &OllamaModelButton::errorOccurred, this, [this](const QString& title, const QString& cause) {
+            notify(NotifyLevel::Error, title, cause);
+        });
+        // 下载完成后重新拉模型列表，下拉框里的"未下载"标记随之消失
+        connect(btn, &OllamaModelButton::modelInstalled, this, [this](const QString&) { requestModelList(); });
+    }
+    connect(m_ollamaClient, &OllamaClient::serviceChecked, this, [this](bool running, const QString&) {
+        if (running && ui->ai_engine_comb->currentIndex() == 2) requestModelList();
+    });
+    connect(ui->ai_model_comb, &QComboBox::currentTextChanged, ui->ollama_model_btn, &OllamaModelButton::setModel);
+    connect(ui->api_url_edit, &QLineEdit::editingFinished, this, [this]() {
+        m_ollamaClient->setBaseUrl(ui->api_url_edit->text());
+        if (ui->ai_engine_comb->currentIndex() == 2) m_ollamaClient->checkService();
+    });
+    connect(ui->translate_model_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (m_loadingSettings || index < 0) return;
+        AppConfig& cfg = ConfigManager::instance().config();
+        const QString value = ui->translate_model_comb->itemData(index).toString();
+        ui->ollama_translate_btn->setModel(value);
+        if (cfg.polish.translateModel == value) return;
+        cfg.polish.translateModel = value;
+        applySettings(0);
+        updateAiEngineUi();
     });
     connect(m_termWidget, &TermWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
         NotifyLevel level = title.contains(tr("成功")) ? NotifyLevel::Success
@@ -973,6 +1038,7 @@ void MainWin::loadConfigToUI() {
     rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
     m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
+    m_lastAiEngine = cfg.polish.aiEngineIndex;
     // loadAll 期间设置项的改动不会发通知，启动时的置顶状态要在这里按配置应用一次
     m_controlBar->setAlwaysOnTop(cfg.barAlwaysOnTop);
     m_panel->setAlwaysOnTop(cfg.barAlwaysOnTop);
@@ -993,15 +1059,139 @@ void MainWin::loadConfigToUI() {
     }
 
     updateAiEngineUi();
+    m_ollamaClient->setBaseUrl(cfg.polish.apiUrl);
+    rebuildTranslateModelCombo({});
+    // 没用 Ollama 的用户不去连本机端口
+    if (ui->ai_engine_comb->currentIndex() == 2) m_ollamaClient->checkService();
+    requestModelList();
+}
 
+// 润色模型按引擎各记一份：换引擎时把当前模型存给旧引擎，换入新引擎自己记的那个（没有则空），
+// 并立刻清掉下拉框里旧引擎的模型。否则换到 Ollama 后，没连上 Ollama 时会把 Gemini 的模型名当"已保存的模型"
+// 补回列表并选中
+void MainWin::swapPolishModelForEngine(int engine) {
+    PolishConfig& p = ConfigManager::instance().config().polish;
+    if (m_lastAiEngine >= 0 && m_lastAiEngine != engine) p.modelByEngine[m_lastAiEngine] = p.model;
+    const int previousEngine = m_lastAiEngine != engine ? m_lastAiEngine : -1;
+    m_lastAiEngine = engine;
+    p.model = p.modelByEngine.value(engine);
+    // 地址和密钥同理：Gemini 的密钥、OpenAI 兼容的地址不能带到 Ollama（地址不对会让 Ollama 一直被判为没运行）
+    if (previousEngine >= 0) {
+        p.apiUrlByEngine[previousEngine] = p.apiUrl;
+        p.apiKeyByEngine[previousEngine] = p.apiKey;
+    }
+    p.apiUrl = p.apiUrlByEngine.value(engine);
+    p.apiKey = p.apiKeyByEngine.value(engine);
+    ui->api_url_edit->setText(p.apiUrl);   // setText 不发 editingFinished，不会触发绑定回写
+    ui->api_key_edit->setText(p.apiKey);
+    if (previousEngine >= 0) p.translateModelByEngine[previousEngine] = p.translateModel;
+    p.translateModel = p.translateModelByEngine.value(engine);
+    {
+        const QSignalBlocker block(ui->ai_model_comb);   // 清空不能触发绑定把 model 写成空
+        ui->ai_model_comb->clear();
+    }
+    ui->ollama_model_btn->setModel(QString());
+    // Ollama / 没有模型列表的引擎在服务没响应前也要有内容可选：先用已记住的值和推荐模型占位，拉到列表后再重建
+    rebuildPolishModelCombo({}, false);
+    rebuildTranslateModelCombo({});
+    applySettings(0);
+}
+
+void MainWin::requestModelList() {
     const int engine = ui->ai_engine_comb->currentIndex();
     if (!m_textPolishService->capabilities(engine).canFetchModels) return;
 
+    const AppConfig& cfg = ConfigManager::instance().config();
     TextPolishService::RequestParams params;
     params.aiEngine = engine;
     params.apiKey = cfg.polish.apiKey;
     params.customUrl = cfg.polish.apiUrl;
     m_textPolishService->fetchModels(params);
+}
+
+// Ollama 下把还没下载的推荐模型也列进下拉框（排在最前），灰字标出；下载由旁边的按钮完成
+static QStringList withOllamaCatalog(const QStringList& installed, OllamaPurpose purpose, QStringList* missing) {
+    QStringList items = installed;
+    for (const QString& name : ollamaCatalogNames(purpose)) {
+        const bool has = std::any_of(installed.cbegin(), installed.cend(),
+                                     [&name](const QString& m) { return OllamaClient::sameModel(m, name); });
+        if (has) continue;
+        items.prepend(name);
+        if (missing) *missing << name;
+    }
+    return items;
+}
+
+static void markNotDownloaded(QComboBox* combo, int index) {
+    if (index < 0) return;
+    combo->setItemData(index, combo->palette().color(QPalette::PlaceholderText), Qt::ForegroundRole);
+    combo->setItemData(index, QCoreApplication::translate("MainWin", "Not downloaded yet"), Qt::ToolTipRole);
+}
+
+void MainWin::rebuildPolishModelCombo(const QStringList& installed, bool listed) {
+    const bool ollama = ui->ai_engine_comb->currentIndex() == 2;
+    AppConfig& config = ConfigManager::instance().config();
+    QStringList missing;
+    QStringList items = ollama ? withOllamaCatalog(installed, OllamaPurpose::Polish, &missing) : installed;
+    // 服务没开、列表为空时保留已保存的模型，不能因为暂时连不上就把设置冲掉
+    if (!listed && !config.polish.model.isEmpty() && !items.contains(config.polish.model)
+        && !(ollama && config.polish.model.startsWith(QStringLiteral("gemini-"), Qt::CaseInsensitive))) {
+        items << config.polish.model;
+        missing << config.polish.model;
+    }
+    {
+        // 重建列表时不能让下拉框的改动信号把已保存的模型名冲掉
+        const QSignalBlocker block(ui->ai_model_comb);
+        ui->ai_model_comb->clear();
+        ui->ai_model_comb->addItems(items);
+        if (ollama) {
+            for (const QString& m : missing) markNotDownloaded(ui->ai_model_comb, ui->ai_model_comb->findText(m));
+        }
+        ui->ai_model_comb->setCurrentIndex(std::max(0, ui->ai_model_comb->findText(config.polish.model)));
+    }
+    ui->ollama_model_btn->setModel(ui->ai_model_comb->currentText());
+    // 已保存的模型不在新列表里（如换了引擎）时，改用列表第一项
+    if (!ui->ai_model_comb->currentText().isEmpty() && config.polish.model != ui->ai_model_comb->currentText()) {
+        config.polish.model = ui->ai_model_comb->currentText();
+        applySettings(0);
+    }
+}
+
+void MainWin::rebuildTranslateModelCombo(const QStringList& models) {
+    const bool ollama = ui->ai_engine_comb->currentIndex() == 2;
+    const QString saved = ConfigManager::instance().config().polish.translateModel;
+    QStringList missing;
+    const QStringList items = ollama ? withOllamaCatalog(models, OllamaPurpose::Translate, &missing) : models;
+    const QSignalBlocker blocker(ui->translate_model_comb);
+    ui->translate_model_comb->clear();
+    for (const QString& m : items) {
+        // 翻译专用模型标出来，方便挑
+        const QString label = TextPolishPrompts::isTranslationModel(m) ? tr("%1 (translation model)").arg(m) : m;
+        ui->translate_model_comb->addItem(label, m);
+        if (missing.contains(m)) markNotDownloaded(ui->translate_model_comb, ui->translate_model_comb->count() - 1);
+    }
+    // 列表还没拉到（或服务暂时没开）时保留已保存的值，不能因为暂时连不上就把设置冲掉
+    if (!saved.isEmpty() && ui->translate_model_comb->findData(saved) < 0) {
+        ui->translate_model_comb->addItem(saved, saved);
+        if (ollama) markNotDownloaded(ui->translate_model_comb, ui->translate_model_comb->count() - 1);
+    }
+    // 不再有"跟随润色模型"：翻译模型始终是一个具体的模型名。没选过时（旧配置里为空 = 原来跟随润色），
+    // 沿用润色模型保持行为不变；润色模型不在列表里就挑翻译专用模型，再不行取第一项
+    QString chosen = saved;
+    if (chosen.isEmpty() && ui->translate_model_comb->count() > 0) {
+        const QString polishModel = ConfigManager::instance().config().polish.model;
+        int idx = ui->translate_model_comb->findData(polishModel);
+        for (int i = 0; idx < 0 && i < ui->translate_model_comb->count(); ++i) {
+            if (TextPolishPrompts::isTranslationModel(ui->translate_model_comb->itemData(i).toString())) idx = i;
+        }
+        chosen = ui->translate_model_comb->itemData(std::max(0, idx)).toString();
+    }
+    ui->translate_model_comb->setCurrentIndex(std::max(0, ui->translate_model_comb->findData(chosen)));
+    ui->ollama_translate_btn->setModel(chosen);
+    if (!chosen.isEmpty() && chosen != saved) {
+        ConfigManager::instance().config().polish.translateModel = chosen;
+        applySettings(0);
+    }
 }
 
 namespace {
@@ -1062,6 +1252,7 @@ void MainWin::retranslateDynamicItems() {
         m_formSwitchBtn->setToolTip(tr("Switch to the compact toolbar"));
     }
     if (m_pagesInSettings) {
+        ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_transcriptWidget), tr("Live Transcript"));
         ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_termWidget), tr("Dictionary"));
         ui->tabWidget->setTabText(ui->tabWidget->indexOf(m_fileWidget), tr("File Transcription"));
     }
@@ -1203,6 +1394,38 @@ void MainWin::updateTranslationUi() {
 
 // 润色与翻译相关控件只在这里启用/隐藏：开关关闭时灰显并保留值，"不适用"的块直接隐藏。
 // 选本地模型时翻译在本机完成，没有润色，也不需要云端的 Key、地址和模型。
+void MainWin::placeModelRow(bool inPolishCard) {
+    if (m_modelRowInPolishCard == inPolishCard) return;
+    m_modelRowInPolishCard = inPolishCard;
+    // 控件换个网格就够了：addWidget 会自动改父控件，信号连接和 SettingsBinder 绑定都不受影响
+    // 润色卡片里放在"风格"同一行右侧（第 1 行第 2、3 列），列布局与上面的连接卡片一致
+    auto* from = inPolishCard ? static_cast<QGridLayout*>(ui->ai_service_card_layout)
+                              : static_cast<QGridLayout*>(ui->polish_card_layout);
+    auto* to = inPolishCard ? static_cast<QGridLayout*>(ui->polish_card_layout)
+                            : static_cast<QGridLayout*>(ui->ai_service_card_layout);
+    from->removeWidget(ui->label_14);
+    from->removeWidget(ui->ai_model_row);
+    const int row = inPolishCard ? 1 : 0;
+    to->addWidget(ui->label_14, row, 2);
+    to->addWidget(ui->ai_model_row, row, 3);
+}
+
+// Ollama 没有密钥：地址独占第二行，从最左边对齐；其它引擎地址和密钥并排，地址在右半边
+void MainWin::placeUrlRow(bool alone) {
+    if (m_urlRowAlone == alone) return;
+    m_urlRowAlone = alone;
+    auto* grid = static_cast<QGridLayout*>(ui->ai_service_card_layout);
+    grid->removeWidget(ui->label_16);
+    grid->removeWidget(ui->api_url_edit);
+    if (alone) {
+        grid->addWidget(ui->label_16, 1, 0);
+        grid->addWidget(ui->api_url_edit, 1, 1, 1, 4);
+    } else {
+        grid->addWidget(ui->label_16, 1, 2);
+        grid->addWidget(ui->api_url_edit, 1, 3, 1, 2);
+    }
+}
+
 void MainWin::updateAiEngineUi() {
     const int engine = ui->ai_engine_comb->currentIndex();
     const bool local = engine == kLocalTranslationEngine;
@@ -1227,10 +1450,23 @@ void MainWin::updateAiEngineUi() {
     };
 
     // 引擎下拉始终显示；连接信息只对云端引擎有意义
-    setVisible({ ui->label_13, ui->api_key_edit, ui->label_16, ui->api_url_edit,
-                 ui->label_14, ui->ai_model_comb, ui->check_connection_btn }, !local);
+    setVisible({ ui->label_16, ui->api_url_edit, ui->label_14, ui->ai_model_row, ui->check_connection_btn }, !local);
+    // Ollama 不需要密钥：只留地址，留空就用默认的 localhost:11434
+    setVisible({ ui->label_13, ui->api_key_edit }, !local && engine != 2);
+    ui->api_url_edit->setPlaceholderText(engine == 2 ? tr("Leave empty to use the default (http://localhost:11434)")
+                                                     : QString());
     setEnabled({ ui->ai_model_comb, ui->label_14 }, caps.canFetchModels);
     ui->check_connection_btn->setEnabled(caps.canTest);
+    // Ollama 下模型下拉框旁多一个下载按钮（所选模型没装时才出现）
+    const bool ollama = engine == 2;
+    // 润色模型只有一个控件：Gemini / OpenAI 兼容时在连接卡片里，Ollama 时挪进润色卡片，
+    // 与翻译模型在翻译卡片里对应（Ollama 的模型是本机下载的，跟着用途走更好理解）
+    placeModelRow(ollama);
+    placeUrlRow(ollama);
+    ui->ollama_model_btn->setActive(ollama);
+    ui->ollama_translate_btn->setActive(ollama);
+    // 单独指定翻译模型只对能列模型的接口有意义（OpenAI 兼容 / Ollama）
+    setVisible({ ui->translate_model_label, ui->translate_model_comb }, engine == 1 || ollama);
 
     ui->polish_card->setVisible(!local);
     // 自订指令只有风格选"自订Prompt"时才会用到，其余风格下显示出来没有作用
@@ -1239,26 +1475,19 @@ void MainWin::updateAiEngineUi() {
     setEnabled({ ui->ai_style_comb, ui->custom_commands_edit, ui->ai_vocabulary_edit,
                  ui->label_18, ui->label_17, ui->label_20 }, polishOn && caps.canPolish);
 
-    // 云端翻译随润色请求一起发出，润色关闭时无法使用
-    const bool cloudBlocked = !local && !polishOn;
-    const bool detailOn = transOn && !cloudBlocked;
+    // 翻译与润色各自独立：只开翻译时单独发一次翻译请求（见 AiStagePlan）
     setEnabled({ ui->translate_source_comb, ui->translate_source_label,
-                 ui->translate_language_comb, ui->label_19 }, detailOn);
+                 ui->translate_language_comb, ui->label_19, ui->translate_model_label, ui->translate_model_comb }, transOn);
     setVisible({ ui->translate_source_comb, ui->translate_source_label }, local);
-
-    QString hint;
-    if (transOn && cloudBlocked) {
-        hint = tr("Enable polishing first, or switch to the local model");
-    }
-    ui->translate_hint_label->setText(hint);
-    ui->translate_hint_label->setVisible(!hint.isEmpty());
+    ui->translate_hint_label->clear();
+    ui->translate_hint_label->setVisible(false);
 
     updateTranslationUi();
 
     // 只列出实际会执行的步骤；润色和翻译都没开时没有额外处理，不显示这一行
     QStringList steps{ tr("Recognition") };
     if (polishOn) steps << tr("Polishing");
-    if (transOn && !cloudBlocked) steps << tr("Translation");
+    if (transOn) steps << tr("Translation");
     steps << tr("Output");
     ui->pipeline_hint_label->setText(steps.join(QStringLiteral("  →  ")));
     ui->pipeline_hint_label->setVisible(steps.size() > 2);
@@ -1268,10 +1497,7 @@ void MainWin::updateAiEngineUi() {
         m_controlBar->toggleButton(ControlBar::Toggle::Enhance)->setEnabled(!local);
         m_controlBar->setToggleHint(ControlBar::Toggle::Enhance,
                                     local ? tr("Not available with the local translation engine") : QString());
-        m_controlBar->setToggleHint(ControlBar::Toggle::Translate,
-                                    (transOn && cloudBlocked)
-                                        ? tr("Turn on AI Enhancement first, or switch to the local model")
-                                        : QString());
+        m_controlBar->setToggleHint(ControlBar::Toggle::Translate, QString());
     }
 }
 
@@ -1678,6 +1904,13 @@ void MainWin::rebuildTrayMenu()
     const bool shown = isVisible() || m_controlBar->isVisible();
     LOG_DEBUG(QString("Tray | menu about to show, settings=%1 bar=%2").arg(isVisible()).arg(m_controlBar->isVisible()));
     trayMenu->addAction(shown ? tr("隐藏") : tr("显示"), this, &MainWin::toggleCurrentForm);
+    if (m_liveOverlay->userHidden()) {
+        trayMenu->addAction(tr("Show dictation window"), this, [this]() {
+            m_liveOverlay->restoreFromUserHide();
+            // 正在录音 / 转录时马上显示出来，空闲时等下一次说话自己弹出
+            if (m_workflow->state() != WorkflowState::Idle) m_liveOverlay->showOnScreen();
+        });
+    }
     trayMenu->addAction(tr("退出"), this, &MainWin::onQuitApplication);
 }
 
@@ -1710,18 +1943,20 @@ void MainWin::showCurrentForm()
 
 void MainWin::movePagesTo(bool settingsWindow)
 {
-    // 词典、文件转录页只有一个实例，在面板和设置窗口的标签页之间借用；状态（文件转录进度等）留在实例里
+    // 实时转录、词典、文件转录页只有一个实例，在面板和设置窗口的标签页之间借用；状态（稿子、文件转录进度等）留在实例里
     if (m_pagesInSettings == settingsWindow) return;
     if (settingsWindow) {
         m_panel->showPage(PanelState::Page::None);
         m_panel->releaseSharedPages();
         const int at = ui->tabWidget->indexOf(ui->appearance);
-        ui->tabWidget->insertTab(at, m_termWidget, tr("Dictionary"));
-        ui->tabWidget->insertTab(at + 1, m_fileWidget, tr("File Transcription"));
+        ui->tabWidget->insertTab(at, m_transcriptWidget, tr("Live Transcript"));
+        ui->tabWidget->insertTab(at + 1, m_termWidget, tr("Dictionary"));
+        ui->tabWidget->insertTab(at + 2, m_fileWidget, tr("File Transcription"));
     } else {
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(m_transcriptWidget));
         ui->tabWidget->removeTab(ui->tabWidget->indexOf(m_termWidget));
         ui->tabWidget->removeTab(ui->tabWidget->indexOf(m_fileWidget));
-        m_panel->takeBackSharedPages(m_termWidget, m_fileWidget);
+        m_panel->takeBackSharedPages(m_transcriptWidget, m_termWidget, m_fileWidget);
     }
     m_pagesInSettings = settingsWindow;
 }

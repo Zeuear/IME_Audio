@@ -176,12 +176,12 @@ NOT_IN_APP: set[tuple[str, str]] = {
     ("Cantonese", "sense-voice-2024"),
     ("Korean", "zipformer-ko"),          # 超过约 10 秒的音频返回空结果
     ("Ukrainian", "moonshine-base-uk"),  # 超过约 9 秒的音频返回空结果
-    ("Ukrainian", "whisper-base"), ("Arabic", "whisper-base"), ("Thai", "whisper-base"),
-    ("Georgian", "whisper-base"), ("Georgian", "whisper-small"),
-    ("Armenian", "whisper-base"), ("Armenian", "whisper-small"),
-    ("Tagalog", "whisper-base"), ("Tagalog", "whisper-small"), ("Tagalog", "qwen3-asr"),
-    ("Hindi", "whisper-base"),
-    ("Hebrew", "whisper-base"), ("Hebrew", "whisper-small"),
+    # 软件语言表里有 whisper-base，必须导出分数：得分过低的由界面按 kMinUsableScore 隐藏；
+    # 不导出则会以“未测试”混在列表里。whisper-small 不在软件表里，保留排除
+    ("Georgian", "whisper-small"),
+    ("Armenian", "whisper-small"),
+    ("Tagalog", "whisper-small"),
+    ("Hebrew", "whisper-small"),
 }
 
 

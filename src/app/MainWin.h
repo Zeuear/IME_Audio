@@ -19,6 +19,7 @@
 
 
 class UpdateManager;
+class OllamaClient;
 class ConfigManager;
 class AudioRecorderService;
 class TranscriptionService; 
@@ -132,8 +133,17 @@ private:
     void applySettings(unsigned effects);
     void loadConfigToUI();
     void updateAiEngineUi();
+    void placeModelRow(bool inPolishCard);
+    void placeUrlRow(bool alone);
+    void swapPolishModelForEngine(int engine);
     void retranslateDynamicItems();
     void rebuildTranslationLanguages();
+    // 按当前引擎拉模型列表（OpenAI 兼容 / Ollama）；结果回到 modelsFetched
+    void requestModelList();
+    // 翻译模型下拉：首项"跟随润色模型"，其余为引擎里的模型；保留已保存但不在列表里的值
+    void rebuildTranslateModelCombo(const QStringList& models);
+    // 润色模型下拉：listed=false 表示没拉到列表（如服务没开），此时保留已保存的模型
+    void rebuildPolishModelCombo(const QStringList& installed, bool listed);
     void updateTranslationUi();
     TranslationRoute currentTranslationRoute() const;
     QString recognitionLanguageCode() const;
@@ -156,6 +166,11 @@ private:
 
     QSystemTrayIcon* trayIcon;
     QToolButton* m_formSwitchBtn = nullptr;   // 设置窗口标签栏右侧，切到横条
+    QString m_liveShownText;                  // 刚补完译文的这句的最终文字，结果信号到了据此跳过重复追加
+    bool m_liveShownValid = false;
+    int m_lastAiEngine = -1;                  // 当前 polish.model 属于哪个引擎（见 swapPolishModelForEngine）
+    bool m_urlRowAlone = false;               // 地址行是否独占一行（Ollama，见 placeUrlRow）
+    bool m_modelRowInPolishCard = false;      // 润色模型行现在在哪张卡片里（见 placeModelRow）
     bool m_pagesInSettings = false;           // 词典 / 文件转录页现在挂在谁身上
     QMenu* trayMenu;
 
@@ -178,6 +193,7 @@ private:
     bool m_liveCaptionFailNotified = false;
 
     TextPolishService* m_textPolishService = nullptr;
+    OllamaClient* m_ollamaClient = nullptr;
     TranslationService* m_translationService = nullptr;
     TranslationModelInstaller* m_translationInstaller = nullptr;
     SherpaManager* m_sherpaManager = nullptr;

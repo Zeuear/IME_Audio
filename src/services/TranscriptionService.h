@@ -6,6 +6,7 @@
 #include "sherpa/SherpaManager.h"
 #include "TextPostProcessor.h"
 #include "interfaces/workflow_interfaces.h"
+#include "textpolish/AiJobTracker.h"
 #include "utils/OrderedResults.h"
 #include <QQueue>
 #include <QHash>
@@ -42,6 +43,8 @@ public:
     using TranslateCallback = std::function<void(bool ok, const QString& text, const QString& error)>;
     bool fileTranslationActive() const;
     QString fileTranslationTarget() const { return m_config.polish.activeTargetLang(); }
+    // 请求排队发出（同时在途数有上限）：整部视频、多个文件的句子一次涌进来时，不排队会让本地后端
+    // 后面的请求在队列里等满 30 秒超时，云端则撞上限流，这些句子都会没有译文
     void translateForFile(const QString& text, TranslateCallback done);
 
 signals:
@@ -63,13 +66,15 @@ private:
         bool success = false;
         QString rawText, finalText, errorMsg;
         bool fileMode = false;
+        QString sourceText;   // 翻译前的文字；没发生翻译时为空
+        quint64 seq = 0;
     };
     // 网络请求无响应时的兜底，否则一句卡住会挡住后面所有结果；要长于上传加 Gladia 最多约 60 秒的轮询
     static constexpr int kNetworkTimeoutMs = 150 * 1000;
 
     void finish(const Ticket& t, bool success, const QString& rawText, const QString& errorMsg);
     void completeResult(const Ticket& t, bool success, const QString& rawText,
-                        const QString& finalText, const QString& errorMsg);
+                        const QString& finalText, const QString& errorMsg, const QString& sourceText = {});
     void armTimeout(const Ticket& t);
 
     void transcribeGroq(const QByteArray &wavBytes, const Ticket& t);
@@ -78,6 +83,16 @@ private:
     void pollGladiaResult(const QString &resultUrl, int attempt, const Ticket& t);
     void transcribeGemini(const QByteArray &wavBytes, const Ticket& t);
     void onSherpaTranscribed(bool ok, const QString& text, const QString& err);
+    // 识别文字之后的 AI 阶段：润色、翻译各自按开关执行（见 AiStagePlan），本地离线翻译不在这里
+    void runAiStages(const Ticket& t, const QString& text);
+    void runAiPolish(const Ticket& t);
+    void onAiPolishDone(const Ticket& t, bool ok, const QString& polished, const QString& error);
+    void runAiTranslation(const Ticket& t);
+    void onAiTranslateDone(const Ticket& t, bool ok, const QString& translated, const QString& error);
+    void finishAiJob(const Ticket& t, const QString& text, bool translated);
+    // 要翻译的句子先把原文交给界面，翻译结束时 completeResult 再补译文
+    void showSourceFirst(quint64 seq, const QString& text);
+    TextPolishService::RequestParams aiRequestParams() const;
 
     static QByteArray buildWavBytes(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
     QString postProcess(const QString &rawText, bool fileMode);
@@ -85,9 +100,21 @@ private:
     TextPostProcessor* m_textProcessor;
     bool m_fileMode = false;
     OrderedResults<Result> m_results;
-    QQueue<Ticket> m_sherpaTickets;   // Sherpa 串行转录，结果按提交顺序回来
-    // 序号 → 润色前文字：润色超时时用它回退；回调返回后即删除，迟到的结果不再处理
-    QHash<quint64, QString> m_polishOriginals;
+    QQueue<Ticket> m_sherpaTickets;
+
+    // 云端 AI 阶段进行中的句子：回调与超时兜底谁先 take 谁收尾，迟到的一方直接忽略
+    AiJobTracker m_aiJobs;
+    // 序号 → 云端翻译前的文字：finish 取走，随结果一起交给实时转录页的右栏
+    QHash<quint64, QString> m_translationSources;
+    struct FileTranslateJob {
+        QString text;
+        TranslateCallback done;
+    };
+    void pumpFileTranslations();
+    void dispatchFileTranslation(const QString& text, TranslateCallback done);
+    QQueue<FileTranslateJob> m_fileTranslateQueue;
+    int m_fileTranslateInFlight = 0;
+    QSet<quint64> m_pendingShown;     // 已经把原文先交给界面、还没发"翻译结束"的序号
     QSet<quint64> m_translating;      // 翻译中的序号；翻译服务有自己的超时，别被识别兜底抢先判失败
 
     const AppConfig& m_config;

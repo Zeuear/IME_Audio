@@ -1,4 +1,6 @@
 #include "FileTaskModel.h"
+#include <QDateTime>
+#include <QDir>
 #include <QFileInfo>
 #include <QLocale>
 #include <QSet>
@@ -60,6 +62,8 @@ QVariant FileTaskModel::data(const QModelIndex& index, int role) const
         return t.segTotal;
     case TextRole:
         return t.text;
+    case TimingTextRole:
+        return timingText(t);
     case StatusTextRole:
         switch (t.state) {
         case FileTask::State::Pending:
@@ -87,6 +91,66 @@ QVariant FileTaskModel::data(const QModelIndex& index, int role) const
     return {};
 }
 
+QString FileTaskModel::formatDuration(qint64 ms)
+{
+    const qint64 s = qMax<qint64>(0, ms) / 1000;
+    const qint64 h = s / 3600;
+    const qint64 m = (s / 60) % 60;
+    const qint64 sec = s % 60;
+    return h > 0 ? QStringLiteral("%1:%2:%3").arg(h).arg(m, 2, 10, QLatin1Char('0')).arg(sec, 2, 10, QLatin1Char('0'))
+                 : QStringLiteral("%1:%2").arg(m).arg(sec, 2, 10, QLatin1Char('0'));
+}
+
+qint64 FileTaskModel::estimateRemainingMs(qint64 transcribeElapsedMs, int done, int total)
+{
+    // 一段都没完成时速度未知，不给估计；段长不一，所以这只是粗略值
+    if (done <= 0 || total <= 0 || done > total) return -1;
+    return transcribeElapsedMs * (total - done) / done;
+}
+
+QString FileTaskModel::timingText(const FileTask& t)
+{
+    using State = FileTask::State;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    switch (t.state) {
+    case State::Decoding:
+    case State::DownloadingModel:
+    case State::Separating:
+        if (t.startMs <= 0) return {};
+        return tr("Elapsed %1").arg(formatDuration(now - t.startMs));
+    case State::Transcribing: {
+        if (t.startMs <= 0) return {};
+        const QString elapsed = formatDuration(now - t.startMs);
+        const qint64 left = t.transcribeStartMs > 0
+                                ? estimateRemainingMs(now - t.transcribeStartMs, t.segDone, t.segTotal) : -1;
+        return left < 0 ? tr("Elapsed %1").arg(elapsed) : tr("Elapsed %1 · ~%2 left").arg(elapsed, formatDuration(left));
+    }
+    case State::Done:
+    case State::Failed:
+    case State::NoSpeech:
+        return t.elapsedMs > 0 ? tr("Took %1").arg(formatDuration(t.elapsedMs)) : QString();
+    default:
+        return {};
+    }
+}
+
+void FileTaskModel::markStarted(int row)
+{
+    FileTask& t = m_tasks[row];
+    t.startMs = QDateTime::currentMSecsSinceEpoch();
+    t.transcribeStartMs = 0;
+    t.elapsedMs = 0;
+    touch(row);
+}
+
+// 到达终态时把进行中的计时定格成总耗时
+static void freezeElapsed(FileTask& t)
+{
+    if (t.startMs > 0) t.elapsedMs = QDateTime::currentMSecsSinceEpoch() - t.startMs;
+    t.startMs = 0;
+    t.transcribeStartMs = 0;
+}
+
 int FileTaskModel::count(FileTask::State state) const
 {
     return static_cast<int>(std::count_if(m_tasks.begin(), m_tasks.end(),
@@ -107,6 +171,8 @@ int FileTaskModel::addPaths(const QStringList& paths)
         FileTask t;
         t.path = path;
         t.size = info.size();
+        // 行一创建就带令牌：转录中才并入批次的行不会经过 reset()，令牌为 0 时译文会被整体丢弃
+        t.runToken = ++m_nextToken;
         added.append(t);
     }
     if (added.isEmpty()) return 0;
@@ -129,6 +195,7 @@ int FileTaskModel::addLink(const QString& url)
     FileTask t;
     t.url = url;
     t.state = FileTask::State::Downloading;
+    t.runToken = ++m_nextToken;   // 同 addPaths：下载完成后可能直接并入正在进行的批次
     const int row = m_tasks.size();
     beginInsertRows({}, row, row);
     m_tasks.append(t);
@@ -192,6 +259,7 @@ void FileTaskModel::restartDownload(int row)
     t.error.clear();
     t.translations.clear();
     t.translationLang.clear();
+    t.startMs = t.transcribeStartMs = t.elapsedMs = 0;
     t.runToken = ++m_nextToken;
     touch(row);
 }
@@ -215,6 +283,30 @@ void FileTaskModel::clear()
     endResetModel();
 }
 
+int FileTaskModel::dropCachedFiles(const QString& linkDownloadsDir)
+{
+    const QString prefix = QDir::cleanPath(linkDownloadsDir) + QLatin1Char('/');
+    int affected = 0;
+    for (int row = 0; row < m_tasks.size(); ++row) {
+        FileTask& t = m_tasks[row];
+        bool changed = false;
+        if (!t.vocalsPath.isEmpty()) {
+            t.vocalsPath.clear();
+            changed = true;
+        }
+        if (t.isLink() && !t.path.isEmpty()
+            && QDir::cleanPath(t.path).startsWith(prefix, Qt::CaseInsensitive)) {
+            t.path.clear();
+            t.size = 0;
+            changed = true;
+        }
+        if (!changed) continue;
+        touch(row);
+        ++affected;
+    }
+    return affected;
+}
+
 void FileTaskModel::reset(int row)
 {
     FileTask& t = m_tasks[row];
@@ -227,19 +319,24 @@ void FileTaskModel::reset(int row)
     t.vocalsPath.clear();
     t.translations.clear();
     t.translationLang.clear();
+    t.startMs = t.transcribeStartMs = t.elapsedMs = 0;
     t.runToken = ++m_nextToken;
     touch(row);
 }
 
 void FileTaskModel::setState(int row, FileTask::State state)
 {
-    m_tasks[row].state = state;
+    FileTask& t = m_tasks[row];
+    t.state = state;
+    if (state == FileTask::State::Done || state == FileTask::State::NoSpeech) freezeElapsed(t);
     touch(row);
 }
 
 void FileTaskModel::setProgress(int row, int done, int total)
 {
     FileTask& t = m_tasks[row];
+    if (t.state != FileTask::State::Transcribing && t.startMs > 0)
+        t.transcribeStartMs = QDateTime::currentMSecsSinceEpoch();   // 预计剩余只看转录这一段的速度
     t.state = FileTask::State::Transcribing;
     t.segDone = done;
     t.segTotal = total;
@@ -294,6 +391,7 @@ void FileTaskModel::setFailed(int row, const QString& error)
     FileTask& t = m_tasks[row];
     t.state = FileTask::State::Failed;
     t.error = error;
+    freezeElapsed(t);
     touch(row);
 }
 

@@ -4,7 +4,7 @@
 #include <QString>
 #include "ui/format/SubtitleFormat.h"
 
-// 一个待转录文件及其进度/结果。链接任务先处于 Downloading，下载完成后 path 指向本地音频，之后与普通文件一样
+// 一个待转录文件及其进度/结果
 struct FileTask {
     // Downloading 放在最后，保持其余状态的数值不变
     enum class State { Pending, Decoding, Transcribing, Done, Failed, NoSpeech, Downloading, DownloadingModel, Separating };
@@ -20,14 +20,18 @@ struct FileTask {
     int segDone = 0;
     int segTotal = 0;
     QString text;
-    QList<SubtitleCue> cues;   // 按 VAD 分段记录的带时间字幕，导出 SRT 用
+    QList<SubtitleCue> cues;    // 按 VAD 分段记录的带时间字幕，导出 SRT 用
     QString error;
-    QString vocalsPath;   // 分离出的人声 WAV（临时文件）；没开分离或还没分离完时为空
+    QString vocalsPath;         // 分离出的人声 WAV（临时文件）；没开分离或还没分离完时为空
 
-    // 译文与 cues 一一对应，空串表示还没回来或翻译失败；云端译文可能乱序回来，按下标填
     QStringList translations;
-    QString translationLang;   // 译文语言代码，导出文件名用
-    quint64 runToken = 0;      // 每次重新转录换新值，上一轮迟到的译文据此丢弃
+    QString translationLang;    // 译文语言代码，导出文件名用
+    quint64 runToken = 0;       // 每次重新转录换新值，上一轮迟到的译文据此丢弃
+
+    // 耗时：startMs 是本轮转录开始的时间戳（0 表示没在跑）
+    qint64 startMs = 0;
+    qint64 transcribeStartMs = 0;
+    qint64 elapsedMs = 0;
 
     bool hasTranslation() const;
     QList<SubtitleCue> translatedCues() const;
@@ -45,6 +49,7 @@ public:
         TotalRole,                      // 总片段数（未知时为 0）
         StatusTextRole,                 // 卡片第二行的状态文字
         TextRole,                       // 转录文本
+        TimingTextRole,                 // 卡片第三行：进行中是"已用 / 预计剩余"，结束后是"耗时"
     };
 
     explicit FileTaskModel(QObject* parent = nullptr);
@@ -68,8 +73,15 @@ public:
     void restartDownload(int row);
     void removeRows(QList<int> rows);
     void clear();
+    // 缓存目录被清空后调用：人声路径一律失效；链接任务下载的音频已不在，path 置空，
+    // 之后再转录会走"重新下载"。已有的文字和译文保留。返回受影响的行数
+    int dropCachedFiles(const QString& linkDownloadsDir);
 
     void reset(int row);
+    void markStarted(int row);   // 这一行开始转录，开始计时
+    // 时长格式化 m:ss / h:mm:ss；按已完成段数推算剩余毫秒，推不出来（还没有完成的段）返回 -1
+    static QString formatDuration(qint64 ms);
+    static qint64 estimateRemainingMs(qint64 transcribeElapsedMs, int done, int total);
     void setState(int row, FileTask::State state);
     void setProgress(int row, int done, int total);
     // 分离人声阶段（下载模型 / 分离）的进度
@@ -82,6 +94,7 @@ public:
     void setCueTranslation(quint64 runToken, int cue, const QString& lang, const QString& text);
 
 private:
+    static QString timingText(const FileTask& task);
     void touch(int row);
 
     QList<FileTask> m_tasks;

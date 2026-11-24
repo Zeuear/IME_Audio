@@ -44,6 +44,8 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/ai_pipeline_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_models_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_polish_service_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/enhancement_fallback_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/translation_service_test.cpp
@@ -67,6 +69,8 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/audio_normalizer_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_line_model_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/transcript_store_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/file_task_model_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/ui_regression_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/tool_icon_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/control_bar_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/toggle_link_test.cpp
@@ -128,6 +132,11 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/TextPolishPrompts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/GeminiProvider.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/OpenAiProvider.cpp
+    # Ollama 模型下载：流式进度解析 + 卡片列表状态（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/ollama/OllamaClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/ollama/OllamaClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/OllamaModelButton.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/OllamaModelButton.h
     # ProcessManager.h holds Q_OBJECT classes (BaseTask / TaskQueueManager /
     # ExtractTask) and must be fed to AUTOMOC so the moc code is generated + linked.
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/utils/ProcessManager.h
@@ -148,8 +157,20 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptLineModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptLineModel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TranscriptStore.cpp
+    # 文件转录任务列表模型（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/FileTaskModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/FileTaskModel.h
     # 横条图标：按状态取色并把线条 SVG 渲染成指定颜色，用到 Qt6::Svg
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ToolIcon.cpp
+    # 悬浮窗悬停按钮、实时转录页选择行为的界面回归（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/LiveOverlay.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/LiveOverlay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/LiveTranscriptWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/LiveTranscriptWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TranscriptLineDelegate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TranscriptLineDelegate.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/AnimatedCheckbox.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/AnimatedCheckbox.h
     # 横条：按工作流状态决定按钮可用性；悬浮窗的位置落点与窗口标志
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ControlBarState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/FloatingWindow.cpp

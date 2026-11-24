@@ -67,6 +67,7 @@ void ConfigManager::applyDefaults() {
     m_config.polish.targetLang = "不翻译";
     m_config.polish.translateEnabled = false;
     m_config.polish.translateSourceLang = "auto";
+    m_config.polish.translateModel.clear();
 
     m_config.hotkey = kDefaultHotkey;
     m_config.continuousMode = false;
@@ -123,6 +124,29 @@ bool ConfigManager::load() {
     m_config.polish.apiUrl = s.value("apiUrl").toString();
     m_config.polish.projectId = s.value("projectId").toString();
     m_config.polish.model = s.value("model").toString();
+    for (int engine = 0; engine <= 2; ++engine) {
+        const QString url = s.value(QStringLiteral("apiUrl_%1").arg(engine)).toString();
+        const QString key = s.value(QStringLiteral("apiKey_%1").arg(engine)).toString();
+        if (!url.isEmpty()) m_config.polish.apiUrlByEngine[engine] = url;
+        if (!key.isEmpty()) m_config.polish.apiKeyByEngine[engine] = key;
+    }
+    // 旧版本只存了一份地址和密钥，归给当时选中的引擎
+    if (!m_config.polish.apiUrlByEngine.contains(m_config.polish.aiEngineIndex))
+        m_config.polish.apiUrlByEngine[m_config.polish.aiEngineIndex] = m_config.polish.apiUrl;
+    if (!m_config.polish.apiKeyByEngine.contains(m_config.polish.aiEngineIndex))
+        m_config.polish.apiKeyByEngine[m_config.polish.aiEngineIndex] = m_config.polish.apiKey;
+    for (int engine = 0; engine <= 3; ++engine) {
+        const QString saved = s.value(QStringLiteral("model_%1").arg(engine)).toString();
+        if (!saved.isEmpty()) m_config.polish.modelByEngine[engine] = saved;
+    }
+    // 旧版本只存了一个 model，归给当时选中的引擎；
+    // 但 Gemini 的模型名（gemini-…）在 Ollama / OpenAI 兼容里不存在，是切引擎时遗留下来的，不能归给它们
+    if (!m_config.polish.modelByEngine.contains(m_config.polish.aiEngineIndex)) {
+        const bool foreignGemini = m_config.polish.aiEngineIndex != 0
+                                   && m_config.polish.model.startsWith(QStringLiteral("gemini-"), Qt::CaseInsensitive);
+        m_config.polish.modelByEngine[m_config.polish.aiEngineIndex] = foreignGemini ? QString() : m_config.polish.model;
+        if (foreignGemini) m_config.polish.model.clear();
+    }
     m_config.polish.prompt = s.value("prompt").toString();
     m_config.polish.vocab = s.value("vocab").toString();
     m_config.polish.targetLang = s.value("targetLang").toString();
@@ -133,6 +157,13 @@ bool ConfigManager::load() {
         ? s.value("translateEnabled").toBool()
         : (!target.isEmpty() && target != "不翻译");
     m_config.polish.translateSourceLang = s.value("translateSourceLang", "auto").toString();
+    m_config.polish.translateModel = s.value("translateModel", "").toString();
+    for (int engine = 1; engine <= 2; ++engine) {
+        const QString saved = s.value(QStringLiteral("translateModel_%1").arg(engine)).toString();
+        if (!saved.isEmpty()) m_config.polish.translateModelByEngine[engine] = saved;
+    }
+    if (!m_config.polish.translateModelByEngine.contains(m_config.polish.aiEngineIndex))
+        m_config.polish.translateModelByEngine[m_config.polish.aiEngineIndex] = m_config.polish.translateModel;
     s.endGroup();
 
     s.beginGroup("terms");
@@ -196,12 +227,25 @@ bool ConfigManager::save() {
     s.setValue("apiUrl", m_config.polish.apiUrl);
     s.setValue("projectId", m_config.polish.projectId);
     s.setValue("model", m_config.polish.model);
+    m_config.polish.apiUrlByEngine[m_config.polish.aiEngineIndex] = m_config.polish.apiUrl;
+    m_config.polish.apiKeyByEngine[m_config.polish.aiEngineIndex] = m_config.polish.apiKey;
+    for (auto it = m_config.polish.apiUrlByEngine.cbegin(); it != m_config.polish.apiUrlByEngine.cend(); ++it)
+        s.setValue(QStringLiteral("apiUrl_%1").arg(it.key()), it.value());
+    for (auto it = m_config.polish.apiKeyByEngine.cbegin(); it != m_config.polish.apiKeyByEngine.cend(); ++it)
+        s.setValue(QStringLiteral("apiKey_%1").arg(it.key()), it.value());
+    m_config.polish.modelByEngine[m_config.polish.aiEngineIndex] = m_config.polish.model;
+    for (auto it = m_config.polish.modelByEngine.cbegin(); it != m_config.polish.modelByEngine.cend(); ++it)
+        s.setValue(QStringLiteral("model_%1").arg(it.key()), it.value());
     s.setValue("prompt", m_config.polish.prompt);
     s.setValue("vocab", m_config.polish.vocab);
     s.setValue("aiStyle", m_config.polish.aiStyle);
     s.setValue("targetLang", m_config.polish.targetLang);
     s.setValue("translateEnabled", m_config.polish.translateEnabled);
     s.setValue("translateSourceLang", m_config.polish.translateSourceLang);
+    s.setValue("translateModel", m_config.polish.translateModel);
+    m_config.polish.translateModelByEngine[m_config.polish.aiEngineIndex] = m_config.polish.translateModel;
+    for (auto it = m_config.polish.translateModelByEngine.cbegin(); it != m_config.polish.translateModelByEngine.cend(); ++it)
+        s.setValue(QStringLiteral("translateModel_%1").arg(it.key()), it.value());
     s.endGroup();
 
     s.beginGroup("terms");

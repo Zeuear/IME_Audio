@@ -57,13 +57,15 @@ private:
     void onLinkFinished(quint64 id, bool ok, const QString& path, const QString& title, const QString& error);
     void queueForTranscription(int row);
     // 筛出能直接转录的行；下载失败的链接任务在这里改为重新下载
-    QList<int> runnableRows(const QList<int>& candidates);
+    QList<int> runnableRows(const QList<int>& candidates, bool includeDone = false);
     void updateAnimTimer();
     static QString exportBaseName(const FileTask& task);
     void removeSelected();
     // 分离出的人声是临时大文件，任务被清掉或重跑时立刻删除
     void discardVocals(int row);
     void clearAll();
+    // 清空链接下载的音频和人声分离的临时文件
+    void clearCache();
     void showContextMenu(const QPoint& pos);
     void updatePreview();
     void updateTranslationPreview(const FileTask* task, bool sameFile);
@@ -108,11 +110,11 @@ private:
     QLabel* m_statusLabel = nullptr;
     QPushButton* m_addBtn = nullptr;
     QPushButton* m_addLinkBtn = nullptr;
+    QPushButton* m_clearCacheBtn = nullptr;
     QPushButton* m_transcribeBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;
     AnimatedCheckBox* m_exportTxtCheck = nullptr;
     AnimatedCheckBox* m_exportSrtCheck = nullptr;
-    AnimatedCheckBox* m_exportVocalsCheck = nullptr;
     AnimatedCheckBox* m_separateCheck = nullptr;   // 转录前先分离人声
     AnimatedCheckBox* m_exportTranslationCheck = nullptr;
     QPushButton* m_copyBtn = nullptr;

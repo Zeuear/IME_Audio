@@ -1,4 +1,5 @@
 #pragma once
+#include <QMap>
 #include <QString>
 #include <QKeySequence>
 #include <QApplication>
@@ -54,18 +55,31 @@ struct PolishConfig {
     QString apiUrl;
     QString projectId;
     QString model;
+    // 各引擎各自记住的润色模型：Gemini 的模型名在 Ollama 里不存在，切引擎时不能共用一个值
+    // （model 始终是当前引擎的那个；切换引擎时 MainWin 负责换入换出）
+    QMap<int, QString> modelByEngine;
+    QMap<int, QString> apiUrlByEngine;   // 同上：地址、密钥也各引擎各一份（Ollama 留空 = 默认 localhost:11434，不能拿到别家的地址）
+    QMap<int, QString> apiKeyByEngine;
+    QMap<int, QString> translateModelByEngine;   // 同上，翻译模型（只有 OpenAI 兼容 / Ollama 用）
     QString prompt;
     QString vocab;
     QString aiStyle;
     QString targetLang;
     bool translateEnabled = false;           // 翻译开关；关闭时保留 targetLang，重新打开不丢
     QString translateSourceLang = "auto";    // auto = 按识别模型语言推断
+    // 翻译用的模型；空 = 跟随润色模型。只对能选模型的引擎（OpenAI 兼容 / Ollama）生效
+    QString translateModel;
 
     // 翻译关闭时目标语言按"不翻译"处理，但 targetLang 本身保留
     QString activeTargetLang() const {
         return translateEnabled ? targetLang : QStringLiteral("不翻译");
     }
     bool usesLocalTranslation() const { return aiEngineIndex == kLocalTranslationEngine; }
+    bool canChooseTranslateModel() const { return aiEngineIndex == 1 || aiEngineIndex == 2; }
+    // 实际用于翻译的模型：Gemini 等没有单独的翻译模型，始终和润色同一个
+    QString effectiveTranslateModel() const {
+        return canChooseTranslateModel() && !translateModel.trimmed().isEmpty() ? translateModel.trimmed() : model;
+    }
     // 云端引擎缺必填项时请求注定失败：Gemini 要 Key，OpenAI 兼容要地址；Ollama 有默认地址
     bool cloudEngineConfigured() const {
         if (aiEngineIndex == 0) return !apiKey.trimmed().isEmpty();

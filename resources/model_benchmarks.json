@@ -2,7 +2,7 @@
  "dataset": "FLEURS test",
  "utterances": 120,
  "sherpa_onnx": "1.13.4",
- "generated": "2026-10-23",
+ "generated": "2026-11-23",
  "languages": {
   "Chinese": {
    "csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09": {
@@ -217,6 +217,14 @@
     "wer": 0.3087,
     "n": 98
    },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 0.0,
+    "rtf": 0.155,
+    "metric": "wer",
+    "cer": 1.009,
+    "wer": 1.1865,
+    "n": 98
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 65.9,
     "rtf": 0.101,
@@ -243,6 +251,14 @@
     "wer": 0.1795,
     "n": 99
    },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 0.0,
+    "rtf": 0.168,
+    "metric": "wer",
+    "cer": 0.9939,
+    "wer": 1.0327,
+    "n": 99
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 77.2,
     "rtf": 0.1,
@@ -267,6 +283,14 @@
     "metric": "wer",
     "cer": 0.0263,
     "wer": 0.0984,
+    "n": 105
+   },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 44.2,
+    "rtf": 0.153,
+    "metric": "wer",
+    "cer": 0.2312,
+    "wer": 0.5575,
     "n": 105
    },
    "csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17": {
@@ -855,6 +879,14 @@
     "wer": 0.9969,
     "n": 93
    },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 39.9,
+    "rtf": 0.162,
+    "metric": "cer",
+    "cer": 0.6006,
+    "wer": 1.1963,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17": {
     "score": 32.2,
     "rtf": 0.075,
@@ -953,6 +985,22 @@
     "metric": "wer",
     "cer": 0.0302,
     "wer": 0.1071,
+    "n": 100
+   },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 43.5,
+    "rtf": 0.106,
+    "metric": "wer",
+    "cer": 0.1692,
+    "wer": 0.5653,
+    "n": 100
+   },
+   "k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25": {
+    "score": 57.0,
+    "rtf": 0.226,
+    "metric": "wer",
+    "cer": 0.1154,
+    "wer": 0.43,
     "n": 100
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
@@ -1061,6 +1109,14 @@
     "metric": "wer",
     "cer": 0.0628,
     "wer": 0.1469,
+    "n": 102
+   },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 46.2,
+    "rtf": 0.142,
+    "metric": "wer",
+    "cer": 0.1814,
+    "wer": 0.5384,
     "n": 102
    },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12": {
@@ -1321,6 +1377,14 @@
     "wer": 0.3251,
     "n": 102
    },
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 0.0,
+    "rtf": 0.16,
+    "metric": "wer",
+    "cer": 1.0557,
+    "wer": 1.0613,
+    "n": 102
+   },
    "csukuangfj/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17": {
     "score": 0.0,
     "rtf": 0.061,
@@ -1381,6 +1445,14 @@
    }
   },
   "Hebrew": {
+   "csukuangfj/sherpa-onnx-whisper-base": {
+    "score": 20.7,
+    "rtf": 0.156,
+    "metric": "wer",
+    "cer": 0.443,
+    "wer": 0.7929,
+    "n": 93
+   },
    "csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12": {
     "score": 51.7,
     "rtf": 0.101,

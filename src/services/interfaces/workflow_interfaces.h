@@ -44,6 +44,12 @@ public:
 signals:
     void transcriptionFinished(bool success, const QString &rawText,
                                const QString &finalText, const QString &errorMsg);
+    // 要翻译的句子识别出来后立刻发出：界面先显示原文，不用等翻译（慢的翻译也不会让原文迟迟不出现）。
+    // seq 是这一句在识别服务里的序号，后面的 transcriptionTranslated 用它对回同一句
+    void transcriptionPending(quint64 seq, const QString &sourceText);
+    // 这一句的翻译阶段结束（成功、回退原文或失败都会发），在 transcriptionFinished 之前发出（同一顺序）。
+    // finalText 为空表示这一句识别失败
+    void transcriptionTranslated(quint64 seq, const QString &sourceText, const QString &finalText);
 };
 
 // 模型层依赖接口：WorkflowManager 只通过此接口加载/查询模型、接收加载完成上行。

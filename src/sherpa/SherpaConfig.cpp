@@ -870,6 +870,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& TagalogModels() {
             }}},
         kOmnilingual1B,
         kOmnilingual300M,
+        kQwen3Asr,   // FLEURS 实测 57.0，Qwen3-ASR 官方支持菲律宾语，排在 Omnilingual 之后
         kFunasrSenseVoice,
         kFunasrNano,
         kWhisperBase,

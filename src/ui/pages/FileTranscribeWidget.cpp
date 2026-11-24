@@ -19,6 +19,8 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
+#include <QDirIterator>
+#include <QLocale>
 #include <QUrl>
 #include <QMenu>
 #include <QMimeData>
@@ -31,9 +33,22 @@
 #include "config/AppConfig.h"
 #include "services/TranscriptionService.h"
 #include "sherpa/SherpaManager.h"
+#include "utils/AppPaths.h"
 #include "utils/Logger.h"
 
 namespace {
+
+// 目录总字节数（递归）；目录不存在时为 0
+qint64 directorySize(const QString& path)
+{
+    qint64 total = 0;
+    QDirIterator it(path, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        it.next();
+        total += it.fileInfo().size();
+    }
+    return total;
+}
 
 // 原文和译文两个预览框共用的刷新逻辑
 void setPreviewText(QPlainTextEdit* edit, const QString& text, bool sameFile)
@@ -112,12 +127,12 @@ void FileTranscribeWidget::setupUi()
 
     m_addBtn = new QPushButton(this);
     m_addLinkBtn = new QPushButton(this);
+    m_clearCacheBtn = new QPushButton(this);
     m_transcribeBtn = new QPushButton(this);   // 空闲时"开始转录"，转录中变为"取消"
     m_exportBtn = new QPushButton(this);
     m_exportTxtCheck = new AnimatedCheckBox(this);
     m_exportTxtCheck->setChecked(true);
     m_exportSrtCheck = new AnimatedCheckBox(this);
-    m_exportVocalsCheck = new AnimatedCheckBox(this);
     m_separateCheck = new AnimatedCheckBox(this);
     if (!AudioFileDecoder::isAvailable()) m_separateCheck->setEnabled(false);
     m_exportTranslationCheck = new AnimatedCheckBox(this);
@@ -129,6 +144,7 @@ void FileTranscribeWidget::setupUi()
     toolbar->addWidget(m_transcribeBtn);
     toolbar->addWidget(m_separateCheck);
     toolbar->addStretch();
+    toolbar->addWidget(m_clearCacheBtn);
 
     // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
     m_hintLabel = new QLabel(this);
@@ -198,7 +214,6 @@ void FileTranscribeWidget::setupUi()
     previewHeader->addWidget(m_previewTitle, 1);
     previewHeader->addWidget(m_exportTxtCheck);
     previewHeader->addWidget(m_exportSrtCheck);
-    previewHeader->addWidget(m_exportVocalsCheck);
     previewHeader->addWidget(m_exportTranslationCheck);
     previewHeader->addWidget(m_exportBtn);
     previewHeader->addWidget(m_copyBtn);
@@ -224,12 +239,12 @@ void FileTranscribeWidget::setupUi()
     previewLayout->addLayout(previewHeader);
     previewLayout->addWidget(textSplitter, 1);
 
-    const int previewMaxHeight = m_preview->fontMetrics().lineSpacing() * 10
-                               + m_previewTitle->sizeHint().height() + 24;
-    previewPanel->setMaximumHeight(previewMaxHeight);
-    
+    // 不再限制预览区和列表区的最大高度：高度由窗口和中间的分隔条决定，
+    // 拖大窗口或拖动分隔条就能看到更多转录内容；只留最小高度，免得被拖到看不见
     const int tileHeight = m_list->itemDelegate()->sizeHint(QStyleOptionViewItem(), QModelIndex()).height();
-    m_listStack->setMaximumHeight(tileHeight * 2);
+    m_listStack->setMinimumHeight(tileHeight);
+    m_preview->setMinimumHeight(m_preview->fontMetrics().lineSpacing() * 4);
+    m_translationPreview->setMinimumHeight(m_preview->minimumHeight());
 
     // 上下两块各放进一张卡片（设置页同款的 card 属性），中间留出间距，不再是挤在一起的裸控件
     auto* topCard = new QFrame(this);
@@ -253,8 +268,8 @@ void FileTranscribeWidget::setupUi()
     splitter->addWidget(topCard);
     splitter->addWidget(previewCard);
     splitter->setChildrenCollapsible(false);
-    splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 0);
+    splitter->setStretchFactor(0, 0);   // 列表区保持自己的建议高度，多出来的空间全给转录预览
+    splitter->setStretchFactor(1, 1);
 
     m_statusLabel = new QLabel(this);
     m_openFolderBtn = new QPushButton(this);
@@ -266,9 +281,8 @@ void FileTranscribeWidget::setupUi()
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);   // 和 TermWidget、基本设置页的页边距一致
-    layout->addWidget(splitter);
+    layout->addWidget(splitter, 1);   // 占满窗口剩余高度，状态行贴在底部
     layout->addLayout(statusRow);
-    layout->addStretch(0);
 
     m_animTimer = new QTimer(this);
     m_animTimer->setInterval(80);
@@ -281,6 +295,7 @@ void FileTranscribeWidget::setupUi()
 
     connect(m_addBtn, &QPushButton::clicked, this, &FileTranscribeWidget::chooseFiles);
     connect(m_addLinkBtn, &QPushButton::clicked, this, &FileTranscribeWidget::addLinksClicked);
+    connect(m_clearCacheBtn, &QPushButton::clicked, this, &FileTranscribeWidget::clearCache);
     connect(m_transcribeBtn, &QPushButton::clicked, this, [this]() {
         if (m_busy) cancel();
         else transcribeClicked();
@@ -289,7 +304,6 @@ void FileTranscribeWidget::setupUi()
     // 两种格式都没勾时无可导出内容，按钮随勾选状态启停
     connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_exportSrtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
-    connect(m_exportVocalsCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_copyBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyPreview);
     connect(m_copyTranslationBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyTranslation);
     connect(m_openFolderBtn, &QPushButton::clicked, this, [this]() {
@@ -339,6 +353,9 @@ void FileTranscribeWidget::retranslateUi()
     m_addBtn->setText(tr("Add Files"));
     m_addLinkBtn->setText(tr("Add Links"));
     m_addLinkBtn->setToolTip(tr("Download the audio of public Facebook or YouTube links and transcribe it"));
+    m_clearCacheBtn->setText(tr("Clear Cache"));
+    m_clearCacheBtn->setToolTip(tr("Delete the audio downloaded from links and the temporary separated vocals. "
+                                   "Finished transcriptions stay; links are downloaded again if you re-transcribe them"));
     m_exportTxtCheck->setLabelText(tr("TXT"));
     m_exportSrtCheck->setLabelText(tr("SRT subtitles"));
     m_exportSrtCheck->setToolTip(tr("Timestamps follow speech pauses, one subtitle per detected sentence"));
@@ -346,8 +363,6 @@ void FileTranscribeWidget::retranslateUi()
     m_separateCheck->setToolTip(AudioFileDecoder::isAvailable()
         ? tr("Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files")
         : tr("Vocal separation is not available on this platform"));
-    m_exportVocalsCheck->setLabelText(tr("Vocals"));
-    m_exportVocalsCheck->setToolTip(tr("Also export the separated vocals as name.vocals.wav"));
     m_hintLabel->setText(tr("Drop audio files here, or click \"Add Files\" / \"Add Links\""));
     m_copyBtn->setText(tr("Copy"));
     m_preview->setPlaceholderText(tr("Select a file to view its transcription"));
@@ -530,6 +545,28 @@ void FileTranscribeWidget::clearAll()
     m_statusLabel->clear();
 }
 
+void FileTranscribeWidget::clearCache()
+{
+    // 转录中文件正被读取，下载中目录正被写入，都不能删
+    if (m_busy || m_model->count(FileTask::State::Downloading) > 0) return;
+
+    const QString linkDir = AppPaths::linkDownloadsDir();
+    const QString vocalsDir = AppPaths::separatedDir();
+    const qint64 freed = directorySize(linkDir) + directorySize(vocalsDir);
+    const bool ok = QDir(linkDir).removeRecursively() & QDir(vocalsDir).removeRecursively();
+    m_model->dropCachedFiles(linkDir);
+    updatePreview();
+    updateButtons();
+
+    if (!ok) {
+        LOG_WARN(QString("Clear cache incomplete: %1, %2").arg(linkDir, vocalsDir));
+        emit errorOccurred(QStringLiteral("清理缓存失败"), QStringLiteral("部分文件正被占用，请稍后再试"));
+        return;
+    }
+    LOG_INFO(QString("File transcription cache cleared, freed %1 bytes").arg(freed));
+    m_statusLabel->setText(tr("Cache cleared, freed %1").arg(QLocale().formattedDataSize(freed)));
+}
+
 void FileTranscribeWidget::showContextMenu(const QPoint& pos)
 {
     const QModelIndex idx = m_list->indexAt(pos);
@@ -547,7 +584,8 @@ void FileTranscribeWidget::showContextMenu(const QPoint& pos)
     clear->setEnabled(!m_busy);
 
     const QAction* chosen = menu.exec(m_list->viewport()->mapToGlobal(pos));
-    if (chosen == retry) startRun(runnableRows(selectedRows()));
+    // 右键重新转录要包含已完成的；工具栏的"开始"不重跑已完成的，所以 runnableRows 默认跳过它们
+    if (chosen == retry) startRun(runnableRows(selectedRows(), true));
     else if (chosen == remove) removeSelected();
     else if (chosen == clear) clearAll();
 }
@@ -608,6 +646,7 @@ void FileTranscribeWidget::updateButtons()
     }
 
     m_addBtn->setEnabled(true);   // 转录中也允许追加
+    m_clearCacheBtn->setEnabled(!m_busy && m_model->count(FileTask::State::Downloading) == 0);
     if (m_busy) {
         m_transcribeBtn->setText(m_cancelled ? tr("Cancelling...") : tr("Cancel"));
         m_transcribeBtn->setEnabled(!m_cancelled);
@@ -624,8 +663,7 @@ void FileTranscribeWidget::updateButtons()
     const int exportCount = selectedDone > 0 ? selectedDone : m_model->count(FileTask::State::Done);
     m_exportBtn->setText(selectedDone > 0 ? tr("Export Selected (%1)").arg(exportCount)
                                           : tr("Export All (%1)").arg(exportCount));
-    m_exportBtn->setEnabled(exportCount > 0 && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()
-                                                || m_exportVocalsCheck->isChecked()));
+    m_exportBtn->setEnabled(exportCount > 0 && (m_exportTxtCheck->isChecked() || m_exportSrtCheck->isChecked()));
 }
 
 void FileTranscribeWidget::setBusy(bool busy)
@@ -652,13 +690,15 @@ void FileTranscribeWidget::transcribeClicked()
     startRun(runnableRows(candidates));
 }
 
-QList<int> FileTranscribeWidget::runnableRows(const QList<int>& candidates)
+QList<int> FileTranscribeWidget::runnableRows(const QList<int>& candidates, bool includeDone)
 {
     QList<int> rows;
     for (int row : candidates) {
         const FileTask& t = m_model->task(row);
-        if (t.state == FileTask::State::Done || t.state == FileTask::State::Downloading) continue;
-        if (t.isLink() && t.path.isEmpty()) {   // 链接没下载下来：重新下载，成功后自动转录
+        if (t.state == FileTask::State::Downloading) continue;
+        if (t.state == FileTask::State::Done && !includeDone) continue;
+        // 链接没下载下来、或缓存里的音频已被清理 / 删除：重新下载，成功后自动转录
+        if (t.isLink() && (t.path.isEmpty() || !QFile::exists(t.path))) {
             m_model->restartDownload(row);
             enqueueDownload(row);
             continue;
@@ -708,6 +748,7 @@ void FileTranscribeWidget::startNextFile()
 
     m_currentRow = m_runRows.takeFirst();
     m_fileActive = true;
+    m_model->markStarted(m_currentRow);
     m_statusLabel->setText(tr("Processing file %1/%2").arg(m_fileDone + 1).arg(m_fileTotal));
     m_list->scrollTo(m_model->index(m_currentRow));
     const FileTask& task = m_model->task(m_currentRow);
@@ -899,7 +940,6 @@ void FileTranscribeWidget::exportResults()
     QStringList exts;
     if (m_exportTxtCheck->isChecked()) exts << QStringLiteral("txt");
     if (m_exportSrtCheck->isChecked()) exts << QStringLiteral("srt");
-    const bool withVocals = m_exportVocalsCheck->isChecked();
 
     // 按音频名称导出同名文件；重名时加序号，不覆盖已有文件
     int written = 0;
@@ -914,16 +954,7 @@ void FileTranscribeWidget::exportResults()
         if (translated) {
             for (const QString& ext : std::as_const(exts)) allExts << lang + QLatin1Char('.') + ext;
         }
-        const bool vocals = withVocals && !t.vocalsPath.isEmpty() && QFile::exists(t.vocalsPath);
-        // 人声文件参与重名检查，但不进文本循环
-        QStringList checkExts = allExts;
-        if (vocals) checkExts << QStringLiteral("vocals.wav");
-        const QString base = uniqueExportBase(dir, exportBaseName(t), checkExts);
-        if (vocals) {
-            const QString target = QDir(dir).filePath(base + QStringLiteral(".vocals.wav"));
-            if (QFile::copy(t.vocalsPath, target)) ++written;
-            else ++failed;
-        }
+        const QString base = uniqueExportBase(dir, exportBaseName(t), allExts);
         for (const QString& ext : std::as_const(allExts)) {
             const bool isTranslation = ext.contains(QLatin1Char('.'));
             const bool srt = ext.endsWith(QLatin1String("srt"));

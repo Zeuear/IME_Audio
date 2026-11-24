@@ -35,4 +35,17 @@ QString loadSystemPrompt(const QString& filename, const QString& defaultPrompt);
 // 补全 API URL：若未以 /v1/chat/completions 结尾，自动补齐
 QString autocompleteApiUrl(const QString& input);
 
+// 去掉思考型模型（Qwen3 / Gemma 4 等）回复里的思考段，只留最终答案；
+// 否则 <think>…</think> 会原样打进前台窗口
+QString stripThinking(const QString& reply);
+
+// 翻译专用模型（Index-Translate、Hy-MT 等）：只按训练时的单条 user 消息格式翻译，不能拿来润色
+bool isTranslationModel(const QString& model);
+
+// 配置里的目标语言（"英文"/"简体中文"/语言代码）转成写进提示词的语言名
+QString promptLanguageName(const QString& storedTargetLang);
+
+// 翻译专用模型的单条 user 消息（Index-Translate 模型卡给出的格式）
+QString translationModelPrompt(const QString& storedTargetLang, const QString& text);
+
 } // namespace TextPolishPrompts
