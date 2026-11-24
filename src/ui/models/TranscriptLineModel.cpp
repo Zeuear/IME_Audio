@@ -54,12 +54,13 @@ void TranscriptLineModel::addPending(quint64 key, const QString& text, const QTi
     if (t.isEmpty()) return;
     // 序号小的在前；从后往前找到第一个序号不大于它的等待行，插在后面（没有等待行就追加到末尾）
     int row = m_entries.size();
-    while (row > 0 && m_entries.at(row - 1).key > key) --row;
+    while (row > 0 && m_entries.at(row - 1).waiting && m_entries.at(row - 1).key > key) --row;
     beginInsertRows({}, row, row);
     Entry e;
     e.time = time;
     e.text = t;
     e.key = key;
+    e.waiting = true;
     e.pendingText = t;
     m_entries.insert(row, e);
     endInsertRows();
@@ -67,13 +68,12 @@ void TranscriptLineModel::addPending(quint64 key, const QString& text, const QTi
 
 bool TranscriptLineModel::completePending(quint64 key, const QString& text, const QString& translation)
 {
-    if (key == 0) return false;
     for (int row = m_entries.size() - 1; row >= 0; --row) {
         Entry& e = m_entries[row];
-        if (e.key != key) continue;
+        if (!e.waiting || e.key != key) continue;
         if (e.text == e.pendingText && !singleLine(text).isEmpty()) e.text = singleLine(text);
         e.translation = singleLine(translation);
-        e.key = 0;
+        e.waiting = false;
         e.pendingText.clear();
         emit dataChanged(index(row), index(row));
         return true;

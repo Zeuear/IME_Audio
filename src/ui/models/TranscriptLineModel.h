@@ -49,7 +49,10 @@ private:
         QTime time;
         QString text;
         QString translation;
-        quint64 key = 0;          // 等译文的句子：识别序号；0 表示不是等待中（不存盘）
+        // 等译文的句子：识别序号。序号从 0 开始，所以"是否在等待"必须单独记，不能拿 key == 0 当哨兵
+        // （否则本次运行的第一句永远补不上译文，结果到达时又被当成新句子追加，出现两行相同的）
+        quint64 key = 0;
+        bool waiting = false;     // 不存盘
         QString pendingText;      // 先显示的原文；补译文时用户已手动改过原文就不再覆盖
     };
     static QString lineOf(const Entry& e, bool withTime);

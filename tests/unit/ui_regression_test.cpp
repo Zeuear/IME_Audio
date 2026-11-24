@@ -18,6 +18,7 @@
 #include "services/WorkflowManager.h"
 #include "services/interfaces/workflow_interfaces.h"
 #include "ui/controls/FloatingWindow.h"
+#include "ui/models/TranscriptLineModel.h"
 #include "ui/controls/ExpandPanel.h"
 #include "ui/controls/LiveOverlay.h"
 #include "ui/delegates/TranscriptLineDelegate.h"
@@ -210,6 +211,21 @@ TEST(UtterancePairing, PendingTranslatedThenResultArriveInOrderAndLiveRowIsNotDu
     EXPECT_EQ(list->model()->index(0, 0).data().toString(), "Hola");
     EXPECT_EQ(list->model()->index(1, 0).data().toString(), "Adios");
     EXPECT_EQ(list->model()->index(2, 0).data().toString(), "plain");
+}
+
+// 识别序号从 0 开始：第一句曾因 0 被当成"没有序号"而补不上译文，结果到达时又追加一行相同的
+TEST(UtterancePairing, FirstSentenceWithSequenceZeroIsCompletedInPlace) {
+    LiveTranscriptWidget live;
+    auto* list = live.findChild<QListView*>("live_transcript_list");
+    ASSERT_NE(list, nullptr);
+    live.appendPending(0, "Hola");
+    live.appendPending(1, "Adios");
+    live.completePending(0, "Hola", "你好");
+    ASSERT_EQ(list->model()->rowCount(), 2);       // 没有多出一行
+    EXPECT_EQ(list->model()->index(0, 0).data().toString(), "Hola");
+    EXPECT_EQ(list->model()->index(0, 0).data(TranscriptLineModel::TranslationRole).toString(), "你好");
+    live.completePending(1, "Adios", "再见");
+    EXPECT_EQ(list->model()->rowCount(), 2);
 }
 
 TEST(UtterancePairing, SlowTranslationDoesNotLoseOrReorderLaterSentences) {
