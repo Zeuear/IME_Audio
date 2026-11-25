@@ -27,6 +27,28 @@ namespace {
         return utf8 ? QString::fromUtf8(utf8) : QString::fromLocal8Bit(archive_entry_pathname(e));
     }
 
+    // 目标路径若经过符号链接（macOS 的 /var -> /private/var 是系统自带的），libarchive 的
+    // SECURE_SYMLINKS 会逐段 lstat，看到链接就拒绝写入，连普通文件也解压不出来。
+    // 先把已存在的目标目录解析成真实路径，包内真正的符号链接仍然由 SECURE_SYMLINKS 拦截。
+    QString resolvedDestDir(const QString& destDir)
+    {
+        const QString native = QDir(QDir::fromNativeSeparators(destDir)).absolutePath();
+        const QString canonical = QFileInfo(native).canonicalFilePath();
+        if (!canonical.isEmpty()) return canonical;
+
+        // 目标还不存在：规范化最近的已存在祖先，再拼回剩余分段
+        QStringList tail;
+        QDir cur(native);
+        while (!cur.exists() && cur.path() != cur.rootPath() && !cur.path().isEmpty()) {
+            tail.prepend(cur.dirName());
+            cur.cdUp();
+        }
+        QString base = QFileInfo(cur.path()).canonicalFilePath();
+        if (base.isEmpty()) base = cur.path();
+        for (const QString& part : tail) base += '/' + part;
+        return base;
+    }
+
     // 进程内解压，不再调用系统 tar：Windows 自带的 bsdtar 没有 bzip2，会再起外部 `bzip2 -d`，
     // 干净机器上没有它就失败；三平台统一用 libarchive，错误原因也能原样带给用户。
     // 阻塞直到完成，调用方应放在工作线程里。支持 tar(.bz2/.gz) 和 zip。
@@ -67,7 +89,7 @@ namespace {
         if (r != ARCHIVE_OK) return fail(QString::fromUtf8(archive_error_string(in)));
 
         const qint64 fileSize = qMax<qint64>(1, QFileInfo(archivePath).size());
-        const QString base = QDir::fromNativeSeparators(destDir);
+        const QString base = resolvedDestDir(destDir);
         int lastPermille = -1;
         QString lastFile;
 

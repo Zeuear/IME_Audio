@@ -8,6 +8,8 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <QTemporaryDir>
+#include <filesystem>
+#include <system_error>
 #include <QString>
 
 #include "utils/ExtractTool.h"
@@ -216,4 +218,35 @@ TEST_F(ExtractProgressTest, FlattenRepairsAlreadyNestedInstallButOnlyForMatching
     EXPECT_TRUE(QFileInfo::exists(dir + "/tokenizer/vocab.json"));
     EXPECT_FALSE(QFileInfo::exists(dir + "/model-x"));
     EXPECT_FALSE(ExtractTool::flattenWrapper(dir, "model-x")) << "already flat: nothing to do";
+}
+
+// 回归 macOS CI：目标路径的祖先是符号链接时（/var -> /private/var，QTemporaryDir 默认在 /var/folders），
+// libarchive 的 SECURE_SYMLINKS 会逐段 lstat 并拒绝写入。解压前必须把目标目录规范化成真实路径。
+TEST_F(ExtractProgressTest, DestinationUnderSymlinkedAncestorIsAccepted) {
+    QTemporaryDir tmp;
+    ASSERT_TRUE(tmp.isValid());
+    const QString realDir = tmp.filePath("real");
+    ASSERT_TRUE(QDir().mkpath(realDir));
+    const QString link = tmp.filePath("link");
+    // Qt 的 QFile::link 在 Windows 上权限不足时会退化为 .lnk 快捷方式（不是真正的符号链接），
+    // 这里用 C++17 filesystem 直接建目录符号链接，才和 macOS /var 的情形一致。
+#ifdef Q_OS_WIN
+    const std::filesystem::path fsReal(realDir.toStdWString());
+    const std::filesystem::path fsLink(link.toStdWString());
+#else
+    const std::filesystem::path fsReal(QFile::encodeName(realDir).constData());
+    const std::filesystem::path fsLink(QFile::encodeName(link).constData());
+#endif
+    std::error_code linkError;
+    std::filesystem::create_directory_symlink(fsReal, fsLink, linkError);
+    if (linkError) GTEST_SKIP() << "symlink unavailable: " << linkError.message();
+
+    const QString archive = tmp.filePath("s.tar.bz2");
+    ASSERT_TRUE(writeArchive(archive, Pack::TarBz2, { { "d/payload.bin", QByteArray(4096, 'p') } }));
+
+    const QString dest = link + "/out";
+    QString error;
+    ASSERT_TRUE(ExtractTool::extractAll(archive, dest, true, nullptr, &error)) << error.toStdString();
+    EXPECT_EQ(readAllBytes(realDir + "/out/payload.bin"), QByteArray(4096, 'p'));
+    EXPECT_EQ(readAllBytes(link + "/out/payload.bin"), QByteArray(4096, 'p'));
 }
