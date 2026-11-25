@@ -20,6 +20,7 @@
 #include <QApplication>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -148,6 +149,16 @@ void LiveTranscriptWidget::setupUi()
 
     retranslateUi();
     updateButtons();
+}
+
+void LiveTranscriptWidget::fitHostScrolling(QScrollArea* host, bool active)
+{
+    if (!host) return;
+    host->setVerticalScrollBarPolicy(active ? Qt::ScrollBarAlwaysOff : Qt::ScrollBarAsNeeded);
+    QWidget* contents = host->widget();
+    if (!contents) return;
+    contents->setMaximumHeight(active ? host->viewport()->height() : QWIDGETSIZE_MAX);
+    contents->adjustSize();
 }
 
 void LiveTranscriptWidget::appendUtterance(const QString& text, const QString& translation, const QDateTime& time)

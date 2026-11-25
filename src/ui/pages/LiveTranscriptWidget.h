@@ -6,6 +6,7 @@
 
 
 class QCheckBox;
+class QScrollArea;
 class QLabel;
 class QPlainTextEdit;
 class QListView;
@@ -22,6 +23,10 @@ class LiveTranscriptWidget : public QWidget
 public:
     explicit LiveTranscriptWidget(QWidget* parent = nullptr);
     ~LiveTranscriptWidget() override;
+
+    // 设置窗口把本页借到 QScrollArea 里：active 时把外层高度钉在视口上，
+    // 让本页的 QListView 自己滚，工具条始终固定在顶部；离开本页时恢复外层滚动。
+    static void fitHostScrolling(QScrollArea* host, bool active);
 
     // 原文（左栏），译文（右栏）
     void appendUtterance(const QString& text, const QString& translation = {},

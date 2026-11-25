@@ -11,7 +11,9 @@
 #include <QThread>
 #include <QSettings>
 #include <QPointer>
+#include <QScrollArea>
 #include <QTabWidget>
+#include <QVBoxLayout>
 #include <QTemporaryDir>
 
 #include "config/ConfigManager.h"
@@ -475,4 +477,42 @@ TEST(SharedPages, BorrowedBackAndForthKeepsInstancesAndOrder) {
     auto* list = live->findChild<QListView*>("live_transcript_list");
     ASSERT_NE(list, nullptr);
     EXPECT_EQ(list->model()->rowCount(), 1);          // 稿子状态留在实例里
+}
+
+
+// 设置窗口的 QScrollArea 里，QTabWidget::sizeHint() 取所有页的最大值：别的设置页一高，
+// 外层就把整页滚走，实时转录顶部的按钮跟着消失。切到本页必须改由列表自己滚。
+TEST(SharedPages, TranscriptPageKeepsToolbarWhenOtherTabsAreTaller) {
+    QScrollArea area;
+    area.setWidgetResizable(true);
+    auto* contents = new QWidget;
+    auto* outerLayout = new QVBoxLayout(contents);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    auto* tabs = new QTabWidget;
+    auto* live = new LiveTranscriptWidget;
+    auto* tall = new QWidget;
+    auto* tallLayout = new QVBoxLayout(tall);
+    for (int i = 0; i < 30; ++i) tallLayout->addWidget(new QPushButton(QStringLiteral("row %1").arg(i)));
+    tabs->addTab(live, QStringLiteral("live"));
+    tabs->addTab(tall, QStringLiteral("tall"));
+    outerLayout->addWidget(tabs);
+    area.setWidget(contents);
+    area.resize(600, 300);
+    area.show();
+    pump(80);
+
+    ASSERT_GT(contents->height(), area.viewport()->height());   // 复现：别的页把外层撑高了
+
+    tabs->setCurrentWidget(live);
+    LiveTranscriptWidget::fitHostScrolling(&area, true);
+    pump(80);
+    EXPECT_EQ(area.verticalScrollBarPolicy(), Qt::ScrollBarAlwaysOff);
+    EXPECT_LE(contents->height(), area.viewport()->height());
+    auto* list = live->findChild<QListView*>(QStringLiteral("live_transcript_list"));
+    ASSERT_NE(list, nullptr);
+    EXPECT_LT(list->height(), area.viewport()->height());
+
+    LiveTranscriptWidget::fitHostScrolling(&area, false);
+    pump(80);
+    EXPECT_GT(contents->height(), area.viewport()->height());   // 切回设置页，外层还能继续滚
 }

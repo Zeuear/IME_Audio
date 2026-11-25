@@ -3,6 +3,7 @@
 
 #include <QMenu>
 #include <QToolButton>
+#include <QScrollArea>
 #include <QClipboard>
 #include <algorithm>
 #include <QDebug>
@@ -250,6 +251,12 @@ void MainWin::initialize() {
 
 void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
+
+    // QTabWidget::sizeHint() 取所有页的最大值：设置页一高，外层 QScrollArea 就把整页
+    // （连工具条一起）滚走。切到实时转录时钉住外层高度，让列表用自己的滚动条。
+    connect(ui->tabWidget, &QTabWidget::currentChanged, this,
+            [this](int) { syncTranscriptScrollHost(); });
+    ui->settingsScrollArea->viewport()->installEventFilter(this);
 
     // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
@@ -1509,20 +1516,23 @@ void MainWin::updateAiEngineUi() {
 // qss 只管写了规则的控件；自绘控件和 qss 里的 palette(...) 跟的是应用调色板。
 // Fusion 的默认调色板随系统深浅色，不设的话系统为深色时，白色主题的弹窗会是深底深字
 static QPalette themePalette(LiveOverlay::Theme theme) {
-    struct Colors { QColor window, base, text, button, midlight, mid, highlight, disabledText; };
+    struct Colors { QColor window, base, text, button, midlight, mid, highlight, disabledText, link; };
     Colors c;
     switch (theme) {
     case LiveOverlay::Theme::Dark:
         c = { QColor(53, 53, 53), QColor(42, 42, 42), QColor(220, 220, 220), QColor(42, 42, 42),
-              QColor(80, 80, 80), QColor(90, 90, 90), QColor(0, 122, 204), QColor(120, 120, 120) };
+              QColor(80, 80, 80), QColor(90, 90, 90), QColor(0, 122, 204), QColor(120, 120, 120),
+              QColor(142, 198, 255) };
         break;
     case LiveOverlay::Theme::Gray:
         c = { QColor(200, 200, 200), QColor(160, 160, 160), QColor(0, 0, 0), QColor(130, 130, 130),
-              QColor(140, 140, 140), QColor(120, 120, 120), QColor(0, 120, 215), QColor(110, 110, 110) };
+              QColor(140, 140, 140), QColor(120, 120, 120), QColor(0, 120, 215), QColor(110, 110, 110),
+              QColor(0, 51, 102) };
         break;
     default:
         c = { QColor(245, 245, 245), QColor(255, 255, 255), QColor(30, 30, 30), QColor(240, 240, 240),
-              QColor(215, 215, 215), QColor(200, 200, 200), QColor(0, 120, 215), QColor(170, 170, 170) };
+              QColor(215, 215, 215), QColor(200, 200, 200), QColor(0, 120, 215), QColor(170, 170, 170),
+              QColor(11, 92, 173) };
         break;
     }
 
@@ -1541,6 +1551,7 @@ static QPalette themePalette(LiveOverlay::Theme theme) {
     pal.setColor(QPalette::Mid, c.mid);
     pal.setColor(QPalette::Highlight, c.highlight);
     pal.setColor(QPalette::HighlightedText, Qt::white);
+    pal.setColor(QPalette::Link, c.link);
     for (QPalette::ColorRole role : { QPalette::WindowText, QPalette::Text, QPalette::ButtonText })
         pal.setColor(QPalette::Disabled, role, c.disabledText);
     return pal;
@@ -1946,6 +1957,21 @@ void MainWin::showCurrentForm()
     }
 }
 
+void MainWin::syncTranscriptScrollHost()
+{
+    if (!ui || !m_transcriptWidget) return;
+    const bool active = ui->tabWidget->currentWidget() == m_transcriptWidget;
+    LiveTranscriptWidget::fitHostScrolling(ui->settingsScrollArea, active);
+}
+
+bool MainWin::eventFilter(QObject* watched, QEvent* event)
+{
+    // 窗口大小变了，视口高度也变：钉住的高度要跟着更新，否则工具条又会被外层滚走
+    if (ui && watched == ui->settingsScrollArea->viewport() && event->type() == QEvent::Resize)
+        syncTranscriptScrollHost();
+    return QMainWindow::eventFilter(watched, event);
+}
+
 void MainWin::movePagesTo(bool settingsWindow)
 {
     // 实时转录、词典、文件转录页只有一个实例，在面板和设置窗口的标签页之间借用；状态（稿子、文件转录进度等）留在实例里
@@ -1964,6 +1990,7 @@ void MainWin::movePagesTo(bool settingsWindow)
         m_panel->takeBackSharedPages(m_transcriptWidget, m_termWidget, m_fileWidget);
     }
     m_pagesInSettings = settingsWindow;
+    syncTranscriptScrollHost();
 }
 
 void MainWin::refreshFormSwitchIcon()

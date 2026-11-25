@@ -76,6 +76,7 @@ protected:
     virtual void changeEvent(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 public slots:
     void onShowWindow();
@@ -120,6 +121,7 @@ private:
     void syncAppearanceCombos();
     void fitToScreen();
     void alignSettingsCards();
+    void syncTranscriptScrollHost();
     bool m_fittedToScreen = false;
 
     // 听写进行中锁住各设置页
