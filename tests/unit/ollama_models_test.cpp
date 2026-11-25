@@ -47,6 +47,8 @@ TEST(OllamaCatalog, SplitsRecommendationsByPurpose) {
     EXPECT_EQ(ollamaCatalogSize("hf.co/IndexTeam/Index-Translate-9B-GGUF:Q4_K_M"), QStringLiteral("5.8 GB"));
     EXPECT_TRUE(translate.contains("hf.co/IndexTeam/Index-Translate-9B-GGUF:Q3_K_M"));
     EXPECT_EQ(ollamaCatalogSize("hf.co/IndexTeam/Index-Translate-9B-GGUF:Q3_K_M"), QStringLiteral("4.7 GB"));
+    EXPECT_TRUE(translate.contains("hf.co/IndexTeam/Index-Translate-2B-GGUF:Q4_K_M"));
+    EXPECT_EQ(ollamaCatalogSize("hf.co/IndexTeam/Index-Translate-2B-GGUF:Q4_K_M"), QStringLiteral("1.3 GB"));
 }
 
 // 按钮只在 Ollama 引擎、服务已检测、所选模型没装时出现
