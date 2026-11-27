@@ -275,16 +275,16 @@ QString SnippetTreeModel::nodeTitle(const QModelIndex& index) const {
 
 QColor SnippetTreeModel::levelColor(int level) {
     switch (level) {
-        case 1: return QColor("#2563EB");
-        case 2: return QColor("#059669");
-        case 3: return QColor("#D97706");
-        default: return QColor("#475569");
+        case 1: return QColor("#6b8dc2");
+        case 2: return QColor("#68a08a");
+        case 3: return QColor("#bb9460");
+        default: return QColor("#7d8794");
     }
 }
 
 namespace {
 // 半透明底色在 light / gray / dark 主题下都可读
-QColor withAlpha(QColor c) { c.setAlpha(38); return c; }
+QColor withAlpha(QColor c) { c.setAlpha(30); return c; }
 }
 
 QColor SnippetTreeModel::levelBg(int level) {

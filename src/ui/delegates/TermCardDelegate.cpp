@@ -18,7 +18,6 @@ constexpr int kCheckBox = 18;
 constexpr int kCheckArea = 40;    // 多选模式下右侧给复选框留出的宽度
 constexpr int kArrowW = 64;       // 中间箭头区：两侧各留约 20px，左右两列不会贴着箭头
 constexpr int kArrowLen = 18;
-const QColor kEnabledColor(0x3b, 0x82, 0xf6);
 
 QRect cardRect(const QStyleOptionViewItem& opt)
 {
@@ -78,6 +77,7 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     const bool hovered = opt.state & QStyle::State_MouseOver;
     const QStringList heard = index.data(TermListModel::HeardRole).toStringList();
     const QString correct = index.data(TermListModel::CorrectRole).toString();
+    const QColor kEnabledColor = opt.palette.color(QPalette::Highlight);
 
     p->save();
     p->setRenderHint(QPainter::Antialiasing);

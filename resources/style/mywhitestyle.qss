@@ -18,7 +18,7 @@ QWidget {
     background-color: rgb(255, 255, 255);
     color: rgb(30, 30, 30);
     font: 9pt "Microsoft YaHei";
-    selection-background-color: rgb(0, 120, 215);
+    selection-background-color: palette(highlight);
     selection-color: white;
 }
 
@@ -104,7 +104,7 @@ QPushButton {
 }
 QPushButton:hover {
     background-color: rgb(235, 240, 245);
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QPushButton:pressed {
     background-color: rgb(220,225,230);
@@ -115,12 +115,12 @@ QPushButton:disabled {
     border: 1px solid rgb(200, 200, 200);
 }
 QPushButton:checked {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QPushButton:default {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 
 QToolButton {
@@ -132,13 +132,13 @@ QToolButton {
 }
 QToolButton:hover {
     background-color: rgb(235, 240, 245);
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QToolButton:pressed {
     background-color: rgb(220,225,230);
 }
 QToolButton:checked {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 
@@ -150,11 +150,11 @@ QLineEdit {
     border-radius: 3px;
     padding: 3px 6px;
     font: 9pt "Microsoft YaHei";
-    selection-background-color: rgb(0, 120, 215);
+    selection-background-color: palette(highlight);
     selection-color: white;
 }
 QLineEdit:focus {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QLineEdit:disabled {
     background-color: rgb(255, 255, 255);
@@ -166,11 +166,11 @@ QTextEdit, QPlainTextEdit {
     color: rgb(30, 30, 30);
     border: 1px solid rgb(200, 200, 200);
     font: 9pt "Microsoft YaHei";
-    selection-background-color: rgb(0, 120, 215);
+    selection-background-color: palette(highlight);
     selection-color: white;
 }
 QTextEdit:focus, QPlainTextEdit:focus {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 
 /* 日志面板：无边框，顶部接一条表头（ID 选择器优先级高于上面的 :focus 规则） */
@@ -196,7 +196,7 @@ QComboBox {
     font: 9pt "Microsoft YaHei";
 }
 QComboBox:hover {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QComboBox:disabled {
     color: rgb(170,170,170);
@@ -220,7 +220,7 @@ QComboBox QAbstractItemView {
     background-color: rgb(255, 255, 255);
     color: rgb(30, 30, 30);
     border: 1px solid rgb(200, 200, 200);
-    selection-background-color: rgb(0, 120, 215);
+    selection-background-color: palette(highlight);
     selection-color: white;
     outline: none;
 }
@@ -245,11 +245,11 @@ QRadioButton::indicator {
     border-radius: 8px;
 }
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {
-    background-color: rgb(0, 120, 215);
-    border: 1px solid rgb(0, 120, 215);
+    background-color: palette(highlight);
+    border: 1px solid palette(highlight);
 }
 QCheckBox::indicator:hover, QRadioButton::indicator:hover {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 
 /* ---------------- SpinBox ---------------- */
@@ -262,7 +262,7 @@ QSpinBox, QDoubleSpinBox {
     font: 9pt "Microsoft YaHei";
 }
 QSpinBox:focus, QDoubleSpinBox:focus {
-    border: 1px solid rgb(0, 120, 215);
+    border: 1px solid palette(highlight);
 }
 QSpinBox::up-button, QDoubleSpinBox::up-button {
     subcontrol-origin: border;
@@ -316,7 +316,7 @@ QSlider::groove:horizontal {
     border-radius: 2px;
 }
 QSlider::handle:horizontal {
-    background: rgb(0, 120, 215);
+    background: palette(highlight);
     width: 14px;
     margin: -6px 0;
     border-radius: 7px;
@@ -327,7 +327,7 @@ QSlider::groove:vertical {
     border-radius: 2px;
 }
 QSlider::handle:vertical {
-    background: rgb(0, 120, 215);
+    background: palette(highlight);
     height: 14px;
     margin: 0 -6px;
     border-radius: 7px;
@@ -342,7 +342,7 @@ QProgressBar {
     color: rgb(30, 30, 30);
 }
 QProgressBar::chunk {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     border-radius: 3px;
 }
 
@@ -360,7 +360,7 @@ QTabBar::tab {
 }
 QTabBar::tab:selected {
     background-color: rgb(255, 255, 255);
-    border-bottom: 2px solid rgb(0, 120, 215);
+    border-bottom: 2px solid palette(highlight);
 }
 QTabBar::tab:hover:!selected {
     background-color: rgb(235, 240, 245);
@@ -377,7 +377,7 @@ QMenuBar::item {
     padding: 4px 10px;
 }
 QMenuBar::item:selected {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 QMenu {
@@ -389,7 +389,7 @@ QMenu::item {
     padding: 5px 20px 5px 20px;
 }
 QMenu::item:selected {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 QMenu::separator {
@@ -422,7 +422,7 @@ QScrollBar::handle:vertical {
     margin: 2px;
 }
 QScrollBar::handle:vertical:hover {
-    background: rgb(0, 120, 215);
+    background: palette(highlight);
 }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
     height: 0;
@@ -439,7 +439,7 @@ QScrollBar::handle:horizontal {
     margin: 2px;
 }
 QScrollBar::handle:horizontal:hover {
-    background: rgb(0, 120, 215);
+    background: palette(highlight);
 }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     width: 0;
@@ -457,7 +457,7 @@ QListWidget::item, QListView::item {
     padding-left: 5px;
 }
 QListWidget::item:selected, QListView::item:selected {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 QListWidget::item:hover, QListView::item:hover {
@@ -476,7 +476,7 @@ QTreeWidget::item, QTreeView::item {
     padding-left: 5px;
 }
 QTreeWidget::item:selected, QTreeView::item:selected {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 QTreeWidget::item:hover, QTreeView::item:hover {
@@ -498,7 +498,7 @@ QTableWidget::item, QTableView::item {
     padding: 4px;
 }
 QTableWidget::item:selected, QTableView::item:selected {
-    background-color: rgb(0, 120, 215);
+    background-color: palette(highlight);
     color: white;
 }
 QHeaderView::section {
@@ -669,7 +669,7 @@ QWidget#download_list_viewport {
     border-radius: 3px;
 }
 #fileProgressBar::chunk {
-    background-color: #007aff;
+    background-color: palette(highlight);
 }
 
 

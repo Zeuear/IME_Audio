@@ -151,7 +151,7 @@ void AboutPage::refresh()
 
 void AboutPage::changeEvent(QEvent* event)
 {
-    if (event->type() == QEvent::LanguageChange) retranslateUi();
+    if (event->type() == QEvent::LanguageChange || event->type() == QEvent::ApplicationPaletteChange) retranslateUi();
     QWidget::changeEvent(event);
 }
 
@@ -181,7 +181,7 @@ void AboutPage::retranslateUi()
         p.replace(url, QStringLiteral("<a href=\"\\1\">\\1</a>"));
         html += QStringLiteral("<p>") + p + QStringLiteral("</p>");
     }
-    m_creditsText->document()->setDefaultStyleSheet(QStringLiteral("a { color: #3b82f6; }"));
+    m_creditsText->document()->setDefaultStyleSheet(QStringLiteral("a { color: %1; }").arg(palette().color(QPalette::Link).name()));
     m_creditsText->setHtml(html);
     m_tabs->setTabText(0, tr("开源组件与许可"));
     m_tabs->setTabText(1, tr("更新说明"));

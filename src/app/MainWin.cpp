@@ -1521,18 +1521,18 @@ static QPalette themePalette(LiveOverlay::Theme theme) {
     switch (theme) {
     case LiveOverlay::Theme::Dark:
         c = { QColor(53, 53, 53), QColor(42, 42, 42), QColor(220, 220, 220), QColor(42, 42, 42),
-              QColor(80, 80, 80), QColor(90, 90, 90), QColor(0, 122, 204), QColor(120, 120, 120),
-              QColor(142, 198, 255) };
+              QColor(80, 80, 80), QColor(90, 90, 90), QColor(91, 155, 248), QColor(120, 120, 120),
+              QColor(91, 155, 248) };
         break;
     case LiveOverlay::Theme::Gray:
         c = { QColor(200, 200, 200), QColor(160, 160, 160), QColor(0, 0, 0), QColor(130, 130, 130),
-              QColor(140, 140, 140), QColor(120, 120, 120), QColor(0, 120, 215), QColor(110, 110, 110),
-              QColor(0, 51, 102) };
+              QColor(140, 140, 140), QColor(120, 120, 120), QColor(59, 130, 246), QColor(110, 110, 110),
+              QColor(59, 130, 246) };
         break;
     default:
         c = { QColor(245, 245, 245), QColor(255, 255, 255), QColor(30, 30, 30), QColor(240, 240, 240),
-              QColor(215, 215, 215), QColor(200, 200, 200), QColor(0, 120, 215), QColor(170, 170, 170),
-              QColor(11, 92, 173) };
+              QColor(215, 215, 215), QColor(200, 200, 200), QColor(59, 130, 246), QColor(170, 170, 170),
+              QColor(59, 130, 246) };
         break;
     }
 
