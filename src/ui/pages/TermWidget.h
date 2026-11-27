@@ -75,6 +75,7 @@ private:
     DictionaryProfiles* m_profiles = nullptr;
     DictionaryKind m_kind = DictionaryKind::Recognition;
     QString m_currentId;
+    QString m_shownId;   // 右侧实际显示的词典；切换标签时 m_currentId 会先指向目标，不能拿它判断是否已显示
     QString m_lastId[2];
     QHash<QString, TermListModel*> m_models;
 

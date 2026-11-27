@@ -113,6 +113,7 @@ TextPolishService::RequestParams TranscriptionService::aiRequestParams() const {
     params.aiEngine = pc.aiEngineIndex;
     params.apiKey = pc.apiKey;
     params.customUrl = pc.apiUrl;
+    params.allowSelfSigned = pc.allowSelfSigned;
     params.model = pc.model;
     params.style = pc.aiStyle;
     params.customPrompt = pc.prompt;
@@ -189,7 +190,7 @@ void TranscriptionService::runAiTranslation(const Ticket& t) {
     params.model = job->plan.translateModel;
     params.targetLang = job->target;
     params.translateOnly = true;
-    if (m_glossaryProvider) params.glossary = m_glossaryProvider(job->target);
+    if (m_glossaryProvider && m_config.polish.sendsGlossaryToTranslator()) params.glossary = m_glossaryProvider(job->target);
     m_textPolishService->polishText(job->current, params,
         [this, t](bool ok, const QString& translated, const QString& error) { onAiTranslateDone(t, ok, translated, error); });
 }
@@ -557,10 +558,11 @@ void TranscriptionService::dispatchFileTranslation(const QString& text, Translat
     params.aiEngine = p.aiEngineIndex;
     params.apiKey = p.apiKey;
     params.customUrl = p.apiUrl;
+    params.allowSelfSigned = p.allowSelfSigned;
     params.model = p.effectiveTranslateModel();
     params.targetLang = p.activeTargetLang();
     params.translateOnly = true;
-    if (m_glossaryProvider) params.glossary = m_glossaryProvider(params.targetLang);
+    if (m_glossaryProvider && p.sendsGlossaryToTranslator()) params.glossary = m_glossaryProvider(params.targetLang);
 
     // 云端请求没有自带超时；结果和超时谁先到用谁，回调只走一次
     auto pending = std::make_shared<TranslateCallback>(std::move(done));

@@ -9,7 +9,9 @@
 #include <QRegularExpression>
 #include <QUrl>
 
+#include "services/dictionary/GlossaryMatcher.h"
 #include "utils/AppPaths.h"
+#include "utils/Logger.h"
 
 namespace TextPolishPrompts {
 
@@ -109,14 +111,15 @@ QStringList buildFewshotMessages(const QString& fewshotText) {
 }
 
 QString glossaryTerms(const GlossaryPairs& glossary, const QString& text) {
-    constexpr int kMaxTerms = 30;
     QStringList terms;
-    for (const auto& pair : glossary) {
-        if (pair.first.isEmpty() || pair.second.isEmpty()) continue;
-        if (!text.contains(pair.first, Qt::CaseInsensitive)) continue;
+    for (const auto& pair : GlossaryMatcher::match(glossary, text)) {
         terms << QStringLiteral("%1→%2").arg(pair.first, pair.second);
-        if (terms.size() >= kMaxTerms) break;
     }
+    // 只记命中的词条，不记原句：用户一眼能看出词典是否生效，又不把听写内容写进日志
+    if (!glossary.isEmpty())
+        LOG_INFO(QString("Glossary matched %1/%2 entries: %3")
+                     .arg(terms.size()).arg(glossary.size())
+                     .arg(terms.isEmpty() ? QStringLiteral("(none)") : terms.join(QStringLiteral(" | "))));
     return terms.join(QStringLiteral("、"));
 }
 

@@ -278,7 +278,7 @@ void TermWidget::restoreProfileSelection() {
         else m_profileList->clearSelection();
     }
     m_profileList->viewport()->update();
-    if (id != m_currentId || !m_model) showProfile(id);
+    if (id != m_shownId || !m_model) showProfile(id);
     else updateBarTexts();
 }
 
@@ -286,6 +286,7 @@ void TermWidget::showProfile(const QString& id) {
     if (m_model) setSelectMode(false);
     m_currentId = id;
     m_lastId[int(m_kind)] = id;
+    m_shownId.clear();
 
     const DictionaryProfile* profile = id.isEmpty() ? nullptr : m_profiles->find(id);
     TermsLibraryManager* library = profile ? m_profiles->library(id) : nullptr;
@@ -314,6 +315,7 @@ void TermWidget::showProfile(const QString& id) {
     m_termsManager = library;
     m_model = model;
     m_proxy->setSourceModel(model);
+    m_shownId = id;
     m_rightStack->setCurrentIndex(0);
     m_list->scrollToTop();
     updateBarTexts();
@@ -465,7 +467,7 @@ void TermWidget::updateBarTexts() {
         m_correctEdit->setPlaceholderText(tr("Write as"));
     }
     m_noteLabel->setVisible(translation);
-    m_noteLabel->setText(tr("Used by AI translation (cloud and Ollama). The offline translator ignores it."));
+    m_noteLabel->setText(tr("Used by AI translation (cloud and Ollama). The offline translator and Open WebUI ignore it."));
     m_hintLabel->setText(profile ? QString() : tr("No dictionary yet. Click \"New Dictionary\" to create one."));
     updateStats();
 }

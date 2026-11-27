@@ -43,11 +43,14 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictionary_profiles_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/entry_check_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/fuzzy_replacer_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/glossary_matcher_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/extract_progress_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/openai_provider_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/open_webui_provider_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/term_widget_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ai_pipeline_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/ollama_models_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_polish_service_test.cpp
@@ -106,8 +109,25 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryProfiles.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryProfiles.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/EntryCheck.cpp
+    # 词典页：切换标签后右侧内容的回归（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/TermWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/TermWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TermListModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/TermListModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictionaryProfileModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/models/DictionaryProfileModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TermCardDelegate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TermCardDelegate.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/DictionaryProfileDelegate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/DictionaryProfileDelegate.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/DictionaryProfileDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/DictionaryProfileDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryLanguages.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryLanguages.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/FuzzyReplacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/FuzzyReplacer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryMatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryMatcher.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/EntryCheck.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/PinyinTable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/HotwordSelector.cpp
@@ -147,6 +167,7 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/TextPolishPrompts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/GeminiProvider.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/OpenAiProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/textpolish/OpenWebUiProvider.cpp
     # Ollama 模型下载：流式进度解析 + 卡片列表状态（Q_OBJECT，.h 交给 AUTOMOC）
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/ollama/OllamaClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/ollama/OllamaClient.h

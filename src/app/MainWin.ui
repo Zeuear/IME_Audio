@@ -918,6 +918,13 @@
                  </property>
                 </widget>
                </item>
+               <item row="2" column="0" colspan="5">
+                <widget class="AnimatedCheckBox" name="allow_self_signed_checkbox">
+                 <property name="toolTip">
+                  <string>Only applies to localhost and loopback addresses</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

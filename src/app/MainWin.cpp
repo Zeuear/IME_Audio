@@ -383,6 +383,7 @@ void MainWin::setupUiConnections(){
         // 地址、密钥直接取输入框当前内容：它们是"提交时才写进配置"，刚输入完就点测试时配置里还是旧值
         params.apiKey = ui->api_key_edit->isVisible() ? ui->api_key_edit->text() : config.polish.apiKey;
         params.customUrl = ui->api_url_edit->text();
+        params.allowSelfSigned = ui->allow_self_signed_checkbox->isChecked();
         params.model = config.polish.model;
         params.style = config.polish.aiStyle;
         params.customPrompt = config.polish.prompt;
@@ -660,7 +661,10 @@ void MainWin::setupUiConnections(){
     connect(ui->api_url_edit, &QLineEdit::editingFinished, this, [this]() {
         m_ollamaClient->setBaseUrl(ui->api_url_edit->text());
         if (ui->ai_engine_comb->currentIndex() == 2) m_ollamaClient->checkService();
+        refreshOpenWebUiModels();
     });
+    connect(ui->api_key_edit, &QLineEdit::editingFinished, this, [this]() { refreshOpenWebUiModels(); });
+    connect(ui->allow_self_signed_checkbox, &QCheckBox::toggled, this, [this]() { refreshOpenWebUiModels(); });
     connect(ui->translate_model_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         if (m_loadingSettings || index < 0) return;
         AppConfig& cfg = ConfigManager::instance().config();
@@ -1040,6 +1044,7 @@ void MainWin::swapPolishModelForEngine(int engine) {
         p.apiKeyByEngine[previousEngine] = p.apiKey;
     }
     p.apiUrl = p.apiUrlByEngine.value(engine);
+    if (engine == kOpenWebUiEngine && p.apiUrl.trimmed().isEmpty()) p.apiUrl = kOpenWebUiDefaultUrl;
     p.apiKey = p.apiKeyByEngine.value(engine);
     ui->api_url_edit->setText(p.apiUrl);   // setText 不发 editingFinished，不会触发绑定回写
     ui->api_key_edit->setText(p.apiKey);
@@ -1055,6 +1060,11 @@ void MainWin::swapPolishModelForEngine(int engine) {
     applySettings(0);
 }
 
+void MainWin::refreshOpenWebUiModels() {
+    if (m_loadingSettings || ui->ai_engine_comb->currentIndex() != kOpenWebUiEngine) return;
+    QTimer::singleShot(0, this, [this]() { requestModelList(); });
+}
+
 void MainWin::requestModelList() {
     const int engine = ui->ai_engine_comb->currentIndex();
     if (!m_textPolishService->capabilities(engine).canFetchModels) return;
@@ -1064,6 +1074,7 @@ void MainWin::requestModelList() {
     params.aiEngine = engine;
     params.apiKey = cfg.polish.apiKey;
     params.customUrl = cfg.polish.apiUrl;
+    params.allowSelfSigned = cfg.polish.allowSelfSigned;
     m_textPolishService->fetchModels(params);
 }
 
@@ -1167,6 +1178,7 @@ const ComboEntry kAiEngineItems[] = {
     { QT_TRANSLATE_NOOP("MainWin", "Local / custom (OpenAI compatible)"), "" },
     { QT_TRANSLATE_NOOP("MainWin", "Ollama (local)"), "" },
     { QT_TRANSLATE_NOOP("MainWin", "Local model (offline translation)"), "" },
+    { QT_TRANSLATE_NOOP("MainWin", "Open WebUI (translation only)"), "" },
 };
 
 const ComboEntry kStyleItems[] = {
@@ -1190,6 +1202,8 @@ void fillCombo(QComboBox* combo, const ComboEntry (&entries)[N]) {
 } // namespace
 
 void MainWin::retranslateDynamicItems() {
+    // AnimatedCheckBox 构造时固定 30x30，只能用 setLabelText 按文字宽度重设，.ui 里写文字会被裁掉
+    ui->allow_self_signed_checkbox->setLabelText(tr("Allow local self-signed certificate"));
     if (m_formSwitchBtn) {
         m_formSwitchBtn->setText(tr("Compact mode"));
         m_formSwitchBtn->setToolTip(tr("Switch to the compact toolbar"));
@@ -1473,7 +1487,9 @@ void MainWin::placeUrlRow(bool alone) {
 void MainWin::updateAiEngineUi() {
     const int engine = ui->ai_engine_comb->currentIndex();
     const bool local = engine == kLocalTranslationEngine;
-    const bool polishOn = !local && ui->enable_enhancement_checkbox->isChecked();
+    const bool openWebUi = engine == kOpenWebUiEngine;
+    const bool translationOnly = local || openWebUi;
+    const bool polishOn = !translationOnly && ui->enable_enhancement_checkbox->isChecked();
     const bool transOn = ui->translate_enabled_checkbox->isChecked();
     const auto caps = m_textPolishService->capabilities(engine);
 
@@ -1496,7 +1512,9 @@ void MainWin::updateAiEngineUi() {
     setVisible({ ui->label_16, ui->api_url_edit, ui->label_14, ui->ai_model_row, ui->check_connection_btn }, !local);
     setVisible({ ui->label_13, ui->api_key_edit }, !local && engine != 2);
     ui->api_url_edit->setPlaceholderText(engine == 2 ? tr("Leave empty to use the default (http://localhost:11434)")
+                                         : openWebUi ? tr("Open WebUI address, e.g. http://127.0.0.1:8081")
                                                      : QString());
+    ui->allow_self_signed_checkbox->setVisible(openWebUi);
     setEnabled({ ui->ai_model_comb, ui->label_14 }, caps.canFetchModels);
     ui->check_connection_btn->setEnabled(caps.canTest);
     const bool ollama = engine == 2;
@@ -1507,7 +1525,7 @@ void MainWin::updateAiEngineUi() {
     ui->ollama_translate_btn->setActive(ollama);
     setVisible({ ui->translate_model_label, ui->translate_model_comb }, engine == 1 || ollama);
 
-    ui->polish_card->setVisible(!local);
+    ui->polish_card->setVisible(!translationOnly);
     const bool customStyle = ui->ai_style_comb->currentData().toString() == QStringLiteral("自订Prompt");
     setVisible({ ui->label_17, ui->custom_commands_edit }, customStyle);
     setEnabled({ ui->ai_style_comb, ui->custom_commands_edit, ui->ai_vocabulary_edit,
@@ -1529,9 +1547,10 @@ void MainWin::updateAiEngineUi() {
     ui->pipeline_hint_label->setVisible(steps.size() > 2);
 
     if (m_controlBar) {
-        m_controlBar->toggleButton(ControlBar::Toggle::Enhance)->setEnabled(!local);
+        m_controlBar->toggleButton(ControlBar::Toggle::Enhance)->setEnabled(!translationOnly);
         m_controlBar->setToggleHint(ControlBar::Toggle::Enhance,
-                                    local ? tr("Not available with the local translation engine") : QString());
+                                    local ? tr("Not available with the local translation engine")
+                                    : openWebUi ? tr("Not available with the Open WebUI engine") : QString());
         m_controlBar->setToggleHint(ControlBar::Toggle::Translate, QString());
     }
 }

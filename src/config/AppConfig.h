@@ -46,9 +46,12 @@ struct SherpaConfig {
 };
 
 inline constexpr int kLocalTranslationEngine = 3;
+inline constexpr int kOpenWebUiEngine = 4;
+// 本机 Open WebUI 后端的默认地址：首次切到该引擎且没填过地址时自动带入
+inline const QString kOpenWebUiDefaultUrl = QStringLiteral("http://127.0.0.1:8081");
 
 struct PolishConfig {
-    int aiEngineIndex = 0;  // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama(本地), 3 = 本地离线翻译
+    int aiEngineIndex = 0;  // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama(本地), 3 = 本地离线翻译, 4 = Open WebUI(只翻译)
     bool enableAiEnhancement = false;
     QString apiKey;
     QString apiUrl;
@@ -67,11 +70,14 @@ struct PolishConfig {
     QString translateSourceLang = "auto"; 
     // 翻译用的模型；空 = 跟随润色模型。只对能选模型的引擎（OpenAI 兼容 / Ollama）生效
     QString translateModel;
+    bool allowSelfSigned = true;
 
     QString activeTargetLang() const {
         return translateEnabled ? targetLang : QStringLiteral("不翻译");
     }
     bool usesLocalTranslation() const { return aiEngineIndex == kLocalTranslationEngine; }
+    bool translationOnlyEngine() const { return usesLocalTranslation() || aiEngineIndex == kOpenWebUiEngine; }
+    bool sendsGlossaryToTranslator() const { return aiEngineIndex != kOpenWebUiEngine; }
     bool canChooseTranslateModel() const { return aiEngineIndex == 1 || aiEngineIndex == 2; }
     // 实际用于翻译的模型：Gemini 等没有单独的翻译模型，始终和润色同一个
     QString effectiveTranslateModel() const {
@@ -80,7 +86,7 @@ struct PolishConfig {
     // 云端引擎缺必填项时请求注定失败：Gemini 要 Key，OpenAI 兼容要地址；Ollama 有默认地址
     bool cloudEngineConfigured() const {
         if (aiEngineIndex == 0) return !apiKey.trimmed().isEmpty();
-        if (aiEngineIndex == 1) return !apiUrl.trimmed().isEmpty();
+        if (aiEngineIndex == 1 || aiEngineIndex == kOpenWebUiEngine) return !apiUrl.trimmed().isEmpty();
         return true;
     }
     QString cloudTargetLang() const {

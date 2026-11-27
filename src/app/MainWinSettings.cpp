@@ -166,6 +166,10 @@ void MainWin::registerSettings()
         [](const AppConfig& c) { return c.polish.translateSourceLang; },
         [](AppConfig& c, const QString& v) { c.polish.translateSourceLang = v; },
         Opt{ Apply::Instant });
+    s->bind(ui->allow_self_signed_checkbox,
+        [](const AppConfig& c) { return c.polish.allowSelfSigned; },
+        [](AppConfig& c, bool v) { c.polish.allowSelfSigned = v; },
+        Opt{ Apply::Instant });
     s->bind(ui->api_url_edit,
         [](const AppConfig& c) { return c.polish.apiUrl; },
         [](AppConfig& c, const QString& v) { c.polish.apiUrl = v; },

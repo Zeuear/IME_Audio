@@ -67,6 +67,7 @@ void ConfigManager::applyDefaults() {
     m_config.polish.translateEnabled = false;
     m_config.polish.translateSourceLang = "auto";
     m_config.polish.translateModel.clear();
+    m_config.polish.allowSelfSigned = true;
 
     m_config.hotkey = kDefaultHotkey;
     m_config.continuousMode = false;
@@ -156,6 +157,7 @@ bool ConfigManager::load() {
         : (!target.isEmpty() && target != "不翻译");
     m_config.polish.translateSourceLang = s.value("translateSourceLang", "auto").toString();
     m_config.polish.translateModel = s.value("translateModel", "").toString();
+    m_config.polish.allowSelfSigned = s.value("allowSelfSigned", true).toBool();
     for (int engine = 1; engine <= 2; ++engine) {
         const QString saved = s.value(QStringLiteral("translateModel_%1").arg(engine)).toString();
         if (!saved.isEmpty()) m_config.polish.translateModelByEngine[engine] = saved;
@@ -240,6 +242,7 @@ bool ConfigManager::save() {
     s.setValue("translateEnabled", m_config.polish.translateEnabled);
     s.setValue("translateSourceLang", m_config.polish.translateSourceLang);
     s.setValue("translateModel", m_config.polish.translateModel);
+    s.setValue("allowSelfSigned", m_config.polish.allowSelfSigned);
     m_config.polish.translateModelByEngine[m_config.polish.aiEngineIndex] = m_config.polish.translateModel;
     for (auto it = m_config.polish.translateModelByEngine.cbegin(); it != m_config.polish.translateModelByEngine.cend(); ++it)
         s.setValue(QStringLiteral("translateModel_%1").arg(it.key()), it.value());

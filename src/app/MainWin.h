@@ -137,6 +137,7 @@ private:
     void retranslateDynamicItems();
     void rebuildTranslationLanguages();
     void requestModelList();
+    void refreshOpenWebUiModels();
     // 翻译模型下拉：首项"跟随润色模型"，其余为引擎里的模型；保留已保存但不在列表里的值
     void rebuildTranslateModelCombo(const QStringList& models);
     // 润色模型下拉：listed=false 表示没拉到列表（如服务没开），此时保留已保存的模型

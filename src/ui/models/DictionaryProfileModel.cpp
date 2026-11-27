@@ -1,5 +1,7 @@
 #include "DictionaryProfileModel.h"
 
+#include <QCoreApplication>
+
 #include "services/dictionary/DictionaryLanguages.h"
 
 DictionaryProfileModel::DictionaryProfileModel(DictionaryProfiles* profiles, QObject* parent)
@@ -35,7 +37,11 @@ QVariant DictionaryProfileModel::data(const QModelIndex& index, int role) const 
     const DictionaryProfile& p = m_items.at(index.row());
     switch (role) {
     case Qt::DisplayRole:
-    case NameRole: return p.name;
+    case NameRole:
+        // 默认词典的名字在索引里按创建时的界面语言存成了英文，显示时按当前语言翻译
+        if (p.id == DictionaryProfiles::defaultId() && p.name == QLatin1String("Default"))
+            return QCoreApplication::translate("DictionaryProfiles", "Default");
+        return p.name;
     case IdRole: return p.id;
     case SubtitleRole: return DictionaryLanguages::subtitle(p);
     case EnabledRole: return p.enabled;

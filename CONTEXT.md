@@ -33,7 +33,7 @@
 
 - **Polish** — LLM (Gemini 或 OpenAI-compatible) 对转录文本的优化：去除口语词、
   修正自我修正、结构化整理、按样式重写。
-- **AI 引擎 (aiEngine)** — `0 = Gemini`, `1 = OpenAI-compatible (本地/自訂)`, `2 = Ollama (本地)`。
+- **AI 引擎 (aiEngine)** — `0 = Gemini`, `1 = OpenAI-compatible (本地/自訂)`, `2 = Ollama (本地)`, `3 = 本地离线翻译 (Bergamot)`, `4 = Open WebUI (只翻译)`。
   影响 API 端点和请求体构造。不是 ASR 后端，是后处理 LLM。`2 = Ollama` 复用 OpenAI-compatible
   的 `/v1/chat/completions` 路径（`isOllama` 标志），仅 base URL 指向本地 Ollama（默认
   `http://localhost:11434`），无需 API key。
