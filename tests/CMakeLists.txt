@@ -19,7 +19,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Inherit settings from the parent project
-include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/third_party/rapidfuzz)
 
 # Ensure Qt headers are visible for IDE/IntelliSense (Qt6::Core link handles this
 # for the compiler, but some IDEs need explicit include dirs)
@@ -39,6 +39,10 @@ set(CMAKE_AUTORCC ON)
 set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/support/widget_app_environment.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/term_replace_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/language_script_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictionary_profiles_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/entry_check_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/fuzzy_replacer_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/extract_progress_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/task_queue_async_test.cpp
@@ -97,6 +101,14 @@ set(TEST_SOURCES
 set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/snippets/SnippetSearchIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TermsLibraryManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/LanguageScript.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/LanguageScript.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryProfiles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/DictionaryProfiles.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/EntryCheck.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/FuzzyReplacer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/FuzzyReplacer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/EntryCheck.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/PinyinTable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/HotwordSelector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp
@@ -170,6 +182,8 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/LiveOverlay.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/LiveTranscriptWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/pages/LiveTranscriptWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ThemedIcon.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/ThemedIcon.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TranscriptLineDelegate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/delegates/TranscriptLineDelegate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/AnimatedCheckbox.cpp

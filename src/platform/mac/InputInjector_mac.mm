@@ -56,7 +56,7 @@ void restoreClipboardNow() {
     QClipboard* clipboard = QGuiApplication::clipboard();
     // 用户在这段时间里自己复制了别的东西，就不能再用旧快照覆盖回去。
     if (clipboard && clipboard->text() == s.injectedText) {
-        clipboard->setMimeData(s.saved);   // 所有权移交给剪贴板
+        clipboard->setMimeData(s.saved);
         LOG_DEBUG("InputInjector(mac): clipboard restored");
     } else {
         delete s.saved;
@@ -69,7 +69,7 @@ void scheduleClipboardRestore(const QString& injectedText) {
     ClipboardRestore& s = restoreState();
     s.injectedText = injectedText;
     if (!s.timer) {
-        s.timer = new QTimer;   // 只会在主线程调用
+        s.timer = new QTimer;
         s.timer->setSingleShot(true);
         QObject::connect(s.timer, &QTimer::timeout, restoreClipboardNow);
     }
@@ -114,8 +114,7 @@ bool postUnicodeChunk(CGEventSourceRef source, const UniChar* buffer, int length
         return false;
     }
 
-    // 触发注入的全局热键（默认 ⌃⌥Y）此刻很可能还按着，不把修饰键清零的话，
-    // 目标应用会把注入的每个字符解读成快捷键而不是文本。
+    // 触发注入的热键（默认 ⌃⌥Y）此刻可能还按着，不清零修饰键的话字符会被目标应用当成快捷键。
     CGEventSetFlags(down, static_cast<CGEventFlags>(0));
     CGEventSetFlags(up, static_cast<CGEventFlags>(0));
 
@@ -139,7 +138,7 @@ int chunkEndFor(const std::vector<UniChar>& units, int begin) {
     return end > begin ? end : begin + 1;
 }
 
-} // namespace
+}
 
 bool InputInjector::sendCtrlV() {
     if (!ensureAccessibilityTrusted()) return false;
@@ -150,8 +149,7 @@ bool InputInjector::sendCtrlV() {
         return false;
     }
 
-    // 只在 v 事件上打 command flag 对多数应用够用，但部分应用（尤其 Electron / 游戏）
-    // 会自行跟踪修饰键的按下与抬起，所以完整地合成 ⌘ 的 down/up 更稳。
+    // 只在 v 事件上打 command flag 对多数应用够用，但 Electron / 游戏等会自行跟踪修饰键，故完整合成 ⌘ 的 down/up。
     struct Step { CGKeyCode key; bool down; CGEventFlags flags; };
     static const Step kSteps[] = {
         { kVkCommand, true,  kCGEventFlagMaskCommand },
@@ -199,8 +197,7 @@ bool InputInjector::pasteViaClipboard(const QString& text) {
     }
 
     clipboard->setText(text);
-    // 给 pasteboard 的跨进程同步留出时间：⌘V 到达得比剪贴板内容更新更早的话，
-    // 目标应用粘贴的会是上一次的内容。
+    // 留出 pasteboard 跨进程同步的时间，否则 ⌘V 先到会粘到上一次内容。
     QThread::msleep(50);
 
     if (sendCtrlV()) {

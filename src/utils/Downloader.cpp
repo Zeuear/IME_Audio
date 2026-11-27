@@ -42,10 +42,8 @@ void Downloader::start(const QUrl& url, const QString& savePath)
 
     QNetworkRequest req(url);
     req.setAttribute(QNetworkRequest::CacheSaveControlAttribute, false);
-    // 强制 HTTP/1.1：部分模型服务器（HuggingFace 等）与 Qt 的 HTTP/2 实现握手失败，
-    // 会报 "HTTP/2 protocol error" / QNetworkReply::ProtocolError。关闭后可正常下载。
+    // 强制 HTTP/1.1：部分模型服务器（HuggingFace 等）与 Qt 的 HTTP/2 握手失败（ProtocolError）。
     req.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
-    // GitHub Release 等会 302 到 CDN，允许 https 之间的跳转
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     if (!m_userAgent.isEmpty()) req.setRawHeader("User-Agent", m_userAgent);
 
@@ -73,7 +71,6 @@ void Downloader::cancel()
     if (m_file.isOpen()) {
         m_file.close();
     }
-    // 取消时删除未下载完成的临时文件
     if (!m_tmpPath.isEmpty() && QFile::exists(m_tmpPath)) {
         QFile::remove(m_tmpPath);
     }
@@ -107,9 +104,8 @@ void Downloader::onReadyRead()
 {
     if (!m_reply || !m_file.isOpen())
         return;
-    if (m_stallTimeoutMs > 0) m_stallTimer.start(m_stallTimeoutMs);   // 有数据就续命
+    if (m_stallTimeoutMs > 0) m_stallTimer.start(m_stallTimeoutMs);
 
-    // 每次有新数据到达就立刻写入磁盘，内存中只保留当前这一小块数据
     const QByteArray chunk = m_reply->readAll();
     if (!chunk.isEmpty()) {
         qint64 written = m_file.write(chunk);

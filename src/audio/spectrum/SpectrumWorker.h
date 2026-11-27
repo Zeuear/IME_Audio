@@ -35,7 +35,6 @@ private:
 
     static constexpr int kFftSize = 512;
     static constexpr int kBandCount = 16;
-    // 语音可懂度核心区覆盖到 3000~4000Hz
     static constexpr double kVoiceMinHz = 400.0;
     static constexpr double kVoiceMaxHz = 4800.0;
     static constexpr float kLevelAttackMs = 15.0f;
@@ -46,7 +45,6 @@ private:
     void* m_kissFftCfg = nullptr;
     std::vector<float> m_fftInputBuffer;
 
-    // 预计算的频段布局
     std::vector<BandRange> m_bandRanges;
     std::vector<float> m_bandCenterHz;
 

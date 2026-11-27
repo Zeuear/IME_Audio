@@ -21,8 +21,7 @@ QString DownloadManager::addTask(const QUrl& url, const QString& savePath, TaskF
     emit taskAdded(task);
     emit queueChanged();
 
-    // 先取出 id 再启动：第一个文件在启动时就同步失败时，失败处理会在 startNext 里把 task 删掉，
-    // 之后再读 task->id 就是读已释放的内存（复制 QString 会改坏堆，表现为 0xc0000374 崩溃）
+    // 先取出 id 再启动：同步失败时 startNext 会删掉 task，之后读 task->id 是悬垂访问（0xc0000374 崩溃）。
     const QString id = task->id;
     startNext();
     return id;
@@ -70,9 +69,7 @@ void DownloadManager::onDownloaderFinished(const QString& savePath)
             updateGroupOnFinished(task);
         }
 
-        // 回调直接在当前线程(即 DownloadManager 所在线程)同步执行,
-        // 不要用 QtConcurrent::run 丢到线程池,避免回调里操作 UI 时产生跨线程问题。
-        // 如果回调本身很耗时,应该由回调内部自己决定要不要另开线程,而不是 DownloadManager 强加。
+        // 回调在当前线程同步执行，不丢线程池，避免回调里操作 UI 跨线程。
         if (task->onComplete) {
             task->onComplete();
         }
@@ -84,7 +81,6 @@ void DownloadManager::onDownloaderFinished(const QString& savePath)
     startNext(); 
     emit queueChanged();
 
-    // 全部执行完毕之后进行。此处 task 已在上方被使用完，无悬垂引用。
     if (task) {
         m_tasks.removeAll(task);
         delete task;
@@ -118,7 +114,6 @@ void DownloadManager::onDownloaderError(const QString& error)
     startNext();
     emit queueChanged();
 
-    // 出错任务同样从任务列表清理并释放，避免误判仍在下载中
     if (task) {
         m_tasks.removeAll(task);
         delete task;
@@ -163,8 +158,7 @@ void DownloadManager::cancelTask(const QString& taskId)
 
 void DownloadManager::cancelGroup(const QString& groupId)
 {
-    // 排队中的：摘出队列，并从任务表里删掉。以前只摘队列不删任务表，tasksInGroup 永远非空，
-    // isInstalling 恒为真，取消之后再也无法重新下载
+    // 排队中的要同时从任务表删除，否则 tasksInGroup 永远非空、isInstalling 恒真，取消后无法重下。
     for (int i = m_queue.size() - 1; i >= 0; --i) {
         DownloadTask* task = m_queue[i];
         if (task->groupId != groupId) continue;
@@ -173,15 +167,14 @@ void DownloadManager::cancelGroup(const QString& groupId)
         delete task;
     }
 
-    // 正在下载的：停掉下载器，并把"占用下载通道"的记账还回去。
-    // 以前只调了 cancel，m_runningCount 不减，之后所有下载都在 startNext 里被挡住，队列卡死
+    // 下载中的要归还 m_runningCount，否则之后所有下载被 startNext 挡住，队列卡死。
     bool releasedActive = false;
     for (auto it = m_activeMap.begin(); it != m_activeMap.end();) {
         DownloadTask* task = it.value();
         if (task->groupId != groupId) { ++it; continue; }
         it = m_activeMap.erase(it);
         if (m_currentDownloader) {
-            m_currentDownloader->cancel();   // 断开回复信号并删除 .part 临时文件
+            m_currentDownloader->cancel();
             m_currentDownloader->deleteLater();
             m_currentDownloader = nullptr;
         }
@@ -194,7 +187,7 @@ void DownloadManager::cancelGroup(const QString& groupId)
     m_groups.remove(groupId);
     emit groupFinished(groupId, false);
     emit queueChanged();
-    if (releasedActive) startNext();   // 通道空出来了，让排在后面的组继续
+    if (releasedActive) startNext();
 }
 
 
@@ -239,7 +232,7 @@ QString DownloadManager::addGroupTask(const QString& groupId, const QString& dis
     emit queueChanged();
     emit groupStarted(groupId, group.displayName, group.totalFiles);
 
-    const QString id = task->id;   // 同上：startNext 里可能同步失败并删掉 task
+    const QString id = task->id;
     startNext();
     return id;
 }
@@ -253,7 +246,6 @@ void DownloadManager::updateGroupOnProgress(DownloadTask* task, qint64 received,
     group.fileReceived[task->id] = received;
     group.fileTotal[task->id] = total;
 
-    // 计算整个分组的总体百分比:所有已知 total 的文件,已下载字节数之和 / 总字节数之和
     qint64 sumReceived = 0, sumTotal = 0;
     for (auto rit = group.fileReceived.constBegin(); rit != group.fileReceived.constEnd(); ++rit) {
         sumReceived += rit.value();
@@ -304,7 +296,7 @@ void DownloadManager::maybeEmitGroupFinished(const QString& groupId)
     if (settled >= group.totalFiles) {
         bool success = (group.failedFiles == 0);
         emit groupFinished(groupId, success);
-        m_groups.remove(groupId); // 分组结束后清理状态,避免内存累积
+        m_groups.remove(groupId);
     }
 }
 

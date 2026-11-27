@@ -30,7 +30,6 @@ void SnippetTreeModel::rebuild() {
     }
 }
 
-// 返回该文件夹下（含子孙）的话术总数
 int SnippetTreeModel::rebuildFolder(const FolderNode* f) {
     int row = 0;
     int total = static_cast<int>(f->items.size());
@@ -101,7 +100,7 @@ int SnippetTreeModel::rowCount(const QModelIndex& parent) const {
 }
 
 int SnippetTreeModel::columnCount(const QModelIndex& /*parent*/) const {
-    return 3; // 0: 名称/中文, 1: 外文, 2: 快捷码
+    return 3;
 }
 
 namespace {
@@ -160,7 +159,7 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
         if (col == 0) return isFol ? folder->title : item->title;
         if (col == 1) {
-            if (isFol) return QString::number(info->count);   // 只放数字，表头已去掉，不再写“条话术”
+            if (isFol) return QString::number(info->count);
             return item->text.simplified().left(60);
         }
         if (col == 2 && !isFol) return item->keyword;
@@ -173,7 +172,6 @@ QVariant SnippetTreeModel::data(const QModelIndex& index, int role) const {
         return QVariant();
     case Qt::ToolTipRole: {
         if (isFol) return QVariant();
-        // 悬停预览：快捷码 + 标题 + 配图大图 + 完整内容
         auto html = [](const QString& s) { return s.toHtmlEscaped().replace('\n', "<br>"); };
         QString tip;
         if (!item->keyword.isEmpty()) tip += "<b>[" + html(item->keyword) + "]</b> ";

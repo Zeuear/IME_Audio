@@ -7,10 +7,10 @@
 
 // @brief 一句听写在云端 AI 阶段（润色、翻译）期间的状态，按识别序号索引
 struct AiJob {
-    QString source;     // 识别原文
-    QString current;    // 当前阶段的输入：润色阶段 = 原文，翻译阶段 = 润色结果
+    QString source;
+    QString current;
     AiStagePlan plan;
-    QString target;     // 翻译目标语言
+    QString target;
 };
 
 class AiJobTracker
@@ -24,7 +24,6 @@ public:
         return it == m_jobs.constEnd() ? nullptr : &it.value();
     }
     bool active(quint64 seq) const { return m_jobs.contains(seq); }
-    // 进入下一阶段：上一阶段的输出成为下一阶段的输入；已结束的句子返回 false
     bool advance(quint64 seq, const QString& output) {
         const auto it = m_jobs.find(seq);
         if (it == m_jobs.end()) return false;

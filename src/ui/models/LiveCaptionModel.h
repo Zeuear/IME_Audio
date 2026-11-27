@@ -6,10 +6,7 @@
 #include <functional>
 
 // @brief 实时字幕的内容模型
-//
-// 一句话的生命周期：Active（正在说）→ Pending（已切出送去转录，仍显示中间文本）→ Final（正式结果替换文本）。
-// 同一时间只显示当前这一句：开始说下一句（或下一句先出正式结果）时，之前的句子立即清掉；
-// 最后一句出正式结果后再停留 kFinalLingerMs。
+// 一句话：Active → Pending（已切出转录，仍显示中间文本）→ Final（正式结果替换）。同一时间只显示当前一句，最后一句停留 kFinalLingerMs。
 class LiveCaptionModel : public QObject
 {
     Q_OBJECT
@@ -41,7 +38,6 @@ public:
     void onUtteranceReady(quint64 id, qint64 nowMs = -1);
     void onTranscribed(quint64 id, const QString &finalText, qint64 nowMs = -1);
 
-    // nowMs 供测试传入伪造时间；返回内容是否变化
     bool expire(qint64 nowMs = -1);
     void clear();
 
@@ -52,13 +48,11 @@ public:
     bool isEmpty() const;
     quint64 epoch() const { return m_epoch; }
 
-    // 中日韩文字之间不加空格
     static QString separatorBetween(const QString &prev, const QString &next);
     static QString normalizePartial(const QString &raw);
 
 signals:
     void changed();
-    // 流式引擎据此重置识别流
     void epochChanged(quint64 epoch);
 
 private:

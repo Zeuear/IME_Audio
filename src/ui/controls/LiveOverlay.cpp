@@ -32,7 +32,7 @@ constexpr qreal kDotCycleMs = 1120.0;
 constexpr qreal kIconHoldSec = 1.5;
 constexpr int kSideGutter = 64;           // 卡片左右各留的空白，悬停按钮画在右侧；左右对称，卡片才保持居中
 constexpr qreal kBtnSize = 24.0, kBtnGap = 4.0, kBtnOffset = 8.0;
-constexpr qreal kBtnVerticalNeed = 2 * kBtnSize + kBtnGap + 16.0;   // 卡片至少这么高才竖排
+constexpr qreal kBtnVerticalNeed = 2 * kBtnSize + kBtnGap + 16.0;
 const QString kPosGroup = QStringLiteral("LiveOverlay");
 
 qreal approach(qreal cur, qreal target, qreal tauSec, qreal dtSec)
@@ -40,7 +40,6 @@ qreal approach(qreal cur, qreal target, qreal tauSec, qreal dtSec)
     return target + (cur - target) * std::exp(-dtSec / tauSec);
 }
 
-// sec：从 0 到 1 所需时间
 qreal fade(qreal cur, bool on, qreal sec, qreal dtSec)
 {
     const qreal step = dtSec / sec;
@@ -75,7 +74,6 @@ qreal dotOpacity(int index, qreal cycleMs)
     return 0.3;
 }
 
-// 底色在胶囊和卡片形态下一致，变形时只有尺寸变化；频谱始终用蓝紫点缀色
 struct OverlayStyle {
     QColor bgTop, bgBottom, border;
     QColor finalText, pendingText;
@@ -102,7 +100,7 @@ const OverlayStyle &styleFor(LiveOverlay::Theme theme)
     default: return dark;
     }
 }
-} // namespace
+}
 
 LiveOverlay::LiveOverlay(QWidget *parent)
     : QWidget(parent)
@@ -110,7 +108,7 @@ LiveOverlay::LiveOverlay(QWidget *parent)
     // 只做状态显示，不能成为焦点窗口，否则听写结果会注入到它自己身上
     FloatingWindow::applyToolWindowFlags(this);
     setCursor(Qt::PointingHandCursor);
-    setMouseTracking(true);   // 悬停在按钮上要高亮，不按键也得收到 move
+    setMouseTracking(true);
     resize(kBallSize + 2 * kSideGutter, kBallSize);
 
     m_barEnergy.fill(0.0, kBarCount);
@@ -123,7 +121,7 @@ LiveOverlay::LiveOverlay(QWidget *parent)
     m_idleFadeTimer->setSingleShot(true);
     m_idleFadeTimer->setInterval(4000);
     connect(m_idleFadeTimer, &QTimer::timeout, this, [this]() {
-        if (m_hover || m_dragging) {   // 用户正在操作按钮，别在手下消失
+        if (m_hover || m_dragging) {
             m_idleFadeTimer->start();
             return;
         }
@@ -204,7 +202,6 @@ void LiveOverlay::setAtTop(bool atTop)
 
 qreal LiveOverlay::cardTop(qreal cardH) const
 {
-    // 贴屏幕的那条边固定：在底部时文字变多向上长，在顶部时向下长，频谱位置都不动
     return m_atTop ? kEdgeInset : height() - kEdgeInset - cardH;
 }
 
@@ -304,8 +301,7 @@ bool LiveOverlay::hasCaption() const
 
 void LiveOverlay::relayoutCaption()
 {
-    // 文字或颜色变了但卡片尺寸没变（长句已到最大宽度和两行高度）时，动画量都不动，
-    // tick 不会重绘，旧字幕会一直留在屏幕上，所以内容一变就主动请求重绘
+    // 尺寸没变时动画量不动、tick 不重绘，旧字幕会残留，所以内容一变就主动重绘
     update();
     if (!hasCaption()) {
         // 文档保留不动，收回胶囊的过程中文字还要淡出
@@ -336,16 +332,13 @@ void LiveOverlay::relayoutCaption()
     m_doc.setHtml(html);
     m_doc.setTextWidth(maxInner);
     const qreal ideal = std::min(m_doc.idealWidth(), maxInner);
-    // 按目标宽度换行：卡片宽度在动画中逐步变宽时，换行位置不会跟着来回跳
     m_doc.setTextWidth(std::ceil(ideal) + 2);
 
-    // 行高取排版结果而不是字体度量，两者差几个像素会漏出第三行的下伸部分
     const qreal docH = m_doc.size().height();
     qreal lineH = QFontMetricsF(font).lineSpacing();
     if (QTextLayout *layout = m_doc.firstBlock().layout(); layout && layout->lineCount() > 0) {
         lineH = layout->lineAt(0).height();
     }
-    // 最多露出两行，滚动量让最新的一行始终贴在底部
     const qreal textH = std::min(docH, lineH * 2.0);
     m_targetScroll = textH - docH;
 
@@ -377,7 +370,6 @@ void LiveOverlay::tick()
 {
     const qreal dt = std::min<qreal>(m_clock.restart() / 1000.0, 0.1);
 
-    // 只有画面上有量在变才重绘：静音、暂停且动画落定时不必每帧重画
     bool moving = false;
     auto step = [&moving](qreal &v, qreal next) {
         if (std::abs(next - v) > 1e-3) moving = true;
@@ -403,7 +395,6 @@ void LiveOverlay::tick()
     step(m_scroll, approach(m_scroll, m_targetScroll, 0.09, dt));
     step(m_capT, fade(m_capT, hasCaption(), 0.22, dt));
 
-    // 加载 / 转录的三个圆点只在胶囊形态出现，可见时一直在闪
     m_dotsMs = std::fmod(m_dotsMs + dt * 1000.0, kDotCycleMs);
     if (std::max(m_loadingOpacity, m_transcribeOpacity) * (1.0 - m_capT) > 0.01) moving = true;
 
@@ -419,7 +410,6 @@ void LiveOverlay::tick()
     if (moving) update();
 }
 
-// 只让卡片和（悬停时的）按钮接收鼠标：左右留白不挡住下面的窗口
 void LiveOverlay::updateInputMask()
 {
     QRect r = cardRect().toAlignedRect();
@@ -500,7 +490,6 @@ void LiveOverlay::leaveEvent(QEvent *event)
 void LiveOverlay::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_dragging) {
-        // 按拖动起点的全局坐标算增量，窗口大小变化不会累积误差
         m_anchor = m_dragStartAnchor + (event->globalPosition().toPoint() - m_dragStartGlobal);
         positionOnScreen();
         return;
@@ -536,7 +525,6 @@ void LiveOverlay::mouseReleaseEvent(QMouseEvent *event)
     QWidget::mouseReleaseEvent(event);
 }
 
-// 双击拖动按钮：回到默认位置
 void LiveOverlay::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && buttonAt(event->position()) == Btn::Drag) {
@@ -560,14 +548,13 @@ void LiveOverlay::mousePressEvent(QMouseEvent *event)
             setCursor(Qt::ClosedHandCursor);
             return;
         }
-        if (m_pressBtn == Btn::Hide) return;   // 松开时才算点击
+        if (m_pressBtn == Btn::Hide) return;
     }
     if (event->button() != Qt::LeftButton || !cardRect().contains(event->position())) {
         QWidget::mousePressEvent(event);
         return;
     }
     emit sphereClicked();
-    // 槽里已同步切换了 Listening / Paused：刚暂停显示暂停图标，刚恢复显示播放图标
     if (m_state == Paused) {
         m_icon = Icon::Pause;
     } else if (m_state == Listening) {
@@ -587,13 +574,11 @@ void LiveOverlay::paintEvent(QPaintEvent *)
     const qreal t = m_capT;
     const OverlayStyle &st = styleFor(m_theme);
 
-    // 加载 / 转录态也画同一块底色；有字幕时转录态保留卡片，等最终结果回来
     const qreal cardOpacity = std::max({m_spectrumOpacity, m_loadingOpacity, m_transcribeOpacity, t});
     if (cardOpacity > 0.01) {
         paintCard(p, card.center(), cardOpacity);
     }
 
-    // 卡片形态下状态由底部圆点行的颜色表达，三个点只在胶囊形态出现
     const QPointF pillCenter(width() / 2.0, cardTop(kPillHeight) + kPillHeight / 2.0);
     paintDots(p, pillCenter, st.barLoading, m_loadingOpacity * (1.0 - t));
     paintDots(p, pillCenter, st.barTranscribe, m_transcribeOpacity * (1.0 - t));
@@ -640,7 +625,6 @@ void LiveOverlay::paintCard(QPainter &p, const QPointF &center, qreal opacity) c
 {
     const qreal t = m_capT;
     const qreal level = (m_state == Paused) ? 0.0 : m_level;
-    // 胶囊随音量缩放，变成卡片后保持原尺寸，避免文字跟着抖
     const qreal s = lerp(m_scale, 1.0, t);
     const qreal w = m_cardW * s, h = m_cardH * s;
     const QRectF r(center.x() - w / 2.0, center.y() - h / 2.0, w, h);
@@ -661,7 +645,6 @@ void LiveOverlay::paintCard(QPainter &p, const QPointF &center, qreal opacity) c
         p.save();
         p.translate(center);
         p.scale(s, s);
-        // 底色整体按 opacity 淡入淡出，频谱条只在聆听 / 暂停态出现，这里换算成相对底色的占比
         paintPillBars(p, (1.0 - t) * (opacity > 0.001 ? m_spectrumOpacity / opacity : 0.0));
         p.restore();
     }
@@ -671,7 +654,6 @@ void LiveOverlay::paintCard(QPainter &p, const QPointF &center, qreal opacity) c
     p.restore();
 }
 
-// 柱高按圆形包络缩放：中间高、两边低
 void LiveOverlay::paintPillBars(QPainter &p, qreal opacity) const
 {
     p.save();
@@ -690,7 +672,6 @@ void LiveOverlay::paintPillBars(QPainter &p, qreal opacity) const
             : std::sqrt(envelopeR * envelopeR - rel * rel) / envelopeR;
         const qreal h = kMinBarHeight + std::max(0.0, m_barEnergy[i] * circle) * (envelopeR - kMinBarHeight);
         const QRectF bar = QRectF(x, -h / 2.0, barW, h).adjusted(0.5, 0.5, -0.5, -0.5);
-        // 圆角半径不能超过 min(宽, 高) / 2，否则两端会变尖
         const qreal rad = std::min(bar.width(), bar.height()) / 2.0;
         p.setBrush(accentAt(i / (kBarCount - 1.0)));
         p.drawRoundedRect(bar, rad, rad);
@@ -703,7 +684,6 @@ void LiveOverlay::paintCaptionContent(QPainter &p, const QRectF &card, qreal opa
     p.save();
     p.setOpacity(p.opacity() * opacity);
 
-    // 文字区高度跟着卡片当前高度走：一行变两行时，第二行随卡片长高被揭开
     const qreal textH = card.height() - kPadTop - kTextBarsGap - kBarsRowHeight - kPadBottom;
     if (textH > 1) {
         const QRectF textRect(card.left() + kPadH, card.top() + kPadTop, card.width() - 2 * kPadH, textH);
@@ -723,7 +703,6 @@ void LiveOverlay::paintCaptionContent(QPainter &p, const QRectF &card, qreal opa
     const qreal cy = card.bottom() - kPadBottom - kBarsRowHeight / 2.0;
     const qreal level = (m_state == Paused) ? 0.0 : m_level;
     for (int i = 0; i < n; ++i) {
-        // 16 路频谱插值到 n 个圆点，再叠加整体电平，让每个点都有起伏
         const qreal pos = i * (kBarCount - 1.0) / (n - 1);
         const int i0 = std::clamp(int(pos), 0, kBarCount - 1), i1 = std::min(i0 + 1, kBarCount - 1);
         const qreal e = lerp(m_barEnergy[i0], m_barEnergy[i1], pos - i0);

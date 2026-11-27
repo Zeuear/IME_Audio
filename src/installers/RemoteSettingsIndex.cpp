@@ -13,7 +13,6 @@ bool isAllowedFileType(const QString& type) {
            type == QStringLiteral("trgvocab");
 }
 
-// 版本号形如 "1.10"、"1.9"，按数字分段比较；非数字段按 0 处理
 int versionCompare(const QString& a, const QString& b) {
     const auto parts = [](const QString& v) {
         QList<int> nums;

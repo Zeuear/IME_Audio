@@ -11,10 +11,10 @@ struct TranslationHop {
 };
 
 enum class RouteKind {
-    Same,      // 源语言等于目标语言，无需翻译
-    Direct,    // 已知索引里直接有 from>to
+    Same,
+    Direct,
     Pivot,     // 非英语互译，需经英语中转：from->en->to
-    Unsupported, // 缺少任意一跳，不支持该方向
+    Unsupported,
 };
 
 struct TranslationRoute {
@@ -22,18 +22,23 @@ struct TranslationRoute {
     QList<TranslationHop> hops;
 };
 
-// 计算翻译方向。knownPairs 元素形如 "zh-Hans>en"。
 TranslationRoute planRoute(const QString& from, const QString& to,
                            const QSet<QString>& knownPairs);
 
-// "英文" -> "en"；未知显示名返回空字符串。
 QString languageCodeForDisplayName(const QString& name);
 
-// "en" -> "英文"；未知代码返回空字符串。
 QString displayNameForLanguageCode(const QString& code);
 
+struct CloudTargetLanguage {
+    const char* code;
+    const char* zhName;
+    const char* label;
+};
+const QList<CloudTargetLanguage>& cloudTargetLanguages();
+
+QString promptNameForStored(const QString& stored);
+
 // 配置里存的目标语言：常用五种存中文显示名（会写进云端提示词，不能改），其余直接存语言代码。
-// 统一转成语言代码；已经是代码的原样返回。
 QString languageCodeForStored(const QString& stored);
 
 // 源语言为 auto 时按识别模型的语言推断；中文按简体、粤语按繁体处理。无法确定返回空。

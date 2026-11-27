@@ -33,7 +33,6 @@ public:
     bool reloadModel(const AppConfig& config);
     void unloadModel();
 
-    // 空闲卸载模型计时控制
     void pauseIdleTimer();
     void resumeIdleTimer();
 
@@ -44,7 +43,6 @@ public:
 public slots:
     void loadModelAsync(const AppConfig& config, bool isReload);
     void transcribeAsync(const QByteArray& pcmData, int sampleRate, std::optional<QString> hotwords = std::nullopt);
-    // 当前模型是否支持按句设置热词；不支持时调用方不必再费力挑词
     bool supportsUtteranceHotwords() const { return m_streamHotwords; }
     void shutdown(); 
     void workerLoop(); 
@@ -65,19 +63,17 @@ private:
     enum class TaskType { Transcribe, Load, Unload };
 
     struct PendingTask {
-        // Transcribe
         TaskType type;
         QByteArray pcmData;  
         int sampleRate = 0;   
 
-        // Load
         AppConfig config;   
         bool isReload = false;
         std::optional<QString> hotwords;
     };
 
     RecognizerKind m_kind = RecognizerKind::None;
-    std::atomic<bool> m_streamHotwords{ false };   // 当前模型是否支持按句设置热词
+    std::atomic<bool> m_streamHotwords{ false };
     std::unique_ptr<sherpa_onnx::cxx::OfflineRecognizer> m_offlineRecognizer;
     std::unique_ptr<sherpa_onnx::cxx::OnlineRecognizer>  m_onlineRecognizer;
 
@@ -91,14 +87,12 @@ private:
     bool m_loadedRequestedCuda = false;
     AppConfig m_configCopy;
 
-    // 空闲自动卸载
     static constexpr int kIdleUnloadMs = 30 * 60 * 1000;
     QTimer* m_idleTimer = nullptr;
     std::atomic<bool> m_idlePaused{ false };
 
     mutable QMutex m_recognizerMutex; 
 
-    // 任务队列相关
     QQueue<PendingTask> m_queue;
     int m_loadsInFlight = 0;     
     AppConfig m_lastLoadRequest; 
@@ -116,13 +110,11 @@ public:
     explicit SherpaInstaller(QNetworkAccessManager* nam, QObject* parent = nullptr);
     void uninstallAll();
     void installModel(const QString& repoId);
-    // 取消正在下载的模型：停下载、删掉已下的残留。解压阶段不能取消，调用也不会有效果
     void cancelInstall(const QString& repoId);
     void uninstallModel(const QString& repoId);
     void ensurePunctModel(const QString& repoId);
     void ensureStreamingModel(const QString& language);
 
-    // VAD 模型。
     void ensureVadModel();
 
     bool isInstalling(const QString& repoId) const;
@@ -141,11 +133,9 @@ signals:
     void installFileFinished(const QString& repoId, const QString& filename);
     void installFileError(const QString& repoId, const QString& filename, const QString& error);
 
-    // 解压进度
     void extractStarted(const QString& repoId, int totalLines);
     void extractProgress(const QString& repoId, int current, int total);
     void extractFinished(const QString& repoId, bool success);
-    // 解压失败的原因（先于 installGroupFinished 发出）
     void extractFailed(const QString& repoId, const QString& cause);
 
     void loadModel(const QString& repoId, bool success, const QString& msg);

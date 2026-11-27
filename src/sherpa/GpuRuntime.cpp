@@ -68,7 +68,6 @@ bool GpuRuntime::requestedGpu() const
 void GpuRuntime::setRequestedGpu(bool on)
 {
     if (!detectable()) on = false;
-    // 检测已经结束且后端没装好：不允许停在 CUDA 模式
     if (on && detectionDone() && !backendReady()) on = false;
     if (m_requestedGpu == on) return;
 

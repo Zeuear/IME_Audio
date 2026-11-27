@@ -6,32 +6,26 @@
 
 
 struct ExtractProgress {
-    int current = 0;       // 进度分子：压缩包已读字节折算的千分比（0..1000）
+    int current = 0;
     int total = 1000;      // 进度分母，恒为 1000（条目总数要通读压缩包才知道，不值得）
-    QString currentFile;   // 当前正在解压的文件名（仅末级，已去路径前缀）
+    QString currentFile;
 };
 
 using ExtractProgressCb = std::function<void(const ExtractProgress&)>;
 
 struct ExtractOptions
 {
-    // 目标目录，默认使用程序根目录
     QString destinationDir = QApplication::applicationDirPath();
 
-    // 需要匹配的文件后缀
     QStringList nameFilters = { "*.dll", "*.so*", "*.dylib" };
 
     // 返回 true 才会被处理。默认不额外过滤。
-    // 例如按前缀过滤: [](const QFileInfo& fi){ return fi.fileName().startsWith("onnx", Qt::CaseInsensitive); }
     std::function<bool(const QFileInfo&)> filter = nullptr;
 
-    // true = 移动（剪切），false = 复制
     bool moveInsteadOfCopy = false;
 
-    // 解压完成后是否删除原始压缩包
     bool removeArchiveAfterExtract = true;
 
-    // 结构化解压进度回调（current/total/currentFile）。为 nullptr 时不回报。
     ExtractProgressCb onProgress = nullptr;
 };
 

@@ -16,7 +16,6 @@ GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(12);
 
-    // 第一步：链接与别名
     auto* topBox = new QGroupBox(tr("Step 1: paste the Google Sheets link and read its sheet list"), this);
     auto* topLayout = new QHBoxLayout(topBox);
     topLayout->addWidget(new QLabel(tr("URL:"), topBox));
@@ -42,7 +41,6 @@ GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     auto* midLayout = new QHBoxLayout();
     midLayout->setSpacing(12);
 
-    // 左：已保存的表
     auto* leftBox = new QGroupBox(tr("Saved tables"), this);
     leftBox->setFixedWidth(390);
     auto* leftLayout = new QVBoxLayout(leftBox);
@@ -63,7 +61,6 @@ GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     leftLayout->addLayout(leftButtons);
     midLayout->addWidget(leftBox);
 
-    // 右：勾选要同步的 Sheet
     auto* rightBox = new QGroupBox(tr("Step 2: check the sheets to import and sync"), this);
     auto* rightLayout = new QVBoxLayout(rightBox);
     auto* rightButtons = new QHBoxLayout();
@@ -83,7 +80,6 @@ GoogleSheetsDialog::GoogleSheetsDialog(SnippetStore* store, QWidget* parent)
     midLayout->addWidget(rightBox, 1);
     mainLayout->addLayout(midLayout, 1);
 
-    // 底部：状态与操作
     auto* bottomLayout = new QHBoxLayout();
     m_statusLabel = new QLabel(tr("Paste a Google Sheets link, then click \"Read Sheets\"."), this);
     bottomLayout->addWidget(m_statusLabel, 1);
@@ -181,7 +177,7 @@ void GoogleSheetsDialog::onFetchSheets() {
         setEnabled(true);
 
         if (!ok) {
-            m_lastFetchedId.clear();   // 失败后再次粘贴要能重试
+            m_lastFetchedId.clear();
             m_statusLabel->setText(tr("Read failed: %1").arg(error));
             emit errorOccurred(tr("读取 Google 表格失败"), error);
             return;
@@ -189,7 +185,6 @@ void GoogleSheetsDialog::onFetchSheets() {
 
         QStringList names;
         for (const auto& p : sheets) names << p.second;
-        // 已有保存勾选的表（m_activeTreeId 非空）保留原勾选，新表默认全选
         fillSheetList(names, previouslyChecked, m_activeTreeId.isEmpty() || previouslyChecked.isEmpty());
         if (m_aliasEdit->text().trimmed().isEmpty()) m_aliasEdit->setText(docTitle);
         m_statusLabel->setText(tr("Found %1 sheets. Check the ones you need, then click \"Import Checked Sheets\".").arg(names.size()));
@@ -255,7 +250,7 @@ void GoogleSheetsDialog::onRemoveSaved() {
                               tr("This also deletes everything of this table from the tree. Continue?")) != QMessageBox::Yes)
         return;
 
-    m_store->deleteNode(treeId);     // 同步移除 google_sheets 配置
+    m_store->deleteNode(treeId);
     m_store->removeGoogleSheet(treeId);
     reloadSavedList();
     onNewSheet();

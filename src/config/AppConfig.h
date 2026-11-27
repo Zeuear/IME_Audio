@@ -4,9 +4,9 @@
 #include <QKeySequence>
 #include <QApplication>
 #include "utils/AppPaths.h"
+#include "translation/LanguageRouting.h"
 
-// macOS 上 Qt 把 Ctrl 映射为 ⌘、Meta 映射为 ⌃，所以 Windows 的 Ctrl+Alt+Y 会变成
-// ⌘⌥Y 并与应用级快捷键频繁冲突；⌃⌥Y 则不占用任何 macOS 系统绑定。
+// macOS 上 Qt 把 Ctrl 映射为 ⌘，Ctrl+Alt+Y 会与应用级快捷键冲突；⌃⌥Y 不占用系统绑定
 #ifdef Q_OS_MACOS
 inline const QString kDefaultHotkey = QStringLiteral("Alt+Meta+Y");
 #else
@@ -45,7 +45,6 @@ struct SherpaConfig {
     float hotscores = 1.5;
 };
 
-// 润色引擎下拉里的最后一项：本地离线翻译。它不润色，只负责翻译
 inline constexpr int kLocalTranslationEngine = 3;
 
 struct PolishConfig {
@@ -55,22 +54,20 @@ struct PolishConfig {
     QString apiUrl;
     QString projectId;
     QString model;
-    // 各引擎各自记住的润色模型：Gemini 的模型名在 Ollama 里不存在，切引擎时不能共用一个值
-    // （model 始终是当前引擎的那个；切换引擎时 MainWin 负责换入换出）
+    // 各引擎各记一份润色模型：Gemini 的模型名在 Ollama 里不存在；model 始终是当前引擎的
     QMap<int, QString> modelByEngine;
-    QMap<int, QString> apiUrlByEngine;   // 同上：地址、密钥也各引擎各一份（Ollama 留空 = 默认 localhost:11434，不能拿到别家的地址）
+    QMap<int, QString> apiUrlByEngine;  
     QMap<int, QString> apiKeyByEngine;
-    QMap<int, QString> translateModelByEngine;   // 同上，翻译模型（只有 OpenAI 兼容 / Ollama 用）
+    QMap<int, QString> translateModelByEngine;
     QString prompt;
     QString vocab;
     QString aiStyle;
     QString targetLang;
-    bool translateEnabled = false;           // 翻译开关；关闭时保留 targetLang，重新打开不丢
-    QString translateSourceLang = "auto";    // auto = 按识别模型语言推断
+    bool translateEnabled = false;
+    QString translateSourceLang = "auto"; 
     // 翻译用的模型；空 = 跟随润色模型。只对能选模型的引擎（OpenAI 兼容 / Ollama）生效
     QString translateModel;
 
-    // 翻译关闭时目标语言按"不翻译"处理，但 targetLang 本身保留
     QString activeTargetLang() const {
         return translateEnabled ? targetLang : QStringLiteral("不翻译");
     }
@@ -86,9 +83,8 @@ struct PolishConfig {
         if (aiEngineIndex == 1) return !apiUrl.trimmed().isEmpty();
         return true;
     }
-    // 云端请求的目标语言
     QString cloudTargetLang() const {
-        return usesLocalTranslation() ? QStringLiteral("不翻译") : activeTargetLang();
+        return usesLocalTranslation() ? QStringLiteral("不翻译") : promptNameForStored(activeTargetLang());
     }
 };
 
@@ -100,16 +96,13 @@ struct AppConfig {
     AsrBackendKind backend = AsrBackendKind::Sherpa;
     AudioConfig audio;
     
-    // 转录
     SherpaConfig sherpa;
     QString gladiaKey;
     QString groqKey;
     QString geminiKey;
 
-    // 润色和翻译
     PolishConfig polish;
 
-    // 词典
     TermsConfig terms;
     QString replaceRules;
 
@@ -120,7 +113,6 @@ struct AppConfig {
     bool liveCaptionAtTop = false;
     // 听写结果是否同时输入到前台窗口；关掉后结果只进"实时转录"稿子。默认开
     bool injectToForeground = true;
-    // 横条（和它下方的面板）是否始终盖在别的软件上面。默认开
     bool barAlwaysOnTop = true;
     // 上次停留的形态：false = 设置窗口（首次安装默认），true = 横条。见 ADR 0005
     bool barMode = false;

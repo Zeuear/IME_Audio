@@ -14,8 +14,7 @@ QString LiveCaptionModel::normalizePartial(const QString &raw)
     QString s = raw.simplified();
     if (s.isEmpty()) return s;
 
-    // 英文流式模型输出全大写；只处理"有大写、没小写"的纯英文文本。
-    // 夹着中日韩文字时大写词多半是缩写（"我用 API"），保持原样
+    // 英文流式模型输出全大写；仅处理纯英文文本，夹着中日韩文字时大写词多半是缩写，保持原样
     bool hasUpper = false, hasLower = false, hasCjk = false;
     for (QChar c : s) {
         if (c.isUpper()) hasUpper = true;
@@ -83,14 +82,11 @@ void LiveCaptionModel::applyPartial(quint64 epoch, const QString &text)
         return;
     }
     if (epoch != m_epoch || t.isEmpty()) return;
-    // VAD 判定开口比流式识别出字晚，而引擎只在文字变化时才发结果：
-    // 这段时间的结果若直接丢掉，句子短、之后文字不再变化时就永远显示不出来。
-    // 先留着，确认真的在说话（setSpeaking(true)）后再补上；静音噪声始终不会进入字幕
+    // VAD 判定开口比流式出字晚，且引擎只在文字变化时发结果：这段时间的结果先留着，确认在说话后补上，静音噪声不会进字幕
     if (!m_speaking) {
-        m_held = { epoch, text };   // 存原文：补上时会重新走一遍归一化和术语替换
+        m_held = { epoch, text };
         return;
     }
-    // 开始说新的一句：之前的句子（含还在等正式结果的）立即清掉，字幕只显示当前这一句
     m_sentences.clear();
     m_sentences.append({t, State::Active, resolveNow(-1), epoch});
     touch();
@@ -154,7 +150,6 @@ void LiveCaptionModel::clear()
     const bool had = !m_sentences.isEmpty();
     m_sentences.clear();
     m_speaking = false;
-    // 让还在队列里的上一轮中间结果作废
     ++m_epoch;
     m_held = {};
     emit epochChanged(m_epoch);

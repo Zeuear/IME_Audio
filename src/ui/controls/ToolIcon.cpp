@@ -53,12 +53,10 @@ QImage renderTile(const QString& path, int size, const QPalette& palette,
     const bool colored = accent.isValid();
     const bool dark = palette.color(QPalette::Window).lightness() < 128;
 
-    // 1. 底边一线投影，让方块"浮"起来
     p.setPen(Qt::NoPen);
     p.setBrush(QColor(0, 0, 0, dark ? 90 : 38));
     p.drawRoundedRect(tile.translated(0, s), radius, radius);
 
-    // 2. 渐变底
     QColor top, bottom;
     if (colored) {
         top = accent.lighter(hover ? 125 : 112);
@@ -76,7 +74,6 @@ QImage renderTile(const QString& path, int size, const QPalette& palette,
     p.setBrush(fill);
     p.drawRoundedRect(tile, radius, radius);
 
-    // 3. 内缘：顶部亮、底部暗，中段透明，立体感主要来自这一圈
     const qreal edgeInset = 1.0 * s;
     QLinearGradient edge(tile.topLeft(), tile.bottomLeft());
     edge.setColorAt(0.0, colored ? QColor(255, 255, 255, 110) : QColor(255, 255, 255, dark ? 60 : 255));
@@ -87,13 +84,11 @@ QImage renderTile(const QString& path, int size, const QPalette& palette,
     p.setPen(QPen(QBrush(edge), 1.0 * s));
     p.drawRoundedRect(tile.adjusted(edgeInset, edgeInset, -edgeInset, -edgeInset) , radius - edgeInset, radius - edgeInset);
 
-    // 4. 外描边，压住渐变的边缘
     QColor outline = colored ? accent.darker(160) : (dark ? QColor(255, 255, 255, 36) : QColor(0, 0, 0, 46));
     outline.setAlpha(colored ? 150 : outline.alpha());
     p.setPen(QPen(outline, 0.8 * s));
     p.drawRoundedRect(tile.adjusted(0.4 * s, 0.4 * s, -0.4 * s, -0.4 * s), radius, radius);
 
-    // 5. 图案：先压一层阴影，再画本体
     const int glyphSize = qRound(19 * s);
     const QPointF origin(tile.center().x() - glyphSize / 2.0, tile.center().y() - glyphSize / 2.0);
     const QColor ink = colored ? QColor(Qt::white) : glyph;
@@ -105,4 +100,4 @@ QImage renderTile(const QString& path, int size, const QPalette& palette,
     return image;
 }
 
-} // namespace ToolIcon
+}

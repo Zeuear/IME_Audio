@@ -138,9 +138,8 @@ void BergamotWorkerClient::failAll(const QString& cause) {
     for (qint64 id : pending) emit translated(id, false, {}, cause);
 }
 
-// ---- 真实进程；测试里这三个函数被替换
 void BergamotWorkerClient::startWorker() {
-    if (m_process) {   // 上一个进程已退出，丢掉旧对象
+    if (m_process) {
         m_process->disconnect(this);
         m_process->deleteLater();
     }

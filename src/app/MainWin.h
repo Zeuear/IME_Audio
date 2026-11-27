@@ -25,6 +25,7 @@ class AudioRecorderService;
 class TranscriptionService; 
 class WorkflowManager;
 class TermsLibraryManager;
+class DictionaryProfiles;
 class SherpaInstaller;
 class SherpaManager;
 class LiveOverlay;
@@ -80,14 +81,12 @@ protected:
 
 public slots:
     void onShowWindow();
-    // 按上次的形态显示：横条或设置窗口（启动、再次启动程序时用）
     void showCurrentForm();
 
 private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void showControlBar();
     void hideControlBar();
-    // 横条与设置窗口二选一，位置继承；见 ADR 0005
     void switchToBar();
     void switchToSettings();
     void toggleCurrentForm();
@@ -105,7 +104,6 @@ private slots:
     void onHotkeyReleased();
     void onStateChanged(WorkflowState newState);
     void onLocalModelActivated();
-    // 切换 CPU/GPU：选中的模型不变，按模式加载对应版本；GPU 版没下载就自动下载，下完由安装器的加载信号重载
     void onComputeModeChanged(bool toGpu);
     void ensureGpuVariant(const QString& repoId);
     // 首次加载模型：useGpu 为真时等 GPU 检测结束再加载（最多 kGpuDetectionWaitMs），只加载一次
@@ -124,13 +122,11 @@ private:
     void syncTranscriptScrollHost();
     bool m_fittedToScreen = false;
 
-    // 听写进行中锁住各设置页
     void setSettingsLocked(bool locked);
 
     enum class NotifyLevel { Info, Success, Warning, Error };
     void notify(NotifyLevel level, const QString& titleCN, const QString& causeCN = {});
 
-    // 设置项登记表与生效处理
     void registerSettings();
     void applySettings(unsigned effects);
     void loadConfigToUI();
@@ -140,7 +136,6 @@ private:
     void swapPolishModelForEngine(int engine);
     void retranslateDynamicItems();
     void rebuildTranslationLanguages();
-    // 按当前引擎拉模型列表（OpenAI 兼容 / Ollama）；结果回到 modelsFetched
     void requestModelList();
     // 翻译模型下拉：首项"跟随润色模型"，其余为引擎里的模型；保留已保存但不在列表里的值
     void rebuildTranslateModelCombo(const QStringList& models);
@@ -149,8 +144,12 @@ private:
     void updateTranslationUi();
     TranslationRoute currentTranslationRoute() const;
     QString recognitionLanguageCode() const;
+    void refreshTranscriptLanguages();
+    void applyDictionaryRules(bool full);
+    void swapRecognitionAndTarget();
+    void runWhenIdle(const std::function<void()>& apply);
+    void resumeDictationAfterSwitch();
 
-    // 开始 / 停止听写
     bool startDictation();
     void setDictationIndicator(bool recording);
     void stopDictation();
@@ -167,23 +166,23 @@ private:
     Ui::MainWin *ui;
 
     QSystemTrayIcon* trayIcon;
-    QToolButton* m_formSwitchBtn = nullptr;   // 设置窗口标签栏右侧，切到横条
+    QToolButton* m_formSwitchBtn = nullptr;
     QString m_liveShownText;                  // 刚补完译文的这句的最终文字，结果信号到了据此跳过重复追加
     bool m_liveShownValid = false;
-    int m_lastAiEngine = -1;                  // 当前 polish.model 属于哪个引擎（见 swapPolishModelForEngine）
-    bool m_urlRowAlone = false;               // 地址行是否独占一行（Ollama，见 placeUrlRow）
-    bool m_modelRowInPolishCard = false;      // 润色模型行现在在哪张卡片里（见 placeModelRow）
-    bool m_pagesInSettings = false;           // 词典 / 文件转录页现在挂在谁身上
+    int m_lastAiEngine = -1;
+    bool m_urlRowAlone = false;
+    bool m_modelRowInPolishCard = false;
+    bool m_pagesInSettings = false;
     QMenu* trayMenu;
 
     QNetworkAccessManager* m_networkManager = nullptr;
     LiveOverlay* m_liveOverlay = nullptr;
-    ControlBar* m_controlBar = nullptr;                 // 常驻置顶
-    LiveTranscriptWidget* m_transcriptWidget = nullptr; // 稿子控件
-    ModelDownloadTracker* m_downloadTracker = nullptr;  // 模型列表行内下载进度的状态
-    ExpandPanel* m_panel = nullptr;                     // 实时转录 / 词典 / 文件转录
-    TermWidget* m_termWidget = nullptr;                 // 词典页
-    FileTranscribeWidget* m_fileWidget = nullptr;       // 文件转录页
+    ControlBar* m_controlBar = nullptr;
+    LiveTranscriptWidget* m_transcriptWidget = nullptr;
+    ModelDownloadTracker* m_downloadTracker = nullptr;
+    ExpandPanel* m_panel = nullptr;
+    TermWidget* m_termWidget = nullptr;
+    FileTranscribeWidget* m_fileWidget = nullptr;
     LiveCaptionModel* m_captionModel = nullptr;
     SnippetStore* m_snippetStore = nullptr;
     SnippetPaster* m_snippetPaster = nullptr;
@@ -203,6 +202,7 @@ private:
     CudaInstaller* m_cudaInstaller = nullptr;
     GpuRuntime* m_gpuRuntime = nullptr;
     TermsLibraryManager* m_termsManager = nullptr;
+    DictionaryProfiles* m_dictionaries = nullptr;
     UpdateManager* m_updateManager = nullptr;
     AudioRecorderService *m_recorderService = nullptr;
     TranscriptionService *m_transcriptionService = nullptr;
@@ -216,16 +216,16 @@ private:
     DictationHistoryModel* m_history = nullptr;   
     bool m_indicatorRecording = false;  
     bool m_loadingSettings = false;
+    std::function<void()> m_pendingSwitch;
     bool m_userCancelledInstall = false;
     QHash<QString, QString> m_installFailCause;   // repoId -> 解压失败原因，用于覆盖笼统的"检查网络"提示
     QString m_autoGpuRepoId;   // 切到 GPU 模式时自动下载中的 GPU 版仓库，空 = 没有
     static constexpr int kGpuDetectionWaitMs = 5000;
     QTimer* m_detectTimer = nullptr;
-    bool m_preloadDeferred = false;     // 首次加载被推迟，等检测结果
+    bool m_preloadDeferred = false;
     bool m_detectionTimedOut = false;
     DownloadGroupProgress m_translateProgress; 
 
-    // 按住说话
     QElapsedTimer m_holdTimer;
     bool m_holdStarted = false;
     bool isTriggered = false;

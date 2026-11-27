@@ -9,47 +9,47 @@
         <translation>No update notes available.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="160"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="158"/>
         <source>Version %1</source>
         <translation>Version %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="161"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="159"/>
         <source>Check for Updates</source>
         <translation>Check for Updates</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="162"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="160"/>
         <source>Download and Install</source>
         <translation>Download and Install</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="163"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="161"/>
         <source>About Qt</source>
         <translation>About Qt</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="168"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="166"/>
         <source>ImeAudio 是一款专注于输入法语音辅助的桌面工具，支持音频采集、语音转换与快捷键控制，帮助你更高效地完成日常输入操作。</source>
         <translation>ImeAudio is a desktop tool focused on voice assistance for input methods. It supports audio capture, voice conversion, and shortcut key control, helping you complete daily input operations more efficiently.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="173"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="171"/>
         <source>语音识别基于 sherpa-onnx（k2-fsa，Apache-2.0）。英、法、德、西语实时字幕使用 Kroko ASR 社区模型（Banafo，https://kroko.ai，CC-BY-SA 许可）。</source>
         <translation>Speech recognition is based on sherpa-onnx (k2-fsa, Apache-2.0). Live captions for English, French, German and Spanish use the Kroko ASR community models (Banafo, https://kroko.ai, CC-BY-SA).</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="175"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="173"/>
         <source>本地离线翻译使用 Firefox Translations 的 Bergamot 模型（Mozilla，MPL-2.0，https://github.com/mozilla/firefox-translations-models）。</source>
         <translation>Local offline translation uses the Bergamot models from Firefox Translations (Mozilla, MPL-2.0, https://github.com/mozilla/firefox-translations-models).</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="186"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="184"/>
         <source>开源组件与许可</source>
         <translation>Open-source components</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/AboutPage.cpp" line="187"/>
+        <location filename="../../src/ui/pages/AboutPage.cpp" line="185"/>
         <source>更新说明</source>
         <translation>Update Notes</translation>
     </message>
@@ -57,18 +57,18 @@
 <context>
     <name>AudioRecorderService</name>
     <message>
-        <location filename="../../src/services/RecorderService.cpp" line="145"/>
-        <location filename="../../src/services/RecorderService.cpp" line="153"/>
+        <location filename="../../src/services/RecorderService.cpp" line="144"/>
+        <location filename="../../src/services/RecorderService.cpp" line="152"/>
         <source>录音启动失败</source>
         <translation>Failed to start recording</translation>
     </message>
     <message>
-        <location filename="../../src/services/RecorderService.cpp" line="146"/>
+        <location filename="../../src/services/RecorderService.cpp" line="145"/>
         <source>请在系统弹出的授权框中允许使用麦克风，然后重新开始录音</source>
         <translation>Please allow microphone access in the system prompt, then start recording again</translation>
     </message>
     <message>
-        <location filename="../../src/services/RecorderService.cpp" line="154"/>
+        <location filename="../../src/services/RecorderService.cpp" line="153"/>
         <source>麦克风权限已被拒绝，请在「系统设置 → 隐私与安全性 → 麦克风」中允许本应用后重试</source>
         <translation>Microphone access was denied. Allow this app in System Settings → Privacy &amp; Security → Microphone, then try again</translation>
     </message>
@@ -76,79 +76,79 @@
 <context>
     <name>ControlBar</name>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="405"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="392"/>
         <source>Start</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="406"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="393"/>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="407"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="394"/>
         <source>Live Transcript</source>
         <translation>Live Transcript</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="408"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="395"/>
         <source>Settings (Full mode)</source>
         <translation>Settings (Full mode)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="409"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="396"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="410"/>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="411"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="397"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="398"/>
         <source>Always on top</source>
         <translation>Always on top</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="412"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="399"/>
         <source>Google Docs...</source>
         <translation>Google Docs...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="414"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="401"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="413"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="400"/>
         <source>Hide toolbar</source>
         <translation>Hide toolbar</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="420"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="407"/>
         <source>AI Enhancement</source>
         <translation>AI Enhancement</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="420"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="407"/>
         <source>AI Translation</source>
         <translation>AI Translation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="420"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="407"/>
         <source>Type into the foreground window</source>
         <translation>Type into the foreground window</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="425"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="412"/>
         <source>Dictionary</source>
         <translation>Dictionary</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="426"/>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="427"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="413"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="414"/>
         <source>File Transcription</source>
         <translation>File Transcription</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ControlBar.cpp" line="426"/>
+        <location filename="../../src/ui/controls/ControlBar.cpp" line="413"/>
         <source>Transcribing...</source>
         <translation>Transcribing...</translation>
     </message>
@@ -156,49 +156,109 @@
 <context>
     <name>CudaInstaller</name>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="253"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="240"/>
         <source>Installation completed. Restart ImeAudio to enable GPU acceleration.</source>
         <translation>Installation completed. Restart ImeAudio to enable GPU acceleration.</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="51"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="49"/>
         <source>NVIDIA GPU or driver not detected</source>
         <translation type="unfinished">NVIDIA GPU or driver not detected</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="95"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="91"/>
         <source>Detected CUDA Runtime, but no available cuDNN found. GPU acceleration requires additional cuDNN installation.</source>
         <translation type="unfinished">Detected CUDA Runtime, but no available cuDNN found. GPU acceleration requires additional cuDNN installation.</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="43"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="42"/>
         <source>CUDA is not available on this platform</source>
         <translation type="unfinished">CUDA is not available on this platform</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="166"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="153"/>
         <source>CUDA installation is not supported on this platform</source>
         <translation type="unfinished">CUDA installation is not supported on this platform</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="171"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="158"/>
         <source>Preparation for CUDA 12.6 offline installation package...</source>
         <translation type="unfinished">Preparation for CUDA 12.6 offline installation package...</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="229"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="216"/>
         <source>Download Error</source>
         <translation type="unfinished">Download Error</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="240"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="227"/>
         <source>Starting installation sequence...</source>
         <translation type="unfinished">Starting installation sequence...</translation>
     </message>
     <message>
-        <location filename="../../src/installers/CudaInstaller.cpp" line="256"/>
+        <location filename="../../src/installers/CudaInstaller.cpp" line="243"/>
         <source>Installation sequence failed: </source>
         <translation type="unfinished">Installation sequence failed: </translation>
+    </message>
+</context>
+<context>
+    <name>DictionaryLanguages</name>
+    <message>
+        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="35"/>
+        <source>%1 ↔ %2</source>
+        <translation>%1 ↔ %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="37"/>
+        <source>Any language</source>
+        <translation>Any language</translation>
+    </message>
+</context>
+<context>
+    <name>DictionaryProfileDialog</name>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="18"/>
+        <source>Edit Dictionary</source>
+        <translation>Edit Dictionary</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="18"/>
+        <source>New Translation Dictionary</source>
+        <translation>New Translation Dictionary</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="18"/>
+        <source>New Recognition Dictionary</source>
+        <translation>New Recognition Dictionary</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="22"/>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="27"/>
+        <source>Name</source>
+        <translation>Name</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="38"/>
+        <source>Languages</source>
+        <translation>Languages</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="40"/>
+        <source>Language</source>
+        <translation>Language</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/DictionaryProfileDialog.cpp" line="57"/>
+        <source>Any language</source>
+        <translation>Any language</translation>
+    </message>
+</context>
+<context>
+    <name>DictionaryProfiles</name>
+    <message>
+        <location filename="../../src/services/dictionary/DictionaryProfiles.cpp" line="97"/>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -322,17 +382,17 @@
 <context>
     <name>ExpandPanel</name>
     <message>
-        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="312"/>
+        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="309"/>
         <source>Live Transcript</source>
         <translation>Live Transcript</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="313"/>
+        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="310"/>
         <source>Dictionary</source>
         <translation>Dictionary</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="314"/>
+        <location filename="../../src/ui/controls/ExpandPanel.cpp" line="311"/>
         <source>File Transcription</source>
         <translation>File Transcription</translation>
     </message>
@@ -414,229 +474,229 @@
 <context>
     <name>FileTranscribeWidget</name>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="353"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="339"/>
         <source>Add Files</source>
         <translation>Add Files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="654"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="635"/>
         <source>Transcribe</source>
         <translation>Transcribe</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="651"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="632"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="597"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="578"/>
         <source>Transcription</source>
         <translation>Transcription</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="367"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="353"/>
         <source>Copy</source>
         <translation>Copy</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="354"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="340"/>
         <source>Add Links</source>
         <translation>Add Links</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="355"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="341"/>
         <source>Download the audio of public Facebook or YouTube links and transcribe it</source>
         <translation>Download the audio of public Facebook or YouTube links and transcribe it</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="356"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="342"/>
         <source>Clear Cache</source>
         <translation>Clear Cache</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="357"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="343"/>
         <source>Delete the audio downloaded from links and the temporary separated vocals. Finished transcriptions stay; links are downloaded again if you re-transcribe them</source>
         <translation>Delete the audio downloaded from links and the temporary separated vocals. Finished transcriptions stay; links are downloaded again if you re-transcribe them</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="359"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="345"/>
         <source>TXT</source>
         <translation>TXT</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="360"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="346"/>
         <source>SRT subtitles</source>
         <translation>SRT subtitles</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="361"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="347"/>
         <source>Timestamps follow speech pauses, one subtitle per detected sentence</source>
         <translation>Timestamps follow speech pauses, one subtitle per detected sentence</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="366"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="352"/>
         <source>Drop audio files here, or click &quot;Add Files&quot; / &quot;Add Links&quot;</source>
         <translation>Drop audio files here, or click &quot;Add Files&quot; / &quot;Add Links&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="368"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="354"/>
         <source>Select a file to view its transcription</source>
         <translation>Select a file to view its transcription</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="369"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="355"/>
         <source>Translation</source>
         <translation>Translation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="370"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="356"/>
         <source>Also export the translation as name.&lt;language&gt;.txt / .srt</source>
         <translation>Also export the translation as name.&lt;language&gt;.txt / .srt</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="371"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="357"/>
         <source>Copy Translation</source>
         <translation>Copy Translation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="372"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="358"/>
         <source>The translation appears here as each segment finishes</source>
         <translation>The translation appears here as each segment finishes</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="373"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="359"/>
         <source>Open Folder</source>
         <translation>Open Folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="405"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="389"/>
         <source>Choose Audio Files</source>
         <translation>Choose Audio Files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="406"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="390"/>
         <source>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</source>
         <translation>Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="430"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="413"/>
         <source>%1 invalid lines ignored</source>
         <translation>%1 invalid lines ignored</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="92"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="90"/>
         <source>Downloading audio...</source>
         <translation>Downloading audio...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="443"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="426"/>
         <source>Added %1 links</source>
         <translation>Added %1 links</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="443"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="426"/>
         <source>No new links added</source>
         <translation>No new links added</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="477"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="460"/>
         <source>%1 links failed to download</source>
         <translation>%1 links failed to download</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="502"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="484"/>
         <source>No new files added</source>
         <translation>No new files added</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="507"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="489"/>
         <source>Added %1 files</source>
         <translation>Added %1 files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="567"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="548"/>
         <source>Cache cleared, freed %1</source>
         <translation>Cache cleared, freed %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="578"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="559"/>
         <source>Re-transcribe</source>
         <translation>Re-transcribe</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="579"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="560"/>
         <source>Remove</source>
         <translation>Remove</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="581"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="562"/>
         <source>Clear All</source>
         <translation>Clear All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="664"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="644"/>
         <source>Export Selected (%1)</source>
         <translation>Export Selected (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="665"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="645"/>
         <source>Export All (%1)</source>
         <translation>Export All (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="752"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="731"/>
         <source>Processing file %1/%2</source>
         <translation>Processing file %1/%2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="651"/>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="833"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="632"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="812"/>
         <source>Cancelling...</source>
         <translation>Cancelling...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="874"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="853"/>
         <source>Cancelled</source>
         <translation>Cancelled</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="876"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="855"/>
         <source>Finished: %1 succeeded, %2 failed, %3 no speech</source>
         <translation>Finished: %1 succeeded, %2 failed, %3 no speech</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="899"/>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="907"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="877"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="885"/>
         <source>Copied to clipboard</source>
         <translation>Copied to clipboard</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="937"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="914"/>
         <source>Choose Export Folder</source>
         <translation>Choose Export Folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="969"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="945"/>
         <source>Exported %1 files to %2, %3 failed</source>
         <translation>Exported %1 files to %2, %3 failed</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="970"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="946"/>
         <source>Exported %1 files to %2</source>
         <translation>Exported %1 files to %2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="362"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="348"/>
         <source>Separate vocals</source>
         <translation>Separate vocals</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="364"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="350"/>
         <source>Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files</source>
         <translation>Remove music and background sound before transcribing. Downloads a 67 MB model on first use; slower on long files</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="365"/>
+        <location filename="../../src/ui/pages/FileTranscribeWidget.cpp" line="351"/>
         <source>Vocal separation is not available on this platform</source>
         <translation>Vocal separation is not available on this platform</translation>
     </message>
@@ -700,184 +760,184 @@
         <translation>Google Sheets Import</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="20"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="19"/>
         <source>Step 1: paste the Google Sheets link and read its sheet list</source>
         <translation>Step 1: paste the Google Sheets link and read its sheet list</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="22"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="21"/>
         <source>URL:</source>
         <translation>URL:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="33"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="32"/>
         <source>Name (optional):</source>
         <translation>Name (optional):</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="37"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="36"/>
         <source>Read Sheets</source>
         <translation>Read Sheets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="46"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="44"/>
         <source>Saved tables</source>
         <translation>Saved tables</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="53"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="51"/>
         <source>Add</source>
         <translation>Add</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="55"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="53"/>
         <source>Remove</source>
         <translation type="unfinished">Remove</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="57"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="55"/>
         <source>Refresh</source>
         <translation>Refresh</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="58"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="56"/>
         <source>Refresh using the sheets that were checked last time</source>
         <translation>Refresh using the sheets that were checked last time</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="67"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="64"/>
         <source>Step 2: check the sheets to import and sync</source>
         <translation>Step 2: check the sheets to import and sync</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="71"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="68"/>
         <source>Select All</source>
         <translation type="unfinished">Select All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="73"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="70"/>
         <source>Invert</source>
         <translation>Invert</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="75"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="72"/>
         <source>Select None</source>
         <translation>Select None</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="88"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="84"/>
         <source>Paste a Google Sheets link, then click &quot;Read Sheets&quot;.</source>
         <translation>Paste a Google Sheets link, then click &quot;Read Sheets&quot;.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="90"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="86"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="93"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="89"/>
         <source>Import Checked Sheets</source>
         <translation>Import Checked Sheets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="109"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="105"/>
         <source>Last sync: %1</source>
         <translation>Last sync: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="149"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="145"/>
         <source>Paste the link of a new Google Sheet.</source>
         <translation>Paste the link of a new Google Sheet.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="163"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="159"/>
         <source>Saved selection loaded. Adjust it and import, or click &quot;Refresh&quot; to reuse it.</source>
         <translation>Saved selection loaded. Adjust it and import, or click &quot;Refresh&quot; to reuse it.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="169"/>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="202"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="165"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="197"/>
         <source>Paste a Google Sheets link first.</source>
         <translation>Paste a Google Sheets link first.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="175"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="171"/>
         <source>Reading the sheet list...</source>
         <translation>Reading the sheet list...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="185"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="181"/>
         <source>Read failed: %1</source>
         <translation>Read failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="186"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="182"/>
         <source>读取 Google 表格失败</source>
         <translation>Failed to read Google Sheet</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="195"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="190"/>
         <source>Found %1 sheets. Check the ones you need, then click &quot;Import Checked Sheets&quot;.</source>
         <translation>Found %1 sheets. Check the ones you need, then click &quot;Import Checked Sheets&quot;.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="207"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="202"/>
         <source>Click &quot;Read Sheets&quot; and check at least one sheet first.</source>
         <translation>Click &quot;Read Sheets&quot; and check at least one sheet first.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="212"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="207"/>
         <source>Importing %1 sheets, please wait...</source>
         <translation>Importing %1 sheets, please wait...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="221"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="216"/>
         <source>Import failed: %1</source>
         <translation>Import failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="222"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="217"/>
         <source>导入 Google 表格失败</source>
         <translation>Failed to import Google Sheet</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="231"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="226"/>
         <source>Imported %1 sheets, %2 snippets in total.</source>
         <translation>Imported %1 sheets, %2 snippets in total.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="250"/>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="267"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="245"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="262"/>
         <source>Select a saved table on the left first.</source>
         <translation>Select a saved table on the left first.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="254"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="249"/>
         <source>Confirm Remove</source>
         <translation>Confirm Remove</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="255"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="250"/>
         <source>This also deletes everything of this table from the tree. Continue?</source>
         <translation>This also deletes everything of this table from the tree. Continue?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="276"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="271"/>
         <source>Refreshing with the saved selection...</source>
         <translation>Refreshing with the saved selection...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="284"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="279"/>
         <source>Refresh failed: %1</source>
         <translation>Refresh failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="285"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="280"/>
         <source>刷新 Google 表格失败</source>
         <translation>Failed to refresh Google Sheet</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="290"/>
+        <location filename="../../src/ui/controls/GoogleSheetsDialog.cpp" line="285"/>
         <source>Refreshed.</source>
         <translation>Refreshed.</translation>
     </message>
@@ -1583,89 +1643,104 @@
 <context>
     <name>LiveTranscriptWidget</name>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="201"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="257"/>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="201"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="257"/>
         <source>Start</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="205"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="261"/>
         <source>Copy Original (%1)</source>
         <translation>Copy Original (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="96"/>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="205"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="141"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="261"/>
         <source>Copy Original</source>
         <translation>Copy Original</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="208"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="264"/>
         <source>Copy Translation (%1)</source>
         <translation>Copy Translation (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="97"/>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="208"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="142"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="264"/>
         <source>Copy Translation</source>
         <translation>Copy Translation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="253"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="309"/>
         <source>Export Transcript</source>
         <translation>Export Transcript</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="254"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="310"/>
         <source>Text files (*.txt)</source>
         <translation>Text files (*.txt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="402"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="537"/>
+        <source>Swap recognition and target languages</source>
+        <translation>Swap recognition and target languages</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="538"/>
+        <source>Target language</source>
+        <translation>Target language</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="539"/>
         <source>Also type into the foreground window</source>
         <translation>Also type into the foreground window</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="403"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="540"/>
         <source>Turn off when you are typing yourself, so the transcript only goes here</source>
         <translation>Turn off when you are typing yourself, so the transcript only goes here</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="404"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="541"/>
         <source>Timestamps</source>
         <translation>Timestamps</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="405"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="542"/>
         <source>Show the time of each line and include it when copying all or exporting</source>
         <translation>Show the time of each line and include it when copying all or exporting</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="406"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="543"/>
         <source>Copy the original text of the selected lines, or of all lines when none are selected</source>
         <translation>Copy the original text of the selected lines, or of all lines when none are selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="407"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="544"/>
         <source>Copy the translation of the selected lines, or of all lines when none are selected</source>
         <translation>Copy the translation of the selected lines, or of all lines when none are selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="410"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="547"/>
         <source>Each sentence appears here on its own line as you speak. Click to select lines (Ctrl/Shift+click for several, drag a box on empty space), double-click a text to edit it, right-click to copy.</source>
         <translation>Each sentence appears here on its own line as you speak. Click to select lines (Ctrl/Shift+click for several, drag a box on empty space), double-click a text to edit it, right-click to copy.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="408"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="545"/>
         <source>Export</source>
         <translation>Export</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="409"/>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="536"/>
+        <source>Recognition language (switches the local recognition model)</source>
+        <translation>Recognition language (switches the local recognition model)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/LiveTranscriptWidget.cpp" line="546"/>
         <source>Clear</source>
         <translation>Clear</translation>
     </message>
@@ -1769,7 +1844,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="951"/>
-        <location filename="../../src/app/MainWin.cpp" line="1489"/>
+        <location filename="../../src/app/MainWin.cpp" line="1522"/>
         <source>Polishing</source>
         <translation>Polishing</translation>
     </message>
@@ -1832,7 +1907,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="1027"/>
-        <location filename="../../src/app/MainWin.cpp" line="1490"/>
+        <location filename="../../src/app/MainWin.cpp" line="1523"/>
         <source>Translation</source>
         <translation>Translation</translation>
     </message>
@@ -1898,7 +1973,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="568"/>
-        <location filename="../../src/app/MainWin.cpp" line="1666"/>
+        <location filename="../../src/app/MainWin.cpp" line="1697"/>
         <source>Idle</source>
         <translation>Idle</translation>
     </message>
@@ -1918,22 +1993,22 @@
         <translation>Interface Language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1593"/>
+        <location filename="../../src/app/MainWin.cpp" line="1626"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1595"/>
+        <location filename="../../src/app/MainWin.cpp" line="1628"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1230"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="79"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1594"/>
+        <location filename="../../src/app/MainWin.cpp" line="1627"/>
         <source>Gray</source>
         <translation>Gray</translation>
     </message>
@@ -1963,12 +2038,12 @@
         <translation type="unfinished">About</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="922"/>
+        <location filename="../../src/app/MainWin.cpp" line="889"/>
         <source>该模型正在安装....</source>
         <translation>This model is being installed....</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="328"/>
+        <location filename="../../src/app/MainWin.cpp" line="324"/>
         <source>开始下载模型...</source>
         <translation>Downloading model...</translation>
     </message>
@@ -1983,376 +2058,553 @@
         <translation>Key test failed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="338"/>
+        <location filename="../../src/app/MainWin.cpp" line="334"/>
         <source>模型下载完成</source>
         <translation>Model downloaded</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="341"/>
+        <location filename="../../src/app/MainWin.cpp" line="337"/>
         <source>模型下载失败</source>
         <translation>Model download failed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="340"/>
+        <location filename="../../src/app/MainWin.cpp" line="336"/>
         <source>模型解压失败</source>
         <translation>Model extraction failed</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.cpp" line="209"/>
-        <location filename="../../src/app/MainWin.cpp" line="1251"/>
+        <location filename="../../src/app/MainWin.cpp" line="1194"/>
         <source>Compact mode</source>
         <translation>Compact mode</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.cpp" line="210"/>
-        <location filename="../../src/app/MainWin.cpp" line="1252"/>
+        <location filename="../../src/app/MainWin.cpp" line="1195"/>
         <source>Switch to the compact toolbar</source>
         <translation>Switch to the compact toolbar</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="341"/>
+        <location filename="../../src/app/MainWin.cpp" line="337"/>
         <source>请检查网络后重试</source>
         <translation>Check your network and try again</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="349"/>
+        <location filename="../../src/app/MainWin.cpp" line="345"/>
         <source>VAD 模型下载失败</source>
         <translation>VAD model download failed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="349"/>
+        <location filename="../../src/app/MainWin.cpp" line="345"/>
         <source>请检查网络后重试，或前往 &quot;下载列表&quot; 查看进度</source>
         <translation>Check your network and try again, or see the Downloads page for progress</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="586"/>
+        <location filename="../../src/app/MainWin.cpp" line="577"/>
         <source>润色失败，已使用原文</source>
         <translation>Polishing failed, original text used</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="590"/>
+        <location filename="../../src/app/MainWin.cpp" line="581"/>
         <source>翻译模型安装失败</source>
         <translation>Failed to install translation model</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="594"/>
+        <location filename="../../src/app/MainWin.cpp" line="585"/>
         <source>翻译失败，已使用原文</source>
         <translation>Translation failed, original text used</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="618"/>
+        <location filename="../../src/app/MainWin.cpp" line="607"/>
         <source>实时字幕不可用</source>
         <translation>Live captions unavailable</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="618"/>
+        <location filename="../../src/app/MainWin.cpp" line="607"/>
         <source>流式识别模型加载或解码失败，听写不受影响</source>
         <translation>The streaming model failed to load or decode; dictation is not affected</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="637"/>
+        <location filename="../../src/app/MainWin.cpp" line="630"/>
         <source>模型加载成功</source>
         <translation>Model loaded</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="698"/>
-        <location filename="../../src/app/MainWin.cpp" line="706"/>
+        <location filename="../../src/app/MainWin.cpp" line="675"/>
+        <location filename="../../src/app/MainWin.cpp" line="682"/>
         <source>成功</source>
         <translation>Success</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="699"/>
+        <location filename="../../src/app/MainWin.cpp" line="676"/>
         <source>冲突</source>
         <translation>Conflict</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1128"/>
+        <location filename="../../src/app/MainWin.cpp" line="1085"/>
         <source>Not downloaded yet</source>
         <translation>Not downloaded yet</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1169"/>
+        <location filename="../../src/app/MainWin.cpp" line="1124"/>
         <source>%1 (translation model)</source>
         <translation>%1 (translation model)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1207"/>
+        <location filename="../../src/app/MainWin.cpp" line="1159"/>
         <source>Local (Sherpa)</source>
         <translation>Local (Sherpa)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1208"/>
+        <location filename="../../src/app/MainWin.cpp" line="1160"/>
         <source>Gemini voice input</source>
         <translation>Gemini voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1209"/>
+        <location filename="../../src/app/MainWin.cpp" line="1161"/>
         <source>Groq voice input</source>
         <translation>Groq voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1210"/>
+        <location filename="../../src/app/MainWin.cpp" line="1162"/>
         <source>Gladia voice input</source>
         <translation>Gladia voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1214"/>
+        <location filename="../../src/app/MainWin.cpp" line="1166"/>
         <source>Google Gemini API</source>
         <translation>Google Gemini API</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1215"/>
+        <location filename="../../src/app/MainWin.cpp" line="1167"/>
         <source>Local / custom (OpenAI compatible)</source>
         <translation>Local / custom (OpenAI compatible)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1216"/>
+        <location filename="../../src/app/MainWin.cpp" line="1168"/>
         <source>Ollama (local)</source>
         <translation>Ollama (local)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1217"/>
+        <location filename="../../src/app/MainWin.cpp" line="1169"/>
         <source>Local model (offline translation)</source>
         <translation>Local model (offline translation)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1221"/>
+        <location filename="../../src/app/MainWin.cpp" line="1173"/>
         <source>Smart default</source>
         <translation>Smart default</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1222"/>
+        <location filename="../../src/app/MainWin.cpp" line="1174"/>
         <source>Business formal</source>
         <translation>Business formal</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1223"/>
+        <location filename="../../src/app/MainWin.cpp" line="1175"/>
         <source>Casual spoken</source>
         <translation>Casual spoken</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1224"/>
+        <location filename="../../src/app/MainWin.cpp" line="1176"/>
         <source>Concise</source>
         <translation>Concise</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1225"/>
+        <location filename="../../src/app/MainWin.cpp" line="1177"/>
         <source>Custom prompt</source>
         <translation>Custom prompt</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1231"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="80"/>
         <source>Japanese</source>
-        <translation type="unfinished">Japanese</translation>
+        <translation>Japanese</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1232"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="81"/>
         <source>Korean</source>
-        <translation type="unfinished">Korean</translation>
+        <translation>Korean</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1233"/>
-        <location filename="../../src/app/MainWin.cpp" line="1271"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="84"/>
+        <source>Cantonese</source>
+        <translation>Cantonese</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="85"/>
+        <source>French</source>
+        <translation>French</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="86"/>
+        <source>German</source>
+        <translation>German</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="87"/>
+        <source>Spanish</source>
+        <translation>Spanish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="88"/>
+        <source>Portuguese</source>
+        <translation>Portuguese</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="89"/>
+        <source>Italian</source>
+        <translation>Italian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="90"/>
+        <source>Russian</source>
+        <translation>Russian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="91"/>
+        <source>Arabic</source>
+        <translation>Arabic</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="92"/>
+        <source>Hindi</source>
+        <translation>Hindi</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="93"/>
+        <source>Thai</source>
+        <translation>Thai</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="94"/>
+        <source>Vietnamese</source>
+        <translation>Vietnamese</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="95"/>
+        <source>Indonesian</source>
+        <translation>Indonesian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="96"/>
+        <source>Malay</source>
+        <translation>Malay</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="97"/>
+        <source>Filipino</source>
+        <translation>Filipino</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="98"/>
+        <source>Turkish</source>
+        <translation>Turkish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="99"/>
+        <source>Dutch</source>
+        <translation>Dutch</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="100"/>
+        <source>Polish</source>
+        <translation>Polish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="101"/>
+        <source>Ukrainian</source>
+        <translation>Ukrainian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="102"/>
+        <source>Czech</source>
+        <translation>Czech</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="103"/>
+        <source>Slovak</source>
+        <translation>Slovak</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="104"/>
+        <source>Hungarian</source>
+        <translation>Hungarian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="105"/>
+        <source>Romanian</source>
+        <translation>Romanian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="106"/>
+        <source>Bulgarian</source>
+        <translation>Bulgarian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="107"/>
+        <source>Croatian</source>
+        <translation>Croatian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="108"/>
+        <source>Serbian</source>
+        <translation>Serbian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="109"/>
+        <source>Greek</source>
+        <translation>Greek</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="110"/>
+        <source>Swedish</source>
+        <translation>Swedish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="111"/>
+        <source>Danish</source>
+        <translation>Danish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="112"/>
+        <source>Norwegian</source>
+        <translation>Norwegian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="113"/>
+        <source>Finnish</source>
+        <translation>Finnish</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="114"/>
+        <source>Hebrew</source>
+        <translation>Hebrew</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="115"/>
+        <source>Persian</source>
+        <translation>Persian</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="116"/>
+        <source>Bengali</source>
+        <translation>Bengali</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="117"/>
+        <source>Tamil</source>
+        <translation>Tamil</translation>
+    </message>
+    <message>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="118"/>
+        <source>Urdu</source>
+        <translation>Urdu</translation>
+    </message>
+    <message>
+        <location filename="../../src/app/MainWin.cpp" line="1214"/>
+        <location filename="../../src/app/MainWin.cpp" line="1222"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="82"/>
         <source>Traditional Chinese</source>
         <translation>Traditional Chinese</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1234"/>
-        <location filename="../../src/app/MainWin.cpp" line="1270"/>
+        <location filename="../../src/app/MainWin.cpp" line="1213"/>
+        <location filename="../../src/app/MainWin.cpp" line="1221"/>
+        <location filename="../../src/translation/LanguageRouting.cpp" line="83"/>
         <source>Simplified Chinese</source>
         <translation>Simplified Chinese</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1255"/>
-        <location filename="../../src/app/MainWin.cpp" line="1952"/>
+        <location filename="../../src/app/MainWin.cpp" line="1198"/>
+        <location filename="../../src/app/MainWin.cpp" line="1995"/>
         <source>Live Transcript</source>
         <translation>Live Transcript</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1456"/>
+        <location filename="../../src/app/MainWin.cpp" line="1495"/>
         <source>Leave empty to use the default (http://localhost:11434)</source>
         <translation>Leave empty to use the default (http://localhost:11434)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1488"/>
+        <location filename="../../src/app/MainWin.cpp" line="1521"/>
         <source>Recognition</source>
         <translation>Recognition</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="339"/>
+        <location filename="../../src/app/MainWin.cpp" line="335"/>
         <source>已取消下载</source>
         <translation>Download cancelled</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1003"/>
+        <location filename="../../src/app/MainWin.cpp" line="966"/>
         <source>当前模型不支持 GPU</source>
         <translation>This model does not support GPU</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1003"/>
+        <location filename="../../src/app/MainWin.cpp" line="966"/>
         <source>继续使用 CPU 运行</source>
         <translation>Continuing on CPU</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1014"/>
+        <location filename="../../src/app/MainWin.cpp" line="977"/>
         <source>正在下载 GPU 版</source>
         <translation>Downloading the GPU version</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1015"/>
+        <location filename="../../src/app/MainWin.cpp" line="978"/>
         <source>约 %1 GB，下载期间继续使用 CPU，完成后自动切换</source>
         <translation>About %1 GB. CPU stays in use during the download, then it switches automatically</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1256"/>
-        <location filename="../../src/app/MainWin.cpp" line="1953"/>
+        <location filename="../../src/app/MainWin.cpp" line="1199"/>
+        <location filename="../../src/app/MainWin.cpp" line="1996"/>
         <source>Dictionary</source>
         <translation>Dictionary</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1257"/>
-        <location filename="../../src/app/MainWin.cpp" line="1954"/>
+        <location filename="../../src/app/MainWin.cpp" line="1200"/>
+        <location filename="../../src/app/MainWin.cpp" line="1997"/>
         <source>File Transcription</source>
         <translation>File Transcription</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1322"/>
+        <location filename="../../src/app/MainWin.cpp" line="1271"/>
         <source>Quality not evaluated</source>
         <translation>Quality not evaluated</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1339"/>
+        <location filename="../../src/app/MainWin.cpp" line="1294"/>
         <source>Auto</source>
         <translation>Auto</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1365"/>
+        <location filename="../../src/app/MainWin.cpp" line="1409"/>
         <source>Source and target are the same language</source>
         <translation>Source and target are the same language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1368"/>
+        <location filename="../../src/app/MainWin.cpp" line="1412"/>
         <source>Cannot detect the source language; choose one manually</source>
         <translation>Cannot detect the source language; choose one manually</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1369"/>
+        <location filename="../../src/app/MainWin.cpp" line="1413"/>
         <source>This language pair is not supported</source>
         <translation>This language pair is not supported</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1372"/>
+        <location filename="../../src/app/MainWin.cpp" line="1416"/>
         <source>Model ready</source>
         <translation>Model ready</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1378"/>
-        <location filename="../../src/app/MainWin.cpp" line="1378"/>
+        <location filename="../../src/app/MainWin.cpp" line="1422"/>
+        <location filename="../../src/app/MainWin.cpp" line="1422"/>
         <source>Downloading model...</source>
         <translation>Downloading model...</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1382"/>
+        <location filename="../../src/app/MainWin.cpp" line="1426"/>
         <source>Model download required: %1 MB</source>
         <translation>Model download required: %1 MB</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1441"/>
+        <location filename="../../src/app/MainWin.cpp" line="1482"/>
         <source>Not available in this version yet</source>
         <translation>Not available in this version yet</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1491"/>
+        <location filename="../../src/app/MainWin.cpp" line="1524"/>
         <source>Output</source>
         <translation>Output</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1499"/>
+        <location filename="../../src/app/MainWin.cpp" line="1531"/>
         <source>Not available with the local translation engine</source>
         <translation>Not available with the local translation engine</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1590"/>
+        <location filename="../../src/app/MainWin.cpp" line="1623"/>
         <source>Follow system</source>
         <translation>Follow system</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1666"/>
+        <location filename="../../src/app/MainWin.cpp" line="1697"/>
         <source>Recording</source>
         <translation>Recording</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1683"/>
+        <location filename="../../src/app/MainWin.cpp" line="1713"/>
         <source>本地模型未安装</source>
         <translation>Local model not installed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1683"/>
+        <location filename="../../src/app/MainWin.cpp" line="1713"/>
         <source>请先在&quot;本地识别&quot;页下载当前语言的模型</source>
         <translation>Download the model for the current language on the Local Recognition page first</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1689"/>
+        <location filename="../../src/app/MainWin.cpp" line="1719"/>
         <source>模型正在下载</source>
         <translation>Model is downloading</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1689"/>
+        <location filename="../../src/app/MainWin.cpp" line="1719"/>
         <source>下载完成后即可开始听写</source>
         <translation>You can start dictating once the download finishes</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1826"/>
+        <location filename="../../src/app/MainWin.cpp" line="1860"/>
         <source>Update Available</source>
         <translation type="unfinished">Update Available</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1827"/>
+        <location filename="../../src/app/MainWin.cpp" line="1861"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">A new version (%1) is available!</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1828"/>
+        <location filename="../../src/app/MainWin.cpp" line="1862"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">Would you like to download and install it now?</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1837"/>
+        <location filename="../../src/app/MainWin.cpp" line="1870"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">Do not remind me again</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1855"/>
+        <location filename="../../src/app/MainWin.cpp" line="1888"/>
         <source>Restart Required</source>
         <translation type="unfinished">Restart Required</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1856"/>
+        <location filename="../../src/app/MainWin.cpp" line="1889"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">Update downloaded successfully. The application will now close and restart to apply the update. Continue?</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1865"/>
+        <location filename="../../src/app/MainWin.cpp" line="1898"/>
         <source>更新失败</source>
         <translation type="unfinished">Update failed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1906"/>
+        <location filename="../../src/app/MainWin.cpp" line="1936"/>
         <source>隐藏</source>
         <translation>Hide</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1906"/>
+        <location filename="../../src/app/MainWin.cpp" line="1936"/>
         <source>显示</source>
         <translation>Show</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1908"/>
+        <location filename="../../src/app/MainWin.cpp" line="1938"/>
         <source>Show dictation window</source>
         <translation>Show dictation window</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1914"/>
+        <location filename="../../src/app/MainWin.cpp" line="1943"/>
         <source>退出</source>
         <translation>Quit</translation>
     </message>
@@ -2360,73 +2612,73 @@
 <context>
     <name>ModelInfoDelegate</name>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="138"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="134"/>
         <source>Starting download...</source>
         <translation>Starting download...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="142"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="138"/>
         <source>Extracting... %1%</source>
         <translation>Extracting... %1%</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="146"/>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="257"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="142"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="249"/>
         <source>Download failed: %1</source>
         <translation>Download failed: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="181"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="176"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="184"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="179"/>
         <source>Retry</source>
         <translation>Retry</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="208"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="202"/>
         <source>Installed</source>
         <translation>Installed</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="212"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="206"/>
         <source>Punctuation</source>
         <translation>Punctuation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="218"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="211"/>
         <source>GPU ready</source>
         <translation>GPU ready</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="221"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="214"/>
         <source>GPU not downloaded</source>
         <translation>GPU version not downloaded</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="224"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="217"/>
         <source>No GPU support</source>
         <translation>No GPU support</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="229"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="222"/>
         <source>Auto language</source>
         <translation>Auto language</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="260"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="252"/>
         <source>Not benchmarked for this language yet</source>
         <translation>Not benchmarked for this language yet</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="265"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="257"/>
         <source>%1 error rate %2% · %3 s to transcribe 10 s of speech (CPU)</source>
         <translation>%1 error rate %2% · %3 s to transcribe 10 s of speech (CPU)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="273"/>
+        <location filename="../../src/ui/delegates/ModelInfoDelegate.cpp" line="265"/>
         <source>The GPU version (about %1 GB) is downloaded automatically when GPU mode is switched on</source>
         <translation>The GPU version (about %1 GB) is downloaded automatically when GPU mode is switched on</translation>
     </message>
@@ -2434,22 +2686,22 @@
 <context>
     <name>ModelListWidget</name>
     <message>
-        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="109"/>
+        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="106"/>
         <source>MODEL</source>
         <translation>MODEL</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="110"/>
+        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="107"/>
         <source>ACCURACY</source>
         <translation>ACCURACY</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="111"/>
+        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="108"/>
         <source>SPEED</source>
         <translation>SPEED</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="118"/>
+        <location filename="../../src/ui/pages/ModelListWidget.cpp" line="114"/>
         <source>FEATURES</source>
         <translation>FEATURES</translation>
     </message>
@@ -2457,48 +2709,48 @@
 <context>
     <name>ModelRegistry</name>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1581"/>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1865"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1555"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1842"/>
         <source>Model not registered in ModelRegistry: %1</source>
         <translation type="unfinished">Model not registered in ModelRegistry: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1585"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1559"/>
         <source>This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</source>
         <translation type="unfinished">This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1745"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1723"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
         <translation type="unfinished">Qwen3-ASR model files not found, please install the model first: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1774"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1752"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
         <translation type="unfinished">Hotwords applied for arch=%1, score=%2</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1777"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1755"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
         <translation type="unfinished">Hotwords configured but architecture does not support contextual biasing, ignored: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1827"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1805"/>
         <source>Failed to create recognizer on CPU: %1</source>
         <translation type="unfinished">Failed to create recognizer on CPU: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1830"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1808"/>
         <source>Failed to create recognizer on CPU due to an unknown error.</source>
         <translation type="unfinished">Failed to create recognizer on CPU due to an unknown error.</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1883"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1860"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
         <translation type="unfinished">ModelDescriptor.files type mismatch for %1, using default values</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="2004"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1981"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
         <translation type="unfinished">BuildManifest: unsupported or unmapped ModelArch for %1</translation>
     </message>
@@ -2506,47 +2758,47 @@
 <context>
     <name>OllamaModelButton</name>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="118"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="117"/>
         <source>Get Ollama</source>
         <translation>Get Ollama</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="119"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="118"/>
         <source>Ollama not detected. Install and start it, then check the connection again.</source>
         <translation>Ollama not detected. Install and start it, then check the connection again.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="129"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="128"/>
         <source>Cancel %1%</source>
         <translation>Cancel %1%</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="129"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="128"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="130"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="129"/>
         <source>Downloading %1</source>
         <translation>Downloading %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="133"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="132"/>
         <source>Retry</source>
         <translation>Retry</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="138"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="137"/>
         <source>Download</source>
         <translation>Download</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="139"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="138"/>
         <source>Not downloaded yet</source>
         <translation>Not downloaded yet</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="139"/>
+        <location filename="../../src/ui/controls/OllamaModelButton.cpp" line="138"/>
         <source>Not downloaded yet, about %1</source>
         <translation>Not downloaded yet, about %1</translation>
     </message>
@@ -2599,38 +2851,38 @@
         <translation>Restart Now</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="126"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="125"/>
         <source>Allow</source>
         <translation>Allow</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="126"/>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="130"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="125"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="129"/>
         <source>Open Settings</source>
         <translation>Open Settings</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="137"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="136"/>
         <source>All set. Restart ImeAudio to apply the permissions.</source>
         <translation>All set. Restart ImeAudio to apply the permissions.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="138"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="137"/>
         <source>Grant the permissions above. This window updates automatically.</source>
         <translation>Grant the permissions above. This window updates automatically.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="147"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="145"/>
         <source>Granted</source>
         <translation>Granted</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="151"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="149"/>
         <source>Not requested</source>
         <translation>Not requested</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="155"/>
+        <location filename="../../src/ui/controls/PermissionGuideDialog.cpp" line="153"/>
         <source>Not granted</source>
         <translation>Not granted</translation>
     </message>
@@ -2638,64 +2890,64 @@
 <context>
     <name>SherpaInstaller</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="556"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="554"/>
         <source>%1 is exist.</source>
         <translation type="unfinished">%1 is exist.</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="557"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="697"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="713"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="714"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="750"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="751"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="555"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="692"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="708"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="709"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="745"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="746"/>
         <source>Download Complete</source>
         <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="639"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="657"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="634"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="652"/>
         <source>VAD model ready</source>
         <translation>VAD model ready</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="648"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="643"/>
         <source>VAD Voice Activity Model</source>
         <translation>VAD Voice Activity Model</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="657"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="652"/>
         <source>VAD model download failed</source>
         <translation>VAD model download failed</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="669"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="664"/>
         <source>Neural punctuation model download failed</source>
         <translation>Neural punctuation model download failed</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="683"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="678"/>
         <source>Neural punctuation model ready</source>
         <translation>Neural punctuation model ready</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="683"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="678"/>
         <source>Neural punctuation decompression failed</source>
         <translation>Neural punctuation decompression failed</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="693"/>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="706"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="688"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="701"/>
         <source>Download Error</source>
         <translation type="unfinished">Download Error</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="719"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="714"/>
         <source>Decoding in progress %1 ...</source>
         <translation type="unfinished">Decoding in progress %1 ...</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="746"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="741"/>
         <source>Extract Error</source>
         <translation type="unfinished">Extract Error</translation>
     </message>
@@ -2703,7 +2955,7 @@
 <context>
     <name>SherpaManager</name>
     <message>
-        <location filename="../../src/sherpa/SherpaManager.cpp" line="185"/>
+        <location filename="../../src/sherpa/SherpaManager.cpp" line="183"/>
         <source>Model or tokens file does not exist! %1</source>
         <translation>Model or tokens file does not exist! %1</translation>
     </message>
@@ -2711,12 +2963,12 @@
 <context>
     <name>ShortcutEdit</name>
     <message>
-        <location filename="../../src/ui/controls/ShortcutEdit.h" line="122"/>
+        <location filename="../../src/ui/controls/ShortcutEdit.h" line="112"/>
         <source>Key</source>
         <translation>Key</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/ShortcutEdit.h" line="123"/>
+        <location filename="../../src/ui/controls/ShortcutEdit.h" line="113"/>
         <source>A-Z / 0-9 / F1-F24 / Space (Backspace to clear)</source>
         <translation>A-Z / 0-9 / F1-F24 / Space (Backspace to clear)</translation>
     </message>
@@ -2865,7 +3117,7 @@
     </message>
     <message>
         <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="144"/>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="235"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="234"/>
         <source>Double-click to edit the text</source>
         <translation>Double-click to edit the text</translation>
     </message>
@@ -2905,32 +3157,32 @@
         <translation>Could not copy the image into the snippet library images folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="213"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="212"/>
         <source>剪贴板里没有图片</source>
         <translation>No image on the clipboard</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="213"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="212"/>
         <source>请先复制一张图片或截图</source>
         <translation>Copy an image or screenshot first</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="228"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="227"/>
         <source>Choose File</source>
         <translation>Choose File</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="228"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="227"/>
         <source>All files (*.*)</source>
         <translation>All files (*.*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="252"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="251"/>
         <source>剪贴板里没有文件</source>
         <translation>No file in clipboard</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="252"/>
+        <location filename="../../src/ui/controls/SnippetContextMenu.cpp" line="251"/>
         <source>请先在文件管理器里复制一个文件</source>
         <translation>Copy a file in your file manager first</translation>
     </message>
@@ -2938,38 +3190,38 @@
 <context>
     <name>SnippetPaster</name>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="55"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="54"/>
         <source>文件粘贴失败</source>
         <translation>File paste failed</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="55"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="54"/>
         <source>找不到文件：%1</source>
         <translation>File not found: %1</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="65"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="64"/>
         <source>图片粘贴失败</source>
         <translation>Image paste failed</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="65"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="64"/>
         <source>无法读取图片文件或下载远程图片</source>
         <translation>Could not read the image file or download the remote image</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="129"/>
-        <location filename="../../src/services/SnippetPaster.cpp" line="133"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="127"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="131"/>
         <source>粘贴失败</source>
         <translation>Paste failed</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="129"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="127"/>
         <source>无法向当前窗口发送粘贴操作，内容已留在剪贴板，可手动 Ctrl+V</source>
         <translation>Could not send paste to the current window; the content is on the clipboard, press Ctrl+V manually</translation>
     </message>
     <message>
-        <location filename="../../src/services/SnippetPaster.cpp" line="133"/>
+        <location filename="../../src/services/SnippetPaster.cpp" line="131"/>
         <source>当前系统暂不支持自动粘贴（或缺少辅助功能权限），内容已复制到剪贴板，请手动粘贴</source>
         <translation>Automatic paste is not supported here (or accessibility permission is missing); the content was copied to the clipboard, paste it manually</translation>
     </message>
@@ -2977,32 +3229,32 @@
 <context>
     <name>SnippetSearchPopup</name>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="253"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="245"/>
         <source>Search snippets (title / text / keyword / folder)</source>
         <translation>Search snippets (title / text / keyword / folder)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="373"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="363"/>
         <source>No matching snippets</source>
         <translation>No matching snippets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="434"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="423"/>
         <source>File: %1</source>
         <translation>File: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="408"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="398"/>
         <source>Remote image, downloaded when pasted</source>
         <translation>Remote image, downloaded when pasted</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="254"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="246"/>
         <source>↑↓ / Hover to preview  ·  Enter / Click to paste  ·  Drag to another window  ·  Esc to close</source>
         <translation>↑↓ / Hover to preview  ·  Enter / Click to paste  ·  Drag to another window  ·  Esc to close</translation>
     </message>
     <message>
-        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="428"/>
+        <location filename="../../src/ui/controls/SnippetSearchPopup.cpp" line="417"/>
         <source>Failed to load image</source>
         <translation>Failed to load image</translation>
     </message>
@@ -3015,27 +3267,27 @@
         <translation>%1 snippets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="305"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="297"/>
         <source>+ Keyword</source>
         <translation>+ Keyword</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="341"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="331"/>
         <source>Image missing</source>
         <translation>Image missing</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="343"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="333"/>
         <source>+ Image</source>
         <translation>+ Image</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="282"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="276"/>
         <source>CN</source>
         <translation>CN</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="294"/>
+        <location filename="../../src/ui/delegates/SnippetTreeDelegate.cpp" line="287"/>
         <source>FL</source>
         <translation>FL</translation>
     </message>
@@ -3043,42 +3295,42 @@
 <context>
     <name>SnippetTreeModel</name>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="191"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="189"/>
         <source>File: %1</source>
         <translation>File: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="230"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="228"/>
         <source>Title</source>
         <translation>Title</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="231"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="229"/>
         <source>Text</source>
         <translation>Text</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="232"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="230"/>
         <source>Keyword</source>
         <translation>Keyword</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="301"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="299"/>
         <source>Level 1</source>
         <translation>Level 1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="302"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="300"/>
         <source>Level 2</source>
         <translation>Level 2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="303"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="301"/>
         <source>Level 3</source>
         <translation>Level 3</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="304"/>
+        <location filename="../../src/ui/models/SnippetTreeModel.cpp" line="302"/>
         <source>Folder</source>
         <translation>Folder</translation>
     </message>
@@ -3086,204 +3338,204 @@
 <context>
     <name>SnippetWidget</name>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="178"/>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="386"/>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="387"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="203"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="409"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="410"/>
         <source>New Table</source>
         <translation>New Table</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="179"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="204"/>
         <source>Google Sheets Import</source>
         <translation>Google Sheets Import</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="180"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="205"/>
         <source>Refresh Google Sheets</source>
         <translation>Refresh Google Sheets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="181"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="206"/>
         <source>Options</source>
         <translation>Options</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="182"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="207"/>
         <source>Suggest when keyword is spoken</source>
         <translation>Suggest when keyword is spoken</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="184"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="209"/>
         <source>Image before text</source>
         <translation>Image before text</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="189"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="214"/>
         <source>Search title / text / keyword / folder...</source>
         <translation>Search title / text / keyword / folder...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="190"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="215"/>
         <source>Expand All</source>
         <translation>Expand All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="191"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="216"/>
         <source>Collapse All</source>
         <translation>Collapse All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="192"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="217"/>
         <source>Multiline</source>
         <translation>Multiline</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="193"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="218"/>
         <source>Max lines:</source>
         <translation>Max lines:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="195"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="220"/>
         <source>More</source>
         <translation type="unfinished">More</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="196"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="221"/>
         <source>Select All</source>
         <translation type="unfinished">Select All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="197"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="222"/>
         <source>Invert</source>
         <translation>Invert</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="194"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="219"/>
         <source>Delete Selected</source>
         <translation>Delete Selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="183"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="208"/>
         <source>When a snippet&apos;s keyword appears in your dictation, the floating box shows a button to paste it. If the whole sentence is just the keyword, it is not typed.</source>
         <translation>When a snippet&apos;s keyword appears in your dictation, the floating box shows a button to paste it. If the whole sentence is just the keyword, it is not typed.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="185"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="210"/>
         <source>Open search by typing a prefix</source>
         <translation>Open search by typing a prefix</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="186"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="211"/>
         <source>Typing a prefix such as // in any app opens the snippet search. This installs a global keyboard hook, which uses extra memory, so it is off by default.</source>
         <translation>Typing a prefix such as // in any app opens the snippet search. This installs a global keyboard hook, which uses extra memory, so it is off by default.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="187"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="212"/>
         <source>Delete the prefix after choosing</source>
         <translation>Delete the prefix after choosing</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="188"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="213"/>
         <source>Prefixes (comma separated)</source>
         <translation>Prefixes (comma separated)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="198"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="223"/>
         <source>Search popup hotkey (leave empty to disable):</source>
         <translation>Search popup hotkey (leave empty to disable):</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="338"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="362"/>
         <source>%1 snippets · %2 Google Sheets synced</source>
         <translation>%1 snippets · %2 Google Sheets synced</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="386"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="409"/>
         <source>Table name:</source>
         <translation>Table name:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="404"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="427"/>
         <source>没有已保存的 Google 表格</source>
         <translation>No saved Google Sheets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="404"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="427"/>
         <source>请先导入一个 Google 表格</source>
         <translation>Import a Google Sheet first</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="421"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="444"/>
         <source>部分 Google 表格刷新失败</source>
         <translation>Some Google Sheets failed to refresh</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="423"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="446"/>
         <source>刷新成功</source>
         <translation>Refreshed</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="423"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="446"/>
         <source>已刷新 %1 个 Google 表格</source>
         <translation>Refreshed %1 Google Sheets</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="440"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="463"/>
         <source>未选择条目</source>
         <translation>Nothing selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="440"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="463"/>
         <source>请先选择要删除的条目</source>
         <translation>Select the items to delete first</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="443"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="466"/>
         <source>Confirm Delete</source>
         <translation>Confirm Delete</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="444"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="467"/>
         <source>Delete the %1 selected nodes? Folders are deleted with their contents.</source>
         <translation>Delete the %1 selected nodes? Folders are deleted with their contents.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="528"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="547"/>
         <source>Rename Folder</source>
         <translation>Rename Folder</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="528"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="547"/>
         <source>New name:</source>
         <translation>New name:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="541"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="560"/>
         <source>Edit Title</source>
         <translation>Edit Title</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="541"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="560"/>
         <source>New title:</source>
         <translation>New title:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="549"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="568"/>
         <source>Edit Text</source>
         <translation>Edit Text</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="549"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="568"/>
         <source>Text to paste:</source>
         <translation>Text to paste:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="557"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="576"/>
         <source>Edit Keyword</source>
         <translation>Edit Keyword</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="557"/>
+        <location filename="../../src/ui/pages/SnippetWidget.cpp" line="576"/>
         <source>Spoken keyword, e.g. quote:</source>
         <translation>Spoken keyword, e.g. quote:</translation>
     </message>
@@ -3310,12 +3562,12 @@
 <context>
     <name>TermCardDelegate</name>
     <message>
-        <location filename="../../src/ui/delegates/TermCardDelegate.cpp" line="148"/>
+        <location filename="../../src/ui/delegates/TermCardDelegate.cpp" line="144"/>
         <source>Auto recognize</source>
         <translation>Auto recognize</translation>
     </message>
     <message>
-        <location filename="../../src/ui/delegates/TermCardDelegate.cpp" line="174"/>
+        <location filename="../../src/ui/delegates/TermCardDelegate.cpp" line="170"/>
         <source>(disabled)</source>
         <translation>(disabled)</translation>
     </message>
@@ -3337,11 +3589,21 @@
     <name>TermListModel</name>
     <message>
         <location filename="../../src/ui/models/TermListModel.cpp" line="83"/>
+        <source>&quot;源词&quot;不能为空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/models/TermListModel.cpp" line="84"/>
         <source>&quot;写成&quot;不能为空</source>
         <translation>&quot;Replace with&quot; cannot be empty</translation>
     </message>
     <message>
-        <location filename="../../src/ui/models/TermListModel.cpp" line="85"/>
+        <location filename="../../src/ui/models/TermListModel.cpp" line="84"/>
+        <source>&quot;译文&quot;不能为空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/models/TermListModel.cpp" line="86"/>
         <source>&quot;%1&quot; 已在其它词条里，不能重复</source>
         <translation>&quot;%1&quot; is already used by another term and cannot be duplicated</translation>
     </message>
@@ -3349,167 +3611,253 @@
 <context>
     <name>TermWidget</name>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="347"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="618"/>
         <source>Reload Terms</source>
-        <translation type="unfinished">Reload Terms</translation>
+        <translation>Reload Terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="353"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="624"/>
         <source>Select All</source>
-        <translation type="unfinished">Select All</translation>
+        <translation>Select All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="354"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="625"/>
         <source>Reverse Select</source>
-        <translation type="unfinished">Reverse Select</translation>
+        <translation>Reverse Select</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="298"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="350"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="569"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="621"/>
         <source>Import TSV</source>
-        <translation type="unfinished">Import TSV</translation>
+        <translation>Import TSV</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="309"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="351"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="581"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="622"/>
         <source>Export TSV</source>
-        <translation type="unfinished">Export TSV</translation>
+        <translation>Export TSV</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="158"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="305"/>
         <source>输入有误</source>
         <translation>Invalid input</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="220"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="327"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="614"/>
+        <source>+ New Dictionary</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="333"/>
+        <source>Edit...</source>
+        <translation>Edit...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="364"/>
+        <source>Delete dictionary &quot;%1&quot; and all its entries?</source>
+        <translation>Delete dictionary &quot;%1&quot; and all its entries?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="423"/>
         <source>%1 selected</source>
         <translation>%1 selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="232"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="441"/>
+        <source>No terms yet. Add one above, e.g. source term → translation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="442"/>
         <source>No terms yet. Add one above, e.g. heard as → write as.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="233"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="444"/>
         <source>%1 terms · %2 enabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="283"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="458"/>
+        <source>Source term</source>
+        <translation>Source term</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="459"/>
+        <source>The term in the source language; separate aliases with commas or /.</source>
+        <translation>The term in the source language; separate aliases with commas or /.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="460"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="613"/>
+        <source>Translation</source>
+        <translation>Translation</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="469"/>
+        <source>No dictionary yet. Click &quot;New Dictionary&quot; to create one.</source>
+        <translation>No dictionary yet. Click &quot;New Dictionary&quot; to create one.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="488"/>
+        <source>Language mismatch</source>
+        <translation>Language mismatch</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="489"/>
+        <source>These words do not look like %1. Add anyway?</source>
+        <translation>These words do not look like %1. Add anyway?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="493"/>
+        <source>Columns look swapped</source>
+        <translation>Columns look swapped</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="494"/>
+        <source>The source term looks like %1 and the translation like %2. Swap the two columns?</source>
+        <translation>The source term looks like %1 and the translation like %2. Swap the two columns?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="497"/>
+        <source>Swap</source>
+        <translation>Swap</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="498"/>
+        <source>Add anyway</source>
+        <translation>Add anyway</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="552"/>
         <source>术语库加载失败</source>
         <translation>Failed to load the terms library</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="283"/>
-        <source>未找到 terms.tsv</source>
-        <translation>terms.tsv not found</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="290"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="560"/>
         <source>术语冲突检查</source>
         <translation>Term conflict check</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="290"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="560"/>
         <source>未发现冲突</source>
         <translation>No conflicts found</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="293"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="563"/>
         <source>检测到术语冲突</source>
         <translation>Term conflicts detected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="301"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="572"/>
         <source>术语库导入成功</source>
         <translation>Terms imported</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="304"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="575"/>
         <source>术语库导入失败</source>
         <translation>Failed to import terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="304"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="315"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="575"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="587"/>
         <source>文件读写失败，请检查路径与权限</source>
         <translation>File read/write failed; check the path and permissions</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="312"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="584"/>
         <source>术语库导出成功</source>
         <translation>Terms exported</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="315"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="587"/>
         <source>术语库导出失败</source>
         <translation>Failed to export terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="337"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="609"/>
         <source>Search terms...</source>
         <translation>Search terms...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="338"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="462"/>
         <source>Heard as (optional)</source>
         <translation>Heard as (optional)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="339"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="463"/>
         <source>What the recognizer mistakenly outputs; separate several with commas. Leave empty to just teach the recognizer a new word, e.g. a name.</source>
         <translation>What the recognizer mistakenly outputs; separate several with commas. Leave empty to just teach the recognizer a new word, e.g. a name.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="341"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="465"/>
         <source>Write as</source>
         <translation>Write as</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="342"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="468"/>
+        <source>Used by AI translation (cloud and Ollama). The offline translator ignores it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="552"/>
+        <source>未找到词典文件</source>
+        <translation>未找到词典文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="610"/>
         <source>+ Add</source>
         <translation>+ Add</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="343"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="611"/>
         <source>More</source>
         <translation>More</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="355"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="334"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="626"/>
         <source>Enable</source>
         <translation>Enable</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="356"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="334"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="627"/>
         <source>Disable</source>
         <translation>Disable</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="357"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="337"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="628"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="358"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="612"/>
+        <source>Recognition</source>
+        <translation type="unfinished">Recognition</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="629"/>
         <source>Done</source>
-        <translation type="unfinished">Done</translation>
+        <translation>Done</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="271"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="363"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="539"/>
         <source>Confirm</source>
-        <translation type="unfinished">Confirm</translation>
+        <translation>Confirm</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="271"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="539"/>
         <source>Delete %1 selected rows?</source>
-        <translation type="unfinished">Delete %1 selected rows?</translation>
+        <translation>Delete %1 selected rows?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="348"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="619"/>
         <source>Check Conflicts</source>
-        <translation type="unfinished">Check Conflicts</translation>
+        <translation>Check Conflicts</translation>
     </message>
 </context>
 <context>
@@ -3569,17 +3917,17 @@
 <context>
     <name>WorkflowManager</name>
     <message>
-        <location filename="../../src/services/WorkflowManager.cpp" line="226"/>
+        <location filename="../../src/services/WorkflowManager.cpp" line="212"/>
         <source>语音识别失败</source>
         <translation>Speech recognition failed</translation>
     </message>
     <message>
-        <location filename="../../src/services/WorkflowManager.cpp" line="263"/>
+        <location filename="../../src/services/WorkflowManager.cpp" line="248"/>
         <source>文本注入失败</source>
         <translation>Text injection failed</translation>
     </message>
     <message>
-        <location filename="../../src/services/WorkflowManager.cpp" line="264"/>
+        <location filename="../../src/services/WorkflowManager.cpp" line="249"/>
         <source>请在「系统设置 → 隐私与安全性 → 辅助功能」中允许本应用；转录文本已留在剪贴板，可直接 ⌘V 粘贴</source>
         <translation>Allow this app in System Settings → Privacy &amp; Security → Accessibility. The transcript is on the clipboard; press ⌘V to paste</translation>
     </message>
@@ -3587,13 +3935,13 @@
 <context>
     <name>YtDlpManager</name>
     <message>
-        <location filename="../../src/services/media/YtDlpManager.cpp" line="192"/>
+        <location filename="../../src/services/media/YtDlpManager.cpp" line="191"/>
         <source>Checking downloader update...</source>
         <translation>Checking downloader update...</translation>
     </message>
     <message>
-        <location filename="../../src/services/media/YtDlpManager.cpp" line="243"/>
-        <location filename="../../src/services/media/YtDlpManager.cpp" line="253"/>
+        <location filename="../../src/services/media/YtDlpManager.cpp" line="242"/>
+        <location filename="../../src/services/media/YtDlpManager.cpp" line="252"/>
         <source>Downloading media component... %1%</source>
         <translation>Downloading media component... %1%</translation>
     </message>

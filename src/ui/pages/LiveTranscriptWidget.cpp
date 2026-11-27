@@ -2,6 +2,7 @@
 #include "ui/delegates/TranscriptLineDelegate.h"
 #include "ui/models/TranscriptLineModel.h"
 #include "ui/models/TranscriptStore.h"
+#include "ui/controls/ThemedIcon.h"
 #include <QAction>
 #include <QCheckBox>
 #include "ui/controls/AnimatedCheckbox.h"
@@ -11,7 +12,9 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QGuiApplication>
+#include <QFrame>
 #include <QHBoxLayout>
+#include <QShowEvent>
 #include <QLabel>
 #include <QMenu>
 #include <QListView>
@@ -27,6 +30,7 @@
 #include <algorithm>
 
 namespace {
+constexpr int kLanguageButtonWidth = 112;
 constexpr int kSaveDelayMs = 2000;   // 说话时每句都在追加，合并成一次写入
 }
 
@@ -44,7 +48,7 @@ LiveTranscriptWidget::~LiveTranscriptWidget()
 void LiveTranscriptWidget::setupUi()
 {
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(0, 12, 0, 0);
     layout->setSpacing(8);
 
     auto* bar = new QHBoxLayout;
@@ -62,8 +66,48 @@ void LiveTranscriptWidget::setupUi()
     bar->addSpacing(8);
     m_injectCheck->hide();
     bar->addWidget(m_timestampCheck);
-    bar->addStretch();
+    auto* pill = new QFrame(this);
+    m_langPill = pill;
+    pill->setObjectName(QStringLiteral("lang_pill"));
+    pill->setStyleSheet(QStringLiteral(
+        "QFrame#lang_pill { border: 1px solid palette(mid); border-radius: 6px; }"
+        "QFrame#lang_pill QPushButton { border: none; background: transparent; padding: 0 10px; min-height: 28px; }"
+        "QFrame#lang_pill QPushButton:hover { background: rgba(128, 128, 128, 45); }"
+        "QFrame#lang_pill QPushButton:pressed { background: rgba(128, 128, 128, 80); }"
+        "QFrame#lang_pill QPushButton#lang_source { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }"
+        "QFrame#lang_pill QPushButton#lang_target { border-top-right-radius: 5px; border-bottom-right-radius: 5px; }"
+        "QFrame#lang_pill QPushButton#lang_swap { background: palette(highlight); border-radius: 0; padding: 0; }"
+        "QFrame#lang_pill QPushButton#lang_swap:hover { background: palette(highlight); }"
+        "QFrame#lang_pill QPushButton#lang_swap:pressed { background: palette(dark); }"
+        "QFrame#lang_pill QPushButton#lang_swap:disabled { background: palette(midlight); }"));
+    auto* pillLayout = new QHBoxLayout(pill);
+    pillLayout->setContentsMargins(0, 0, 0, 0);
+    pillLayout->setSpacing(0);
+    m_sourceBtn = new QPushButton(pill);
+    m_sourceBtn->setObjectName(QStringLiteral("lang_source"));
+    m_swapBtn = new QPushButton(pill);
+    m_swapBtn->setObjectName(QStringLiteral("lang_swap"));
+    m_targetBtn = new QPushButton(pill);
+    m_targetBtn->setObjectName(QStringLiteral("lang_target"));
+    for (QPushButton* b : { m_sourceBtn, m_swapBtn, m_targetBtn }) {
+        b->setFlat(true);
+        b->setCursor(Qt::PointingHandCursor);
+        b->setFocusPolicy(Qt::NoFocus);
+        pillLayout->addWidget(b);
+    }
+    m_swapBtn->setIconSize(QSize(18, 18));
+    refreshSwapIcon();
+    m_sourceBtn->setFixedWidth(kLanguageButtonWidth);
+    m_targetBtn->setFixedWidth(kLanguageButtonWidth);
+    m_swapBtn->setFixedWidth(38);
+    pill->adjustSize();
+    pill->raise();
+    connect(m_sourceBtn, &QPushButton::clicked, this, &LiveTranscriptWidget::pickSourceLanguage);
+    connect(m_swapBtn, &QPushButton::clicked, this, &LiveTranscriptWidget::swapLanguagesRequested);
+    connect(m_targetBtn, &QPushButton::clicked, this, &LiveTranscriptWidget::pickTargetLanguage);
+    bar->addSpacing(8);
     bar->addWidget(m_copyOriginalBtn);
+    bar->addStretch();
     bar->addWidget(m_copyTranslationBtn);
     bar->addWidget(m_exportBtn);
     bar->addWidget(m_clearBtn);
@@ -128,6 +172,7 @@ void LiveTranscriptWidget::setupUi()
         m_delegate->setShowTime(on);
         m_list->doItemsLayout();
         m_list->viewport()->update();
+        positionLanguagePill();
     });
     connect(m_copyOriginalBtn, &QPushButton::clicked, this, &LiveTranscriptWidget::copyOriginal);
     connect(m_copyTranslationBtn, &QPushButton::clicked, this, &LiveTranscriptWidget::copyTranslation);
@@ -379,6 +424,7 @@ bool LiveTranscriptWidget::eventFilter(QObject* watched, QEvent* event)
         return false;
     }
     if (watched != m_list->viewport()) return QWidget::eventFilter(watched, event);
+    if (event->type() == QEvent::Resize) positionLanguagePill();
     const auto type = event->type();
     if (type != QEvent::MouseButtonPress && type != QEvent::MouseButtonRelease
         && type != QEvent::MouseButtonDblClick && type != QEvent::MouseMove)
@@ -405,11 +451,91 @@ bool LiveTranscriptWidget::eventFilter(QObject* watched, QEvent* event)
 void LiveTranscriptWidget::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::LanguageChange) retranslateUi();
+    if ((event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) && m_swapBtn) refreshSwapIcon();
     QWidget::changeEvent(event);
+}
+
+void LiveTranscriptWidget::positionLanguagePill()
+{
+    if (!m_langPill || !m_list || !m_delegate) return;
+    m_langPill->adjustSize();
+    const int dividerX = m_list->viewport()->mapTo(this, QPoint(m_delegate->dividerX(m_list->viewport()->width()), 0)).x();
+    const QRect row = m_toggleBtn->geometry();
+    m_langPill->move(dividerX - m_langPill->width() / 2, row.center().y() - m_langPill->height() / 2);
+}
+
+void LiveTranscriptWidget::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    positionLanguagePill();
+}
+
+void LiveTranscriptWidget::refreshSwapIcon()
+{
+    const QColor color = m_swapBtn->isEnabled() ? palette().color(QPalette::HighlightedText)
+                                                : palette().color(QPalette::Disabled, QPalette::ButtonText);
+    m_swapBtn->setIcon(themedIcon(QStringLiteral("lang_swap"), color, 18));
+}
+
+void LiveTranscriptWidget::setTranslationEnabled(bool enabled)
+{
+    m_targetBtn->setEnabled(enabled);
+    m_swapBtn->setEnabled(enabled);
+    refreshSwapIcon();
+}
+
+void LiveTranscriptWidget::setLanguagePair(const QString& source, const QString& target)
+{
+    const QString arrow = QStringLiteral(" \u25BE");
+    const QFontMetrics fm(m_sourceBtn->font());
+    const int room = kLanguageButtonWidth - 24 - fm.horizontalAdvance(arrow);
+    m_sourceBtn->setText(fm.elidedText(source, Qt::ElideRight, room) + arrow);
+    m_targetBtn->setText(fm.elidedText(target, Qt::ElideRight, room) + arrow);
+}
+
+void LiveTranscriptWidget::setSourceChoices(const QList<LanguageChoice>& choices, const QString& currentKey)
+{
+    m_sourceChoices = choices;
+    m_sourceKey = currentKey;
+}
+
+void LiveTranscriptWidget::setTargetChoices(const QList<LanguageChoice>& choices, const QString& currentKey)
+{
+    m_targetChoices = choices;
+    m_targetKey = currentKey;
+}
+
+QString LiveTranscriptWidget::chooseLanguage(QWidget* anchor, const QList<LanguageChoice>& choices, const QString& currentKey)
+{
+    if (choices.isEmpty()) return {};
+    QMenu menu(this);
+    for (const LanguageChoice& c : choices) {
+        QAction* a = menu.addAction(c.text);
+        a->setData(c.key);
+        a->setCheckable(true);
+        a->setChecked(c.key == currentKey);
+    }
+    const QAction* chosen = menu.exec(anchor->mapToGlobal(QPoint(0, anchor->height())));
+    return chosen ? chosen->data().toString() : QString();
+}
+
+void LiveTranscriptWidget::pickSourceLanguage()
+{
+    const QString key = chooseLanguage(m_sourceBtn, m_sourceChoices, m_sourceKey);
+    if (!key.isEmpty()) emit sourceLanguageChosen(key);
+}
+
+void LiveTranscriptWidget::pickTargetLanguage()
+{
+    const QString key = chooseLanguage(m_targetBtn, m_targetChoices, m_targetKey);
+    if (!key.isEmpty()) emit targetLanguageChosen(key);
 }
 
 void LiveTranscriptWidget::retranslateUi()
 {
+    m_sourceBtn->setToolTip(tr("Recognition language (switches the local recognition model)"));
+    m_swapBtn->setToolTip(tr("Swap recognition and target languages"));
+    m_targetBtn->setToolTip(tr("Target language"));
     m_injectCheck->setLabelText(tr("Also type into the foreground window"));
     m_injectCheck->setToolTip(tr("Turn off when you are typing yourself, so the transcript only goes here"));
     m_timestampCheck->setLabelText(tr("Timestamps"));

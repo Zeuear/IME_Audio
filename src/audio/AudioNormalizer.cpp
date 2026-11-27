@@ -21,7 +21,6 @@ QByteArray AudioNormalizer::normalizePcm16(const QByteArray& pcm, double* gainOu
     if (peak == 0 || rms < kNoiseFloorRms) return pcm;
 
     const double gain = std::min(kTargetPeak * 32768.0 / peak, kMaxGain);
-    // 增益不足 5% 听不出差别，省掉一次拷贝
     if (gain < 1.05) return pcm;
 
     QByteArray out(pcm.size(), Qt::Uninitialized);

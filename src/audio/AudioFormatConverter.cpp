@@ -29,7 +29,7 @@ float decodeSample(const char* p, QAudioFormat::SampleFormat format)
     }
 }
 
-} // namespace
+}
 
 namespace AudioFormatConverter {
 
@@ -49,7 +49,6 @@ QByteArray toInternalPcm(const QByteArray& chunk, const QAudioFormat& sourceForm
     const qsizetype frames = chunk.size() / (bytesPerSample * channels);
     if (frames == 0) return {};
 
-    // 1) 解码并混成单声道 float
     std::vector<float> mono(static_cast<size_t>(frames));
     const char* raw = chunk.constData();
     for (qsizetype i = 0; i < frames; ++i) {
@@ -60,8 +59,7 @@ QByteArray toInternalPcm(const QByteArray& chunk, const QAudioFormat& sourceForm
         mono[static_cast<size_t>(i)] = acc / channels;
     }
 
-    // 2) 重采样到目标采样率。降采样时对窗口内取平均，相当于一个最简单的低通，
-    //    避免高频折叠成噪声；升采样（少见）用线性插值。
+    // 降采样取窗口平均（最简低通）避免高频折叠成噪声；升采样用线性插值。
     const double step = static_cast<double>(sourceFormat.sampleRate()) / targetSampleRate;
     const qsizetype outCount = static_cast<qsizetype>(frames / step);
     QByteArray out(static_cast<qsizetype>(outCount * sizeof(int16_t)), Qt::Uninitialized);
@@ -82,7 +80,6 @@ QByteArray toInternalPcm(const QByteArray& chunk, const QAudioFormat& sourceForm
             const float frac = static_cast<float>(pos - i0);
             v = mono[static_cast<size_t>(i0)] * (1.0f - frac) + mono[static_cast<size_t>(i1)] * frac;
         }
-        // 3) 转回 Int16
         dst[k] = static_cast<int16_t>(std::clamp(v, -1.0f, 1.0f) * 32767.0f);
     }
     return out;

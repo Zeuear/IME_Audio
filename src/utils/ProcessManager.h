@@ -23,7 +23,6 @@ public:
 
 signals:
     void taskFinished(TaskResult result, const QString& message);
-    // 解压进度
     void extractStarted(int totalLines);
     void extractProgress(int current, int total);
     void extractFinished(bool success);
@@ -74,7 +73,6 @@ public:
 
     void run() override {
         m_thread = new QThread();
-        // 用一个 QObject worker 把阻塞逻辑丢进子线程执行
         connect(m_thread, &QThread::started, this, &ElevatedProcessTask::runElevatedBlocking);
         connect(this, &ElevatedProcessTask::elevatedFinished, m_thread, &QThread::quit);
         connect(m_thread, &QThread::finished, m_thread, &QObject::deleteLater);
@@ -176,20 +174,15 @@ private:
         m_running = true;
         m_currentTask = m_queue.dequeue();
 
-        // task 必须无 parent 才能 moveToThread；若调用方误设了 parent，先清掉，
-        // 避免 "QObject with parent cannot be moved" 导致 move 失败、任务仍跑在主线程。
+        // task 必须无 parent 才能 moveToThread，误设 parent 时先清掉，否则 move 失败、任务仍跑在主线程。
         m_currentTask->setParent(nullptr);
 
-        // 把 task 丢进独立 worker 线程执行，真正脱离调用线程（主线程）
         QThread* thread = new QThread(this);
         m_currentTask->moveToThread(thread);
 
         connect(thread, &QThread::started, m_currentTask, &BaseTask::run);
         connect(m_currentTask, &BaseTask::taskFinished, this, &TaskQueueManager::onTaskDone);
-        // 关键：用直接连接（无接收者对象 → 在发送者线程即 worker 线程执行）调用 thread->quit()，
-        // 让 worker 线程自己退出自身的事件循环，不依赖主线程事件循环投递。
-        // 否则 quit() 会被排队到主线程，一旦主线程阻塞（如同步调用方未运行事件循环）
-        // 就永远收不到，导致 worker 线程 exec() 死等、析构时死锁。
+        // 用直接连接在 worker 线程调用 thread->quit()：排队到主线程的话，主线程一旦阻塞就永远收不到，worker 的 exec() 死等、析构死锁。
         connect(m_currentTask, &BaseTask::taskFinished, [thread]() { thread->quit(); });
         connect(thread, &QThread::finished, m_currentTask, &QObject::deleteLater);
         connect(thread, &QThread::finished, thread, &QObject::deleteLater);
@@ -202,7 +195,6 @@ private:
             m_allSuccessful = false;
             m_summary += message + "; ";
         }
-        // 线程已 quit，task 将在 finished 时 deleteLater；直接启动下一个
         startNext();
     }
         

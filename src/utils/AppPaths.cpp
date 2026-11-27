@@ -45,6 +45,11 @@ QString termsFile()
     return QDir(dataDir()).absoluteFilePath("terms.tsv");
 }
 
+QString dictionariesDir()
+{
+    return QDir(dataDir()).absoluteFilePath("dictionaries");
+}
+
 QString snippetsFile()
 {
     return QDir(dataDir()).absoluteFilePath("snippets/data/snippets.json");
@@ -52,7 +57,6 @@ QString snippetsFile()
 
 QString promptsDir()
 {
-    // 提示词首次运行时会写入默认内容，属可写数据
     return QDir(dataDir()).absoluteFilePath("prompts");
 }
 
@@ -103,8 +107,7 @@ QString vadModelFile()
 {
     const QString bundled = QDir(resourceDir()).absoluteFilePath("sherpa/vad/silero_vad.onnx");
 #ifdef Q_OS_MACOS
-    // 构建时会把 VAD 模型拷进 bundle 的 Resources；但 SherpaInstaller::ensureVadModel 缺失时
-    // 下载到的是数据目录（bundle 内不可写）。两处都要认，否则下载成功了也永远找不到。
+    // VAD 模型构建时拷进 bundle Resources，缺失时下载到数据目录（bundle 内不可写），两处都要认。
     if (!QFile::exists(bundled)) {
         return QDir(sherpaRoot()).absoluteFilePath("vad/silero_vad.onnx");
     }

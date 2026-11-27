@@ -60,4 +60,4 @@ QString readToken(const QString& dir)
     return QJsonDocument::fromJson(f.readAll()).object().value("token").toString();
 }
 
-} // namespace DocsExtension
+}

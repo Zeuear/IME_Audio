@@ -64,9 +64,6 @@ void SpeechSegmenter::reloadDetector()
                   .arg(vadConfig.silero_vad.threshold).arg(m_config.audio.silenceTimeoutMs).arg(m_config.audio.sampleRate));
 }
 
-// ============================================================
-// 每块音频的处理流程
-// ============================================================
 void SpeechSegmenter::processChunk(const QByteArray chunk)
 {
     if (!m_vad) return;
@@ -95,7 +92,6 @@ void SpeechSegmenter::feedDetector(const QByteArray& chunk)
     m_vad->AcceptWaveform(floatSamples.data(), count);
 }
 
-// 开始说话 / 停止说话 通知界面（悬浮球动画）
 void SpeechSegmenter::reportSpeakingChange()
 {
     const bool speaking = m_vad->IsDetected();
@@ -126,7 +122,6 @@ void SpeechSegmenter::emitLeftoverAfterCut()
     }
 }
 
-// 一直说不停、累计到分段上限：让 VAD 交出当前语音，在停顿处切开
 void SpeechSegmenter::cutIfTooLong()
 {
     if (!m_isSpeaking) return;
@@ -139,9 +134,6 @@ void SpeechSegmenter::cutIfTooLong()
     }
 }
 
-// ============================================================
-// 强制切段
-// ============================================================
 int64_t SpeechSegmenter::segmentLimitSamples() const
 {
     const int segmentLimitMs = qMin(m_config.audio.maxRecordMs, kMaxSegmentMs);
@@ -255,9 +247,6 @@ size_t SpeechSegmenter::findQuietCut(const std::vector<float>& samples, size_t s
     return (bestFrame + kWinFrames / 2) * frame;
 }
 
-// ============================================================
-// 结束会话
-// ============================================================
 QList<QByteArray> SpeechSegmenter::finishSession()
 {
     QList<QByteArray> out;
@@ -294,9 +283,6 @@ void SpeechSegmenter::resetState()
     }
 }
 
-// ============================================================
-// 小工具
-// ============================================================
 std::vector<float> SpeechSegmenter::takeWithLeftover(const std::vector<float>& segment)
 {
     std::vector<float> all = std::move(m_leftover);

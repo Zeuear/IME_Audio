@@ -25,8 +25,7 @@ const QJsonObject& benchmarks()
     return langs;
 }
 
-// 实测得分低于它的模型视为不可用（错误率 60% 以上，听写基本是乱码），不放进列表。
-// 抽查过原始输出：这些模型在对应语种上确实输出乱码或串成别的语言，不是测试出错
+// 实测得分低于它的模型视为不可用（错误率 60% 以上，抽查确认输出乱码），不放进列表
 constexpr double kMinUsableScore = 40.0;
 
 double clamp(double v, double lo, double hi)
@@ -119,14 +118,12 @@ void ModelInfoModel::setLanguage(const QString& language)
     m_language = language;
     m_items.clear();
     const QJsonObject scores = benchmarks().value(language).toObject();
-    // 某模型在某语种下是否因得分过低被排除；没有基准数据的不排除
     auto tooPoor = [](const QJsonObject& langScores, const QString& repoId) {
         const QJsonObject s = langScores.value(repoId).toObject();
         return !s.isEmpty() && s.value("score").toDouble() < kMinUsableScore;
     };
     QList<ModelInfo> poor;
     for (const ModelEntry& e : ModelRegistry::GetModelEntriesByLanguage(language)) {
-        // 注册表里有空白占位的 repoId，跳过
         if (e.repoPath.trimmed().isEmpty()) continue;
         ModelInfo m;
         m.displayName = e.displayName;
@@ -168,7 +165,6 @@ void ModelInfoModel::setLanguage(const QString& language)
 void ModelInfoModel::setSort(SortKey key, Qt::SortOrder order)
 {
     beginResetModel();
-    // 先回到原始顺序，再稳定排序：并列的模型保持注册表里的先后
     std::sort(m_items.begin(), m_items.end(), [](const ModelInfo& a, const ModelInfo& b) { return a.rank < b.rank; });
     if (key != SortKey::Default) {
         const bool bestFirst = order == Qt::DescendingOrder;
@@ -205,8 +201,7 @@ int ModelInfoModel::rowOfDisplayName(const QString& displayName) const
     return -1;
 }
 
-// 准确度：按错误率折线映射到 1~5。锚点沿用原来的分档（60/75/85 分对应 2/3/4 档），
-// 95 分以上封顶；低于 30 分按 1.0。折线而非整档，同档里的模型也能比出高低
+// 准确度：按错误率折线映射到 1~5（60/75/85 分对应 2/3/4 档，95 分以上封顶，低于 30 分为 1.0）；折线让同档模型也能比出高低
 double ModelInfoModel::accuracyRating(double score)
 {
     struct Anchor { double score, rating; };
@@ -222,8 +217,7 @@ double ModelInfoModel::accuracyRating(double score)
     return 5.0;
 }
 
-// 速度：RTF 越小越快，按对数映射——RTF 0.02（10 秒语音 0.2 秒出字）为 5.0，RTF 1（实时）为 1.0，
-// 对数是因为模型速度跨度达几十倍，线性映射会把大部分模型挤在同一端
+// 速度：RTF 按对数映射（0.02 为 5.0，1 为 1.0）；模型速度跨度达几十倍，线性会把多数挤在同一端
 double ModelInfoModel::speedRating(double rtf)
 {
     constexpr double kFastRtf = 0.02;

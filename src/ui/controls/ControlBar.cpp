@@ -26,22 +26,20 @@
 
 namespace {
 constexpr int kButtonSize = 38;
-constexpr int kIconSize = 36;   // 带底板的图标整块尺寸
+constexpr int kIconSize = 36;
 constexpr int kPadH = 14;
 constexpr int kPadV = 5;
-constexpr int kShadow = 10;   // 窗口四周留给阴影的透明边距
+constexpr int kShadow = 10;
 constexpr int kSpacing = 4;
 constexpr int kGroupGap = 8;
 const QString kPositionGroup = QStringLiteral("ControlBar");
 
-// 状态和悬停都画在图标自带的底板上，按钮本身不再有底色；
-// 应用样式表自带的选中 / 悬停底色会盖住图标，所以逐个覆盖成透明
+// 应用样式表的选中 / 悬停底色会盖住图标，所以覆盖成透明
 const char* const kButtonStyle =
     "QToolButton, QToolButton:hover, QToolButton:pressed, QToolButton:checked {"
     " background: transparent; border: none; }"
     "QToolButton:pressed { padding-top: 1px; }";
 
-// 开启 / 进行中的底板色：录音用红，所有开关和面板入口统一用蓝，避免一排花花绿绿
 const QColor kRed(0xff, 0x45, 0x3a);
 const QColor kBlue(0x0a, 0x84, 0xff);
 
@@ -59,7 +57,6 @@ QToolButton* makeButton(QWidget* parent)
 QFrame* makeDivider(QWidget* parent)
 {
     auto* f = new QFrame(parent);
-    // 短而淡，只做分组提示，不抢图标的视觉
     f->setFixedSize(1, 18);
     f->setStyleSheet(QStringLiteral("background: rgba(128, 128, 128, 40);"));
     return f;
@@ -73,8 +70,6 @@ QPixmap tilePixmap(const QString& resource, const QPalette& palette, const QColo
     return pm;
 }
 
-// accent 有效画彩色底板；无效画中性底板，图案取 state 对应的颜色。
-// 悬停时 Qt 取 Active 模式的图，所以两张都备好
 QIcon tile(const QString& resource, const QPalette& palette, const QColor& accent, ToolIcon::State state)
 {
     const QColor glyph = ToolIcon::stateColor(palette, state);
@@ -83,14 +78,14 @@ QIcon tile(const QString& resource, const QPalette& palette, const QColor& accen
     icon.addPixmap(tilePixmap(resource, palette, accent, glyph, true), QIcon::Active);
     return icon;
 }
-} // namespace
+}
 
 ControlBar::ControlBar(QWidget* parent)
     : QWidget(parent)
 {
     FloatingWindow::applyToolWindowFlags(this);
     setAttribute(Qt::WA_AlwaysShowToolTips);   // 非激活的工具窗口默认不显示悬停提示
-    setProperty("visualInset", kShadow);       // 告诉 ExpandPanel：四周这圈是透明阴影，对齐时扣掉
+    setProperty("visualInset", kShadow);
 
     m_shadow = new AppleShadowEffect(this);
     m_shadow->setBlurRadius(kShadow - 3);
@@ -154,8 +149,7 @@ ControlBar::ControlBar(QWidget* parent)
     m_topAction = m_menu->addAction(QString());
     m_topAction->setCheckable(true);
     m_topAction->setChecked(true);
-    // 改置顶标志会销毁重建原生窗口；此刻菜单的 exec 还没返回，在里面重建会让菜单挂在已销毁的窗口上，
-    // 表现为菜单错位、关不掉或置顶丢失。推迟到菜单收起、事件循环空闲后再发
+    // 改置顶标志会销毁重建原生窗口；菜单 exec 未返回时重建会让菜单错位或置顶丢失，推迟到事件循环空闲后再发
     auto requestTop = [this](bool on) {
         LOG_DEBUG(QString("ControlBar top toggled checked=%1 flagOn=%2").arg(on).arg(bool(windowFlags() & Qt::WindowStaysOnTopHint)));
         QTimer::singleShot(0, this, [this, on]() {
@@ -174,7 +168,6 @@ ControlBar::ControlBar(QWidget* parent)
     for (QToolButton* b : { m_enhanceBtn, m_translateBtn, m_injectBtn }) {
         b->setCheckable(true);
         connect(b, &QToolButton::toggled, this, &ControlBar::refreshIcons);
-        // 宿主会改可用状态，图标要跟着变灰或恢复
         b->installEventFilter(this);
     }
 
@@ -182,7 +175,6 @@ ControlBar::ControlBar(QWidget* parent)
     connect(m_stopBtn, &QToolButton::clicked, this, &ControlBar::stopRequested);
     connect(m_settingsBtn, &QToolButton::clicked, this, &ControlBar::settingsRequested);
 
-    // 点击只请求，选中状态由宿主经 setPanelPage 回写校正
     m_transcriptBtn->setCheckable(true);
     m_dictionaryBtn->setCheckable(true);
     m_fileBtn->setCheckable(true);
@@ -242,11 +234,9 @@ QAbstractButton* ControlBar::settingsButton() const
 void ControlBar::contextMenuEvent(QContextMenuEvent* event)
 {
     LOG_DEBUG(QString("ControlBar ctxMenu reason=%1 menuVisible=%2 pos=%3,%4").arg(int(event->reason())).arg(m_menu->isVisible()).arg(event->globalPos().x()).arg(event->globalPos().y()));
-    // 已经开着就不再叠一个
     if (m_menu->isVisible()) return;
 
-    // 横条不可激活，本进程此时通常不是前台。弹出菜单要靠激活来持有鼠标捕获，
-    // 没有前台权限就会被系统立刻收回，表现为菜单一闪而过。先让本进程拿到前台，再弹菜单
+    // 横条不可激活，没有前台权限时弹出菜单会被系统立刻收回，所以先拿前台再弹
     const ForegroundWindow::Handle previous = ForegroundWindow::current();
     ForegroundWindow::bringToFront(winId());
     QElapsedTimer et; et.start();
@@ -369,10 +359,9 @@ void ControlBar::refreshIcons()
         if (b->styleSheet() != style) b->setStyleSheet(style);
     }
 
-    const QColor none;   // 无效色 = 中性底板
+    const QColor none;
     using S = ToolIcon::State;
 
-    // 录音红只给当前可点的那一个，避免两个红块并排
     m_startBtn->setIcon(tile(QStringLiteral(":/tool_record"), pal,
                              m_startBtn->isEnabled() ? kRed : none,
                              m_startBtn->isEnabled() ? S::Normal : S::Disabled));
@@ -380,7 +369,6 @@ void ControlBar::refreshIcons()
                             m_stopBtn->isEnabled() ? kRed : none,
                             m_stopBtn->isEnabled() ? S::Normal : S::Disabled));
 
-    // 开关：打开 = 彩色底板，关闭 = 中性底板配暗色图案
     auto toggleIcon = [&](const QString& resource, const QToolButton* b, const QColor& accent) {
         if (!b->isEnabled()) return tile(resource, pal, none, S::Disabled);
         return b->isChecked() ? tile(resource, pal, accent, S::Normal) : tile(resource, pal, none, S::Off);
@@ -389,7 +377,6 @@ void ControlBar::refreshIcons()
     m_translateBtn->setIcon(toggleIcon(QStringLiteral(":/tool_translate"), m_translateBtn, kBlue));
     m_injectBtn->setIcon(toggleIcon(QStringLiteral(":/tool_inject"), m_injectBtn, kBlue));
 
-    // 面板入口：展开 = 彩色底板，收起 = 中性底板
     auto panelIcon = [&](const QString& resource, const QToolButton* b, const QColor& accent) {
         return tile(resource, pal, b->isChecked() ? accent : none, S::Normal);
     };
@@ -432,10 +419,9 @@ void ControlBar::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF body = QRectF(rect()).adjusted(kShadow, kShadow, -kShadow, -kShadow);
-    const qreal radius = body.height() / 2;   // 胶囊形
+    const qreal radius = body.height() / 2;
 
-    // 阴影由 m_shadow（AppleShadowEffect）画在本窗口之下，这里只画主体；
-    // 主体必须不透明，否则阴影会从底下透出来
+    // 阴影由 m_shadow 画在窗口之下，主体必须不透明，否则阴影会透出来
     QColor border = palette().color(QPalette::WindowText);
     border.setAlpha(40);
     const QColor fill = palette().color(QPalette::Window);
@@ -444,7 +430,6 @@ void ControlBar::paintEvent(QPaintEvent*)
     const QRectF edge = body.adjusted(0.5, 0.5, -0.5, -0.5);
     p.drawRoundedRect(edge, radius, radius);
 
-    // 顶部一圈内高光，向下渐隐；浅色主题下白色高光看不出来，不影响
     QLinearGradient hi(edge.topLeft(), edge.bottomLeft());
     hi.setColorAt(0.0, QColor(255, 255, 255, 60));
     hi.setColorAt(0.5, QColor(255, 255, 255, 0));
@@ -456,7 +441,6 @@ void ControlBar::paintEvent(QPaintEvent*)
 void ControlBar::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    // 胶囊形：阴影轮廓的圆角跟着主体高度走
     m_shadow->setCornerRadius((height() - 2 * kShadow) / 2.0);
 }
 

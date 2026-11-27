@@ -143,7 +143,6 @@ void FileTaskModel::markStarted(int row)
     touch(row);
 }
 
-// 到达终态时把进行中的计时定格成总耗时
 static void freezeElapsed(FileTask& t)
 {
     if (t.startMs > 0) t.elapsedMs = QDateTime::currentMSecsSinceEpoch() - t.startMs;
@@ -195,7 +194,7 @@ int FileTaskModel::addLink(const QString& url)
     FileTask t;
     t.url = url;
     t.state = FileTask::State::Downloading;
-    t.runToken = ++m_nextToken;   // 同 addPaths：下载完成后可能直接并入正在进行的批次
+    t.runToken = ++m_nextToken;
     const int row = m_tasks.size();
     beginInsertRows({}, row, row);
     m_tasks.append(t);
@@ -368,8 +367,8 @@ void FileTaskModel::appendText(int row, const QString& text)
 
 void FileTaskModel::appendCue(int row, const SubtitleCue& cue)
 {
-    m_tasks[row].cues.append(cue);   // 不影响卡片显示，无需 touch
-    m_tasks[row].translations.append(QString());   // 占位，译文回来后按下标填
+    m_tasks[row].cues.append(cue);
+    m_tasks[row].translations.append(QString());
 }
 
 void FileTaskModel::setCueTranslation(quint64 runToken, int cue, const QString& lang, const QString& text)

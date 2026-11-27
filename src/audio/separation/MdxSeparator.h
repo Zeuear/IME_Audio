@@ -18,16 +18,14 @@ struct Stereo {
 
 struct Result {
     Stereo vocals;
-    QString error;   // 非空表示失败；中文，可直接展示给用户
+    QString error;
 };
 
-// progress(已完成块数, 总块数)，在调用线程里同步回调
 using Progress = std::function<void(int done, int total)>;
 
 Result separateVocals(const QString& modelPath, const Stereo& mix, int threads, bool useCuda,
                       const std::atomic_bool* cancel = nullptr, const Progress& progress = {});
 
-// 写 16-bit 双声道 WAV
 bool writeStereoWav(const QString& path, const Stereo& audio, int sampleRate);
 
 }

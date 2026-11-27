@@ -35,7 +35,7 @@ QImage flattenOnWhite(const QImage& src) {
     return out;
 }
 
-} // namespace
+}
 
 SnippetPaster::SnippetPaster(SnippetStore* store, QNetworkAccessManager* network, QObject* parent)
     : QObject(parent), m_store(store), m_network(network) {}
@@ -50,7 +50,6 @@ void SnippetPaster::paste(const QString& itemId) {
     const bool imageFirst = m_store->settings().comboImageFirst;
     m_store->incrementUseCount(itemId);
 
-    // 只记了路径，原文件可能已被移走或删除；其余内容仍然可用
     if (!filePath.isEmpty() && !QFileInfo::exists(filePath)) {
         emit errorOccurred(tr("文件粘贴失败"), tr("找不到文件：%1").arg(filePath));
         filePath.clear();
@@ -63,7 +62,6 @@ void SnippetPaster::paste(const QString& itemId) {
     loadImage(imagePath, [this, text, filePath, imageFirst](const QImage& image) {
         if (image.isNull()) {
             emit errorOccurred(tr("图片粘贴失败"), tr("无法读取图片文件或下载远程图片"));
-            // 图片失败时文字和文件仍然可用
             pasteLoaded(text, QImage(), filePath, imageFirst);
             return;
         }

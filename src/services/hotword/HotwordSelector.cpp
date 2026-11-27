@@ -21,7 +21,7 @@ double latinCost(const QString& a, const QString& b)
     return double(prev[m]) / std::max(n, m);
 }
 
-} // namespace
+}
 
 HotwordSelector::HotwordSelector(const PinyinTable* table)
     : m_table(table ? table : &PinyinTable::builtin())
@@ -96,7 +96,6 @@ double HotwordSelector::similarity(const QVector<Unit>& term, const QVector<Unit
         const int lastStart = std::max(0, int(text.size()) - len);
         for (int start = 0; start <= lastStart; ++start) {
             const int wl = std::min<int>(len, int(text.size()) - start);
-            // 词条与窗口的编辑距离
             prev.fill(0.0, wl + 1);
             cur.fill(0.0, wl + 1);
             for (int j = 0; j <= wl; ++j) prev[j] = j;

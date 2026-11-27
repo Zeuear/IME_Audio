@@ -2,13 +2,10 @@
 
 #include <QString>
 
-// macOS 上 .app bundle 内部不可写（写入还会破坏签名），可写数据必须落到
-// Application Support，只读资源在 Contents/Resources；Windows/Linux 上两者
-// 都是可执行文件所在目录。新增文件时务必按可写/只读归类，放错在 macOS 上
-// 表现为运行时找不到或写不进，编译与 CI 都发现不了。
+// macOS .app bundle 内不可写（写入还会破坏签名）：可写数据落 Application Support，只读资源在 Contents/Resources；
+// Windows/Linux 两者同在可执行文件目录。新增文件务必按可写/只读归类，放错只在 macOS 运行时暴露。
 namespace AppPaths {
 
-// 可写：日志、配置、下载的模型、术语库、提示词
 QString dataDir();
 // 只读、随应用分发：内置 VAD 模型
 QString resourceDir();
@@ -16,23 +13,20 @@ QString resourceDir();
 QString logFile();
 QString configFile();
 QString termsFile();
+QString dictionariesDir();
 // SnippetStore 约定文件位于 <base>/data/snippets.json
 QString snippetsFile();
 QString promptsDir();
 // 实时转录稿子的自动保存文件（可写，只留上次一份；属隐私内容，放在程序数据目录，随卸载清理）
 QString transcriptFile();
 
-// 按需下载的外部工具（如 yt-dlp）
 QString toolsDir();
-// 链接转录下载的音频
 QString linkDownloadsDir();
 // 人声分离输出的临时 WAV；程序启动和退出时清空
 QString separatedDir();
 
 QString sherpaRoot();
-// 目录不存在时会创建
 QString sherpaModelsDir();
-// 本地翻译模型，每个方向一个子目录；目录不存在时会创建
 QString translationModelsDir();
 QString vadModelFile();
 

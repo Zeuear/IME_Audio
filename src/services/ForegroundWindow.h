@@ -8,10 +8,8 @@ namespace ForegroundWindow {
 // Windows 是 HWND，macOS 是前台应用的 pid，Linux 暂未实现
 using Handle = quintptr;
 
-// 当前前台窗口；取不到返回 0
 Handle current();
 
-// 把焦点还给 handle 对应的窗口；平台不支持或失败返回 false
 bool restore(Handle handle);
 
 // 把本应用刚显示的窗口（winId）提到前台并拿到键盘焦点。全局热键触发时本应用在后台，

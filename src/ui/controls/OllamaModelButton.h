@@ -4,9 +4,7 @@
 
 class OllamaClient;
 
-// @brief 模型下拉框旁的 Ollama 下载按钮：所选模型没装时显示「下载」，下载中显示进度、点一下取消，
-// 失败显示「重试」；没检测到 Ollama 时变成「下载 Ollama」打开官网。模型已装或不是 Ollama 引擎时隐藏。
-// 只负责下载，不保存设置：选哪个模型仍由下拉框决定。依赖由 MainWin 通过 setClient 注入。
+// @brief 模型下拉框旁的 Ollama 下载按钮（下载 / 进度 / 重试 / 下载 Ollama），只负责下载不保存设置；依赖由 MainWin 经 setClient 注入。
 class OllamaModelButton : public QPushButton
 {
     Q_OBJECT
@@ -14,16 +12,12 @@ public:
     explicit OllamaModelButton(QWidget* parent = nullptr);
 
     void setClient(OllamaClient* client);
-    // 是否处于 Ollama 引擎下；否则始终隐藏
     void setActive(bool active);
-    // 下拉框当前选中的模型；空串（如"跟随润色模型"）时隐藏
     void setModel(const QString& name);
     void setInstalled(const QStringList& models);
 
 signals:
-    // 本按钮发起的下载完成；宿主据此刷新模型列表
     void modelInstalled(const QString& name);
-    // title / cause 为中文，由宿主统一弹出
     void errorOccurred(const QString& title, const QString& cause);
 
 protected:

@@ -71,7 +71,6 @@ void SpectrumWorker::updateLevel(const QByteArray& chunk)
     const int count = chunk.size() / 2;
     if (count == 0) return;
 
-    // 计算当前帧的瞬时 RMS
     double sumSquares = 0.0;
     for (int i = 0; i < count; ++i) {
         double v = static_cast<double>(samples[i]);
@@ -79,7 +78,6 @@ void SpectrumWorker::updateLevel(const QByteArray& chunk)
     }
     double instantRms = std::sqrt(sumSquares / count);
 
-    // 转成 dBFS，映射到 [0,1]
     double instantDb = 20.0 * std::log10(std::max(instantRms, 1.0) / 32768.0);
     float instantNormalized = std::clamp(static_cast<float>((instantDb + 60.0) / 45.0), 0.0f, 1.0f);
 
@@ -121,7 +119,6 @@ void SpectrumWorker::updateSpectrum(const QByteArray& chunk)
         magnitudes[i] = std::sqrt(fftOut[i].r * fftOut[i].r + fftOut[i].i * fftOut[i].i);
     }
 
-    // 每个频段取 RMS（能量平均）
     std::vector<float> bandsDb(kBandCount);
     for (int b = 0; b < kBandCount; ++b) {
         const auto& range = m_bandRanges[b];
@@ -135,7 +132,6 @@ void SpectrumWorker::updateSpectrum(const QByteArray& chunk)
         bandsDb[b] = 20.0f * std::log10(std::max(rms, 1e-6f));
     }
 
-    // 分频段自适应量程 + 心理声学权重 + 全局响度增益
     const std::vector<float>& visualBands = m_controller->process(bandsDb, m_rmsLevel);
     emit spectrumReady(QVector<float>(visualBands.begin(), visualBands.end()));
 }

@@ -52,7 +52,6 @@ void TranscriptLineModel::addPending(quint64 key, const QString& text, const QTi
 {
     const QString t = singleLine(text);
     if (t.isEmpty()) return;
-    // 序号小的在前；从后往前找到第一个序号不大于它的等待行，插在后面（没有等待行就追加到末尾）
     int row = m_entries.size();
     while (row > 0 && m_entries.at(row - 1).waiting && m_entries.at(row - 1).key > key) --row;
     beginInsertRows({}, row, row);
@@ -191,7 +190,6 @@ void TranscriptLineModel::restore(const QString& serialized)
     for (const QString& raw : lines) {
         const QString line = raw.trimmed();
         if (line.isEmpty()) continue;
-        // 紧跟在某一句后面、以 ">> " 开头的行是它的译文
         if (line.startsWith(kTranslationMark) && !entries.isEmpty() && entries.last().time.isValid()
             && entries.last().translation.isEmpty()) {
             entries.last().translation = singleLine(line.mid(kTranslationMark.size()));

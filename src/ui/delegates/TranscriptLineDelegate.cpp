@@ -45,6 +45,12 @@ TranscriptLineDelegate::Hit TranscriptLineDelegate::hitTest(const QRect& row, co
     return pos.x() <= mid ? Hit::Original : Hit::Translation;
 }
 
+int TranscriptLineDelegate::dividerX(int viewportWidth) const
+{
+    const QRect row(0, 0, viewportWidth, 1);
+    return (originalRect(row).right() + translationRect(row).left()) / 2;
+}
+
 QRect TranscriptLineDelegate::originalRect(const QRect& row) const
 {
     const QRect all = textRect(row);

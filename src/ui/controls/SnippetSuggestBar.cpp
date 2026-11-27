@@ -17,8 +17,8 @@ namespace {
 constexpr int kAutoHideMs = 8000;
 constexpr int kMaxLabelWidth = 160;
 constexpr int kGapToAnchor = 8;
-constexpr int kCollapsedSize = 36;      // 收起时的圆形箭头直径
-constexpr int kCollapseDelayMs = 400;   // 鼠标移出后延迟收起，给从箭头移向按钮留缓冲
+constexpr int kCollapsedSize = 36;
+constexpr int kCollapseDelayMs = 400;
 constexpr int kAnimMs = 260;
 constexpr int kMarginX = 10;
 constexpr int kMarginY = 8;
@@ -34,7 +34,7 @@ QRectF lerpRect(const QRectF& a, const QRectF& b, qreal t) {
                   lerp(a.height(), b.height(), t));
 }
 
-} // namespace
+}
 
 SnippetSuggestBar::SnippetSuggestBar(QWidget *parent) : QWidget(parent) {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint
@@ -53,7 +53,7 @@ SnippetSuggestBar::SnippetSuggestBar(QWidget *parent) : QWidget(parent) {
     });
     connect(m_anim, &QVariantAnimation::finished, this, [this]() {
         if (m_expanded) return;
-        applyPlacement();   // 收起播完：补上动画期间推迟的定位，并恢复遮罩
+        applyPlacement();
         if (!m_pending.isEmpty()) {
             const QVector<Suggestion> pending = m_pending;
             m_pending.clear();
@@ -88,7 +88,6 @@ void SnippetSuggestBar::setSuggestions(const QVector<Suggestion>& suggestions) {
     }
     m_currentIds = ids;
 
-    // 按钮不是控件，而是自绘的：这样才能被底板的轮廓裁剪，随展开逐步露出
     m_items.clear();
     const QFontMetrics fm(font());
     int x = kMarginX;
@@ -105,7 +104,6 @@ void SnippetSuggestBar::setSuggestions(const QVector<Suggestion>& suggestions) {
     m_full = QSize(x - kSpacing + kMarginX, kButtonH + 2 * kMarginY).expandedTo(QSize(kCollapsedSize, kCollapsedSize));
     m_hover = -1;
 
-    // 新一批提示从收起的小箭头开始，不播放动画
     m_anim->stop();
     m_expanded = false;
     m_progress = 0;
@@ -122,8 +120,7 @@ void SnippetSuggestBar::placeNear(const QRect& anchor, bool below) {
     if (!m_expanded && m_anim->state() != QAbstractAnimation::Running) applyPlacement();
 }
 
-// 窗口固定为展开后的完整尺寸，动画只在 paintEvent 里画：逐帧改原生窗口的几何，
-// 窗口和内容的刷新不同步，无论怎么取整都会抖。这里只在收起且静止时调用，所以同时设回遮罩。
+// 窗口固定为展开尺寸，动画只在 paintEvent 里画：逐帧改原生窗口几何会与内容刷新不同步而抖；只在收起且静止时调用，同时设回遮罩。
 void SnippetSuggestBar::applyPlacement() {
     if (m_full.isEmpty()) return;
     const bool flipped = m_below != m_anchorBelow;
@@ -140,15 +137,12 @@ void SnippetSuggestBar::applyPlacement() {
         target.moveTo(qBound(area.left(), x, area.right() - w), qBound(area.top(), y, area.bottom() - h));
     }
     if (target != geometry()) setGeometry(target);
-    // 收起时只有箭头区域接收鼠标，否则透明部分会挡住下面的窗口并误触发展开。
-    // 多留 1px：系统缩放非整数时遮罩取整不能切到圆的边缘
-    // 字幕每次变化都会走到这里，遮罩没变就不碰原生窗口
+    // 收起时只有箭头区域接收鼠标，避免透明部分挡住下面的窗口；多留 1px 防非整数缩放取整切到圆边；遮罩没变就不碰原生窗口
     const QRegion collapsedMask(collapsedRect().adjusted(-1, -1, 1, 1));
     if (mask() != collapsedMask) setMask(collapsedMask);
     if (flipped) update();
 }
 
-// 圆形箭头在窗口内的位置：贴锚点的那条边、水平居中
 QRect SnippetSuggestBar::collapsedRect() const {
     return QRect((m_full.width() - kCollapsedSize) / 2, m_below ? 0 : m_full.height() - kCollapsedSize,
                  kCollapsedSize, kCollapsedSize);
@@ -210,7 +204,6 @@ void SnippetSuggestBar::paintEvent(QPaintEvent *) {
     const QPalette& pal = palette();
     const qreal t = qBound(0.0, m_progress, 1.0);
 
-    // 底板：圆形 → 按钮栏的圆角矩形。用小数坐标靠抗锯齿平滑过渡，不按整像素跳
     const QRectF collapsed = QRectF(collapsedRect()).adjusted(0.5, 0.5, -0.5, -0.5);
     const QRectF body = lerpRect(collapsed, QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), t);
     const qreal radius = qMin(lerp(kCollapsedSize / 2.0, 10, t), qMin(body.width(), body.height()) / 2);
@@ -218,13 +211,12 @@ void SnippetSuggestBar::paintEvent(QPaintEvent *) {
     bodyPath.addRoundedRect(body, radius, radius);
     p.fillPath(bodyPath, pal.color(QPalette::Window));
 
-    // 箭头：展开一开始就迅速淡出，让位给按钮
     const qreal arrowAlpha = 1.0 - qBound(0.0, t * 3.0, 1.0);
     if (arrowAlpha > 0) {
         p.save();
         p.setOpacity(arrowAlpha);
         const QPointF c = collapsed.center();
-        const qreal dir = m_below ? 1.0 : -1.0;   // 在锚点下方时箭头朝下
+        const qreal dir = m_below ? 1.0 : -1.0;
         p.setPen(QPen(pal.color(QPalette::Text), 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         p.setBrush(Qt::NoBrush);
         p.drawPolyline(QPolygonF({ QPointF(c.x() - 6, c.y() + 3 * dir), QPointF(c.x(), c.y() - 3 * dir),
@@ -246,7 +238,6 @@ void SnippetSuggestBar::paintEvent(QPaintEvent *) {
         p.restore();
     }
 
-    // 按钮：大小位置固定，用底板的圆角轮廓裁剪，随轮廓扩大逐步露出；整体轻微淡入避免生硬
     const qreal alpha = qBound(0.0, (t - 0.15) / 0.5, 1.0);
     if (alpha > 0) {
         p.save();
@@ -265,7 +256,6 @@ void SnippetSuggestBar::paintEvent(QPaintEvent *) {
         p.restore();
     }
 
-    // 边框最后画：按钮被揭开时不会盖住底板的轮廓线
     p.setBrush(Qt::NoBrush);
     p.setPen(pal.color(QPalette::Mid));
     p.drawPath(bodyPath);
@@ -303,7 +293,7 @@ bool SnippetSuggestBar::event(QEvent *event) {
 }
 
 void SnippetSuggestBar::enterEvent(QEnterEvent *event) {
-    m_hideTimer.stop();   // 鼠标在上面时不自动消失
+    m_hideTimer.stop();
     m_collapseTimer.stop();
     setExpanded(true);
     QWidget::enterEvent(event);

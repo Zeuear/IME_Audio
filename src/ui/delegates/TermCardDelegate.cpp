@@ -10,12 +10,12 @@
 
 namespace {
 constexpr int kCardHeight = 44;
-constexpr int kGap = 4;           // 卡片上下间距
+constexpr int kGap = 4;
 constexpr int kRadius = 8;
 constexpr int kPad = 14;
 constexpr int kBarWidth = 4;
 constexpr int kCheckBox = 18;
-constexpr int kCheckArea = 40;    // 多选模式下右侧给复选框留出的宽度
+constexpr int kCheckArea = 40;
 constexpr int kArrowW = 64;       // 中间箭头区：两侧各留约 20px，左右两列不会贴着箭头
 constexpr int kArrowLen = 18;
 
@@ -23,7 +23,7 @@ QRect cardRect(const QStyleOptionViewItem& opt)
 {
     return opt.rect.adjusted(0, kGap, 0, -kGap);
 }
-} // namespace
+}
 
 TermEditor::TermEditor(QWidget* parent)
     : QWidget(parent)
@@ -87,7 +87,6 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     path.addRoundedRect(QRectF(card).adjusted(0.5, 0.5, -0.5, -0.5), kRadius, kRadius);
 
     QColor bg = enabled ? colors.m_cardColor : colors.m_disabledCardColor;
-    // 悬停时往文字色方向靠一点，深浅主题都适用
     if (hovered) {
         const QColor& t = colors.m_textColor;
         bg = QColor::fromRgbF(bg.redF() * 0.92f + t.redF() * 0.08f, bg.greenF() * 0.92f + t.greenF() * 0.08f,
@@ -97,7 +96,6 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     p->setPen(QPen(checked ? kEnabledColor : colors.m_cardBorderColor, checked ? 1.5 : 1.0));
     p->drawPath(path);
 
-    // 左侧蓝条：裁在卡片圆角内
     if (enabled) {
         p->save();
         p->setClipPath(path);
@@ -105,7 +103,6 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
         p->restore();
     }
 
-    // 右侧复选框随多选模式滑入
     const int checkW = int(kCheckArea * m_selectT);
     if (m_selectT > 0.01) {
         const QRectF box(card.right() - checkW + (kCheckArea - kCheckBox) / 2.0,
@@ -126,7 +123,6 @@ void TermCardDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
         p->setOpacity(1.0);
     }
 
-    // 文字：听成 → 写成；听成为空时显示"自动识别"
     const QColor textColor = enabled ? colors.m_textColor : colors.m_hintColor;
     const QColor hintColor = colors.m_hintColor;
     const int left = card.left() + kBarWidth + kPad;

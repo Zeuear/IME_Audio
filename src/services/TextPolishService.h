@@ -21,6 +21,7 @@ public:
         QString customPrompt;
         QString replaceRules;
         QString aiVocab;
+        QList<QPair<QString, QString>> glossary;
         int aiEngine = 0; // 0 = Gemini, 1 = OpenAI兼容(本地/自訂), 2 = Ollama
         bool translateOnly = false;   // 只翻译：model 填翻译用的模型，不润色
     };
@@ -43,10 +44,8 @@ public:
     void testConnection(const RequestParams &params);
     void fetchModels(const RequestParams& params);
 
-    // 供 UI 查询当前引擎能力；内部按 aiEngine 创建一次 provider 读取标志
     Capabilities capabilities(int aiEngine) const;
 
-    // 仅测试使用：注入假 provider，生产代码路径不使用
     void setProviderFactoryForTest(ProviderFactory f) { m_providerFactory = std::move(f); }
 
 signals:

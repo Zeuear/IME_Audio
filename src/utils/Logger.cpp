@@ -23,7 +23,6 @@ void Logger::log(const QString& level, const QString& message) {
         QTextStream out(&file);
         out.setEncoding(QStringConverter::Utf8);
 
-        // 2026-07-20 10:00:00.123 | INFO | Message
         QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
         out << timestamp << " | " << level << " | " << message << "\n";
 

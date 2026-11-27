@@ -19,7 +19,6 @@ class ControlBar : public QWidget
 {
     Q_OBJECT
 public:
-    // 开关类图标，状态由宿主用 ToggleLink 连到设置里已有的控件，横条自己不保存
     enum class Toggle { Enhance, Translate, Inject };
 
     explicit ControlBar(QWidget* parent = nullptr);
@@ -29,25 +28,20 @@ public:
     QAbstractButton* transcriptButton() const;
     QAbstractButton* dictionaryButton() const;
     QAbstractButton* fileButton() const;
-    // 点击只发 panelRequested，面板状态由宿主决定后用它回写
     void setPanelPage(PanelState::Page page);
     void setFileBusy(bool busy);
     QAction* settingsAction() const { return m_settingsAction; }
     QAction* quitAction() const { return m_quitAction; }
     QAction* hideAction() const { return m_hideAction; }
     QAction* alwaysOnTopAction() const { return m_topAction; }
-    // 在名称后追加一行说明；传空串去掉
     void setToggleHint(Toggle which, const QString& hint);
 
     void setAlwaysOnTop(bool on);
     void setWorkflowState(WorkflowState state);
 
-    // 读取保存的位置并校正到屏幕内后显示（不激活）
     void showAtSavedPosition();
-    // 从设置窗口切过来时继承它的左上角；经屏幕校正后记为新的保存位置
     void showAt(const QPoint& topLeft);
 
-    // 录音计时：会话进行中每秒走一次，结束后归零
     bool timerRunning() const;
     QString elapsedText() const;
 
@@ -56,12 +50,10 @@ signals:
     void stopRequested();
     void settingsRequested();
     void panelRequested(PanelState::Page page);
-    // 有的桌面没有托盘，退出入口放在横条的右键菜单
     void quitRequested();
     // 只表达意图：隐藏前要先收起展开面板，由宿主一并处理
     void hideRequested();
     void alwaysOnTopToggled(bool on);
-    // 打开 Google 文档的安装与绑定窗口
     void docsRequested();
 
 protected:
@@ -103,8 +95,8 @@ private:
     QAction* m_docsAction = nullptr;
     QAction* m_hideAction = nullptr;
     QAction* m_quitAction = nullptr;
-    QString m_hints[3];   // 按 Toggle 的顺序
+    QString m_hints[3];
 
     bool m_dragging = false;
-    QPoint m_dragOffset;   // 按下时鼠标相对窗口左上角的偏移
+    QPoint m_dragOffset;
 };

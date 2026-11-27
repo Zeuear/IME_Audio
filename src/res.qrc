@@ -24,6 +24,7 @@
         <file alias="tool_dictionary">../resources/icons/tool_dictionary.svg</file>
         <file alias="tool_file">../resources/icons/tool_file.svg</file>
         <file alias="tool_pin">../resources/icons/tool_pin.svg</file>
+        <file alias="lang_swap">../resources/icons/lang_swap.svg</file>
         <file alias="overlay_hide">../resources/icons/overlay_hide.svg</file>
         <file alias="overlay_drag">../resources/icons/overlay_drag.svg</file>
         <file alias="tool_compact">../resources/icons/tool_compact.svg</file>

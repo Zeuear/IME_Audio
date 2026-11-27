@@ -13,9 +13,8 @@ class QWebSocket;
 // @brief 本机 WebSocket 服务：Chrome 扩展把听写文字写进被绑定的 Google 文档标签页。
 // 协议：扩展→程序 hello(token) 后 bound(title) / unbound / bindFailed(reason) / ack(id) / insertFailed(id, reason) / ping；
 // 程序→扩展 ready / denied / release / newDoc / bindActive / resume(session, from) / text(session, id, text)
-// 送达：每句带递增 id，扩展写进文档后回 ack；没确认的句子在重新绑定后按顺序补发，
-// 扩展按 (session, id) 去重且只接受下一个连续 id，所以不丢、不重、不乱序。
-// 队列满时丢最早的句子，补发前先发 resume 告诉扩展从哪句接着写，否则缺口会让扩展一直等下去。
+// 送达：每句带递增 id，扩展写入后回 ack；未确认的在重新绑定后补发，扩展按 (session, id) 去重且只收下一个连续 id。
+// 队列满丢最早的句子，补发前先发 resume 告知起点，否则缺口会让扩展一直等。
 namespace DocsBridgeProtocol {
 inline constexpr quint16 kPort = 38617;
 // 对应 extensions/google-docs/manifest.json 的 key
@@ -26,7 +25,6 @@ inline bool isAllowedOrigin(const QString& origin)
     return origin == kExtensionOrigin || origin == kExtensionOrigin + QLatin1Char('/');
 }
 
-// 程序→扩展的状态消息：ready（配对通过）/ denied（令牌不对）/ release（程序要求解除绑定）
 inline QByteArray typeMessage(const QString& type)
 {
     return QJsonDocument(QJsonObject{{"type", type}}).toJson(QJsonDocument::Compact);
@@ -63,9 +61,7 @@ public:
 
     void setEnabled(bool on, quint16 port = DocsBridgeProtocol::kPort);
     quint16 serverPort() const;
-    // 测试用：不读用户配置里的令牌哈希
     void setTokenHashSource(std::function<QByteArray()> source) { m_tokenHash = std::move(source); }
-    // 扩展已连上并通过令牌校验
     bool isConnected() const { return m_authed; }
 
     // 绑定中，或绑定后连接意外断开（Lost）：两种情况听写结果都不能注入前台，否则会打进别的软件
@@ -76,12 +72,9 @@ public:
     // 绑定或断开期间都接收：先进待确认队列，能发就发，断开时等重新绑定后补发。未持有输出时返回 false
     bool sendText(const QString& text);
     int pendingCount() const { return m_outbox.size(); }
-    // 队列满被丢弃的句数
     int droppedCount() const { return m_dropped; }
     void setMaxPending(int n) { m_maxPending = n; }
-    // 用户在程序里停止文档输出：通知扩展解绑，结果恢复注入前台
     void release();
-    // 让扩展新建一个 Google 文档并绑定 / 绑定 Chrome 当前标签页；扩展没连上返回 false
     bool requestNewDoc();
     bool requestBindActive();
 
@@ -93,16 +86,13 @@ public:
 
 signals:
     void linkChanged();
-    // reason：notDocs（当前标签页不是 Google 文档）或扩展给出的错误信息
     void bindFailed(const QString& reason);
-    // 扩展写入文档失败，句子留在队列里，重新绑定后补写
     void insertFailed(const QString& reason);
 
 private:
     void onNewConnection();
     void onMessage(const QString& msg);
     void setLink(bool bound, bool lost, const QString& title);
-    // 连接断开时，原先绑定着就进入 Lost
     void dropClient();
     bool sendCommand(const QString& type);
     bool canSend() const { return m_client && m_authed && m_bound; }

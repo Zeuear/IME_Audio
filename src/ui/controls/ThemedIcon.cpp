@@ -16,7 +16,6 @@ QPixmap renderSvg(const QByteArray& svg, int logicalSize) {
     const qreal dpr = std::ceil(qApp->devicePixelRatio());
     const int px = static_cast<int>(logicalSize * dpr);
 
-    // 直接用 QSvgRenderer，不依赖 qsvg 图片格式插件
     QSvgRenderer renderer(svg);
     if (!renderer.isValid()) {
         LOG_WARN("Themed icon render failed: invalid SVG");
@@ -33,7 +32,7 @@ QPixmap renderSvg(const QByteArray& svg, int logicalSize) {
     return pixmap;
 }
 
-} // namespace
+}
 
 QIcon themedIcon(const QString& resource, const QColor& color, int logicalSize) {
     QFile file(QStringLiteral(":/") + resource);

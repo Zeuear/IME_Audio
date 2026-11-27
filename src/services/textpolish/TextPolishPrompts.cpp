@@ -17,7 +17,7 @@ namespace {
 void ensurePromptsDirInited() {
     QDir().mkpath(AppPaths::promptsDir());
 }
-} // namespace
+}
 
 QString loadSystemPrompt(const QString& filename, const QString& defaultPrompt) {
     ensurePromptsDirInited();
@@ -108,14 +108,29 @@ QStringList buildFewshotMessages(const QString& fewshotText) {
     return result;
 }
 
-QString translateOnlyPrompt(const QString& targetLang) {
+QString glossaryTerms(const GlossaryPairs& glossary, const QString& text) {
+    constexpr int kMaxTerms = 30;
+    QStringList terms;
+    for (const auto& pair : glossary) {
+        if (pair.first.isEmpty() || pair.second.isEmpty()) continue;
+        if (!text.contains(pair.first, Qt::CaseInsensitive)) continue;
+        terms << QStringLiteral("%1→%2").arg(pair.first, pair.second);
+        if (terms.size() >= kMaxTerms) break;
+    }
+    return terms.join(QStringLiteral("、"));
+}
+
+QString translateOnlyPrompt(const QString& targetLang, const GlossaryPairs& glossary, const QString& text) {
     const QString base = loadSystemPrompt("system_prompt_translate.txt",
         "你是一个专业翻译。请把用户给出的语音转写文本翻译为目标语言。\n"
         "【输出规则】:\n"
         "- 只输出译文，不要改写、增删原意，不要包含解释、Markdown 代码块、引号或原文。\n"
         "- 人名、产品名等专有名词保持通行写法。\n"
         "- 原文为空或无法理解时输出空字符串。");
-    return QStringLiteral("%1\n\n【目标语言】:「%2」（如果是中文请用对应的繁简体）").arg(base, targetLang);
+    QString prompt = QStringLiteral("%1\n\n【目标语言】:「%2」（如果是中文请用对应的繁简体）").arg(base, targetLang);
+    const QString terms = glossaryTerms(glossary, text);
+    if (!terms.isEmpty()) prompt += QStringLiteral("\n\n【术语对照（必须按此翻译）】:\n%1").arg(terms);
+    return prompt;
 }
 
 bool hasTranslationTarget(const QString& targetLang) {
@@ -199,9 +214,14 @@ QString promptLanguageName(const QString& storedTargetLang) {
     return kNames.value(storedTargetLang, storedTargetLang);
 }
 
-QString translationModelPrompt(const QString& storedTargetLang, const QString& text) {
+QString translationModelPrompt(const QString& storedTargetLang, const QString& text, const GlossaryPairs& glossary) {
+    const QString terms = glossaryTerms(glossary, text);
+    if (!terms.isEmpty()) {
+        return QStringLiteral("请将以下文本翻译成%1，并且严格遵循所有约束要求。\n\n【源文】\n%2\n\n【约束要求】\n1. 【硬性要求】专名/术语对照: %3\n\n只输出译文，不要有任何额外说明。")
+            .arg(promptLanguageName(storedTargetLang), text.trimmed(), terms);
+    }
     return QStringLiteral("请将以下文本翻译为%1，直接输出翻译结果，不要进行任何解释。\n\n%2")
         .arg(promptLanguageName(storedTargetLang), text);
 }
 
-} // namespace TextPolishPrompts
+}

@@ -10,7 +10,6 @@ namespace Appearance {
 LiveOverlay::Theme themeFromKey(const QString& key);
 QString themeKey(LiveOverlay::Theme theme);
 
-// 下拉框顺序：浅色、灰色、深色；越界按浅色
 QStringList themeKeys();
 int themeIndex(LiveOverlay::Theme theme);
 LiveOverlay::Theme themeAt(int index);
@@ -22,4 +21,4 @@ int languageIndex(const QString& key);
 // 该语言键对应的翻译资源；"跟随系统"只有系统区域恰好是 zh_CN 才用中文，其余用英文
 QString translationResource(const QString& languageKey, const QString& systemLocaleName);
 
-} // namespace Appearance
+}

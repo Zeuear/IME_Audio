@@ -9,7 +9,6 @@
 #include <QPushButton>
 #include <QLabel>
 
-// 对应原 _open_google_sheets_dialog：Google 表格一站式导入与 Sheet 选页中心
 // 勾选状态直接读取右侧列表的 check state（按 Sheet 名称保存），网络请求为同步阻塞（期间对话框被禁用）。
 class GoogleSheetsDialog : public QDialog {
     Q_OBJECT
@@ -17,7 +16,6 @@ public:
     explicit GoogleSheetsDialog(SnippetStore* store, QWidget* parent = nullptr);
     ~GoogleSheetsDialog() override;
 
-    // 在左侧「已保存」列表中选中指定 L1 tree_id
     void selectTree(const QString& treeId);
 
 signals:

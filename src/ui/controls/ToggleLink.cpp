@@ -28,7 +28,7 @@ private:
     QAbstractButton* m_button;
     QCheckBox* m_box;
 };
-} // namespace
+}
 
 namespace ToggleLink {
 
@@ -38,15 +38,13 @@ void connect(QAbstractButton* button, QCheckBox* box)
     button->setChecked(box->isChecked());
     button->setEnabled(box->isEnabled());
 
-    // 按钮 → 复选框：点击由按钮自己翻转并发出 toggled，再把结果交给复选框
     QObject::connect(button, &QAbstractButton::toggled, box, [box](bool on) {
-        if (box->isChecked() != on) box->setChecked(on);   // 相等时不再触发，避免来回弹
+        if (box->isChecked() != on) box->setChecked(on);
     });
-    // 复选框 → 按钮：代码或配置载入改复选框时同步；相等不动，避免来回弹
     QObject::connect(box, &QCheckBox::toggled, button, [button](bool on) {
         if (button->isChecked() != on) button->setChecked(on);
     });
     new EnabledWatcher(button, box);
 }
 
-} // namespace ToggleLink
+}

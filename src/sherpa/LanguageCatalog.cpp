@@ -5,8 +5,8 @@
 
 namespace {
 struct Info {
-    const char* key;    // 英文名，稳定标识
-    const char* code;   // ISO 639 代码，仅用于显示
+    const char* key;
+    const char* code;
 };
 
 const QList<Info> kLanguages = {

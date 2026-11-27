@@ -15,7 +15,6 @@ constexpr int kCardRadius = 8;
 
 QColor headerColor(const QPalette& pal)
 {
-    // 表头比行底色向文字色偏一点，深浅主题都只是轻微区分
     const QColor base = pal.color(QPalette::Base);
     const QColor text = pal.color(QPalette::Text);
     constexpr double k = -0.07;
@@ -32,7 +31,6 @@ QColor borderColor(const QPalette& pal)
     return c;
 }
 
-// 表头：准确度 / 速度两列可点击排序，当前排序列的标题后画一个小三角
 class HeaderBar : public QWidget {
 public:
     using SortKey = ModelInfoModel::SortKey;
@@ -78,7 +76,6 @@ protected:
         const double x = col.left() + fm.horizontalAdvance(title) + 6;
         const double cy = col.center().y();
         QPolygonF tri;
-        // 降序（最好在前）箭头朝下，升序朝上
         if (m_order == Qt::DescendingOrder)
             tri << QPointF(x, cy - kH / 2) << QPointF(x + kW, cy - kH / 2) << QPointF(x + kW / 2, cy + kH / 2);
         else
@@ -109,7 +106,6 @@ protected:
         p.drawText(c.radio.united(c.name), flags, ModelListWidget::tr("MODEL"));
         const QString accuracyTitle = ModelListWidget::tr("ACCURACY");
         const QString speedTitle = ModelListWidget::tr("SPEED");
-        // 当前排序列的标题用正文色，其余保持淡色
         p.setPen(m_key == SortKey::Accuracy ? palette().color(QPalette::Text) : palette().color(QPalette::PlaceholderText));
         p.drawText(c.accuracy, flags, accuracyTitle);
         p.setPen(m_key == SortKey::Speed ? palette().color(QPalette::Text) : palette().color(QPalette::PlaceholderText));
@@ -134,7 +130,6 @@ ModelListWidget::ModelListWidget(QWidget* parent)
 
 void ModelListWidget::setupUi()
 {
-    // 表头 + 列表画在同一张圆角卡片里；1px 边距留给卡片边框
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(1, 1, 1, 1);
     layout->setSpacing(0);
@@ -145,13 +140,13 @@ void ModelListWidget::setupUi()
     m_list->setItemDelegate(new ModelInfoDelegate(m_list));
     m_list->setSelectionMode(QAbstractItemView::SingleSelection);
     m_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_list->setMouseTracking(true);     // 悬停高亮
+    m_list->setMouseTracking(true);
     m_list->setUniformItemSizes(true);
     // 行数不多，整表展开，由外层页面滚动，避免嵌套滚动条
     m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_list->setFrameShape(QFrame::NoFrame);
-    m_list->viewport()->installEventFilter(this);   // 截获"取消 / 重试"的点击
+    m_list->viewport()->installEventFilter(this);
 
     auto* header = new HeaderBar(this);
     header->onSortClicked = [this](ModelInfoModel::SortKey key) { onHeaderSortClicked(key); };
@@ -180,7 +175,6 @@ void ModelListWidget::retranslateUi()
     m_list->viewport()->update();
 }
 
-// 点同一列：最好在前 → 最好在后 → 恢复默认；换一列则从最好在前开始
 void ModelListWidget::onHeaderSortClicked(ModelInfoModel::SortKey key)
 {
     if (key != m_sortKey) {

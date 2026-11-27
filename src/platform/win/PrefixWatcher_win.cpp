@@ -48,7 +48,7 @@ QChar vkToChar(DWORD vk, bool shift) {
 
 bool keyDown(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
 
-} // namespace
+}
 
 struct PrefixWatcher::Impl {
     PrefixWatcher* owner = nullptr;
@@ -57,7 +57,7 @@ struct PrefixWatcher::Impl {
     QStringList prefixes;
     QString buffer;
     QElapsedTimer sinceLastKey;
-    bool queryMode = false;   // 命中前缀后，之后的按键都当搜索词（受 mutex 保护）
+    bool queryMode = false;
     QString query;
 
     std::thread thread;
@@ -96,11 +96,9 @@ struct PrefixWatcher::Impl {
         buffer.clear();
     }
 
-    // 返回 true 表示吞掉这次按键（不再交给目标应用）
     bool onKey(DWORD vk, DWORD scanFlags) {
-        // 我们自己模拟的按键（退格、Ctrl+V）不参与识别
         if (scanFlags & LLKHF_INJECTED) return false;
-        if (isModifier(vk)) return false;   // 单独的修饰键不产生字符，也不打断已输入的内容
+        if (isModifier(vk)) return false;
 
         QString hitPrefix;
         QString newQuery;
@@ -124,7 +122,7 @@ struct PrefixWatcher::Impl {
                     swallow = true;
                     queryMode = false;
                 } else if (vk == VK_BACK) {
-                    if (query.isEmpty()) {   // 再退一格就删到前缀本身了：放弃
+                    if (query.isEmpty()) {
                         nav = Qt::Key_Escape;
                         queryMode = false;
                     } else {

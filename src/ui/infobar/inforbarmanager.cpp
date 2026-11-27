@@ -42,7 +42,7 @@ QParallelAnimationGroup* InforBarManager::createAnimationGroup(QWidget* parent)
 QPropertyAnimation* InforBarManager::createDropAnimation(InforBar* inforBar)
 {
     auto ani = new QPropertyAnimation(inforBar, "pos", this);
-    ani->setDuration(400); // ͳһΪ400ms
+    ani->setDuration(400);
     ani->setEasingCurve(QEasingCurve::OutCubic);
     return ani;
 }
@@ -59,7 +59,6 @@ QPropertyAnimation* InforBarManager::createSlideAnimation(InforBar* inforBar)
 
 QPoint InforBarManager::pos(InforBar* inforBar, const QSize& parentSize) const
 {
-    // To be implemented by subclasses.
     Q_UNUSED(inforBar)
     Q_UNUSED(parentSize)
     return QPoint();
@@ -67,21 +66,14 @@ QPoint InforBarManager::pos(InforBar* inforBar, const QSize& parentSize) const
 
 QPoint InforBarManager::slideStartPos(InforBar* inforBar) const
 {
-    // To be implemented by subclasses.
     Q_UNUSED(inforBar)
     return QPoint();
 }
 
 void InforBarManager::add(InforBar* inforBar)
 {
-    //m_pendingInforBars.append(inforBar);
-    //if (!m_addTimer->isActive()) {
-    //    m_addTimer->start();
-    //}
 
     auto parent = inforBar->parentWidget();
-    //if (!parent)
-    //    return;
 
     if (!m_aniGroups.contains(parent))
         m_inforBars[parent].clear();
@@ -112,7 +104,6 @@ void InforBarManager::remove(InforBar* inforBar)
 
         updateDropAnimation(parent);
         m_aniGroups[parent]->start();
-        //QTimer::singleShot(400, this, [=]() { updateDropAnimation(parent); });
     }
 }
 

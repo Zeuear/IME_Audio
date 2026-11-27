@@ -20,7 +20,6 @@ bool isCustomDevice(const QString& name)
     return !name.isEmpty() && name != AudioConfig::kDefaultDeviceName;
 }
 
-// 按设置里的设备名称查找；选的是「默认」或设备已拔掉时退回系统默认设备
 QAudioDevice findDevice(const QList<QAudioDevice>& devices, const QAudioDevice& fallback, const QString& name)
 {
     if (!isCustomDevice(name)) return fallback;
@@ -259,7 +258,6 @@ void AudioRecorderService::onSpeechEnded()
     emit voiceStopped();
 }
 
-// 连续模式
 void AudioRecorderService::onSentenceReady(const QByteArray& pcmData, int sampleRate)
 {
     if (m_config.continuousMode.load() && !pcmData.isEmpty()) {

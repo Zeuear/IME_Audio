@@ -45,7 +45,6 @@ void AboutPage::setupUi()
     layout->setContentsMargins(24, 20, 24, 20);
     layout->setSpacing(16);
 
-    // 顶部：大图标 + 名称版本 + 一句话简介
     auto* header = new QHBoxLayout;
     header->setSpacing(20);
     m_iconLabel = new QLabel(this);
@@ -71,7 +70,6 @@ void AboutPage::setupUi()
     header->addLayout(titleCol, 1);
     layout->addLayout(header);
 
-    // 更新卡片：状态、进度、操作
     auto* card = new QFrame(this);
     card->setObjectName("aboutCard");
     card->setStyleSheet("QFrame#aboutCard { background: palette(base); border: 1px solid palette(midlight); border-radius: 10px; }");
@@ -144,7 +142,7 @@ void AboutPage::refresh()
     m_installBtn->setVisible(v.installVisible);
     m_progress->setVisible(v.progressVisible);
     if (v.progressVisible) {
-        if (v.percent < 0) m_progress->setRange(0, 0);   // 总大小未知：忙碌动画
+        if (v.percent < 0) m_progress->setRange(0, 0);
         else { m_progress->setRange(0, 100); m_progress->setValue(v.percent); }
     }
 }

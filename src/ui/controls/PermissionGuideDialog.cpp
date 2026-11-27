@@ -21,7 +21,7 @@ bool isReady(Status s)
     return s == Status::Granted || s == Status::NotRequired;
 }
 
-}   // namespace
+}
 
 PermissionGuideDialog::PermissionGuideDialog(QWidget* parent)
     : QDialog(parent)
@@ -105,7 +105,6 @@ PermissionGuideDialog::Row PermissionGuideDialog::addRow(QGridLayout* grid, int 
     Row r;
     r.status = new QLabel(this);
     r.button = new QPushButton(this);
-    // 授权后按钮隐藏，但仍占位，避免状态文字跟着左右跳
     QSizePolicy sp = r.button->sizePolicy();
     sp.setRetainSizeWhenHidden(true);
     r.button->setSizePolicy(sp);
@@ -140,7 +139,6 @@ void PermissionGuideDialog::refresh()
 
 void PermissionGuideDialog::setStatus(QLabel* label, Status status)
 {
-    // 成功 / 失败用固定语义色，其余跟随主题
     switch (status) {
     case Status::Granted:
     case Status::NotRequired:
@@ -161,7 +159,6 @@ void PermissionGuideDialog::setStatus(QLabel* label, Status status)
 void PermissionGuideDialog::onMicrophoneClicked()
 {
     if (PlatformPermissions::microphoneStatus() != Status::NotDetermined) {
-        // 拒绝过之后系统不会再弹框，只能去系统设置里打开
         PlatformPermissions::openMicrophoneSettings();
         return;
     }

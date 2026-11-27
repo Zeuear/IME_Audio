@@ -3,7 +3,6 @@
 #include "LanguageRouting.h"
 
 // @brief 是否进入本地翻译阶段；纯逻辑，便于单测
-// from / to 是语言代码；配置里存的目标语言可能是中文显示名，这里统一转换
 struct TranslationStageDecision {
     bool shouldTranslate = false;
     QString from;
@@ -15,7 +14,6 @@ inline TranslationStageDecision decideTranslationStage(bool fileMode, bool local
                                                        const QString& targetLang,
                                                        const QString& recognitionCode = {}) {
     TranslationStageDecision d;
-    // 文件转录结果不进入注入链路，也不做本地翻译
     if (fileMode) return d;
     // 云端引擎的翻译随润色请求一起发出；只有本地引擎才走这里
     if (!localEngine) return d;
@@ -29,7 +27,6 @@ inline TranslationStageDecision decideTranslationStage(bool fileMode, bool local
     return d;
 }
 
-// 翻译结束后的文本：成功用译文，失败回退翻译前文字并标记
 struct TranslationOutcome {
     QString text;
     bool usedFallback = false;

@@ -3,16 +3,13 @@
 #include <QStringList>
 
 // @brief 推荐给用户一键下载的 Ollama 模型：未下载时也列进润色 / 翻译模型下拉框，旁边的按钮负责下载。
-// 依据：本项目的翻译评测（Index-Translate-9B Q4 综合 91.9，明显高于离线小模型与谷歌翻译；
-// Q4_K_M 为首选；Q3_K_M 给显存吃紧的用户；2B Q4_K_M 只有 1.3 GB，速度约为 9B 的 3 倍，
-// 通用翻译质量略降，给低配机器用）。
-// 润色选通用小模型，翻译选翻译专用模型。
+// 依据本项目翻译评测：Index-Translate-9B Q4_K_M 首选，Q3_K_M 给显存吃紧的用户，2B 速度约 3 倍、质量略降给低配机器；润色选通用小模型。
 enum class OllamaPurpose { Polish, Translate };
 
 struct OllamaCatalogEntry {
     OllamaPurpose purpose;
-    const char* name;      // ollama pull 用的完整名称
-    const char* size;      // 下载体积；不确定时留空
+    const char* name;
+    const char* size;
 };
 
 inline constexpr OllamaCatalogEntry kOllamaCatalog[] = {

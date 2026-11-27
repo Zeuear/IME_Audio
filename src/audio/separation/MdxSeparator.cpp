@@ -21,9 +21,8 @@ namespace {
 constexpr int kNFft = 7680;
 constexpr int kHop = 1024;
 constexpr float kCompensate = 1.021f;   // 补偿模型对幅度的系统性偏低
-constexpr int kChannels = 4;            // 左右声道各一对实部/虚部
+constexpr int kChannels = 4;
 
-// 把 OrtStatus 转成错误文本并释放；成功返回空串
 QString takeError(const OrtApi* api, OrtStatus* status)
 {
     if (!status) return {};
@@ -53,7 +52,6 @@ struct Session {
     }
 };
 
-// 创建会话并从输入形状读出 dim_f / dim_t，不写死，换同族模型时不用改代码
 QString openSession(Session& s, const QString& modelPath, int threads, bool useCuda)
 {
     s.api = OrtRuntime::api();
@@ -142,9 +140,9 @@ Result separateVocals(const QString& modelPath, const Stereo& mix, int threads, 
     Session& s = *session;
     const OrtApi* api = s.api;
 
-    const int chunk = kHop * (s.dimT - 1);     // 一块输入对应的样本数
+    const int chunk = kHop * (s.dimT - 1);
     const int trim = kNFft / 2;                // 块两端的 STFT 边缘效应，丢掉
-    const int gen = chunk - 2 * trim;          // 每块真正采用的样本数
+    const int gen = chunk - 2 * trim;
     const int chunks = (n + gen - 1) / gen;
     const int bins = kNFft / 2 + 1;
     const size_t plane = size_t(s.dimF) * s.dimT;
@@ -179,7 +177,7 @@ Result separateVocals(const QString& modelPath, const Stereo& mix, int threads, 
                 const int p = start + i;
                 segment[i] = (p >= 0 && p < n) ? src[p] : 0.0f;
             }
-            stft.forward(segment.data(), chunk, spec);   // [frame][bin]
+            stft.forward(segment.data(), chunk, spec);
 
             // 张量布局 [通道][频点][帧]，通道顺序 L实 L虚 R实 R虚
             float* re = input.data() + plane * (ch * 2);

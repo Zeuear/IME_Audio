@@ -9,18 +9,18 @@
 #include "Downloader.h"
 
 enum class TaskStatus {
-    Pending,     // 等待中
-    Downloading, // 下载中
-    Finished,    // 已完成
-    Error,       // 失败
-    Cancelled    // 已取消
+    Pending,
+    Downloading,
+    Finished,
+    Error,
+    Cancelled
 };
 
 using TaskFinishedCallback = std::function<void()>;
 using TaskErrorCallback = std::function<void(const QString& err)>;
 
 struct DownloadTask {
-	QString groupId; // 可选的分组ID, 用于将多个下载任务归为一组
+	QString groupId;
     QString id;
     QUrl url;
     QString savePath;
@@ -66,7 +66,6 @@ public:
     void cancelTask(const QString& taskId);
     void cancelAll();
 
-	// Group download management
     QString addGroupTask(const QString& groupId, const QString& displayName,
                          const QUrl& url, const QString& savePath,
                          TaskFinishedCallback onComplete = nullptr, TaskErrorCallback onError = nullptr);

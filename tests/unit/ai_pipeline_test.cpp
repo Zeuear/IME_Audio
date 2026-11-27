@@ -251,3 +251,19 @@ TEST(OllamaErrors, MemoryErrorSuggestsSmallerModelAndOthersPassThrough) {
     EXPECT_TRUE(explainOllamaError("model requires more system memory (9 GiB) than is available").contains(QString::fromUtf8("更小")));
     EXPECT_EQ(explainOllamaError("connection refused"), "connection refused");
 }
+
+TEST(TranslationModel, GlossaryUsesTheCanonicalConstraintPromptOnlyForTermsInTheText) {
+    const TextPolishPrompts::GlossaryPairs glossary{ { QStringLiteral("碳纤维"), QStringLiteral("carbon fiber") },
+                                                     { QStringLiteral("月港"), QStringLiteral("Moon Harbor") } };
+    EXPECT_EQ(translationModelPrompt(QStringLiteral("英文"), QStringLiteral("碳纤维很轻"), glossary),
+              QStringLiteral("请将以下文本翻译成英语，并且严格遵循所有约束要求。\n\n【源文】\n碳纤维很轻\n\n【约束要求】\n"
+                             "1. 【硬性要求】专名/术语对照: 碳纤维→carbon fiber\n\n只输出译文，不要有任何额外说明。"));
+    EXPECT_EQ(translationModelPrompt(QStringLiteral("英文"), QStringLiteral("你好"), glossary),
+              translationModelPrompt(QStringLiteral("英文"), QStringLiteral("你好")));
+}
+
+TEST(TranslationModel, GeneralModelsGetTheGlossaryAsAnExtraSection) {
+    const TextPolishPrompts::GlossaryPairs glossary{ { QStringLiteral("Kuda"), QStringLiteral("科达") } };
+    EXPECT_TRUE(translateOnlyPrompt(QStringLiteral("中文"), glossary, QStringLiteral("I met kuda")).contains(QStringLiteral("Kuda→科达")));
+    EXPECT_FALSE(translateOnlyPrompt(QStringLiteral("中文"), glossary, QStringLiteral("hello")).contains(QStringLiteral("术语对照")));
+}

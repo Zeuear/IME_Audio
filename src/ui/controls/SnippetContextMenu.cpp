@@ -201,7 +201,6 @@ void SnippetContextMenu::onPasteClipboardImage(const QString& itemId) {
     if (mime && mime->hasImage()) {
         img = qvariant_cast<QImage>(mime->imageData());
     } else if (mime && mime->hasUrls()) {
-        // 文件管理器里复制的图片文件
         for (const QUrl& u : mime->urls()) {
             if (u.isLocalFile() && kImageSuffixes.contains(QFileInfo(u.toLocalFile()).suffix().toLower())) {
                 img.load(u.toLocalFile());

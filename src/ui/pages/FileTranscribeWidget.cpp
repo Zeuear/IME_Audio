@@ -38,7 +38,6 @@
 
 namespace {
 
-// 目录总字节数（递归）；目录不存在时为 0
 qint64 directorySize(const QString& path)
 {
     qint64 total = 0;
@@ -50,7 +49,6 @@ qint64 directorySize(const QString& path)
     return total;
 }
 
-// 原文和译文两个预览框共用的刷新逻辑
 void setPreviewText(QPlainTextEdit* edit, const QString& text, bool sameFile)
 {
     const QString shown = edit->toPlainText();
@@ -111,7 +109,7 @@ void FileTranscribeWidget::setServices(QNetworkAccessManager* networkManager,
             this, &FileTranscribeWidget::onTranslationFailed);
     connect(m_pipeline, &FileTranscriptionPipeline::vocalsReady, this, [this](int row, const QString& path) {
         if (row < 0 || row >= m_model->rowCount()) {
-            QFile::remove(path);   // 任务已被移除，没人会用这个文件
+            QFile::remove(path);
             return;
         }
         discardVocals(row);
@@ -128,7 +126,7 @@ void FileTranscribeWidget::setupUi()
     m_addBtn = new QPushButton(this);
     m_addLinkBtn = new QPushButton(this);
     m_clearCacheBtn = new QPushButton(this);
-    m_transcribeBtn = new QPushButton(this);   // 空闲时"开始转录"，转录中变为"取消"
+    m_transcribeBtn = new QPushButton(this);
     m_exportBtn = new QPushButton(this);
     m_exportTxtCheck = new AnimatedCheckBox(this);
     m_exportTxtCheck->setChecked(true);
@@ -146,11 +144,9 @@ void FileTranscribeWidget::setupUi()
     toolbar->addStretch();
     toolbar->addWidget(m_clearCacheBtn);
 
-    // 上半部分：列表为空时显示拖入提示，有文件后切到卡片列表
     m_hintLabel = new QLabel(this);
     m_hintLabel->setAlignment(Qt::AlignCenter);
     m_hintLabel->setWordWrap(true);
-    // 虚线细一点、颜色淡一点，和卡片的边框风格保持一致
     // 底色也画成圆角的，否则外层容器的直角底色会露出来
     m_hintLabel->setStyleSheet(QStringLiteral(
         "QLabel { border: 2px dashed rgba(255, 255, 255, 60); border-radius: 10px; background-color: rgba(255, 255, 255, 8); }"));
@@ -163,7 +159,6 @@ void FileTranscribeWidget::setupUi()
     m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_list->setFrameShape(QFrame::NoFrame);
     m_list->setUniformItemSizes(true);
-    // 方块平铺：一行排满后自动换到下一行
     // 必须用 IconMode：ListMode 会把条目拉伸成整行宽度，不会平铺
     m_list->setViewMode(QListView::IconMode);
     m_list->setResizeMode(QListView::Adjust);
@@ -173,8 +168,7 @@ void FileTranscribeWidget::setupUi()
     m_list->setDragDropMode(QAbstractItemView::NoDragDrop);
     m_list->setAcceptDrops(false);
     m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_list->setMouseTracking(true);   // 悬停显示失败原因
-    // 列表底色透明，让外层卡片的颜色透出来，和设置页保持一致
+    m_list->setMouseTracking(true);
     m_list->setObjectName("file_task_list");
     m_list->setStyleSheet(QStringLiteral("QListView#file_task_list { background: transparent; border: none; }"));
     m_list->viewport()->setAutoFillBackground(false);
@@ -186,17 +180,14 @@ void FileTranscribeWidget::setupUi()
     m_listStack->addWidget(m_hintLabel);
     m_listStack->addWidget(m_list);
 
-    // 下半部分：所选文件的文本预览
     m_previewTitle = new QLabel(this);
     m_copyBtn = new QPushButton(this);
     m_preview = new QPlainTextEdit(this);
     m_preview->setReadOnly(true);
-    // 预览区不用硬边框，改成卡片内的柔和底色，和上方的列表区视觉上统一
     m_preview->setObjectName("preview_text");
     m_preview->setStyleSheet(QStringLiteral(
         "QPlainTextEdit#preview_text { border: none; border-radius: 8px; background-color: rgba(0, 0, 0, 40); padding: 8px; }"));
 
-    // 译文和原文并排，同样的底色；没开翻译时整栏隐藏
     m_copyTranslationBtn = new QPushButton(this);
     m_translationPreview = new QPlainTextEdit(this);
     m_translationPreview->setReadOnly(true);
@@ -205,7 +196,6 @@ void FileTranscribeWidget::setupUi()
         "QPlainTextEdit#translation_preview_text { border: none; border-radius: 8px; background-color: rgba(0, 0, 0, 40); padding: 8px; }"));
     m_translationPreview->hide();
 
-    // 标题加粗作为下半区的分组标题；导出跟着结果放在这里
     QFont titleFont = m_previewTitle->font();
     titleFont.setBold(true);
     m_previewTitle->setFont(titleFont);
@@ -233,20 +223,17 @@ void FileTranscribeWidget::setupUi()
     previewPanel->setObjectName("preview_panel");
     previewPanel->setStyleSheet(QStringLiteral("QWidget#preview_panel { background: transparent; }"));
     auto* previewLayout = new QVBoxLayout(previewPanel);
-    // 预览区的留白交给外层卡片的内边距，这里不再额外留空
     previewLayout->setContentsMargins(0, 0, 0, 0);
     previewLayout->setSpacing(8);
     previewLayout->addLayout(previewHeader);
     previewLayout->addWidget(textSplitter, 1);
 
     // 不再限制预览区和列表区的最大高度：高度由窗口和中间的分隔条决定，
-    // 拖大窗口或拖动分隔条就能看到更多转录内容；只留最小高度，免得被拖到看不见
     const int tileHeight = m_list->itemDelegate()->sizeHint(QStyleOptionViewItem(), QModelIndex()).height();
     m_listStack->setMinimumHeight(tileHeight);
     m_preview->setMinimumHeight(m_preview->fontMetrics().lineSpacing() * 4);
     m_translationPreview->setMinimumHeight(m_preview->minimumHeight());
 
-    // 上下两块各放进一张卡片（设置页同款的 card 属性），中间留出间距，不再是挤在一起的裸控件
     auto* topCard = new QFrame(this);
     topCard->setProperty("card", true);
     auto* topLayout = new QVBoxLayout(topCard);
@@ -280,8 +267,8 @@ void FileTranscribeWidget::setupUi()
     statusRow->addWidget(m_openFolderBtn);
 
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(10, 10, 10, 10);   // 和 TermWidget、基本设置页的页边距一致
-    layout->addWidget(splitter, 1);   // 占满窗口剩余高度，状态行贴在底部
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->addWidget(splitter, 1);
     layout->addLayout(statusRow);
 
     m_animTimer = new QTimer(this);
@@ -301,7 +288,6 @@ void FileTranscribeWidget::setupUi()
         else transcribeClicked();
     });
     connect(m_exportBtn, &QPushButton::clicked, this, &FileTranscribeWidget::exportResults);
-    // 两种格式都没勾时无可导出内容，按钮随勾选状态启停
     connect(m_exportTxtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_exportSrtCheck, &AnimatedCheckBox::toggled, this, [this]() { updateButtons(); });
     connect(m_copyBtn, &QPushButton::clicked, this, &FileTranscribeWidget::copyPreview);
@@ -373,13 +359,11 @@ void FileTranscribeWidget::retranslateUi()
     m_openFolderBtn->setText(tr("Open Folder"));
 
     // 预览标题未选中时是"Transcription"；卡片状态文字由模型在绘制时 tr，重绘即可刷新
-    // 主按钮和导出按钮的文字随状态变化，由 updateButtons 设置
     updatePreview();
     updateButtons();
     m_list->viewport()->update();
 }
 
-// ---------------------------------------------------------------- 列表与按钮
 void FileTranscribeWidget::dragEnterEvent(QDragEnterEvent* event)
 {
     LOG_INFO(QString("[DIAG-DND] dragEnter formats=%1 hasUrls=%2 action=%3")
@@ -406,7 +390,6 @@ void FileTranscribeWidget::chooseFiles()
         tr("Audio Files (*.wav *.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wma *.mp4 *.mkv);;All Files (*)")));
 }
 
-// ---------------------------------------------------------------- 链接
 void FileTranscribeWidget::updateAnimTimer()
 {
     // 解码中和下载中的"未知进度"条都靠这个定时器重绘
@@ -453,7 +436,7 @@ void FileTranscribeWidget::enqueueDownload(int row)
 void FileTranscribeWidget::onLinkFinished(quint64 id, bool ok, const QString& path, const QString& title, const QString& error)
 {
     const int row = m_model->rowOfLink(id);
-    if (row < 0) {   // 任务在下载期间被移除了
+    if (row < 0) {
         if (ok && m_pipeline) m_pipeline->releaseDownload(id);
         return;
     }
@@ -484,7 +467,6 @@ void FileTranscribeWidget::onLinkFinished(quint64 id, bool ok, const QString& pa
 void FileTranscribeWidget::queueForTranscription(int row)
 {
     if (m_busy) {
-        // 并入当前批次队尾；批次已取消则留在待处理
         if (!m_cancelled) {
             m_runRows << row;
             ++m_fileTotal;
@@ -520,7 +502,6 @@ void FileTranscribeWidget::removeSelected()
 {
     if (m_busy) return;
     const QList<int> rows = selectedRows();
-    // 链接任务：同时取消下载并删除临时音频
     if (m_pipeline) {
         for (int row : rows) {
             if (m_model->task(row).linkId != 0) m_pipeline->cancelDownload(m_model->task(row).linkId);
@@ -572,7 +553,7 @@ void FileTranscribeWidget::showContextMenu(const QPoint& pos)
     const QModelIndex idx = m_list->indexAt(pos);
     if (!idx.isValid()) return;
     if (!m_list->selectionModel()->isSelected(idx))
-        m_list->setCurrentIndex(idx);   // 右键未选中的卡片时先选中它
+        m_list->setCurrentIndex(idx);
 
     QMenu menu(this);
     QAction* retry = menu.addAction(tr("Re-transcribe"));
@@ -645,7 +626,7 @@ void FileTranscribeWidget::updateButtons()
         }
     }
 
-    m_addBtn->setEnabled(true);   // 转录中也允许追加
+    m_addBtn->setEnabled(true);
     m_clearCacheBtn->setEnabled(!m_busy && m_model->count(FileTask::State::Downloading) == 0);
     if (m_busy) {
         m_transcribeBtn->setText(m_cancelled ? tr("Cancelling...") : tr("Cancel"));
@@ -655,7 +636,6 @@ void FileTranscribeWidget::updateButtons()
         m_transcribeBtn->setEnabled(hasRunnable);
     }
 
-    // 按钮文字说明导出范围：有选中的已完成项就只导出它们，否则导出全部已完成项
     int selectedDone = 0;
     for (int row : selected) {
         if (m_model->task(row).state == FileTask::State::Done) ++selectedDone;
@@ -697,7 +677,6 @@ QList<int> FileTranscribeWidget::runnableRows(const QList<int>& candidates, bool
         const FileTask& t = m_model->task(row);
         if (t.state == FileTask::State::Downloading) continue;
         if (t.state == FileTask::State::Done && !includeDone) continue;
-        // 链接没下载下来、或缓存里的音频已被清理 / 删除：重新下载，成功后自动转录
         if (t.isLink() && (t.path.isEmpty() || !QFile::exists(t.path))) {
             m_model->restartDownload(row);
             enqueueDownload(row);
@@ -855,7 +834,7 @@ void FileTranscribeWidget::finishFile(FileTask::State state, const QString& erro
         ++m_noSpeechCount;
         m_model->setState(m_currentRow, FileTask::State::NoSpeech);
         break;
-    default:   // 取消：退回待处理
+    default:
         m_model->reset(m_currentRow);
         break;
     }
@@ -889,7 +868,6 @@ void FileTranscribeWidget::finishAll()
     }
 }
 
-// ---------------------------------------------------------------- 导出
 
 void FileTranscribeWidget::copyPreview()
 {
@@ -917,7 +895,6 @@ bool FileTranscribeWidget::writeTextFile(const QString& path, const QString& tex
 
 void FileTranscribeWidget::exportResults()
 {
-    // 有选中就只导出选中的成功项，否则导出全部成功项
     QList<int> rows;
     for (int row : selectedRows()) {
         if (m_model->task(row).state == FileTask::State::Done) rows << row;
@@ -941,7 +918,6 @@ void FileTranscribeWidget::exportResults()
     if (m_exportTxtCheck->isChecked()) exts << QStringLiteral("txt");
     if (m_exportSrtCheck->isChecked()) exts << QStringLiteral("srt");
 
-    // 按音频名称导出同名文件；重名时加序号，不覆盖已有文件
     int written = 0;
     int failed = 0;
     // 隐藏时说明没有译文可导出，不看它的勾选状态

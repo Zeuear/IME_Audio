@@ -28,7 +28,6 @@ public:
     SnippetSearchPopup(SnippetStore* store, SnippetPaster* paster, QWidget *parent = nullptr);
 
     void showPopup();
-    // 打字前缀呼出
     void showPopupAfterPrefix(int prefixLength);
     void hidePopup();
 
@@ -63,15 +62,15 @@ private:
     QLabel* m_previewText = nullptr;
     QLabel* m_hintLabel = nullptr;
 
-    ForegroundWindow::Handle m_target = 0;    // 呼出前的前台窗口
+    ForegroundWindow::Handle m_target = 0;
     QTimer m_hideTimer;
-    QHash<QString, QPixmap> m_previewCache;   // 路径 -> 已缩放的预览图
+    QHash<QString, QPixmap> m_previewCache;
     QPoint m_dragStartPos;
-    QPersistentModelIndex m_dragIndex;        // 按下时的结果行，移动超过阈值才开始拖动
-    bool m_dragged = false;                   // 这次按下已发起拖动，松开不能再算点击
-    bool m_dragging = false;                  // 拖放循环进行中，失焦不能关闭弹窗
-    int m_erasePrefixChars = 0;               // 选定条目后要先删掉的前缀字符数
-    int m_queryLength = 0;                    // 打字前缀模式下已经打进目标窗口的搜索词长度
+    QPersistentModelIndex m_dragIndex;
+    bool m_dragged = false;
+    bool m_dragging = false;
+    int m_erasePrefixChars = 0;
+    int m_queryLength = 0;
     bool m_queryMode = false;                 // 打字前缀呼出：弹窗不拿焦点，搜索词由 PrefixWatcher 转发
     QTimer m_idleTimer;
     QTimer m_outsideClickTimer;               // 打字前缀模式下轮询全局鼠标，点到弹窗外面就收起

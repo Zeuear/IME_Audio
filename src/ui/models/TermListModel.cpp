@@ -8,8 +8,7 @@ TermListModel::TermListModel(TermsLibraryManager* manager, QObject* parent)
     connect(m_manager, &TermsLibraryManager::termsReloaded, this, [this]() {
         beginResetModel();
         endResetModel();
-        // 信号发出时词条已经改完，只能和上次记下的行数比。
-        // 行数变了（增删、重新加载）行号就对不上了，勾选作废；只改内容时保留
+        // 信号发出时词条已改完，只能和上次记下的行数比：行数变了行号对不上，勾选作废
         if (rowCount() != m_rowCount && !m_checked.isEmpty()) {
             m_checked.clear();
             emit checkedChanged();
@@ -64,7 +63,7 @@ Qt::ItemFlags TermListModel::flags(const QModelIndex& index) const
     return QAbstractListModel::flags(index) | Qt::ItemIsEditable;
 }
 
-bool TermListModel::addTerm(const QString& heardText, const QString& correct)
+bool TermListModel::addTerm(const QString& heardText, const QString& correct, const QString& tags)
 {
     const QStringList heard = TermsLibraryManager::splitWords(heardText);
     if (const QString err = validate(heard, correct.trimmed(), -1); !err.isEmpty()) {
@@ -74,13 +73,15 @@ bool TermListModel::addTerm(const QString& heardText, const QString& correct)
     TermItem item;
     item.setHeard(heard);
     item.correct = correct.trimmed();
+    item.tags = tags;
     m_manager->addItem(item);
     return true;
 }
 
 QString TermListModel::validate(const QStringList& heard, const QString& correct, int row) const
 {
-    if (correct.isEmpty()) return tr("\"写成\"不能为空");
+    if (m_requireHeard && heard.isEmpty()) return tr("\"源词\"不能为空");
+    if (correct.isEmpty()) return m_requireHeard ? tr("\"译文\"不能为空") : tr("\"写成\"不能为空");
     if (const QString dup = m_manager->duplicateHeard(heard, row); !dup.isEmpty()) {
         return tr("\"%1\" 已在其它词条里，不能重复").arg(dup);
     }

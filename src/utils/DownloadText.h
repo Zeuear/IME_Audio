@@ -11,7 +11,7 @@ QString formatSize(qint64 bytes);
 // 只有一个文件时不显示序号；percent 为负表示未知，不显示百分比，超过 100 按 100
 QString progressLine(const QString& fileName, int fileIndex, int fileCount, int percent, int maxNameChars = 36);
 
-} // namespace DownloadText
+}
 
 // @brief 一组文件（模型、CUDA 包）的进度累计：文件数、完成数、当前文件、整体百分比；喂下载器信号即可。
 class DownloadGroupProgress
@@ -24,7 +24,6 @@ public:
     int percent() const { return m_percent; }
     int finishedFiles() const { return m_finished; }
     int totalFiles() const { return m_total; }
-    // 还没收到过进度时为空串
     QString line(int maxNameChars = 36) const;
 
 private:

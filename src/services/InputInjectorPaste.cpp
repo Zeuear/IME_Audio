@@ -4,7 +4,6 @@
 #include <QImage>
 #include <QThread>
 
-// 剪贴板写入是各平台通用的，只有"发 Ctrl+V"依赖 platform/<os>/ 的 sendCtrlV()
 
 bool InputInjector::pasteText(const QString& text) {
     return pasteViaClipboard(text);

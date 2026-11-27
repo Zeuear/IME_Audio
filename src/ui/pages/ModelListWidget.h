@@ -17,7 +17,6 @@ public:
     bool setCurrentModel(const QString& displayName);
     QString currentModel() const;
     void refreshInstalled();
-    // 行内下载进度来自 tracker（SherpaInstaller 的信号由宿主喂给它）
     void setDownloadTracker(ModelDownloadTracker* tracker);
 
 signals:

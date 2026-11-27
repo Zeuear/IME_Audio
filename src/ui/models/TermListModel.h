@@ -18,7 +18,8 @@ public:
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    bool addTerm(const QString& heardText, const QString& correct);
+    bool addTerm(const QString& heardText, const QString& correct, const QString& tags = {});
+    void setRequireHeard(bool require) { m_requireHeard = require; }
 
     bool isChecked(int row) const { return m_checked.contains(row); }
     void setChecked(const QSet<int>& rows);
@@ -34,4 +35,5 @@ private:
     TermsLibraryManager* m_manager;
     QSet<int> m_checked;
     int m_rowCount = 0;
+    bool m_requireHeard = false;
 };

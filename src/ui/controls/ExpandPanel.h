@@ -14,22 +14,17 @@ public:
     explicit ExpandPanel(QWidget* parent = nullptr);
 
     void setPages(QWidget* transcript, QWidget* dictionary, QWidget* file);
-    // 跟随这个窗口（横条）的位置；面板可见时它移动或改变大小，面板重新摆放
     void attachTo(QWidget* anchor);
 
-    // 三页在设置窗口形态下都借给设置窗口的标签页：同一个实例，借出时面板必须是收起的
     void releaseSharedPages();
     void takeBackSharedPages(QWidget* transcript, QWidget* dictionary, QWidget* file);
 
-    // 和横条的置顶设置保持一致：横条不置顶时面板也不该盖在别的软件上面
     void setAlwaysOnTop(bool on);
 
     PanelState::Page page() const { return m_page; }
-    // None 表示收起
     void showPage(PanelState::Page page);
 
 signals:
-    // 面板页面变了（每次变化只报一次），横条据此点亮图标
     void pageChanged(PanelState::Page page);
 
 protected:
@@ -48,14 +43,13 @@ private:
     void retranslateUi();
     void reposition();
     void onTabChanged(int index);
-    // 左上角贴着横条，只有右边、下边和右下角能拖
     Qt::Edges resizeEdgesAt(const QPoint& pos) const;
     static int indexOf(PanelState::Page page);
     static PanelState::Page pageAt(int index);
 
     QTabWidget* m_tabs = nullptr;
     QWidget* m_border = nullptr;
-    QTimer* m_sizeSaveTimer = nullptr;   // 拖动时大小连续变化，停下后才写一次配置
+    QTimer* m_sizeSaveTimer = nullptr;
     QSize m_savedSize;
     QPointer<QWidget> m_anchor;
     PanelState::Page m_page = PanelState::Page::None;

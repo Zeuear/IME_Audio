@@ -75,7 +75,6 @@ void OllamaModelButton::setModel(const QString& name)
 void OllamaModelButton::setInstalled(const QStringList& models)
 {
     m_installed = models;
-    // 能列出已装模型就说明服务在运行
     m_checked = true;
     m_running = true;
     refresh();

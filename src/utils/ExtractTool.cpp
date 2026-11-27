@@ -16,7 +16,7 @@ namespace {
     {
         if (path.isEmpty()) return false;
         if (path.startsWith('/') || path.startsWith('\\')) return false;
-        if (path.size() >= 2 && path.at(1) == ':') return false;   // 盘符
+        if (path.size() >= 2 && path.at(1) == ':') return false;
         const QStringList parts = QString(path).replace('\\', '/').split('/');
         return !parts.contains(QStringLiteral(".."));
     }
@@ -27,16 +27,13 @@ namespace {
         return utf8 ? QString::fromUtf8(utf8) : QString::fromLocal8Bit(archive_entry_pathname(e));
     }
 
-    // 目标路径若经过符号链接（macOS 的 /var -> /private/var 是系统自带的），libarchive 的
-    // SECURE_SYMLINKS 会逐段 lstat，看到链接就拒绝写入，连普通文件也解压不出来。
-    // 先把已存在的目标目录解析成真实路径，包内真正的符号链接仍然由 SECURE_SYMLINKS 拦截。
+    // 目标路径若经过符号链接（如 macOS 的 /var -> /private/var），SECURE_SYMLINKS 会拒绝写入；先解析成真实路径，包内的符号链接仍被拦截。
     QString resolvedDestDir(const QString& destDir)
     {
         const QString native = QDir(QDir::fromNativeSeparators(destDir)).absolutePath();
         const QString canonical = QFileInfo(native).canonicalFilePath();
         if (!canonical.isEmpty()) return canonical;
 
-        // 目标还不存在：规范化最近的已存在祖先，再拼回剩余分段
         QStringList tail;
         QDir cur(native);
         while (!cur.exists() && cur.path() != cur.rootPath() && !cur.path().isEmpty()) {
@@ -49,9 +46,7 @@ namespace {
         return base;
     }
 
-    // 进程内解压，不再调用系统 tar：Windows 自带的 bsdtar 没有 bzip2，会再起外部 `bzip2 -d`，
-    // 干净机器上没有它就失败；三平台统一用 libarchive，错误原因也能原样带给用户。
-    // 阻塞直到完成，调用方应放在工作线程里。支持 tar(.bz2/.gz) 和 zip。
+    // 进程内解压，不调用系统 tar：Windows 的 bsdtar 没有 bzip2、干净机器上会失败；三平台统一 libarchive。阻塞，须放工作线程。
     bool runExtract(const QString& archivePath, const QString& destDir,
         const ExtractProgressCb& onProgress, QString* error)
     {
@@ -63,7 +58,6 @@ namespace {
 
         archive* in = archive_read_new();
         archive* out = archive_write_disk_new();
-        // 无论从哪个出口返回都要释放；read_free 会顺带 close
         struct Guard {
             archive* in; archive* out;
             ~Guard() { archive_read_free(in); archive_write_free(out); }
@@ -116,7 +110,6 @@ namespace {
             if (!isSafeEntryPath(rel)) return fail(QStringLiteral("unsafe entry path: ") + rel);
             archive_entry_update_pathname_utf8(entry, (base + '/' + rel).toUtf8().constData());
 
-            // 硬链接的目标也是包内相对路径，同样要搬到目标目录下
             if (const char* link = archive_entry_hardlink_utf8(entry)) {
                 const QString linkRel = QString::fromUtf8(link);
                 if (!isSafeEntryPath(linkRel)) return fail(QStringLiteral("unsafe hardlink: ") + linkRel);
@@ -131,7 +124,6 @@ namespace {
                 const void* buf = nullptr;
                 size_t size = 0;
                 la_int64_t offset = 0;
-                // 按数据块推进进度，单个大文件（如 encoder.onnx）解压期间也能看到进度在走
                 while ((r = archive_read_data_block(in, &buf, &size, &offset)) == ARCHIVE_OK) {
                     if (archive_write_data_block(out, buf, size, offset) < ARCHIVE_WARN)
                         return fail(QString::fromUtf8(archive_error_string(out)));
@@ -146,7 +138,7 @@ namespace {
         return true;
     }
 
-} // namespace
+}
 
 
 bool ExtractTool::flattenWrapper(const QString& dir, const QString& wrapperName)
@@ -175,7 +167,7 @@ bool ExtractTool::flattenWrapper(const QString& dir, const QString& wrapperName)
         }
     }
     if (allMoved) wrapper.removeRecursively();
-    else QDir().rename(tmpPath, top.first().absoluteFilePath());   // 没移干净就还原，不留半截状态
+    else QDir().rename(tmpPath, top.first().absoluteFilePath());
     return allMoved;
 }
 
@@ -219,7 +211,6 @@ bool ExtractTool::extractAndDeploy(const QString& archivePath, const ExtractOpti
         return false;
     }
 
-    // 临时目录放目标盘旁边
     const QString tempDir = QFileInfo(options.destinationDir).absolutePath()
         + "/.extract_" + QUuid::createUuid().toString(QUuid::Id128);
     if (!QDir().mkpath(tempDir)) {

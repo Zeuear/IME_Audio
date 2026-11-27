@@ -47,7 +47,7 @@ public:
         quint64 runToken = 0;
         QString path;
         AppConfig config;
-        bool separateVocals = false;   // 先分离人声，再转录人声
+        bool separateVocals = false;
     };
 
     explicit FileTranscriptionPipeline(QNetworkAccessManager* networkManager,

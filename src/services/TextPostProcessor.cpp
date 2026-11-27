@@ -14,6 +14,7 @@ void TextPostProcessor::setLanguage(const QString& lang) {
 QString TextPostProcessor::postProcess(const QString& rawText) {
     QString text = rawText;
     text = TermsLibraryManager::applyReplaceRules(text, m_replaceRules);
+    if (m_fuzzyEnabled) text = m_fuzzy.apply(text);
     if (m_autoPunctuation) {
         text = addAutoPunctuation(text, m_language);
     }
@@ -51,12 +52,12 @@ bool TextPostProcessor::endsWithSentencePunctuation(const QString& text) const {
         return true;
     }
 
-    if (cleanText.endsWith(QStringLiteral("。")) ||   // 。
-        cleanText.endsWith(QStringLiteral("！")) ||   // ！
-        cleanText.endsWith(QStringLiteral("？")) ||   // ？
-        cleanText.endsWith(QStringLiteral("，")) ||   // ，
-        cleanText.endsWith(QStringLiteral("；")) ||   // ；
-        cleanText.endsWith(QStringLiteral("："))) {    // ：
+    if (cleanText.endsWith(QStringLiteral("。")) ||
+        cleanText.endsWith(QStringLiteral("！")) ||
+        cleanText.endsWith(QStringLiteral("？")) ||
+        cleanText.endsWith(QStringLiteral("，")) ||
+        cleanText.endsWith(QStringLiteral("；")) ||
+        cleanText.endsWith(QStringLiteral("："))) {
         return true;
     }
     return false;
@@ -72,10 +73,8 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
         return QStringLiteral(".");
     }
 
-    // 根因修复：以前用"文本里有没有 >127 的字符"猜是不是中文——西语/法语/德语等带重音符号
-    // （á é ñ ü ...）同样会被判成"非 ASCII"，误落进下面的中文分支，最终兜底吐出中文的「。」。
-    // 应该按识别语言 m_language（"zh"/"ja"/"en"/"es"...）走分支，而不是猜字节。
-    // 中日用全角标点（。！？），其余语言（含西语等拉丁文字、韩语、俄语、阿拉伯语等）用西式 ASCII 标点。
+    // 按识别语言而非字节猜：西语/法语等带重音字符也是非 ASCII，曾误落进中文分支吐出「。」
+    // 中日用全角标点，其余语言用 ASCII 标点
     const bool useFullwidthPunctuation = (language == QStringLiteral("zh") || language == QStringLiteral("ja"));
 
     if (!useFullwidthPunctuation) {
@@ -107,7 +106,6 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
         return QStringLiteral(".");
     }
 
-    // Chinese/CJK question suffixes: 吗 么 嘛 呢
     static const QChar cnQuestionSuffixes[] = {
         QChar(0x5480),  // 吗
         QChar(0x4E58),  // 么
@@ -116,7 +114,7 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
     };
     for (QChar suf : cnQuestionSuffixes) {
         if (!cleanText.isEmpty() && cleanText.back() == suf) {
-            return QStringLiteral("？");  // ？
+            return QStringLiteral("？");
         }
     }
 
@@ -134,11 +132,10 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
     };
     for (const QString& kw : cnQuestionKeywords) {
         if (cleanText.contains(kw)) {
-            return QStringLiteral("？");  // ？
+            return QStringLiteral("？");
         }
     }
 
-    // Chinese/CJK exclamation suffixes: 啊 呀 哇 啦
     static const QChar cnExclaimSuffixes[] = {
         QChar(0x5580),  // 啊
         QChar(0x565A),  // 呀
@@ -147,7 +144,7 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
     };
     for (QChar suf : cnExclaimSuffixes) {
         if (!cleanText.isEmpty() && cleanText.back() == suf) {
-            return QStringLiteral("！");  // ！
+            return QStringLiteral("！");
         }
     }
 
@@ -159,9 +156,9 @@ QString TextPostProcessor::pickSuffix(const QString& text, const QString& langua
     };
     for (const QString& kw : cnExclaimKeywords) {
         if (cleanText.contains(kw)) {
-            return QStringLiteral("！");  // ！
+            return QStringLiteral("！");
         }
     }
 
-    return QStringLiteral("。");  // 。
+    return QStringLiteral("。");
 }

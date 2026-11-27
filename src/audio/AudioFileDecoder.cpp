@@ -40,7 +40,6 @@ struct OpenedAudio {
     QString error;
 };
 
-// 打开文件并准备好音频流解码器；其它流（m4a 的封面图、视频画面）直接丢弃，省去无用的解复用
 OpenedAudio openAudio(const QString& path)
 {
     OpenedAudio r;
@@ -127,9 +126,9 @@ AudioFileDecoder::Result AudioFileDecoder::decode(const QString& path, int targe
             drainFrames();
         av_packet_unref(pkt.get());
     }
-    avcodec_send_packet(dec.get(), nullptr);   // 冲出解码器缓存的最后几帧
+    avcodec_send_packet(dec.get(), nullptr);
     drainFrames();
-    convert(nullptr, 0);                       // 冲出重采样器里剩余的样本
+    convert(nullptr, 0);
 
     if (r.pcm.isEmpty()) return failed(QStringLiteral("没有解码出音频数据"));
     return r;

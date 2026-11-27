@@ -65,7 +65,7 @@ bool TermsLibraryManager::exportToFile(const QString &path) const { return saveT
 
 QStringList TermsLibraryManager::checkConflicts() const {
     QStringList conflicts;
-    QMap<QString, int> heardMap;   // 听成 → 所在词条
+    QMap<QString, int> heardMap;
     for (int i = 0; i < m_items.size(); ++i) {
         const auto& item = m_items[i];
         if (!item.enabled) continue;
@@ -75,7 +75,6 @@ QStringList TermsLibraryManager::checkConflicts() const {
                 conflicts << QString("无效替换(相同): %1").arg(w);
                 continue;
             }
-            // 同一个听成对应了不同的写成
             if (heardMap.contains(w)) {
                 const QString& other = m_items[heardMap[w]].correct;
                 if (other != item.correct) {
@@ -180,7 +179,6 @@ QString TermsLibraryManager::applyReplaceRules(const QString& text, const QStrin
         }
     }
 
-    // 统一把占位符替换回真正的目标词，此时不会再触发二次替换
     for (auto it = placeholderMap.constBegin(); it != placeholderMap.constEnd(); ++it) {
         result.replace(it.key(), it.value());
     }

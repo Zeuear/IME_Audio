@@ -8,4 +8,4 @@ namespace ToggleLink {
 
 void connect(QAbstractButton* button, QCheckBox* box);
 
-} // namespace ToggleLink
+}

@@ -47,28 +47,22 @@ protected:
     void keyPressEvent(QKeyEvent* event) override {
         int key = event->key();
 
-        // 1. 支持 A-Z 字母键
         if (key >= Qt::Key_A && key <= Qt::Key_Z) {
-            setText(QChar(key)); // 自动转为大写字母
+            setText(QChar(key));
             emit editingFinished();
         }
-        // 2. 支持 0-9 数字键（包含大键盘和数字小键盘）
         else if (key >= Qt::Key_0 && key <= Qt::Key_9) {
             setText(QChar(key));
             emit editingFinished();
         }
-        // 3. 支持 F1-F24 功能键
         else if (key >= Qt::Key_F1 && key <= Qt::Key_F24) {
-            // 使用 QKeySequence 自动将 Qt::Key_F1 转换为文本 "F1"
             setText(QKeySequence(key).toString());
             emit editingFinished();
         }
-        // 4. 支持空格键（默认热键使用）
         else if (key == Qt::Key_Space) {
             setText("Space");
             emit editingFinished();
         }
-        // 5. 支持退格键和删除键清空内容
         else if (key == Qt::Key_Backspace || key == Qt::Key_Delete) {
             clear();
             emit editingFinished();
@@ -86,8 +80,7 @@ public:
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(3);
 
-        // 修饰键名称：Qt 在 macOS 上把 Ctrl 映射为 ⌘、Meta 映射为 ⌃，
-        // 因此标签必须按平台显示，内部存储格式保持 Qt 语义不变。
+        // Qt 在 macOS 上把 Ctrl 映射为 ⌘、Meta 映射为 ⌃，标签按平台显示，存储仍用 Qt 语义
 #ifdef Q_OS_MACOS
         const QString ctrlName = QStringLiteral("⌘ Cmd");
         const QString shiftName = QStringLiteral("⇧ Shift");
@@ -99,16 +92,14 @@ public:
         const QString altName = QStringLiteral("Alt");
         const QString metaName = QStringLiteral("Win");
 #endif
-        // 每个修饰键一组"名称 + 勾选框"，组与组之间留出间隔
         auto addModifier = [&](const QString& name, AnimatedCheckBox*& box) {
             QLabel* label = new QLabel(name, this);
             label->setFixedHeight(30);
-            label->setContentsMargins(0, 0, 5, 0);   // 名称与方框的可见间距约 8px
+            label->setContentsMargins(0, 0, 5, 0);
             box = new AnimatedCheckBox(this);
             layout->addWidget(label);
             layout->addWidget(box);
-            // 勾选框控件宽 30px、方框只占左侧 18px，右侧约 12px 空白也算进组间距，
-            // 所以这里只补 6px，使可见组间距约 24px，且最后一组到输入框的间距与组间一致
+            // 勾选框控件宽 30px、方框只占左 18px，右侧空白也算组间距，只补 6px 使可见间距约 24px
             layout->addSpacing(6);
         };
         addModifier(ctrlName, chkCtrl);
@@ -116,7 +107,6 @@ public:
         addModifier(altName, chkAlt);
         addModifier(metaName, chkMeta);
 
-        // 按键输入框：允许的按键写在提示里，不再占一行标签
         txtKey = new SingleCharEdit();
         txtKey->setFixedSize(70, 30);
         txtKey->setPlaceholderText(tr("Key"));
@@ -175,7 +165,6 @@ protected:
 
 signals:
     void hotkeyActivated();
-    // 按住说话模式用：快捷键松开
     void hotkeyReleased();
     void shortcutChanged(const QString& shortcut);
 
@@ -217,5 +206,5 @@ private:
     AnimatedCheckBox* chkMeta;
     QLineEdit *txtKey;
     QHotkey *globalHotkey = nullptr;
-    bool m_filling = false;   // setShortCut 回填控件期间
+    bool m_filling = false;
 };

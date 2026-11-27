@@ -17,12 +17,9 @@
 namespace InstallMarker {
 
     bool isInstalled(const QString& modelDir);
-    // 目录存在，且带"安装中"标记：上一次下载没有完成
     bool isIncomplete(const QString& modelDir);
 
-    // 开始下载前调用
     bool markInstalling(const QString& modelDir);
-    // 全部下完后调用
     void markComplete(const QString& modelDir);
 
 }
@@ -53,7 +50,6 @@ enum class ModelArch {
     Unsupported
 };
 
-/** @brief 神经标点（sherpa-onnx punc）绑定模式。 */
 enum class PunctMode {
     Auto,   // 默认：需要则绑定全局默认 punc 模型（仅 zh/en 且模型不自带头标点时）
     Off     // 不绑定神经标点，回退到 TextPostProcessor 启发式
@@ -68,7 +64,6 @@ struct TransducerFiles {
     QString joinerFile = "joiner.int8.onnx";
 };
 
-// paraformer / nemo_ctc / dolphin / zipformer_ctc / telespeech / wenet_ctc / omnilingual
 struct SingleFileModelFiles {
     QString modelFile = "model.onnx";
     QString tokensFile = "tokens.txt";
@@ -120,14 +115,14 @@ struct FunasrFiles {
 };
 
 struct Qwen3AsrFiles {
-    QString archiveUrl;                         // 完整下载地址(含具体版本号,以后升级模型版本时只改这里)
-    QString archiveFileName;                    // 下载到本地的文件名,如 "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2"
-    QString extractedDirName;                   // 解压后归档内的目录名,用于识别、之后移动内容到目标目录
-    QString encoderFile = "encoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
-    QString decoderFile = "decoder.int8.onnx";  // 用于判断"是否已安装"的探测文件
-    QString convFile = "conv_frontend.onnx";    // 用于判断"是否已安装"的探测文件
+    QString archiveUrl;
+    QString archiveFileName;
+    QString extractedDirName;
+    QString encoderFile = "encoder.int8.onnx";
+    QString decoderFile = "decoder.int8.onnx";
+    QString convFile = "conv_frontend.onnx";
     QString decoderDataFile;                    // 外部权重，空串 = 没有；须与 decoderFile 同目录
-    QStringList tokenizerFiles;                 // 放在 tokenizer 子目录下
+    QStringList tokenizerFiles;
     QString tokenizer = "tokenizer";
     QString hotwords;
 };
@@ -168,12 +163,12 @@ struct ModelDescriptor {
     int numThreads = 2;
 
     QString language;                       // 由语言表注入（zh/en/...），用于判断是否可绑 punc
-    PunctMode punctMode = PunctMode::Auto; // 神经标点绑定模式
+    PunctMode punctMode = PunctMode::Auto;
     bool hasBuiltinPunctuation = false;    // 模型自带标点（SenseVoice/Canary 等）→ 不绑 punc
 
     QString gpuRepoId;                     // 非空 = 该 CPU 模型有对应的 GPU 变体（另一行）
     bool gpuVariant = false;               // 该行本身是 GPU 变体（fp16），只有它才会用 CUDA
-    int approxSizeMb = 0;                  // GPU 变体的下载体积（MB），只用于界面显示
+    int approxSizeMb = 0;
 
     ModelDescriptor(ModelArch a)
         : arch(a), files(DefaultFilesFor(a)), displayName(modelArchToString(a)) {
@@ -282,8 +277,8 @@ struct ModelDescriptor {
 };
 
 struct ModelEntry {
-    QString displayName;   // 用户看到的： "SenseVoice-Small (多语言/标点/事件)"
-    QString repoPath;      // 程序用的： "csukuangfj/sherpa-onnx-sense-voice-..."
+    QString displayName;
+    QString repoPath;
 };
 
 
@@ -371,14 +366,12 @@ public:
         const QString& modelFile,
         int numThreads);
 
-    // languageCode 为 Cohere 的语言代码（"zh"、"en" …），由 cohereLanguageCode() 从软件语言名换算
     static sherpa_onnx::cxx::OfflineRecognizerConfig buildCohereTranscribe(
         const QString& repoId,
         const CohereTranscribeFiles& files,
         const QString& languageCode,
         int numThreads);
 
-    // 软件语言名（如 "Chinese"）→ Cohere 语言代码；不支持的语种返回空串
     static QString cohereLanguageCode(const QString& languageName);
 
 };
@@ -425,9 +418,9 @@ public:
 		QString repoId;
 		bool isLoaded = false;
 		bool cudaFailed = false;     // GPU 变体的 CUDA 初始化失败（不回退 CPU，isLoaded 为 false）
-		QString failReason;          // cudaFailed 时的原因（来自底层异常，英文）
-		GpuProvider provider = GpuProvider::Unknown;   // 创建成功后真正使用的后端
-		bool requestedCuda = false;   // 这次加载是否要求 CUDA（模型有 GPU 变体且全局开了 GPU）
+		QString failReason;
+		GpuProvider provider = GpuProvider::Unknown;
+		bool requestedCuda = false;
 		RecognizerKind kind = RecognizerKind::None;
         RecognizerPtrVar recognizer = std::monostate{};
 	};
@@ -445,9 +438,6 @@ public:
 
     };
 
-    /**
-     * @brief 全局共享神经标点模型。
-     */
     struct NeuralPunctModel {
         inline static const QString repoId =
             "csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12";
@@ -462,25 +452,21 @@ public:
     static bool shouldUseNeuralPunct(const ModelDescriptor& desc, const QString& language);
 
     // 模型覆盖多种语言、而识别时无法指定语种（由模型自己判断）。
-    // 短词、口音下容易判成别的语言，界面据此给模型打上"自动识别语种"标注。
-    // Whisper / Cohere 会按所选语言传参，Canary 的源语种写在条目里，都不算
     static bool detectsLanguageAutomatically(const ModelDescriptor& desc, int coveredLanguageCount);
 
     static const ModelDescriptor* Find(const QString& repoId);
+    static bool SupportsHotwords(const QString& repoId);
 
-    // GPU 变体配对：CPU 模型的 gpuRepoId 指向另一行 GPU 变体
     static bool IsGpuVariant(const QString& repoId);
-    static QString GpuVariantOf(const QString& cpuRepoId);   // 没有返回空串
-    static QString CpuVariantOf(const QString& gpuRepoId);   // 没有返回空串
+    static QString GpuVariantOf(const QString& cpuRepoId);
+    static QString CpuVariantOf(const QString& gpuRepoId);
     static bool ShouldUseCuda(const ModelDescriptor& desc, bool globalUseGpu);
-    // 选中 CPU 模型后实际加载哪个仓库（GPU 模式且 GPU 版已下载才换成 GPU 版）
     static QString ResolveForMode(const QString& repoId, bool useGpu);
     static GpuVariant::GpuState GpuStateOf(const QString& cpuRepoId);
     // allowHotwords=false 用于实时字幕：流式 BPE 模型没配词表，套用全局热词可能导致创建失败
     static Result GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords = true);
 
-    // 实时字幕的流式伴随模型：不在语言表里（不出现在模型列表），但并入 Table()，
-    // 所以 Find / BuildManifest / GetConfig 照常可用。没有伴随模型的语言返回空串。
+    // 实时字幕的流式伴随模型：不在语言表里，但并入 Table()，Find / BuildManifest / GetConfig 照常可用；无则返回空串。
     static QString StreamingModelFor(const QString& language);
     static bool IsStreamingCompanion(const QString& repoId);
 
@@ -488,7 +474,7 @@ public:
     static QStringList GetModelsByLanguage(const QString& language); 
     static QStringList GetLanguagesByModel(const QString& repoId);
     static QList<ModelEntry> GetModelEntriesByLanguage(const QString& language);
-    static QStringList GetLanguagesByRepo(const QString& repoId);   // 该模型出现在哪些语言分组里
+    static QStringList GetLanguagesByRepo(const QString& repoId);
 
     static ModelInstallManifest BuildManifest(const QString& repoId);
     static const QString FindByDisplayName(const QString& language, const QString& displayName);

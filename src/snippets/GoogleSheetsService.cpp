@@ -40,16 +40,14 @@ QString htmlUnescape(QString s) {
     return out;
 }
 
-// ---------------------------------------------------------------------------
 // XLSX 解析：只取 A、B 两列和嵌入的图片。CSV 导出拿不到直接插入单元格的图片，所以优先走 XLSX
-// ---------------------------------------------------------------------------
 
 const QString kRelNs = QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships");
 
 struct XlsxRel {
     QString id;
     QString type;
-    QString target;   // 已换算成压缩包内的绝对路径
+    QString target;
 };
 
 // 关系文件里的 Target 相对于“被描述文件所在目录”，或以 / 开头表示从包根算起
@@ -100,7 +98,6 @@ QStringList parseSharedStrings(const QByteArray& data) {
     return out;
 }
 
-// 工作表里的 A、B 列，行号从 0 开始，缺的行补空串
 QVector<QStringList> parseSheetRows(const QByteArray& data, const QStringList& shared, int minRows) {
     QHash<int, QStringList> rows;
     int maxRow = -1;
@@ -222,7 +219,6 @@ GoogleSheetsService::CellImages extractSheetImages(QZipReader& zip, const QStrin
     return result;
 }
 
-// 解析整本 XLSX 里名为 sheetName 的工作表；压缩包不可读或找不到该表返回 false
 bool parseXlsxSheet(const QByteArray& xlsx, const QString& sheetName, const QString& imagesDir,
                     QVector<QStringList>& rowsOut, GoogleSheetsService::CellImages& imagesOut) {
     QBuffer buffer;
@@ -287,7 +283,7 @@ QVector<QPair<QString, QString>> parseWorkbookSheets(const QByteArray& xlsx) {
     return out;
 }
 
-} // namespace
+}
 
 GoogleSheetsService::GoogleSheetsService(QObject* parent)
     : QObject(parent), m_nam(new QNetworkAccessManager(this)) {}
@@ -350,7 +346,6 @@ void GoogleSheetsService::listSheetNames(const QString& url, ListSheetsCallback 
         return;
     }
 
-    // 1) /edit：取标题（失败不致命，下一步 pubhtml 还能拿到标签列表）
     httpGet(QUrl(QString("https://docs.google.com/spreadsheets/d/%1/edit").arg(sheetId)), timeoutMs,
         [this, sheetId, timeoutMs, callback](bool editOk, QByteArray editBody, QString err1) {
             QString docTitle;
@@ -369,7 +364,6 @@ void GoogleSheetsService::listSheetNames(const QString& url, ListSheetsCallback 
                 }
             }
 
-            // 2) pubhtml：干净的 Sheet 标签列表
             httpGet(QUrl(QString("https://docs.google.com/spreadsheets/d/%1/pubhtml").arg(sheetId)), timeoutMs,
                 [this, sheetId, timeoutMs, callback, editOk, err1, docTitle, htmlText](bool pubOk, QByteArray pubBody, QString err2) {
                     QVector<QPair<QString, QString>> sheets;
@@ -384,7 +378,6 @@ void GoogleSheetsService::listSheetNames(const QString& url, ListSheetsCallback 
                         }
                     }
 
-                    // 3) 回退：/edit 引导数据
                     if (sheets.isEmpty() && !htmlText.isEmpty()) {
                         static const QRegularExpression re2(R"re(\[(\d+),\s*\[\["([^"]+)")re");
                         QSet<QString> seen;
@@ -433,7 +426,6 @@ void GoogleSheetsService::loadXlsx(const QString& spreadsheetId, int timeoutMs, 
         return;
     }
     const QUrl url(QString("https://docs.google.com/spreadsheets/d/%1/export?format=xlsx").arg(spreadsheetId));
-    // 整本文件比单张 CSV 大得多，超时放宽
     httpGet(url, timeoutMs * 3, [this, spreadsheetId, callback = std::move(callback)](bool ok, QByteArray data, QString) {
         // 无权限时 Google 返回登录页 HTML，不是 zip（以 PK 开头）
         if (!ok || !data.startsWith("PK")) data.clear();
@@ -442,7 +434,6 @@ void GoogleSheetsService::loadXlsx(const QString& spreadsheetId, int timeoutMs, 
     });
 }
 
-// 先试 XLSX（能带出直接插入单元格的图片），任何一步失败都退回 CSV
 void GoogleSheetsService::fetchSheetItems(const QString& spreadsheetId,
                                           const QString& sheetGid,
                                           const QString& sheetName,
@@ -487,7 +478,7 @@ QVector<QStringList> GoogleSheetsService::parseCsv(const QString& text) {
     QStringList row;
     QString cell;
     bool inQuotes = false;
-    bool any = false;   // 当前行是否出现过字符
+    bool any = false;
 
     auto endCell = [&]() { row << cell; cell.clear(); };
     auto endRow = [&]() {
@@ -536,7 +527,7 @@ void GoogleSheetsService::parseRowsIntoFolder(FolderNode* l2Folder, const QVecto
             auto m = imgRe.match(colB);
             if (m.hasMatch()) {
                 imgPath = m.captured(1);
-                colB.clear();          // 公式本身不作为外文文本
+                colB.clear();
             }
         }
 

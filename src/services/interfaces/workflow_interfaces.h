@@ -6,7 +6,6 @@
 #include "config/AppConfig.h"
 
 // 录音层依赖接口：WorkflowManager 只通过此接口驱动录音、接收上行信号。
-// 具体实现 = AudioRecorderService；测试用 FakeRecorder 注入，完全脱离 WASAPI/COM。
 class IRecorder : public QObject {
     Q_OBJECT
 public:
@@ -27,7 +26,6 @@ signals:
     void spectrumUpdated(const QVector<float> &bands);
     void voiceStarted();
     void voiceStopped();
-    // 录音层错误（如 VAD 模型缺失）：title/cause 为中文，由上层 notify 弹窗
     void errorOccurred(const QString& title, const QString& cause = {});
 };
 

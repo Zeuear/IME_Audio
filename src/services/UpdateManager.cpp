@@ -28,7 +28,7 @@ bool writeUpdaterScript(const QString& script, QString* path)
     return true;
 }
 
-}   // namespace
+}
 
 UpdateManager::UpdateManager(QNetworkAccessManager* networkManager, QObject* parent)
     : QObject(parent), m_networkManager(networkManager) {
@@ -254,7 +254,6 @@ bool UpdateManager::launchUpdaterWindows(const QString& downloadedFilePath, QStr
     const QString currentExeName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
     const QString targetExePath = QFileInfo(QCoreApplication::applicationFilePath()).absoluteFilePath();
 
-    // 逻辑：循环等待当前进程退出 -> 移动新文件覆盖旧文件 -> 重启程序 -> 校验并删除自身
     QString batchContent = QString(
         "@echo off\n"
         "setlocal enabledelayedexpansion\n"

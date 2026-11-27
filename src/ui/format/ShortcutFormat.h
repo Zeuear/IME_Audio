@@ -4,7 +4,6 @@
 #include <QString>
 #include <QStringList>
 
-// 快捷键字符串的解析与拼装。刻意与 Qt Widgets 解耦，方便单元测试。
 // 存储格式统一使用 Qt 认识的修饰键名（Ctrl/Shift/Alt/Meta），交由 QKeySequence
 // 在各平台自动映射——macOS 上 Ctrl 即 ⌘、Meta 即 ⌃。
 struct ShortcutParts {

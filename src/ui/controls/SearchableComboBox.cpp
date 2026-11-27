@@ -29,7 +29,6 @@ void SearchableComboBox::setupUi()
     // 列表弹出后会抢走鼠标，双击的第二下落在列表窗口上，只能在列表窗口这里识别
     view()->window()->installEventFilter(this);
 
-    // 输入了列表里没有的内容就离开时，文字回退到当前选中项，避免界面显示与实际选择不一致
     connect(lineEdit(), &QLineEdit::editingFinished, this, &SearchableComboBox::leaveEditMode);
     // 选中过滤结果后结束输入；排队执行，等 QComboBox 先按选中项切换 currentIndex
     connect(completer, QOverload<const QString&>::of(&QCompleter::activated), this,
@@ -49,8 +48,7 @@ bool SearchableComboBox::isEditing() const
 
 bool SearchableComboBox::eventFilter(QObject* watched, QEvent* event)
 {
-    // 输入模式下装在 qApp 上：点到下拉框以外就结束输入。
-    // 点不接收焦点的空白处时焦点不变，收不到失焦，只能这样识别
+    // 输入模式下装在 qApp 上：点到不接收焦点的空白处时焦点不变、收不到失焦，只能这样识别
     if (event->type() == QEvent::MouseButtonPress && isEditing() && watched->isWidgetType()) {
         auto* target = static_cast<QWidget*>(watched);
         QWidget* filterPopup = completer() ? completer()->popup() : nullptr;
@@ -69,12 +67,11 @@ bool SearchableComboBox::eventFilter(QObject* watched, QEvent* event)
             [[fallthrough]];
         case QEvent::MouseButtonDblClick:
         case QEvent::MouseButtonRelease:
-            // 双击的第二下已在列表窗口上处理；列表收起后 Qt 还会把这次按下重放给输入框，
-            // 连同随后的双击/松开都不交给输入框，否则会取消全选、把光标放到点击处
+            // 双击第二下已在列表窗口处理；列表收起后 Qt 会把按下重放给输入框，吞掉以免取消全选
             if (m_swallowEditClick) {
                 if (event->type() == QEvent::MouseButtonRelease) {
                     m_swallowEditClick = false;
-                    lineEdit()->selectAll();   // 收起列表时输入框的选区可能已被清掉，补一次，保证直接输入即替换
+                    lineEdit()->selectAll();
                 }
                 return true;
             }
@@ -87,7 +84,6 @@ bool SearchableComboBox::eventFilter(QObject* watched, QEvent* event)
                                 && m_popupClock.elapsed() <= QApplication::doubleClickInterval();
         if (event->type() == QEvent::MouseButtonPress) {
             m_openingPress = false;
-            // 刚弹出列表就又点在输入框上 = 双击：收起列表，进入输入过滤
             const QPoint global = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
             const QRect editRect(lineEdit()->mapToGlobal(QPoint(0, 0)), lineEdit()->size());
             if (justOpened && editRect.contains(global)) {
@@ -96,9 +92,7 @@ bool SearchableComboBox::eventFilter(QObject* watched, QEvent* event)
                 return true;
             }
         } else if (event->type() == QEvent::MouseButtonRelease && m_openingPress) {
-            // 单击输入框弹出列表后，同一次点击的松开会落在列表窗口外，Qt 当成"点在外面"把列表收起。
-            // 点箭头时 Qt 内部会屏蔽这次松开，但输入框这里是手动 showPopup()，只能自己吞掉；
-            // 按住多久都算同一次点击，所以按"是否为弹出那一下的松开"判断，而不是按时间
+            // 手动 showPopup() 时，同一次点击的松开会被 Qt 当成点在列表外而收起；按“是否为弹出那一下的松开”吞掉，不按时间
             m_openingPress = false;
             return true;
         }
@@ -110,7 +104,6 @@ bool SearchableComboBox::eventFilter(QObject* watched, QEvent* event)
 void SearchableComboBox::focusOutEvent(QFocusEvent* event)
 {
     QComboBox::focusOutEvent(event);
-    // 过滤结果弹窗出现时也会失焦，这种不算离开
     if (event->reason() != Qt::PopupFocusReason) leaveEditMode();
 }
 

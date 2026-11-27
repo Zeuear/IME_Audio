@@ -60,7 +60,6 @@ void TranscriptionService::transcribe(const QByteArray& rawPcm, int sampleRate, 
         return;
     }
 
-    // 幅度标准化，仅 16-bit 单声道（内部统一格式）才处理
     QByteArray pcmData = rawPcm;
     if (channels == 1 && bitsPerSample == 16) {
         double gain = 1.0;
@@ -176,7 +175,7 @@ void TranscriptionService::onAiPolishDone(const Ticket& t, bool ok, const QStrin
     }
 
     if (job->plan.translate && !job->plan.combined) {
-        m_aiJobs.advance(t.seq, next);   // 润色结果交给翻译模型
+        m_aiJobs.advance(t.seq, next);
         runAiTranslation(t);
         return;
     }
@@ -190,6 +189,7 @@ void TranscriptionService::runAiTranslation(const Ticket& t) {
     params.model = job->plan.translateModel;
     params.targetLang = job->target;
     params.translateOnly = true;
+    if (m_glossaryProvider) params.glossary = m_glossaryProvider(job->target);
     m_textPolishService->polishText(job->current, params,
         [this, t](bool ok, const QString& translated, const QString& error) { onAiTranslateDone(t, ok, translated, error); });
 }
@@ -221,7 +221,6 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ti
     p.apiKey = m_config.polish.apiKey;
     p.model = m_config.polish.model;
     p.customUrl = m_config.polish.apiUrl;
-    // 文件转录保留原文，译文由 translateForFile 另出
     p.targetLang = t.fileMode ? QStringLiteral("不翻译") : m_config.polish.cloudTargetLang();
     p.style = m_config.polish.aiStyle;
     p.customPrompt = m_config.polish.prompt;
@@ -236,7 +235,6 @@ void TranscriptionService::transcribeGemini(const QByteArray &wavBytes, const Ti
 }
 
 void TranscriptionService::transcribeGroq(const QByteArray &wavBytes, const Ticket& t) {
-    // Groq Whisper API：multipart/form-data 上传音频文件
     if (m_config.groqKey.isEmpty()) {
         finish(t, false, {}, QStringLiteral("Groq API Key 未配置"));
         return;
@@ -347,7 +345,7 @@ void TranscriptionService::submitGladiaTranscription(const QString &audioUrl, co
 }
 
 void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attempt, const Ticket& t) {
-    static const int kMaxAttempts = 60; // ~60s @ 1s
+    static const int kMaxAttempts = 60;
     if (attempt >= kMaxAttempts) {
         finish(t, false, {}, QStringLiteral("Gladia 转录超时"));
         return;
@@ -376,7 +374,6 @@ void TranscriptionService::pollGladiaResult(const QString &resultUrl, int attemp
             finish(t, false, {}, QStringLiteral("Gladia 转录失败"));
             return;
         }
-        // 仍处理中：1s 后重试
         QTimer::singleShot(1000, this, [this, resultUrl, attempt, t]() {
             pollGladiaResult(resultUrl, attempt + 1, t);
         });
@@ -404,7 +401,6 @@ void TranscriptionService::finish(const Ticket& t, bool success, const QString& 
         return;
     }
 
-    // 先把原文交给界面显示，翻译好了再补译文
     showSourceFirst(t.seq, processed);
     m_translating.insert(t.seq);
     m_translationService->translate(processed, stage.from, stage.to,
@@ -515,7 +511,6 @@ bool TranscriptionService::fileTranslationActive() const {
     const PolishConfig& p = m_config.polish;
     if (!TextPolishPrompts::hasTranslationTarget(p.activeTargetLang())) return false;
     if (p.usesLocalTranslation()) return m_translationService && m_translationService->hasBackend();
-    // 翻译开关独立生效，不依附 AI 增强（润色）开关
     return p.cloudEngineConfigured() && m_textPolishService->capabilities(p.aiEngineIndex).canTranslate;
 }
 
@@ -547,7 +542,7 @@ void TranscriptionService::dispatchFileTranslation(const QString& text, Translat
         const auto stage = decideTranslationStage(false, true, p.translateSourceLang, p.activeTargetLang(),
                                                   LanguageCatalog::codeOf(m_config.sherpa.languageModel));
         if (!stage.shouldTranslate) {
-            done(true, text, {});   // 源语言与目标语言相同，原文即译文
+            done(true, text, {});
             return;
         }
         if (!m_translationService) {
@@ -565,6 +560,7 @@ void TranscriptionService::dispatchFileTranslation(const QString& text, Translat
     params.model = p.effectiveTranslateModel();
     params.targetLang = p.activeTargetLang();
     params.translateOnly = true;
+    if (m_glossaryProvider) params.glossary = m_glossaryProvider(params.targetLang);
 
     // 云端请求没有自带超时；结果和超时谁先到用谁，回调只走一次
     auto pending = std::make_shared<TranslateCallback>(std::move(done));

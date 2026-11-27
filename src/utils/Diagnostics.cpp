@@ -63,8 +63,7 @@ void messageHandler(QtMsgType type, const QMessageLogContext& context, const QSt
     if (s_previousHandler) {
         s_previousHandler(type, context, message);
     } else {
-        // qInstallMessageHandler 在此前用的是 Qt 默认处理器时返回 nullptr，
-        // 这里不补的话开发时控制台就再也看不到 Qt 的输出了。
+        // 此前用的是 Qt 默认处理器时返回 nullptr，不补则开发时控制台看不到 Qt 输出。
         fprintf(stderr, "%s\n", qPrintable(qFormatLogMessage(type, context, message)));
         fflush(stderr);
     }
@@ -111,8 +110,7 @@ void logMacLaunchContext()
     if (sysctlbyname("sysctl.proc_translated", &translated, &size, nullptr, 0) != 0) {
         translated = 0;
     }
-    // 编译架构与运行架构不一致（Apple Silicon 上跑 x86_64 包）时，arm64 的 sherpa 动态库
-    // 会加载失败，反之亦然。
+    // 编译架构与运行架构不一致（Apple Silicon 上跑 x86_64 包）时，sherpa 动态库会加载失败。
     LOG_DEBUG(QString("Env | rosetta translated: %1 (build arch=%2, cpu arch=%3)")
                   .arg(translated ? QLatin1String("yes") : QLatin1String("no"), QSysInfo::buildCpuArchitecture(), QSysInfo::currentCpuArchitecture()));
 
@@ -120,8 +118,7 @@ void logMacLaunchContext()
     const QString bundle = QDir::cleanPath(appDir + "/../..");
     LOG_DEBUG(QString("Env | bundle: %1").arg(bundle));
 
-    // Gatekeeper 的 App Translocation：未移出 DMG / 下载目录的应用会被挂载到只读随机路径，
-    // 相对 bundle 的资源查找和数据目录行为都会变。
+    // App Translocation：未移出 DMG / 下载目录的应用被挂载到只读随机路径，资源与数据目录行为会变。
     if (appDir.contains("/AppTranslocation/")) {
         LOG_WARN("Env | 应用运行在 Gatekeeper 的 AppTranslocation 沙盒路径下，请先把 .app 拖进「应用程序」再启动");
     }
@@ -137,7 +134,6 @@ void logMacLaunchContext()
 
 void redirectStderr()
 {
-    // 从终端启动时保持原样，方便开发者直接看输出。
     if (isatty(fileno(stderr))) return;
 
     const QByteArray path = QFile::encodeName(QDir(AppPaths::dataDir()).absoluteFilePath("voice_ime.stderr.log"));
@@ -149,7 +145,7 @@ void redirectStderr()
 }
 #endif
 
-} // namespace
+}
 
 namespace Diagnostics {
 

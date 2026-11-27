@@ -12,10 +12,8 @@ class QTimer;
 QT_END_NAMESPACE
 
 // @brief
-// 启动时的授权引导（目前只有 macOS 需要）：列出麦克风与辅助功能的授权状态，逐项引导授权，
-// 全部授权后由用户点「立即重启」使其生效。
-// 是否弹出按当前授权状态判断而不是"首次安装"标记：签名不变时升级后授权仍在，引导不会出现；
-// 授权被关掉、换了签名或换了电脑时又会自动出现。Windows / Linux 上授权都是 NotRequired，永不出现。
+// 启动时的授权引导（目前只有 macOS 需要）：逐项引导麦克风与辅助功能授权，全部授权后点「立即重启」生效。
+// 按当前授权状态判断是否弹出：签名不变时升级后不出现，授权被关掉或换签名 / 电脑时自动出现；Windows / Linux 永不出现。
 class PermissionGuideDialog : public QDialog
 {
     Q_OBJECT

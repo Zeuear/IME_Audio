@@ -9,7 +9,7 @@ QString nowString() {
     return QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
 }
 
-} // namespace
+}
 
 
 bool SnippetStore::addGoogleSheet(const GoogleSheetConfig& gs) {
@@ -136,7 +136,7 @@ struct SnippetStore::SheetFetch {
     QStringList sel, allNames;
     QString docTitle, error;
     bool ok = true;
-    QVector<QPair<QString, QString>> todo;   // 要拉的 (gid, 名称)
+    QVector<QPair<QString, QString>> todo;
     int next = 0;
     FolderList fetched;
 };

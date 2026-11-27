@@ -21,7 +21,7 @@ double temperatureFor(const TextPolishService::RequestParams& params) {
     // 翻译要求确定性输出（翻译模型卡也要求 0）；润色保留一点改写余地
     return params.translateOnly ? 0.0 : 0.2;
 }
-} // namespace
+}
 
 QString OpenAiProvider::buildOpenAiEndpoint(const TextPolishService::RequestParams& params) {
     return autocompleteApiUrl(params.customUrl);
@@ -51,12 +51,12 @@ QJsonArray OpenAiProvider::buildMessages(const QString& inputText, const TextPol
         // 翻译专用模型按训练时的格式只收一条 user 消息；加 system 规则反而容易跑题、附带解释
         if (isTranslationModel(params.model)) {
             return QJsonArray{
-                QJsonObject{ {"role", "user"}, {"content", translationModelPrompt(params.targetLang, inputText)} },
+                QJsonObject{ {"role", "user"}, {"content", translationModelPrompt(params.targetLang, inputText, params.glossary)} },
             };
         }
         // 通用模型只翻译：不带润色的 fewshot，否则模型会照着示例去改写而不是翻译
         return QJsonArray{
-            QJsonObject{ {"role", "system"}, {"content", translateOnlyPrompt(params.targetLang)} },
+            QJsonObject{ {"role", "system"}, {"content", translateOnlyPrompt(params.targetLang, params.glossary, inputText)} },
             QJsonObject{ {"role", "user"}, {"content", inputText} },
         };
     }
@@ -166,7 +166,6 @@ bool OpenAiProvider::isValidModelsResponse(const QByteArray& json) {
     QJsonParseError parseErr;
     QJsonDocument doc = QJsonDocument::fromJson(json, &parseErr);
     if (parseErr.error != QJsonParseError::NoError) return false;
-    // OpenAI /v1/models 响应结构：{"object":"list","data":[ ... ]}
     return doc.object().value("object").toString() == QStringLiteral("list")
         && doc.object().contains("data");
 }
@@ -176,7 +175,7 @@ QStringList OpenAiProvider::parseOllamaTags(const QByteArray& json) {
     QJsonParseError parseErr;
     QJsonDocument doc = QJsonDocument::fromJson(json, &parseErr);
     if (parseErr.error != QJsonParseError::NoError) {
-        return models; // 解析失败返回空列表
+        return models;
     }
     const QJsonArray arr = doc.object().value("models").toArray();
     for (const auto& v : arr) {
@@ -305,13 +304,11 @@ void OpenAiProvider::test(const TextPolishService::RequestParams& params,
     const bool isOllama =  params.aiEngine == 2;
     QUrl url;
     if (isOllama) {
-        // Ollama：用 /api/tags 验证服务存活，并顺带报告模型数量
         url = QUrl(ollamaBaseUrl(params.customUrl) + QStringLiteral("api/tags"));
     } else {
         QString base = params.customUrl.trimmed();
         if (base.isEmpty()) base = QStringLiteral("http://localhost:11434");
         if (!base.endsWith('/')) base += '/';
-        // OpenAI 兼容：用 /v1/models 验证 endpoint + API key
         url = QUrl(base + QStringLiteral("v1/models"));
     }
 
@@ -334,7 +331,6 @@ void OpenAiProvider::test(const TextPolishService::RequestParams& params,
             const QStringList models = OpenAiProvider::parseOllamaTags(body);
             done(true, QStringLiteral("Ollama 连接成功，已加载 %1 个本地模型").arg(models.size()));
         } else {
-            // 尝试解析 OpenAI /models 响应，确认返回了模型列表
             const bool ok = OpenAiProvider::isValidModelsResponse(body);
             done(ok, ok ? QStringLiteral("OpenAI 兼容服务连接成功（返回了模型列表）")
                         : QStringLiteral("服务返回非预期内容（HTTP 200 但无法解析模型列表）"));

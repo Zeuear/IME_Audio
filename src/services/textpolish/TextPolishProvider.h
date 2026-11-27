@@ -26,18 +26,15 @@ public:
     virtual bool canPolish() const { return true; }
     virtual bool canTranslate() const { return true; }
 
-    // 是否支持连接测试（默认不支持）
     virtual bool canTest() const { return false; }
     virtual void test(const TextPolishService::RequestParams& /*params*/,
                       QNetworkAccessManager* /*mgr*/,
                       TestCallback done) { done(false, QStringLiteral("该后端不支持连接测试")); }
 
-    // 是否支持拉取模型列表（默认不支持）
     virtual bool canFetchModels() const { return false; }
     virtual void fetchModels(const QString& /*baseUrl*/,
                              QNetworkAccessManager* /*mgr*/,
                              ModelsCallback done) { done(false, {}, QStringLiteral("该后端不支持拉取模型列表")); }
 };
 
-// 按 params 选择对应 provider（轻量工厂，不引入注册表）
 std::unique_ptr<TextPolishProvider> createTextPolishProvider(const TextPolishService::RequestParams& params);

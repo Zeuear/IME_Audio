@@ -19,7 +19,6 @@ namespace {
 constexpr int kBufferSize = 12;
 constexpr qint64 kBufferTimeoutMs = 2500;
 
-// macOS 虚拟键码（与键盘布局无关的物理键位，对应 Carbon 的 kVK_*）
 enum : int64_t {
     kVkReturn = 0x24, kVkTab = 0x30, kVkSpace = 0x31, kVkBackspace = 0x33, kVkEscape = 0x35,
     kVkKeypadEnter = 0x4C, kVkDown = 0x7D, kVkUp = 0x7E,
@@ -43,14 +42,12 @@ QChar keyToChar(int64_t key, bool shift) {
     default: break;
     }
 
-    // 数字行：键码不连续，按 0..9 排列
     static const int64_t kDigitKeys[10] = { 0x1D, 0x12, 0x13, 0x14, 0x15, 0x17, 0x16, 0x1A, 0x1C, 0x19 };
     static const char kShiftedDigits[] = ")!@#$%^&*(";
     for (int d = 0; d < 10; ++d) {
         if (key == kDigitKeys[d]) return shift ? QChar(kShiftedDigits[d]) : QChar('0' + d);
     }
 
-    // 字母：同样不连续，用 "键码 -> 字母" 表
     static const struct { int64_t key; char letter; } kLetters[] = {
         {0x00,'a'},{0x0B,'b'},{0x08,'c'},{0x02,'d'},{0x0E,'e'},{0x03,'f'},{0x05,'g'},{0x04,'h'},{0x22,'i'},
         {0x26,'j'},{0x28,'k'},{0x25,'l'},{0x2E,'m'},{0x2D,'n'},{0x1F,'o'},{0x23,'p'},{0x0C,'q'},{0x0F,'r'},
@@ -62,7 +59,7 @@ QChar keyToChar(int64_t key, bool shift) {
     return QChar();
 }
 
-} // namespace
+}
 
 struct PrefixWatcher::Impl {
     PrefixWatcher* owner = nullptr;
@@ -71,7 +68,7 @@ struct PrefixWatcher::Impl {
     QStringList prefixes;
     QString buffer;
     QElapsedTimer sinceLastKey;
-    bool queryMode = false;   // 命中前缀后，之后的按键都当搜索词（受 mutex 保护）
+    bool queryMode = false;
     QString query;
 
     std::thread thread;
@@ -129,7 +126,6 @@ struct PrefixWatcher::Impl {
         query.clear();
     }
 
-    // 返回 true 表示吞掉这次按键（不再交给目标应用）
     bool onKey(int64_t key, CGEventFlags flags) {
         QString hitPrefix;
         QString newQuery;
@@ -154,7 +150,7 @@ struct PrefixWatcher::Impl {
                     swallow = true;
                     queryMode = false;
                 } else if (key == kVkBackspace) {
-                    if (query.isEmpty()) {   // 再退一格就删到前缀本身了：放弃
+                    if (query.isEmpty()) {
                         nav = Qt::Key_Escape;
                         queryMode = false;
                     } else {
@@ -221,7 +217,6 @@ struct PrefixWatcher::Impl {
         }
         if (type != kCGEventKeyDown && type != kCGEventKeyUp) return event;
 
-        // 我们自己模拟的按键（退格、⌘V）不参与识别
         if (CGEventGetIntegerValueField(event, kCGEventSourceUnixProcessID) == getpid()) return event;
 
         const int64_t key = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
@@ -232,7 +227,6 @@ struct PrefixWatcher::Impl {
             }
             return event;
         }
-        // 长按产生的自动重复也按一次按键处理，保持和 Windows 钩子一致
         if (self->onKey(key, CGEventGetFlags(event))) {
             self->swallowedKey = key;
             return nullptr;

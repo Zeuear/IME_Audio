@@ -47,9 +47,6 @@ public:
     QVector<GoogleSheetConfig>& googleSheets() { return m_googleSheets; }
     const QVector<GoogleSheetConfig>& googleSheets() const { return m_googleSheets; }
 
-    // ------------------------------------------------------------------
-    // 路径与图片
-    // ------------------------------------------------------------------
     const QString& baseDir() const { return m_baseDir; }
     const QString& imagesDir() const { return m_imagesDir; }
     QString resolveImagePath(const QString& relOrAbs) const;
@@ -58,13 +55,9 @@ public:
     QString copyImageToStore(const QString& srcPath);
     QString savePixmapToStore(const QPixmap& pixmap);
 
-    // ------------------------------------------------------------------
-    // 节点 CRUD
-    // ------------------------------------------------------------------
     // level<=0 时按父级自动推算（max 3）；parentId 为空建 L1。返回树内指针（下次增删前有效）
     FolderNode* addFolder(const QString& parentId, const QString& title, int level = 0);
 
-    // 返回切换后的 collapsed 状态
     bool toggleFolderCollapsed(const QString& folderId);
     bool setAllCollapsed(bool collapsed, int maxLevel = 3);
 
@@ -78,28 +71,22 @@ public:
     bool deleteNode(const QString& nodeId);
     int deleteNodes(const QStringList& nodeIds);
 
-    // 在同级（文件夹之间 / 条目之间）上下移动
     bool moveNode(const QString& nodeId, int direction);
     bool incrementUseCount(const QString& itemId);
 
     FolderNode* findFolderById(const QString& id);
     SnippetItem* findItemById(const QString& id);
 
-    // 查找文件夹及其父级/所在列表/下标
     bool findFolder(const QString& id,
                     FolderNode** outNode = nullptr,
                     FolderNode** outParent = nullptr,
                     FolderList** outList = nullptr,
                     int* outIndex = nullptr);
-    // 查找条目及其所在文件夹/下标
     bool findItem(const QString& id,
                   SnippetItem** outItem = nullptr,
                   FolderNode** outFolder = nullptr,
                   int* outIndex = nullptr);
 
-    // ------------------------------------------------------------------
-    // Google Sheets
-    // ------------------------------------------------------------------
     bool addGoogleSheet(const GoogleSheetConfig& gs);
     bool updateGoogleSheet(const QString& treeId, const GoogleSheetConfig& gs);
     bool removeGoogleSheet(const QString& treeId);
@@ -107,7 +94,6 @@ public:
     GoogleSheetConfig* findGoogleSheetByUrl(const QString& url);
 
     // 对应原 sync_google_sheet 的合并部分。selectedSheets 为空时沿用已记住的勾选，仍为空则全选
-    // 返回 L1 tree_id
     QString syncGoogleSheet(const QString& url,
                             const QString& customAlias,
                             const QString& existingTreeId,
@@ -127,25 +113,17 @@ public:
                            const QStringList& selectedNames,
                            ImportCallback done);
 
-    // 刷新全部已保存表（逐个拉取，最后一次性合并）。done(成功个数, 失败信息)
     using RefreshCallback = std::function<void(int okCount, const QStringList& errors)>;
     void refreshAllGoogleSheets(GoogleSheetsService* service, RefreshCallback done);
 
-    // ------------------------------------------------------------------
-    // 搜索 / 工具
-    // ------------------------------------------------------------------
-    // 匹配 关键字/中文/外文/目录路径；query 为空时 allWhenEmpty 决定返回全部或空
     QVector<SearchHit> search(const QString& query, bool allWhenEmpty = false);
 
-    // 听写文本里出现了哪些条目的快捷码（keyword）；按使用次数降序，最多 limit 条
     QVector<SnippetItem*> matchKeywords(const QString& spokenText, int limit = 4);
 
     int countItemsInFolder(const FolderNode& folder) const;
-    // 返回祖先文件夹标题链（不含自身）；找不到返回空
     QStringList getNodePath(const QString& targetId) const;
 
 private:
-    // 一张 Google 表格的拉取任务（异步链路里用 shared_ptr 传递）
     struct SheetFetch;
     struct RefreshJob;
     using FetchDone = std::function<void(std::shared_ptr<SheetFetch>)>;
@@ -159,9 +137,9 @@ private:
     QTimer m_saveTimer;
 
     QString m_dataFilePath;
-    QString m_baseDir;      // <base>
-    QString m_dataDir;      // <base>/data
-    QString m_imagesDir;    // <base>/data/images
+    QString m_baseDir;
+    QString m_dataDir;
+    QString m_imagesDir;
 
     FolderList m_roots;
     AppSettings m_settings;

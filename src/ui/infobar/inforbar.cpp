@@ -50,14 +50,7 @@ void InforBar::initAnimation()
 
 void InforBar::initEffect()
 {
-    //m_shadow_effect = new AppleShadowEffect(this);
-    //m_shadow_effect->setBlurRadius(15);
-    //m_shadow_effect->setInnerDistance(15);
-    //m_shadow_effect->setOffset(QPointF(0, 4));
-    //m_shadow_effect->setColor(QColor(0, 0, 0, 120));
 
-    //if(!parentWidget())
-    //    setGraphicsEffect(m_shadow_effect);
 }
 
 
@@ -162,27 +155,24 @@ void InforBar::__fadeIn()
 
 
 int InforBar::calculateWidth() const {
-    const int iconSize = m_icoSize; // 图标大小
-    const int margin = m_margin;   // 左右边距
-    const int iconSpacing = m_iconSpacing; // 图标与文本间距
-    const int textSpacing = m_textSpacing; // 标题与内容间距
+    const int iconSize = m_icoSize;
+    const int margin = m_margin;
+    const int iconSpacing = m_iconSpacing;
+    const int textSpacing = m_textSpacing;
     const int shadowAdjustment = 10; // 阴影调整（5px 每侧）
 
-    // 计算文本宽度
     QFont font(QStringLiteral("Roboto"));
     font.setPointSize(11);
     QFontMetrics fm(font);
     int titleWidth = fm.horizontalAdvance(m_title);
     int contentWidth = fm.horizontalAdvance(m_content);
 
-    // 计算总宽度
-    int totalWidth = 2 * margin + shadowAdjustment; // 左右边距 + 阴影
+    int totalWidth = 2 * margin + shadowAdjustment;
     if (!m_icon.isNull()) {
-        totalWidth += iconSize + iconSpacing; // 图标 + 间距
+        totalWidth += iconSize + iconSpacing;
     }
-    totalWidth += titleWidth + textSpacing + contentWidth; // 标题 + 间距 + 内容
+    totalWidth += titleWidth + textSpacing + contentWidth;
 
-    // 确保最小宽度
     const int minWidth = 200;
     return qMax(totalWidth, minWidth);
 }
@@ -191,7 +181,7 @@ int InforBar::calculateWidth() const {
 void InforBar::setColor(const QColor color)
 {
     m_color = color;
-    m_cache = QPixmap(); // 失效缓存
+    m_cache = QPixmap();
     update();
 }
 
@@ -199,7 +189,7 @@ void InforBar::setColor(const QColor color)
 void InforBar::setIcon(const QIcon icon)
 {
     m_icon = icon;
-    m_cache = QPixmap(); // 失效缓存
+    m_cache = QPixmap();
     update();
 }
 
@@ -209,6 +199,6 @@ void InforBar::setText(const QString title, const QString content)
     m_title = title;
     m_content = content;
     resize(calculateWidth(), height());
-    m_cache = QPixmap(); // 失效缓存
+    m_cache = QPixmap();
     update();
 }

@@ -23,7 +23,6 @@ void MainWin::registerSettings()
     m_settings = new SettingsBinder(cfg, this);
     SettingsBinder* s = m_settings;
 
-    // ---- 基础设置：设备与后端
     s->bindIndex(ui->identification_backend_comb,
         [](const AppConfig& c) { return int(c.backend); },
         [](AppConfig& c, int v) { c.backend = AsrBackendKind(v); },
@@ -53,7 +52,6 @@ void MainWin::registerSettings()
         [](AppConfig& c, const QString& v) { c.geminiKey = v; },
         Opt{ Apply::OnCommit });
 
-    // ---- 基础设置：录音
     s->bind(ui->autiomatic_monitoring_checkbox,
         [](const AppConfig& c) { return c.continuousMode.load(); },
         [](AppConfig& c, bool v) { c.continuousMode = v; },
@@ -80,7 +78,6 @@ void MainWin::registerSettings()
         [](AppConfig& c, int v) { c.audio.maxRecordMs = v; },
         Opt{ Apply::OnCommit, kRecorder });
 
-    // ---- 基础设置：实时字幕
     s->bind(ui->live_caption_checkbox,
         [](const AppConfig& c) { return c.liveCaptionEnabled.load(); },
         [](AppConfig& c, bool v) { c.liveCaptionEnabled = v; },
@@ -94,12 +91,10 @@ void MainWin::registerSettings()
         [](AppConfig& c, int v) { c.liveCaptionAtTop = v == 1; },
         Opt{ Apply::Instant, kCaption });
 
-    // ---- 基础设置：快捷键（组合键由 ShortcutEdit 自己注册，这里只负责记下来）
     s->bindIndex(ui->hotkey_mode_comb,
         [](const AppConfig& c) { return c.hotkeyHold ? 1 : 0; },
         [](AppConfig& c, int v) { c.hotkeyHold = v == 1; },
         Opt{ Apply::Instant, 0, true });
-    // 「输入到前台窗口」以这个复选框为唯一来源，横条图标和稿子页里的复选框都连它（见 MainWin.cpp 的 ToggleLink）
     s->bind(ui->inject_checkbox,
         [](const AppConfig& c) { return c.injectToForeground; },
         [](AppConfig& c, const bool& v) { c.injectToForeground = v; },
@@ -112,18 +107,17 @@ void MainWin::registerSettings()
         applySettings(0);
     });
 
-    // ---- 本地识别：语言、模型、GPU 都是自定义流程，这里只登记听写锁定，读写见下方连接
     s->addLockedWidget(ui->language_comb);
     s->addLockedWidget(ui->model_list_widget);
     s->addLockedWidget(ui->uninstall_sherpa_btn);
     s->addLockedWidget(ui->gpu_backend_widget);
-    // 换语言只刷新模型列表、记下选择，不下载；点模型列表才下载（onLocalModelActivated）
     connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this]() {
         if (m_loadingSettings) return;
         AppConfig& c = ConfigManager::instance().config();
         c.sherpa.languageModel = currentLanguageKey();
         c.sherpa.localModelRepoId = ui->model_list_widget->currentModel();
-        applySettings(kCaption);   // 实时字幕的流式模型跟随语言
+        applyDictionaryRules(true);
+        applySettings(kCaption);
     });
     connect(ui->gpu_backend_widget, &GpuBackendWidget::computeModeChanged, this, [this](GpuBackendWidget::ComputeMode mode) {
         const bool toGpu = mode == GpuBackendWidget::ComputeMode::CUDA;
@@ -135,7 +129,6 @@ void MainWin::registerSettings()
         onComputeModeChanged(toGpu);
     });
 
-    // ---- AI 增强（润色服务每次请求时读配置，不需要额外通知）
     s->bind(ui->enable_enhancement_checkbox,
         [](const AppConfig& c) { return c.polish.enableAiEnhancement; },
         [](AppConfig& c, bool v) { c.polish.enableAiEnhancement = v; },
@@ -191,11 +184,9 @@ void MainWin::registerSettings()
     connect(s, &SettingsBinder::changed, this, &MainWin::applySettings);
 }
 
-// 保存配置并通知受影响的模块
 void MainWin::applySettings(unsigned effects)
 {
-    // 写文件不在这一帧里做：杀毒软件扫描时一次写入能卡几十毫秒，会让下拉框、开关的动画掉帧。
-    // 连续改动合并成一次写入；退出时 ~MainWin 还会再存一次
+    // 写文件不放在这一帧：杀毒扫描时一次写入能卡几十毫秒，导致动画掉帧；连续改动合并，退出时 ~MainWin 再存一次
     if (!m_saveTimer) {
         m_saveTimer = new QTimer(this);
         m_saveTimer->setSingleShot(true);
@@ -209,7 +200,6 @@ void MainWin::applySettings(unsigned effects)
 
     if (effects & SettingsBinder::Recorder) m_workflow->applyRecorderConfig();
     if (effects & SettingsBinder::LiveCaption) {
-        // 刚打开字幕或换了语言时，缺流式模型就补下载
         if (cfg.liveCaptionEnabled.load()) m_sherpaInstaller->ensureStreamingModel(cfg.sherpa.languageModel);
         syncLiveCaption();
     }

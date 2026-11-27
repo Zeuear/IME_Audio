@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include "services/dictionary/FuzzyReplacer.h"
 
 
 class TextPostProcessor : public QObject {
@@ -10,7 +11,9 @@ public:
     explicit TextPostProcessor(QObject *parent = nullptr);
 
     void setReplaceRules(const QString& rules);
-    void setLanguage(const QString& lang);  // "en", "zh", etc.
+    void setFuzzyEntries(const QList<HotwordSelector::Entry>& entries) { m_fuzzy.setEntries(entries); }
+    void setFuzzyEnabled(bool on) { m_fuzzyEnabled = on; }
+    void setLanguage(const QString& lang);
     void setAutoPunctuation(bool on) { m_autoPunctuation = on; }
 
     QString postProcess(const QString& rawText);
@@ -21,6 +24,8 @@ public:
 
 private:
     QString m_replaceRules;
+    FuzzyReplacer m_fuzzy;
+    bool m_fuzzyEnabled = false;
     QString m_language;
     bool m_autoPunctuation = true;
 };

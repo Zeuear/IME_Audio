@@ -25,7 +25,6 @@ public:
     quint64 enqueue(const QString& url);
     void cancel(quint64 id);
     void cancelAll();
-    // 删除临时目录
     void release(quint64 id);
 
 signals:

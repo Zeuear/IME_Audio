@@ -8,7 +8,7 @@
 InputInjector::Mode InputInjector::defaultMode() { return Mode::UnicodeTypeOnly; }
 bool InputInjector::sendCtrlV() { return false; }
 bool InputInjector::setClipboardFile(const QString& path) {
-    auto* mime = new QMimeData;   // 所有权交给剪贴板
+    auto* mime = new QMimeData;
     mime->setUrls({ QUrl::fromLocalFile(path) });
     QGuiApplication::clipboard()->setMimeData(mime);
     return true;

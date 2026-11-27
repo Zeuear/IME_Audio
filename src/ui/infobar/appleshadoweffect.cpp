@@ -158,7 +158,7 @@ static QImage applyBoxBlur(const QImage& source, qreal radius, int passes = 3)
     if (source.isNull() || radius < 1) return source;
 
     QImage currentImage = source;
-    int r = static_cast<int>(radius / passes);  // Adjust radius per pass
+    int r = static_cast<int>(radius / passes);
     int size = r * 2 + 1;
 
     for (int pass = 0; pass < passes; ++pass) {
@@ -169,7 +169,6 @@ static QImage applyBoxBlur(const QImage& source, qreal radius, int passes = 3)
 
         QVector<QRgb> tempBuffer(width * height);
 
-        // Horizontal pass
         const uchar* srcBits = currentImage.bits();
         int srcBytesPerLine = currentImage.bytesPerLine();
         QRgb* tempData = tempBuffer.data();
@@ -204,7 +203,6 @@ static QImage applyBoxBlur(const QImage& source, qreal radius, int passes = 3)
             }
         }
 
-        // Vertical pass
         uchar* dstBits = result.bits();
         int dstBytesPerLine = result.bytesPerLine();
 
@@ -237,7 +235,7 @@ static QImage applyBoxBlur(const QImage& source, qreal radius, int passes = 3)
             }
         }
 
-        currentImage = result;  // Use the result as input for the next pass
+        currentImage = result;
     }
 
     return currentImage;
@@ -352,7 +350,7 @@ static QImage applyFastGaussianBlur(const QImage& source, qreal radius)
     QImage result(width, height, QImage::Format_ARGB32_Premultiplied);
     result.fill(Qt::transparent);
 
-    qreal sigma = radius / 3.0;  // ��֮ǰһ��
+    qreal sigma = radius / 3.0;
     qreal b0, b1, b2, b3;
     computeIIRCoefficients(sigma, b0, b1, b2, b3);
 
@@ -457,13 +455,11 @@ AppleShadowEffect::AppleShadowEffect(QObject* parent)
     m_opacity(1.0),
     m_innerDistance(0)
 {
-    m_shadowPixmap = QPixmap();  // ��ʼΪ�գ��ȴ���һ�λ���
+    m_shadowPixmap = QPixmap();
 }
 
 QRectF AppleShadowEffect::boundingRectFor(const QRectF& rect) const
 {
-    //qreal delta = m_blurRadius + qMax(qAbs(m_offset.x()), qAbs(m_offset.y()));
-    //return rect.adjusted(-delta, -delta, delta, delta);
     return rect;
 }
 
@@ -507,14 +503,12 @@ void AppleShadowEffect::draw(QPainter* painter)
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    //painter->setOpacity(m_opacity);
 
     QRectF shadowRect = sourceRect.adjusted(-m_blurRadius, -m_blurRadius, m_blurRadius, m_blurRadius);
     shadowRect.translate(m_offset);
     QRectF sourcePixmapRect(0, 0, m_shadowPixmap.width(), m_shadowPixmap.height());
     painter->drawPixmap(shadowRect, m_shadowPixmap, sourcePixmapRect);
 
-    //painter->setOpacity(m_opacity);
     drawSource(painter);
     painter->restore();
 }
@@ -524,18 +518,16 @@ ShadowDemoWidget::ShadowDemoWidget(QWidget* parent)
     : QWidget(parent),
     m_shadowEffect(new AppleShadowEffect(this))
 {
-    // ���ô�������
-    setAttribute(Qt::WA_TranslucentBackground);  // ͸����������ʾ��Ӱ
-    setWindowFlags(Qt::FramelessWindowHint);     // �ޱ߿򴰿�
-    resize(300, 200);                            // Ĭ�ϴ�С
+    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(Qt::FramelessWindowHint);
+    resize(300, 200);
 
-    // ������ӰЧ��
     m_shadowEffect->setBlurRadius(30);
     m_shadowEffect->setOffset(QPointF(0, 4));
     m_shadowEffect->setColor(QColor(0, 0, 0, 150));
     setGraphicsEffect(m_shadowEffect);
 
-    setMouseTracking(true);  // ����������
+    setMouseTracking(true);
 }
 
 ShadowDemoWidget::~ShadowDemoWidget()
@@ -547,13 +539,11 @@ void ShadowDemoWidget::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // ��������
-    QRect rect = this->rect().adjusted(20, 20, -20, -20);  // �����Ӱ�ռ�
-    painter.setBrush(QColor(245, 245, 245));         // ǳ�Ұ�͸������
+    QRect rect = this->rect().adjusted(20, 20, -20, -20);
+    painter.setBrush(QColor(245, 245, 245));
     painter.setPen(Qt::NoPen);
-    painter.drawRoundedRect(rect, 8, 8);                  // Բ�Ǿ���
+    painter.drawRoundedRect(rect, 8, 8);
 
-    // ����ʾ������
     painter.setPen(QColor(50, 50, 50));
     painter.setFont(QFont("Helvetica", 12));
     painter.drawText(rect, Qt::AlignCenter, "Apple Shadow Demo");

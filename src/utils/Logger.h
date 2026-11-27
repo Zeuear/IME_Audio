@@ -13,14 +13,11 @@ class Logger :public QObject {
     Q_OBJECT
 
 public:
-    // 获取单例实例
     static Logger& instance();
 
-    // 禁止拷贝和赋值
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
-    // 设置日志文件路径
     void setLogPath(const QString& path);
     void log(const QString& level, const QString& message);
 
@@ -44,4 +41,4 @@ private:
 #define LOG_DEBUG(msg)       Logger::instance().log("DEBUG", msg)
 
 
-#endif // LOGGER_H
+#endif

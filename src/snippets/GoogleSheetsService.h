@@ -20,10 +20,8 @@ public:
     explicit GoogleSheetsService(QObject* parent = nullptr);
     ~GoogleSheetsService() override;
 
-    // 提取 spreadsheet ID
     static QString extractSpreadsheetId(const QString& urlOrId);
 
-    // 解析 CSV 行
     static QVector<QStringList> parseCsv(const QString& csvText);
 
     // (行, 列) 均从 0 开始；表格里直接插入的图片按所在单元格对上，优先于 B 列的 =IMAGE() 公式
@@ -31,7 +29,6 @@ public:
     static void parseRowsIntoFolder(FolderNode* l2Folder, const QVector<QStringList>& rows,
                                     const CellImages& cellImages = {});
 
-    // callback: ok, docTitle, spreadsheetId, sheets(gid, name), error
     using ListSheetsCallback = std::function<void(bool, QString, QString, QVector<QPair<QString, QString>>, QString)>;
     void listSheetNames(const QString& url, ListSheetsCallback callback, int timeoutMs = 20000);
 

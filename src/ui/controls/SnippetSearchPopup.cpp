@@ -33,11 +33,10 @@ namespace {
 
 constexpr int kShadowMargin = 24;   
 constexpr int kKeywordRole = Qt::UserRole + 7;
-constexpr int kDepthRole = Qt::UserRole + 8;    // 目录层级
-constexpr int kHeaderRole = Qt::UserRole + 9;   // bool 目录行
+constexpr int kDepthRole = Qt::UserRole + 8;
+constexpr int kHeaderRole = Qt::UserRole + 9;
 constexpr int kIndentPx = 14;
 
-// 结果按目录树排列
 class ResultDelegate : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
@@ -105,15 +104,12 @@ constexpr int kPreviewImageH = 110;
 constexpr int kPopupW = 560;
 constexpr int kPopupH = 320;
 constexpr int kOutsideClickPollMs = 40;
-// 列表最多展示条数
 constexpr int kMaxResults = 200;
-// 还完焦点后等目标窗口真正拿到前台，再发 Ctrl+V
 constexpr int kPasteDelayMs = 150;
 constexpr int kIdleHideMs = 15000;
-// 失焦后稍等再关，避免点击列表时的瞬时失焦把窗口关掉
 constexpr int kBlurHideDelayMs = 150;
 
-} // namespace
+}
 
 SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paster, QWidget *parent)
     // NoDropShadowWindowHint：卡片自己画了阴影，mac 上系统还会按半透明窗口的轮廓再加一层，叠出重影
@@ -149,7 +145,6 @@ SnippetSearchPopup::SnippetSearchPopup(SnippetStore* store, SnippetPaster* paste
     connect(m_listView, &QListView::clicked, this, [this](const QModelIndex& index) {
         if (!m_dragged) triggerPaste(index);
     });
-    // 鼠标悬停切换选中项，预览随之更新（和方向键共用同一条路径）
     connect(m_listView, &QListView::entered, this, [this](const QModelIndex& index) {
         if (index.flags() & Qt::ItemIsSelectable) m_listView->setCurrentIndex(index);
     });
@@ -168,7 +163,6 @@ void SnippetSearchPopup::setupUi() {
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(kShadowMargin, kShadowMargin, kShadowMargin, kShadowMargin);
 
-    // 卡片
     auto* card = new QFrame(this);
     card->setObjectName("snippetCard");
     card->setStyleSheet("#snippetCard { background: palette(window); border: 1px solid palette(midlight);"
@@ -208,12 +202,10 @@ void SnippetSearchPopup::setupUi() {
     m_listView->setFrameShape(QFrame::NoFrame);
     m_listView->setStyleSheet("QListView { background: palette(base); outline: none; border: 1px solid palette(midlight); border-radius: 10px; }");
     m_listView->setUniformItemSizes(false);  
-    // 鼠标悬停即预览
     m_listView->setMouseTracking(true);
     m_listView->viewport()->setMouseTracking(true);
     midLayout->addWidget(m_listView, 5);
 
-    // 右侧预览：只保留 目录路径 / 标题 / 配图 / 内容
     auto* preview = new QFrame(card);
     preview->setObjectName("snippetPreview");
     preview->setStyleSheet("#snippetPreview { background: palette(base); border-radius: 10px; }");
@@ -223,7 +215,7 @@ void SnippetSearchPopup::setupUi() {
 
     m_previewPath = new QLabel(preview);
     m_previewPath->setWordWrap(true);
-    m_previewPath->setEnabled(false);   // disabled 配色 = 次要信息
+    m_previewPath->setEnabled(false);
     m_previewTitle = new QLabel(preview);
     m_previewTitle->setWordWrap(true);
     QFont bold = m_previewTitle->font();
@@ -233,7 +225,7 @@ void SnippetSearchPopup::setupUi() {
     m_previewImage = new QLabel(preview);
     m_previewImage->setFixedSize(kPreviewImageW, kPreviewImageH);
     m_previewImage->setAlignment(Qt::AlignCenter);
-    m_previewImage->hide();   // 没有配图时不占位
+    m_previewImage->hide();
     m_previewText = new QLabel(preview);
     m_previewText->setWordWrap(true);
     m_previewText->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -279,11 +271,9 @@ void SnippetSearchPopup::open(bool followTyping) {
     m_searchEdit->setReadOnly(followTyping);
     m_searchEdit->setFocusPolicy(followTyping ? Qt::NoFocus : Qt::StrongFocus);
 
-    // 本窗口已在前台时（用户在软件内按热键）不能把自己当成粘贴目标
     const ForegroundWindow::Handle foreground = ForegroundWindow::current();
     if (foreground && !isVisible()) m_target = foreground;
 
-    // 出现在鼠标附近，限制在当前屏幕内
     const QPoint cursor = QCursor::pos();
     QScreen* screen = QGuiApplication::screenAt(cursor);
     if (!screen) screen = QGuiApplication::primaryScreen();
@@ -344,7 +334,7 @@ void SnippetSearchPopup::refreshList() {
     auto hits = m_store->search(m_searchEdit->text(), true);
     if (hits.size() > kMaxResults) hits.resize(kMaxResults);
 
-    QStringList shown;   // 已经输出的目录链（id），同名目录也不会被合并
+    QStringList shown;
     for (const auto& hit : hits) {
         const QStringList& parts = hit.trailNames;
         const QStringList& keys = hit.trailKeys;
@@ -407,7 +397,6 @@ void SnippetSearchPopup::updatePreview(const QModelIndex& index) {
         if (remote) {
             m_previewImage->setText(tr("Remote image, downloaded when pasted"));
         } else {
-            // 悬停会频繁切换，解码结果按路径缓存
             auto cached = m_previewCache.constFind(imagePath);
             if (cached == m_previewCache.constEnd()) {
                 // 解码时直接缩到预览框大小，不把大图整张载入再缩小
@@ -442,7 +431,6 @@ void SnippetSearchPopup::moveSelection(int delta) {
     const int rows = m_model->rowCount();
     if (rows == 0) return;
     int row = m_listView->currentIndex().isValid() ? m_listView->currentIndex().row() : (delta > 0 ? -1 : 0);
-    // 目录行不可选，跳过；最多走一圈
     for (int i = 0; i < rows; ++i) {
         row = (row + delta + rows) % rows;
         const QModelIndex next = m_model->index(row, 0);
@@ -461,7 +449,6 @@ void SnippetSearchPopup::triggerPaste(const QModelIndex& index) {
     const int erase = m_erasePrefixChars + m_queryLength;
     hidePopup();
     ForegroundWindow::restore(m_target);
-    // 前缀已经打进目标窗口，焦点还回去之后先删掉再粘贴
     QTimer::singleShot(kPasteDelayMs, m_paster, [paster = m_paster, id, erase]() {
         PrefixWatcher::eraseTyped(erase);
         paster->paste(id);
@@ -481,8 +468,7 @@ void SnippetSearchPopup::startDrag(const QModelIndex& index) {
     drag->setHotSpot(m_dragStartPos - rowRect.topLeft());
     m_dragged = true;
 
-    // 拖动期间不能 hide：源窗口被隐藏后拖动可能当场结束，用户只看到弹窗消失。
-    // 弹窗又大又置顶会盖住放置目标，所以只留 1 像素可见（空区域等于清除遮罩，不能用）
+    // 拖动期间不能 hide（源窗口隐藏后拖动可能当场结束）；又不能盖住放置目标，所以只留 1 像素可见（空区域等于清除遮罩）
     m_dragging = true;
     setMask(QRegion(0, 0, 1, 1));
     const Qt::DropAction result = drag->exec(Qt::CopyAction);
@@ -490,7 +476,6 @@ void SnippetSearchPopup::startDrag(const QModelIndex& index) {
     clearMask();
 
     if (result == Qt::IgnoreAction) {
-        // 没放到任何地方（Esc 或放在不接受的区域）：弹窗留着，用户可以接着选
         activateWindow();
         m_searchEdit->setFocus();
         return;

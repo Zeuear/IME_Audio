@@ -25,14 +25,14 @@
 namespace {
 
 constexpr int kSumsTimeoutMs = 15000;
-constexpr int kToolStallMs = 30000;         // 下载组件时无数据多久放弃
-constexpr int kJobStallMs = 90000;          // 下载音频时无输出多久终止
+constexpr int kToolStallMs = 30000;
+constexpr int kJobStallMs = 90000;
 constexpr qint64 kCheckIntervalSec = 3600;
 const char* kReleaseBase = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/";
 
 struct ToolSpec {
     bool supported = false;
-    QString assetName;   // Release 里的文件名，也是 SHA2-256SUMS 里的键
+    QString assetName;
     QString localName;
 };
 
@@ -144,7 +144,6 @@ void YtDlpManager::release(quint64 id)
     m_workDirs.erase(it);
 }
 
-// ---------------------------------------------------------------- 下载组件
 QString YtDlpManager::toolPath() const
 {
     return QDir(toolDir()).absoluteFilePath(toolSpec().localName);
@@ -297,7 +296,6 @@ void YtDlpManager::failPreparation(const QString& error)
     for (const Job& j : jobs) emit taskFinished(j.id, false, {}, {}, error);
 }
 
-// ---------------------------------------------------------------- 下载音频
 void YtDlpManager::startJob()
 {
     m_current = m_queue.takeFirst();

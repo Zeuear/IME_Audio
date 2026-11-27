@@ -3,7 +3,6 @@
 
 namespace {
 
-// 只留字母和数字（转小写），并记下每个字符在原文里的位置
 QString stripToAlnum(const QString& s, QVector<int>* origIndex = nullptr) {
     QString out;
     for (int i = 0; i < s.size(); ++i) {
@@ -80,7 +79,6 @@ const QVector<SnippetSearchIndex::Entry>& SnippetSearchIndex::entries(FolderList
     return m_entries;
 }
 
-// 遍历顺序与树一致：先本文件夹的条目，再子文件夹
 void SnippetSearchIndex::build(FolderList& list, const QStringList& names, const QStringList& keys) {
     for (auto& folder : list) {
         QStringList next = names;

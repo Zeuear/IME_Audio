@@ -18,7 +18,7 @@ constexpr int kShadowMargin = 16;
 constexpr int kCornerRadius = 8;
 constexpr QSize kPanelSize(780 + 2 * kShadowMargin, 520 + 2 * kShadowMargin);
 constexpr QSize kMinPanelSize(480 + 2 * kShadowMargin, 300 + 2 * kShadowMargin);
-constexpr int kCornerGrip = 16;   // 右下角判定范围放大，好抓
+constexpr int kCornerGrip = 16;
 const QString kSettingsGroup = QStringLiteral("ExpandPanel");
 constexpr int kTranscriptIndex = 0;
 constexpr int kDictionaryIndex = 1;
@@ -44,7 +44,6 @@ protected:
         p.setRenderHint(QPainter::Antialiasing);
         const QRectF body = QRectF(rect()).adjusted(kShadowMargin, kShadowMargin,
                                                     -kShadowMargin, -kShadowMargin);
-        // 画 2px：盖住页面控件自己的直角边框（如输入框的焦点框）和蒙版的锯齿
         p.setPen(QPen(palette().color(QPalette::Mid), 2));
         p.setBrush(Qt::NoBrush);
         p.drawRoundedRect(body.adjusted(1, 1, -1, -1), kCornerRadius - 1, kCornerRadius - 1);
@@ -110,7 +109,7 @@ ExpandPanel::ExpandPanel(QWidget* parent)
     connect(m_sizeSaveTimer, &QTimer::timeout, this, [this]() {
         m_savedSize = size();
         FloatingWindow::saveSize(kSettingsGroup, m_savedSize);
-        if (isVisible()) reposition();   // 变大后可能超出屏幕或压到横条
+        if (isVisible()) reposition();
     });
 }
 
@@ -128,7 +127,7 @@ void ExpandPanel::setPages(QWidget* transcript, QWidget* dictionary, QWidget* fi
 void ExpandPanel::releaseSharedPages()
 {
     m_syncingTab = true;
-    m_tabs->removeTab(kFileIndex);   // 先删后面的，前面的序号才不变
+    m_tabs->removeTab(kFileIndex);
     m_tabs->removeTab(kDictionaryIndex);
     m_tabs->removeTab(kTranscriptIndex);
     m_syncingTab = false;
@@ -201,7 +200,7 @@ void ExpandPanel::reposition()
     const int inset = m_anchor->property("visualInset").toInt();
     const QPoint position = FloatingWindow::placeBelow(
         m_anchor->frameGeometry().adjusted(inset, inset, -inset, -inset),
-        size() - QSize(2 * kShadowMargin, 2 * kShadowMargin),   // 按可见主体摆放，阴影不算
+        size() - QSize(2 * kShadowMargin, 2 * kShadowMargin),
         FloatingWindow::availableScreens(), FloatingWindow::primaryScreenArea());
     move(position - QPoint(kShadowMargin, kShadowMargin));
 }
@@ -220,9 +219,7 @@ void ExpandPanel::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
     m_border->setGeometry(rect());
     m_border->raise();
-    // 页面控件是直角的，会从圆角处探出来，按圆角裁掉
     QPainterPath clip;
-    // 用面板自己的尺寸算：此刻布局可能还没把页面摆好，m_tabs->rect() 不可靠
     clip.addRoundedRect(QRectF(0, 0, width() - 2 * kShadowMargin, height() - 2 * kShadowMargin),
                         kCornerRadius, kCornerRadius);
     m_tabs->setMask(QRegion(clip.toFillPolygon().toPolygon()));

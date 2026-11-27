@@ -18,7 +18,7 @@ namespace {
 QString elideMiddle(const QString& name, int maxChars)
 {
     if (maxChars < 4 || name.size() <= maxChars) return name;
-    const int keep = maxChars - 1;        // 留一个位置给省略号
+    const int keep = maxChars - 1;
     const int head = keep / 2;
     const int tail = keep - head;         // 尾部多留一点，扩展名和版本号都在尾巴上
     return name.left(head) + QChar(0x2026) + name.right(tail);
@@ -34,7 +34,7 @@ QString progressLine(const QString& fileName, int fileIndex, int fileCount, int 
     return parts.join(QStringLiteral(" · "));
 }
 
-} // namespace DownloadText
+}
 
 void DownloadGroupProgress::start(int totalFiles)
 {

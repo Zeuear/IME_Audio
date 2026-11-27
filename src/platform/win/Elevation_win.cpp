@@ -5,7 +5,6 @@
 #include <Windows.h>
 #include <shellapi.h>
 
-// 通过 UAC ("runas") 提权启动安装程序并同步等待其结束。
 // 本函数运行在 ElevatedProcessTask 自己的工作线程上，允许阻塞。
 void ElevatedProcessTask::runElevatedBlocking() {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);

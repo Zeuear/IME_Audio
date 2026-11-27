@@ -95,7 +95,7 @@ bool trailRec(const FolderList& list, const QString& id, QStringList cur, QStrin
     return false;
 }
 
-} // namespace
+}
 
 SnippetStore::SnippetStore(const QString& dataFilePath)
     : m_dataFilePath(QFileInfo(dataFilePath).absoluteFilePath()) {
@@ -153,9 +153,6 @@ QString SnippetStore::savePixmapToStore(const QPixmap& pixmap) {
     return "data/images/" + newName;
 }
 
-// ------------------------------------------------------------------
-// JSON serialization
-// ------------------------------------------------------------------
 QJsonObject SnippetStore::folderToJson(const FolderNode* folder) const {
     QJsonObject obj;
     obj["id"] = folder->id;
@@ -224,14 +221,10 @@ SnippetItem SnippetStore::jsonToItem(const QJsonObject& obj) const {
     return item;
 }
 
-// ------------------------------------------------------------------
-// load / save
-// ------------------------------------------------------------------
 // 返回 true 表示发生了旧格式迁移，需要回写
 bool SnippetStore::loadFromObject(QJsonObject root) {
     bool migrated = false;
 
-    // settings（缺失的键保留默认值）
     m_settings = AppSettings();
     const QJsonObject s = root["settings"].toObject();
     if (s.contains("hotkey")) m_settings.hotkey = s["hotkey"].toString("");
@@ -247,7 +240,6 @@ bool SnippetStore::loadFromObject(QJsonObject root) {
     m_settings.maxDisplayLines = s["max_display_lines"].toInt(3);
     m_settings.voiceTrigger = s["voice_trigger"].toBool(true);
 
-    // 旧版扁平 snippets -> trees 迁移
     if (!root.contains("trees")) {
         QJsonArray trees = getDefaultData()["trees"].toArray();
         const QJsonArray old = root["snippets"].toArray();
@@ -384,9 +376,6 @@ bool SnippetStore::flush() {
     return true;
 }
 
-// ------------------------------------------------------------------
-// Default data（对应原 get_default_data）
-// ------------------------------------------------------------------
 QString SnippetStore::createSampleImage(const QString& filename, const QString& title,
                                         const QString& subtitle, const QColor& bg) const {
     ensureDirs();
@@ -492,9 +481,6 @@ QJsonObject SnippetStore::getDefaultData() const {
     return root;
 }
 
-// ------------------------------------------------------------------
-// 查找
-// ------------------------------------------------------------------
 bool SnippetStore::findFolder(const QString& id, FolderNode** outNode, FolderNode** outParent,
                               FolderList** outList, int* outIndex) {
     return findFolderRec(id, m_roots, nullptr, outNode, outParent, outList, outIndex);
@@ -517,9 +503,6 @@ SnippetItem* SnippetStore::findItemById(const QString& id) {
     return findItem(id, &it) ? it : nullptr;
 }
 
-// ------------------------------------------------------------------
-// CRUD
-// ------------------------------------------------------------------
 FolderNode* SnippetStore::addFolder(const QString& parentId, const QString& title, int level) {
     QString t = title.trimmed();
     if (t.isEmpty()) t = QString::fromUtf8("新建目录");
@@ -662,9 +645,6 @@ bool SnippetStore::incrementUseCount(const QString& itemId) {
     return save();
 }
 
-// ------------------------------------------------------------------
-// Search / helpers
-// ------------------------------------------------------------------
 QVector<SnippetStore::SearchHit> SnippetStore::search(const QString& query, bool allWhenEmpty) {
     return m_searchIndex.search(m_roots, query, allWhenEmpty);
 }

@@ -81,7 +81,6 @@ void AnimatedCheckBox::paintEvent(QPaintEvent* event)
 QSize AnimatedCheckBox::sizeHint() const
 {
     if (text().isEmpty()) return QSize(30, 30);
-    // 方框 18 + 左边距 4 + 间距 6 + 文字 + 右边距
     return QSize(28 + fontMetrics().horizontalAdvance(text()) + 6, 30);
 }
 

@@ -1,7 +1,6 @@
 #include "inforposmanager.h"
 #include <QGuiApplication>
 
-// TopInforBarManager
 QPoint TopInforBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();
@@ -28,7 +27,6 @@ QPoint TopInforBarManager::slideStartPos(InforBar* inforBar) const
 }
 
 
-// TopRightInfoBarManager
 QPoint TopRightInfoBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();
@@ -65,7 +63,6 @@ QPoint TopRightInfoBarManager::slideStartPos(InforBar* inforBar) const
 
 
 
-// BottomRightInfoBarManager
 QPoint BottomRightInfoBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();
@@ -102,7 +99,6 @@ QPoint BottomRightInfoBarManager::slideStartPos(InforBar* inforBar) const
 
 
 
-// TopLeftInfoBarManager
 QPoint TopLeftInfoBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();
@@ -131,7 +127,6 @@ QPoint TopLeftInfoBarManager::slideStartPos(InforBar* inforBar) const
 
 
 
-// BottomLeftInfoBarManager
 QPoint BottomLeftInfoBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();
@@ -158,7 +153,6 @@ QPoint BottomLeftInfoBarManager::slideStartPos(InforBar* inforBar) const
 
 
 
-// BottomInfoBarManager
 QPoint BottomInfoBarManager::pos(InforBar* inforBar, const QSize& _parentSize) const
 {
     QWidget* p = inforBar->parentWidget();

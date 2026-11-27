@@ -12,13 +12,10 @@ bool isSupported(const QString& url);
 
 QStringList parseLines(const QString& text, QStringList* invalid = nullptr);
 
-// 不是进度行返回 -1
 int parseProgressPercent(const QString& line);
 
-// 找不到返回空串
 QString sha256For(const QByteArray& sums, const QString& assetName);
 
-// 一行格式为 "标题\t路径"
 bool parseResultLine(const QString& line, QString* title, QString* path);
 
 enum class Failure {

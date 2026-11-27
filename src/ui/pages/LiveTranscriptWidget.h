@@ -1,11 +1,13 @@
 #pragma once
 #include <QDateTime>
+#include <QList>
 #include <QWidget>
 #include "ui/controls/AnimatedCheckbox.h"
 #include <memory>
 
 
 class QCheckBox;
+class QFrame;
 class QScrollArea;
 class QLabel;
 class QPlainTextEdit;
@@ -21,8 +23,18 @@ class LiveTranscriptWidget : public QWidget
 {
     Q_OBJECT
 public:
+    struct LanguageChoice {
+        QString text;
+        QString key;
+    };
+
     explicit LiveTranscriptWidget(QWidget* parent = nullptr);
     ~LiveTranscriptWidget() override;
+
+    void setLanguagePair(const QString& source, const QString& target);
+    void setSourceChoices(const QList<LanguageChoice>& choices, const QString& currentKey);
+    void setTargetChoices(const QList<LanguageChoice>& choices, const QString& currentKey);
+    void setTranslationEnabled(bool enabled);
 
     // 设置窗口把本页借到 QScrollArea 里：active 时把外层高度钉在视口上，
     // 让本页的 QListView 自己滚，工具条始终固定在顶部；离开本页时恢复外层滚动。
@@ -49,6 +61,9 @@ public:
 signals:
     void startRequested();
     void stopRequested();
+    void swapLanguagesRequested();
+    void sourceLanguageChosen(const QString& key);
+    void targetLanguageChosen(const QString& key);
     // title/cause 为中文，由宿主统一弹出
     void errorOccurred(const QString& title, const QString& cause);
     void injectToggled(bool on);
@@ -57,12 +72,18 @@ signals:
 
 protected:
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     void setupUi();
     void retranslateUi();
     void updateButtons();
+    void refreshSwapIcon();
+    void positionLanguagePill();
+    void pickSourceLanguage();
+    void pickTargetLanguage();
+    QString chooseLanguage(QWidget* anchor, const QList<LanguageChoice>& choices, const QString& currentKey);
     // 复制：有选中行只复制选中行，没选中复制全部；原文、译文各一份，互不混在一起
     void copyOriginal();
     void copyTranslation();
@@ -80,6 +101,14 @@ private:
     QPushButton* m_toggleBtn = nullptr;
     AnimatedCheckBox* m_injectCheck = nullptr;
     AnimatedCheckBox* m_timestampCheck = nullptr;
+    QFrame* m_langPill = nullptr;
+    QPushButton* m_sourceBtn = nullptr;
+    QPushButton* m_swapBtn = nullptr;
+    QPushButton* m_targetBtn = nullptr;
+    QList<LanguageChoice> m_sourceChoices;
+    QString m_sourceKey;
+    QList<LanguageChoice> m_targetChoices;
+    QString m_targetKey;
     QPushButton* m_copyOriginalBtn = nullptr;
     QPushButton* m_copyTranslationBtn = nullptr;
     QPushButton* m_exportBtn = nullptr;

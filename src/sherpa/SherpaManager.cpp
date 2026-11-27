@@ -117,8 +117,7 @@ bool SherpaManager::reloadModel(const AppConfig& config) {
         return false;
     }
 
-    // 启动预加载还没跑完时就开始录音：再排一个加载会把已加载好的识别器清掉重来，
-    // 让 Loading 态的判断和第一句的转录都撞上重载窗口，直接等在途的那次加载完成即可
+    // 启动预加载未完成时开始录音：再排一个加载会清掉已加载的识别器，直接等在途那次完成
     {
         QMutexLocker locker(&m_queueMutex);
         if (m_loadsInFlight > 0 && sameModel(m_lastLoadRequest)) {
@@ -156,7 +155,6 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         return;
     }
 
-    // 选中的是 CPU 模型；GPU 模式且 GPU 版已下载时，实际加载它的 GPU 版（没下完就继续用 CPU 版）
     const QString selectedRepoId = repoId;
     repoId = ModelRegistry::ResolveForMode(selectedRepoId, config.sherpa.useGpu);
     if (repoId != selectedRepoId) {
@@ -211,7 +209,6 @@ void SherpaManager::loadModel(const AppConfig& config, bool isReload)
         m_currentRepoId.clear();
     };
     // GPU 变体用 CUDA 且不回退 CPU：创建失败时要保住已加载的模型，所以成功后才释放旧的
-    // （代价是切换瞬间两个模型同时在内存里）
     const bool keepOldOnFail = ModelRegistry::ShouldUseCuda(*desc, useGpu);
     if (!keepOldOnFail) releaseCurrent();
 
@@ -378,12 +375,11 @@ bool SherpaManager::transcribeOnline(const std::vector<float>& samples, int samp
 void SherpaManager::transcribeAsync(const QByteArray& pcmData, int sampleRate, std::optional<QString> hotwords)
 {
     if (pcmData.isEmpty()) return;
-    // 不再因模型未加载而丢弃：utterance 入队后排在 Load 任务之后，
-    // worker 串行执行，加载完成后再转录，避免 Loading 态说话被抛弃。
+    // 不因模型未加载而丢弃：utterance 排在 Load 任务之后，worker 串行执行，避免 Loading 态说话被抛弃
     {
         QMutexLocker locker(&m_queueMutex);
         m_queue.enqueue({ TaskType::Transcribe, pcmData, sampleRate, {}, false, std::move(hotwords) });
-        m_queueNotEmpty.wakeOne(); // 唤醒可能正在休眠等待任务的 worker 线程
+        m_queueNotEmpty.wakeOne();
     }
     emit queueSizeChanged(pendingCount());
 }
@@ -401,7 +397,6 @@ void SherpaManager::resumeIdleTimer()
 }
 
 // 在 worker 线程调用：定时器属于主线程，且录音 / 文件转录期间不能武装，否则长任务会被空闲卸载打断。
-// 暂停标志在主线程上再检查一次，避免排队期间刚好进入暂停
 void SherpaManager::armIdleTimer()
 {
     QMetaObject::invokeMethod(this, [this]() {
@@ -528,7 +523,6 @@ void SherpaInstaller::ensureStreamingModel(const QString& language)
     }
     if (isInstalling(repoId)) return;
 
-    // 上次没下完的残留先清掉，重新下
     if (InstallMarker::isIncomplete(modelDirFor(repoId))) QDir(modelDirFor(repoId)).removeRecursively();
 
     ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
@@ -553,7 +547,6 @@ void SherpaInstaller::installModel(const QString& repoId)
         if (cfg.liveCaptionEnabled.load()) ensureStreamingModel(cfg.sherpa.languageModel);
     }
 
-    // 正在下载：别重复开一轮，也别把半截目录当成已存在
     if (isInstalling(repoId)) return;
 
     const QString modelPath = modelDirFor(repoId);
@@ -562,7 +555,6 @@ void SherpaInstaller::installModel(const QString& repoId)
         emit loadModel(repoId, true, tr("Download Complete"));
         return;
     }
-    // 上次没下完（带"安装中"标记）：清掉残留重新下
     if (InstallMarker::isIncomplete(modelPath)) {
         LOG_WARN(QString("Removing incomplete model directory: %1").arg(modelPath));
         QDir(modelPath).removeRecursively();
@@ -571,8 +563,7 @@ void SherpaInstaller::installModel(const QString& repoId)
     ModelInstallManifest manifest = ModelRegistry::BuildManifest(repoId);
     if (!InstallMarker::markInstalling(modelPath)) LOG_WARN(QString("Cannot create model directory: %1").arg(modelPath));
 
-    // 先发"开始"再提交下载：文件在启动时就同步失败（目标路径建不出来）时，"失败"会在 addGroupTask 里同步发出，
-    // 如果"开始"排在后面，行内状态会先变失败、再被"开始"盖回下载中，永远停在那里
+    // 先发"开始"再提交下载：同步失败时"失败"会在 addGroupTask 里先发出，若"开始"在后会把行内状态盖回下载中
     if (!manifest.archiveUrl.isEmpty()) {
         m_activeManifests[repoId] = manifest;
         emit installGroupStarted(repoId, manifest.displayName, 1);
@@ -588,9 +579,8 @@ void SherpaInstaller::installModel(const QString& repoId)
 
 void SherpaInstaller::cancelInstall(const QString& repoId)
 {
-    if (m_downloadManager->tasksInGroup(repoId).isEmpty()) return;   // 没在下载（装好了，或在解压）
+    if (m_downloadManager->tasksInGroup(repoId).isEmpty()) return;
     emit installCancelled(repoId);
-    // 下载层会随后报告"组失败"，onGroupFinished 的失败分支负责清理目录和记录
     m_downloadManager->cancelGroup(repoId);
 }
 

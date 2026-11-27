@@ -30,7 +30,6 @@ void CudaInstaller::setEnvironment() {
     QString nativeCudnnPath = QDir::toNativeSeparators(cudnnBinDir);
 
     if (!path.contains(nativeCudnnPath, Qt::CaseInsensitive)) {
-        // 动态修改当前进程及其子进程的环境变量
         qputenv("PATH", (nativeCudnnPath + ";" + path).toLocal8Bit());
     }
 }
@@ -44,7 +43,6 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         return result;
     }
 
-    // 第一层:硬件检测
     QString gpuName;
     if (!detectNvidiaGpuPresent(&gpuName)) {
         result.hasNvidiaGpu = false;
@@ -54,7 +52,6 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
     result.hasNvidiaGpu = true;
     result.gpuName = gpuName;
 
-    // 第二层:CUDA Runtime 动态库检测
     bool cudartLoaded = false;
     for (const auto& cand : spec.cudartCandidates) {
         QLibrary lib(cand.libName);
@@ -76,7 +73,6 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         return result;
     }
 
-    // 第三层(按需):cuDNN 检测,如果 sherpa-onnx 的 GPU 推理依赖 cudnn
     if (requireCudnn) {
         bool cudnnLoaded = false;
         for (const auto& name : spec.cudnnCandidates) {
@@ -96,13 +92,11 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
         }
     }
 
-    // 第四层:ONNX Runtime CUDA Execution Provider 检测
     {
         QString dllPath = QApplication::applicationDirPath() + QDir::separator() + spec.ortCudaProviderLib;
         result.hasOrtCudaProvider = QFile::exists(dllPath);
 
-        // 只看 provider 文件在不在不够：onnxruntime.dll 与 provider 版本不一致时（如旧版程序装过 GPU 运行库后升级），
-        // sherpa 会悄悄回退 CPU，日志照样写 provider=cuda。不一致就判为未就绪，让用户重新安装
+        // provider 与 onnxruntime.dll 版本不一致时 sherpa 会悄悄回退 CPU 且日志仍写 provider=cuda，故判为未就绪让用户重装
         if (result.hasOrtCudaProvider) {
             const QString ortVersion = fileVersion(QApplication::applicationDirPath() + "/onnxruntime.dll");
             const QString providerVersion = fileVersion(dllPath);
@@ -113,13 +107,6 @@ GpuDetectionResult CudaInstaller::detectGpuEnvironment(bool requireCudnn)
             }
         }
 
-        //QLibrary ortLib(ortCudaLib);
-        //if (result.hasOrtCudaProvider) {
-        //    ortLib.unload();
-        //}
-        //else {
-        //    result.failReason = tr("Detected CUDA Runtime, but ONNX Runtime CUDA provider (onnxruntime_providers_cuda) not found. GPU acceleration requires the sherpa-onnx CUDA build.");
-        //}
     }
 
     result.isFullyReady = result.hasNvidiaGpu && result.hasCudaRuntime

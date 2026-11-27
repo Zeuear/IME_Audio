@@ -143,7 +143,6 @@ private:
         CComPtr<IUIAutomationTextPattern> textPattern;
         hr = focused->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&textPattern));
 
-        // 拿不到 TextPattern 就退回旧的"追加到末尾"逻辑，保证兼容性
         if (FAILED(hr) || !textPattern) {
             std::wstring combined = fullText + wideText;
             CComBSTR bstrCombined(combined.c_str());
@@ -158,7 +157,6 @@ private:
             return SUCCEEDED(valuePattern->SetValue(bstrCombined));
         }
 
-        // 默认插入到文末（找不到光标位置时的兜底）
         int selStart = static_cast<int>(fullText.size());
         int selEnd = selStart;
 
@@ -171,7 +169,6 @@ private:
                 CComPtr<IUIAutomationTextRange> selRange;
                 selection->GetElement(0, &selRange);
                 if (selRange) {
-                    // 通过"文档起点 -> 选区起点"这段文字的长度，反推选区起点的字符偏移
                     CComPtr<IUIAutomationTextRange> preStart;
                     docRange->Clone(&preStart);
                     preStart->MoveEndpointByRange(
@@ -181,7 +178,6 @@ private:
                     preStart->GetText(-1, &preStartText);
                     selStart = preStartText.Length();
 
-                    // 同理反推选区终点的偏移（如果只是光标，selEnd == selStart）
                     CComPtr<IUIAutomationTextRange> preEnd;
                     docRange->Clone(&preEnd);
                     preEnd->MoveEndpointByRange(
@@ -194,12 +190,10 @@ private:
             }
         }
 
-        // 边界保护，避免偏移超出实际文本长度
         const int textLen = static_cast<int>(fullText.size());
         selStart = std::clamp(selStart, 0, textLen);
         selEnd = std::clamp(selEnd, selStart, textLen);
 
-        // 拼接：光标前 + 新插入文本 + （如有选区则跳过被选中的部分）光标后
         std::wstring combined;
         combined.reserve(fullText.size() + wcslen(wideText));
         combined.append(fullText, 0, selStart);
@@ -287,7 +281,7 @@ class UnicodeTextInjector {
 public:
     struct Options {
         int batchSize = 20;     // 每批发送的字符数，避免单次 SendInput 数组过大丢字符
-        int batchDelayMs = 1;   // 批次之间的间隔，给目标应用消息队列喘息时间
+        int batchDelayMs = 1;
         bool guardIme = true;   // 是否在注入期间临时关闭输入法，防止英文字符被劫持成拼音候选
     };
 
@@ -411,7 +405,6 @@ bool InputInjector::setClipboardFile(const QString& path) {
     if (dropFiles) GlobalUnlock(drop);
     if (dropEffect) GlobalUnlock(effect);
 
-    // 剪贴板可能正被别的程序占用，稍等重试
     bool opened = false;
     for (int i = 0; dropFiles && dropEffect && !opened && i < 5; ++i) {
         opened = OpenClipboard(nullptr);
@@ -425,7 +418,6 @@ bool InputInjector::setClipboardFile(const QString& path) {
     }
 
     EmptyClipboard();
-    // SetClipboardData 成功后内存归系统所有
     const bool ok = SetClipboardData(CF_HDROP, drop) != nullptr;
     if (!ok) GlobalFree(drop);
     if (!SetClipboardData(RegisterClipboardFormatW(CFSTR_PREFERREDDROPEFFECT), effect)) GlobalFree(effect);
@@ -445,8 +437,6 @@ bool InputInjector::pasteViaClipboard(const QString& text) {
     QThread::msleep(30);
     bool ok = sendCtrlV();
 
-    //QThread::msleep(50);
-    //clipboard->setText(restoreText);
     return ok;
 }
 

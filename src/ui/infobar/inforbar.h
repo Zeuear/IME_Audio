@@ -15,7 +15,6 @@
 #include <QGraphicsOpacityEffect>
 #include "appleshadoweffect.h"
 
-// C++ 11引入的加强型枚举
 enum  InforBarPosition {
    I_TOP,
    I_BOTTOM,
@@ -96,7 +95,7 @@ private:
     void initAnimation();
     void __fadeOut();
     void __fadeIn();
-    int calculateWidth() const; // 新增：计算自适应宽度
+    int calculateWidth() const;
 
 
     void setColor(const QColor color);
@@ -132,7 +131,7 @@ private:
     QPropertyAnimation* m_opacity_animation;
     qreal m_opacity;
 
-    QPixmap m_cache; // 新增：绘制缓存
+    QPixmap m_cache;
 
     int m_icoSize = 18;
     int m_margin = 10;

@@ -29,7 +29,6 @@ bool ConfigManager::writeFileAtomically(const QString& path, const QByteArray& d
 {
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) return false;
-    // Windows 上权限位主要靠目录本身的 ACL，这一步效果有限
     if (ownerOnly) file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
     if (file.write(data) != data.size()) {
         file.cancelWriting();
@@ -139,8 +138,7 @@ bool ConfigManager::load() {
         const QString saved = s.value(QStringLiteral("model_%1").arg(engine)).toString();
         if (!saved.isEmpty()) m_config.polish.modelByEngine[engine] = saved;
     }
-    // 旧版本只存了一个 model，归给当时选中的引擎；
-    // 但 Gemini 的模型名（gemini-…）在 Ollama / OpenAI 兼容里不存在，是切引擎时遗留下来的，不能归给它们
+    // 旧版本只存一个 model 归给当时引擎；Gemini 模型名不能归给 Ollama / OpenAI 兼容
     if (!m_config.polish.modelByEngine.contains(m_config.polish.aiEngineIndex)) {
         const bool foreignGemini = m_config.polish.aiEngineIndex != 0
                                    && m_config.polish.model.startsWith(QStringLiteral("gemini-"), Qt::CaseInsensitive);
@@ -176,7 +174,6 @@ bool ConfigManager::load() {
 
 bool ConfigManager::save() {
     // 还没载入过就保存，写出去的是未载入的默认值，会把用户已有的快捷键、密钥等整份覆盖。
-    // 文件不存在（首次运行）不受限：那时本来就要写出默认配置
     if (!m_synced && QFile::exists(m_configPath)) {
         LOG_WARN("Refused to save configuration before it was loaded (would overwrite the existing file with defaults)");
         return false;

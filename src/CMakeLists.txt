@@ -46,7 +46,8 @@ endif()
 
 target_include_directories(${TARGET_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    "${CMAKE_SOURCE_DIR}/third_party/QHotkey/QHotkey")
+    "${CMAKE_SOURCE_DIR}/third_party/QHotkey/QHotkey"
+    "${CMAKE_SOURCE_DIR}/third_party/rapidfuzz")
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMINMAX)
 
 

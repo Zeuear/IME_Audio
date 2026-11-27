@@ -14,30 +14,6 @@ void PaintTool::paintShadow(
     qreal opacityFactor    
 )
 {
-    //int expand = 8;
-    //int edge = 10;
-    //int maxLayers = 10;
-
-    //int startAlpha = shadowColor.alpha();
-    //for (int i = 0; i < maxLayers; i++)
-    //{
-        //shadowColor.setAlpha(startAlpha - int(std::sqrt(i) * 20));
-        //painter.setPen(shadowColor);
-
-        //qreal factor = 1.0 - qreal(i) / (maxLayers - 1); 
-        //shadowColor.setAlpha(int(startAlpha * factor));
-
-        //painter.setPen(Qt::NoPen);
-        //painter.setBrush(QBrush(shadowColor));
-
-    //    int distance = i + 1;
-
-    //    QRect shadowRect = QRect(edge - distance, edge - distance,
-    //        width - (edge - distance) * 2,
-    //        height - (edge - distance) * 2);
-
-    //    painter.drawRoundedRect(shadowRect, 15, 15);
-    //}
     painter.save();
 
 
@@ -113,17 +89,14 @@ void PaintTool::paintGradientShadow(
 
 QPixmap PaintTool::drawShadowEffect(const QPixmap& sourcePixmap, const QColor& baseColor, qreal offset, qreal blurRadius, qreal devicePixelRatio)
 {
-    // Check if source pixmap is valid
     if (sourcePixmap.isNull()) {
         return QPixmap();
     }
 
-    // Calculate output pixmap size with blur radius
     QSize sourceSize = sourcePixmap.size();
     QRectF sourceRect(0, 0, sourceSize.width(), sourceSize.height());
     QSize pixmapSize = sourceRect.size().toSize() * devicePixelRatio;
 
-    // Create output pixmap
     QPixmap outputPixmap(pixmapSize);
     outputPixmap.setDevicePixelRatio(devicePixelRatio);
     outputPixmap.fill(Qt::transparent);
@@ -131,33 +104,26 @@ QPixmap PaintTool::drawShadowEffect(const QPixmap& sourcePixmap, const QColor& b
     QPainter painter(&outputPixmap);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
-    // Derive shadow colors
-    QColor edgeColor = baseColor.darker(120); // Edge darkening
-    edgeColor.setAlpha(255); // Soft opacity
-    QColor midColor = baseColor.darker(105); // Mid-tone
-    midColor.setAlpha(150); // Smooth transition
+    QColor edgeColor = baseColor.darker(120);
+    edgeColor.setAlpha(255);
+    QColor midColor = baseColor.darker(105);
+    midColor.setAlpha(150);
     QColor centerColor = baseColor;
-    centerColor.setAlpha(0); // Transparent center
+    centerColor.setAlpha(0);
 
-    // Create radial gradient for shadow
     QRadialGradient shadowGradient(sourceRect.center(), sourceRect.width()/2);
-    shadowGradient.setColorAt(0.0, centerColor); // Transparent center
-    shadowGradient.setColorAt(0.8, centerColor); // Mid-tone transition
-    shadowGradient.setColorAt(0.9, midColor); // Mid-tone transition
-    shadowGradient.setColorAt(1.0, edgeColor); // Fade to transparent
+    shadowGradient.setColorAt(0.0, centerColor);
+    shadowGradient.setColorAt(0.8, centerColor);
+    shadowGradient.setColorAt(0.9, midColor);
+    shadowGradient.setColorAt(1.0, edgeColor);
 
-    //painter.setBrush(QColor(255, 255, 255, 255));
-    //painter.drawRect(sourceRect);
 
-    // Draw source pixmap on top
     painter.drawPixmap(0, 0, sourcePixmap.scaled(sourceSize * devicePixelRatio, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
-    // Draw shadow
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(shadowGradient);
-    //painter.drawRect(sourceRect);
 
     return outputPixmap;
 }

@@ -10,16 +10,15 @@
 
 namespace {
 constexpr int kShowDelayMs = 250;
-constexpr int kChainWindowMs = 400;   // 离开上一个按钮后这段时间内进入下一个，立即显示
+constexpr int kChainWindowMs = 400;
 constexpr int kPadX = 10;
 constexpr int kPadY = 6;
 constexpr int kRadius = 7;
 constexpr int kArrowW = 14;
 constexpr int kArrowH = 7;
-constexpr int kGap = 9;               // 箭头尖离按钮边缘的距离：越过横条 5px 内边距再留一点空
+constexpr int kGap = 9;
 constexpr int kMaxTextWidth = 280;
 constexpr int kTextFlags = Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap;
-// 三套主题的提示框都是深底白字，气泡沿用
 const QColor kFill(40, 40, 40, 240);
 const QColor kBorder(255, 255, 255, 40);
 }
@@ -63,7 +62,7 @@ bool BubbleTip::eventFilter(QObject* watched, QEvent* event)
     if (!w) return false;
     switch (event->type()) {
     case QEvent::ToolTip:
-        return true;   // 系统提示不再出现
+        return true;
     case QEvent::Enter:
         m_target = w;
         if (QDateTime::currentMSecsSinceEpoch() - m_hiddenAt < kChainWindowMs) showFor(w);
@@ -110,7 +109,6 @@ void BubbleTip::showFor(QWidget* target)
     QScreen* screen = QGuiApplication::screenAt(anchor.center());
     const QRect avail = screen ? screen->availableGeometry() : QRect(anchor.center() - QPoint(2000, 2000), QSize(4000, 4000));
 
-    // 默认在上方；顶上放不下就翻到下方
     int y = anchor.top() - kGap - size.height();
     m_below = y < avail.top();
     if (m_below) y = anchor.bottom() + 1 + kGap;

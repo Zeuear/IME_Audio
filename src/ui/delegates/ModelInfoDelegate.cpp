@@ -87,7 +87,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
-    // 底色：选中用高亮色淡化，悬停轻微提亮；行间分隔线
     if (selected || hovered) {
         QColor bg = pal.color(QPalette::Highlight);
         bg.setAlpha(selected ? 40 : 16);
@@ -103,7 +102,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
 
     const Columns c = columns(opt.rect);
 
-    // 单选圈：当前选中的模型
     const QRectF ring(c.radio.left() + 1, c.radio.center().y() - 8, 16, 16);
     p->setBrush(Qt::NoBrush);
     p->setPen(QPen(selected ? pal.color(QPalette::Highlight) : pal.color(QPalette::Mid), 1.5));
@@ -114,7 +112,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         p->drawEllipse(ring.adjusted(4, 4, -4, -4));
     }
 
-    // 名称 + 覆盖语言
     QFont nameFont = opt.font;
     nameFont.setBold(true);
     p->setFont(nameFont);
@@ -123,7 +120,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     p->drawText(nameRect, Qt::AlignLeft | Qt::AlignVCenter,
                 QFontMetrics(nameFont).elidedText(index.data(Qt::DisplayRole).toString(), Qt::ElideRight, nameRect.width()));
 
-    // 下载状态：第二行在下载、解压、失败时换成对应的说明，没有任务时仍是覆盖语言
     const auto dlState = static_cast<ModelDownloadTracker::State>(index.data(ModelInfoModel::DownloadStateRole).toInt());
     const int dlPercent = index.data(ModelInfoModel::DownloadPercentRole).toInt();
     const QString dlText = index.data(ModelInfoModel::DownloadTextRole).toString();
@@ -154,7 +150,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
     p->drawText(langRect, Qt::AlignLeft | Qt::AlignVCenter,
                 QFontMetrics(subFont).elidedText(subText, Qt::ElideRight, langRect.width()));
 
-    // 准确度 / 速度：信号格 + 数值
     auto drawMetric = [&](const QRect& col, int level, const QString& value) {
         p->setFont(opt.font);
         if (level <= 0) {
@@ -201,7 +196,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         return;
     }
 
-    // 特性：已安装（成功语义色）/ 自带标点
     QStringList features;
     QList<QColor> dots;
     if (index.data(ModelInfoModel::InstalledRole).toBool()) {
@@ -212,7 +206,6 @@ void ModelInfoDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, cons
         features << tr("Punctuation");
         dots << pal.color(QPalette::Highlight);
     }
-    // GPU 模式下的加速状态：不支持 / 没下载（点切换后自动下载）/ 已就绪
     const int gpuState = index.data(ModelInfoModel::GpuStateRole).toInt();
     if (gpuState == static_cast<int>(GpuVariant::GpuState::Ready)) {
         features << tr("GPU ready");
@@ -253,7 +246,6 @@ bool ModelInfoDelegate::helpEvent(QHelpEvent* e, QAbstractItemView* view, const 
     QString tip;
     const auto dlState = static_cast<ModelDownloadTracker::State>(index.data(ModelInfoModel::DownloadStateRole).toInt());
     if (dlState == ModelDownloadTracker::State::Failed) {
-        // 失败原因在行里被省略号截断时，悬停看完整原因
         tip = tr("Download failed: %1").arg(index.data(ModelInfoModel::DownloadTextRole).toString());
     } else if (c.accuracy.contains(e->pos()) || c.speed.contains(e->pos())) {
         if (!index.data(ModelInfoModel::BenchmarkedRole).toBool()) {

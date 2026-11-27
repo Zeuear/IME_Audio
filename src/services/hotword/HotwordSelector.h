@@ -8,14 +8,8 @@
 #include "PinyinTable.h"
 
 // @brief 按读音从词典里挑出和这句话最相关的热词。纯逻辑，便于单测。
-//
-// 为什么需要：Qwen3-ASR 这类 LLM 型识别器的热词写在提示词里，词典几百条全塞进去会超出序列长度（识别直接返回空），
-// 就算只塞前几十条，也没有针对性。做法是借实时字幕已经识别出的这句话（专有名词常听成同音字），
-// 按读音找出词典里"听起来像"的词，只把这几个交给离线识别器：多解码一次音频的代价没有，只多一次文本匹配。
-//
-// 匹配方式：把文字拆成"读音单元"（汉字 → 拼音编号，连续英文数字 → 一个小写词），
-// 在文字里滑动与词条等长（±1）的窗口，算带权编辑距离。权重：读音相同 0；zh/z、ch/c、sh/s、前后鼻音、n/l 之差 0.3；其余 1。
-// 词典有几千条时，先用"词条里至少要有几个单元在句子里出现过"粗筛，绝大多数词条不用进编辑距离。
+// 为什么：LLM 型识别器的热词写在提示词里，全塞会超出序列长度；借实时字幕已识别的这句话，按读音找出词典里“听起来像”的词，只把这几个交给离线识别器。
+// 匹配：汉字 → 拼音编号、连续英文数字 → 小写词，滑动与词条等长（±1）的窗口算带权编辑距离（读音相同 0；zh/z、ch/c、sh/s、前后鼻音、n/l 之差 0.3；其余 1）；词典大时先按“至少出现几个单元”粗筛。
 class HotwordSelector
 {
 public:
@@ -34,14 +28,12 @@ public:
     void setEntries(const QList<Entry>& entries);
     int entryCount() const { return int(m_entries.size()); }
 
-    // 按相似度从高到低，相同按词典顺序；text 为空返回空表
     QStringList select(const QString& text, int maxWords = kDefaultMax, double minScore = kDefaultMinScore) const;
 
-    // 暴露给单测
     struct Unit {
         QString latin;              // 非空表示英文词（已小写），此时下面的编号无效
-        int sid = -1;               // 拼音编号（多音字取主读音）
-        int nid = -1;               // 抹平发音混淆后的编号
+        int sid = -1;
+        int nid = -1;
         QVector<int> altSid;        // 多音字的其余读音；比较时任一读音对得上就算
         QVector<int> altNid;
         bool isLatin() const { return !latin.isEmpty(); }
@@ -52,7 +44,7 @@ public:
 private:
     struct Compiled {
         QString text;
-        QVector<QVector<Unit>> forms;    // 正确写法 + 各听成的写法
+        QVector<QVector<Unit>> forms;
     };
 
     double unitCost(const Unit& a, const Unit& b) const;

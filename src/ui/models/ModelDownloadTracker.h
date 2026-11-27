@@ -13,8 +13,8 @@ public:
 
     struct Info {
         State state = State::None;
-        int percent = 0;   // 下载中是整体百分比，解压中是解压百分比
-        QString text;      // 下载中："文件名 · 第几个/共几个 · 百分比"；失败：原因
+        int percent = 0;
+        QString text;
     };
 
     explicit ModelDownloadTracker(QObject* parent = nullptr) : QObject(parent) {}

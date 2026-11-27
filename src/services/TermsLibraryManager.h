@@ -24,7 +24,6 @@
         Q_OBJECT
     public:
         explicit TermsLibraryManager(QObject *parent = nullptr);
-        // 词库文件路径，改动后自动写回这里；测试用临时文件，避免读写用户的词库
         explicit TermsLibraryManager(const QString &path, QObject *parent = nullptr);
 
         bool loadFromTsv(const QString &path);
@@ -47,12 +46,11 @@
         void clear();
 
         static QString defaultPath();
+        QString path() const { return m_path; }
 
-        // 返回 words 中已被其它启用词条占用的第一个听成，没有则为空
         QString duplicateHeard(const QStringList& words, int excludeRow = -1) const;
         static QString applyReplaceRules(const QString& text, const QString& rules);
 
-        // 中英文逗号、顿号、分号、斜杠都可作分隔
         static QStringList splitWords(const QString& text);
 
         struct TermsRuleSet {

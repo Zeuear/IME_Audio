@@ -28,7 +28,7 @@ void ModelDownloadTracker::onFileProgress(const QString& repoId, const QString& 
 
 void ModelDownloadTracker::onFileFinished(const QString& repoId, const QString&)
 {
-    entry(repoId).progress.fileFinished();   // 下一次进度到来时才体现在说明行上，这里不必通知
+    entry(repoId).progress.fileFinished();
 }
 
 void ModelDownloadTracker::onFileError(const QString& repoId, const QString&, const QString& error)
@@ -57,7 +57,7 @@ void ModelDownloadTracker::onGroupFinished(const QString& repoId, bool success, 
 {
     Entry& e = entry(repoId);
     if (success || e.cancelled) {
-        m_entries.remove(repoId);   // 装好了，或用户取消了：都没有状态要显示
+        m_entries.remove(repoId);
     } else {
         e.info.state = State::Failed;
         e.info.percent = 0;

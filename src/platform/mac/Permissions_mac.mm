@@ -12,8 +12,7 @@
 
 namespace {
 
-// 系统设置 → 隐私与安全性 的深链。anchor 是各子面板的固定标识符，
-// macOS 13 起的「系统设置」和更早的「系统偏好设置」都认这个 scheme。
+// 系统设置 → 隐私与安全性 的深链；anchor 是子面板固定标识，新旧系统设置都认。
 void openPrivacyPane(NSString* anchor) {
     NSString* spec = [NSString
         stringWithFormat:@"x-apple.systempreferences:com.apple.preference.security?%@", anchor];
@@ -27,12 +26,11 @@ void openPrivacyPane(NSString* anchor) {
     }
 }
 
-} // namespace
+}
 
 PlatformPermissions::Status PlatformPermissions::microphoneStatus() {
     const AVAuthorizationStatus raw = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
     // 原始值 0=NotDetermined 1=Restricted 2=Denied 3=Authorized；Restricted 与 Denied 在下面被合并，
-    // 排查"为什么弹不出授权框"时需要区分。
     if (raw == AVAuthorizationStatusRestricted) {
         LOG_WARN("Permissions(mac): 麦克风授权状态为 Restricted（家长控制/MDM 限制）");
     }
@@ -41,8 +39,7 @@ PlatformPermissions::Status PlatformPermissions::microphoneStatus() {
         return Status::Granted;
     case AVAuthorizationStatusNotDetermined:
         return Status::NotDetermined;
-    // Restricted（家长控制 / MDM 限制）对用户而言和 Denied 是同一件事：
-    // 系统不会再弹框，本应用也无法自行改变，都只能引导到系统设置。
+    // Restricted（家长控制 / MDM）对用户等同 Denied：系统不再弹框，只能引导到系统设置。
     case AVAuthorizationStatusRestricted:
     case AVAuthorizationStatusDenied:
     default:
@@ -85,7 +82,6 @@ void PlatformPermissions::openAccessibilitySettings() {
     openPrivacyPane(@"Privacy_Accessibility");
 }
 
-// 麦克风与辅助功能授权都要重启进程才真正生效。
 void PlatformPermissions::relaunchApp() {
     const QString bundle = QString::fromNSString([[NSBundle mainBundle] bundlePath]);
     const bool isBundle = bundle.endsWith(".app");

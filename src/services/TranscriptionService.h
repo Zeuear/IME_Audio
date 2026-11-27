@@ -30,16 +30,19 @@ public:
 
     void transcribe(const QByteArray& pcmData, int sampleRate, int channels, int bitsPerSample);
 
-    // 用一个只读请求验证云端识别的 Key，不上传音频；cause 为中文失败原因
     using KeyTestCallback = std::function<void(bool ok, const QString& cause)>;
     void testKey(AsrBackendKind backend, const QString& key, KeyTestCallback done);
 
     // 词典里的热词：识别前用实时字幕已识别出的这句话，按读音挑出相关的几个交给识别器（见 HotwordSelector）。
     // provider 返回这一句的流式文字；字幕没开时返回空，这一句就沿用加载时的全局热词
+    void setFuzzyReplacement(const QList<HotwordSelector::Entry>& entries, bool enabled) {
+        m_textProcessor->setFuzzyEntries(entries);
+        m_textProcessor->setFuzzyEnabled(enabled);
+    }
     void setHotwordEntries(const QList<HotwordSelector::Entry>& entries) { m_hotwordSelector.setEntries(entries); }
+    void setGlossaryProvider(std::function<QList<QPair<QString, QString>>(const QString&)> provider) { m_glossaryProvider = std::move(provider); }
     void setHotwordHintProvider(std::function<QString()> provider) { m_hotwordHint = std::move(provider); }
 
-    // 文件转录模式
     void setFileMode(bool on) { m_fileMode = on; }
     bool fileMode() const { return m_fileMode; }
 
@@ -56,9 +59,7 @@ public:
 signals:
     void fileSegmentFinished(bool success, const QString &rawText,
                              const QString &finalText, const QString &errorMsg);
-    // 润色失败已回退原文
     void enhancementFailed(const QString& cause, bool fileMode);
-    // 本地翻译失败已回退翻译前文字（听写才会进入翻译）
     void translationFailed(const QString& cause);
 
 private:
@@ -72,7 +73,7 @@ private:
         bool success = false;
         QString rawText, finalText, errorMsg;
         bool fileMode = false;
-        QString sourceText;   // 翻译前的文字；没发生翻译时为空
+        QString sourceText;
         quint64 seq = 0;
     };
     // 网络请求无响应时的兜底，否则一句卡住会挡住后面所有结果；要长于上传加 Gladia 最多约 60 秒的轮询
@@ -89,14 +90,12 @@ private:
     void pollGladiaResult(const QString &resultUrl, int attempt, const Ticket& t);
     void transcribeGemini(const QByteArray &wavBytes, const Ticket& t);
     void onSherpaTranscribed(bool ok, const QString& text, const QString& err);
-    // 识别文字之后的 AI 阶段：润色、翻译各自按开关执行（见 AiStagePlan），本地离线翻译不在这里
     void runAiStages(const Ticket& t, const QString& text);
     void runAiPolish(const Ticket& t);
     void onAiPolishDone(const Ticket& t, bool ok, const QString& polished, const QString& error);
     void runAiTranslation(const Ticket& t);
     void onAiTranslateDone(const Ticket& t, bool ok, const QString& translated, const QString& error);
     void finishAiJob(const Ticket& t, const QString& text, bool translated);
-    // 要翻译的句子先把原文交给界面，翻译结束时 completeResult 再补译文
     void showSourceFirst(quint64 seq, const QString& text);
     TextPolishService::RequestParams aiRequestParams() const;
 
@@ -109,6 +108,7 @@ private:
     QQueue<Ticket> m_sherpaTickets;
     HotwordSelector m_hotwordSelector;
     std::function<QString()> m_hotwordHint;
+    std::function<QList<QPair<QString, QString>>(const QString&)> m_glossaryProvider;
 
     // 云端 AI 阶段进行中的句子：回调与超时兜底谁先 take 谁收尾，迟到的一方直接忽略
     AiJobTracker m_aiJobs;

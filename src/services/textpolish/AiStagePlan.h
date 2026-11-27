@@ -9,8 +9,8 @@
 struct AiStagePlan {
     bool polish = false;
     bool translate = false;
-    bool combined = false;      // 润色和翻译合成一次请求
-    QString translateModel;     // 翻译阶段实际用的模型
+    bool combined = false;
+    QString translateModel;
 };
 
 inline AiStagePlan planAiStages(bool enhancementOn, const QString& targetLang,

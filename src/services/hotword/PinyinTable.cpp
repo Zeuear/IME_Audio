@@ -6,7 +6,6 @@
 
 namespace {
 
-// 抹平常见的发音混淆：翘舌/平舌、前后鼻音、n/l 不分
 QString normalizeSyllable(QString s)
 {
     s.replace(QStringLiteral("zh"), QStringLiteral("z"));
@@ -17,7 +16,7 @@ QString normalizeSyllable(QString s)
     return s;
 }
 
-} // namespace
+}
 
 const PinyinTable& PinyinTable::builtin()
 {
@@ -47,7 +46,6 @@ PinyinTable PinyinTable::fromText(const QString& text)
     PinyinTable t;
     t.m_index.fill(0, kLast - kFirst + 1);
     for (const QStringView line : QStringView(text).split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
-        // 以 "+" 开头的行是多音字的其余读音
         const bool extra = line.startsWith(QLatin1Char('+'));
         const QStringView body = extra ? line.mid(1) : line;
         const int space = body.indexOf(QLatin1Char(' '));
@@ -64,7 +62,6 @@ PinyinTable PinyinTable::fromText(const QString& text)
             }
         }
     }
-    // 抹平后相同的拼音共用一个编号
     QHash<QString, int> normIds;
     t.m_normIds.resize(t.m_syllables.size());
     for (int i = 0; i < t.m_syllables.size(); ++i) {

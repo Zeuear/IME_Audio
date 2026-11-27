@@ -8,12 +8,12 @@
 
 struct SnippetItem {
     QString id;
-    QString keyword;      // 快捷码
+    QString keyword;
     QString title;        // A列：中文（显示用）
     QString text;         // B列：外文（粘贴目标）
     QString imagePath;    // 相对路径 data/images/xxx，或 http(s) 链接
     QString filePath;     // 附件的绝对路径。只记路径不复制：视频、音频可能很大，复制进话术库会卡住界面
-    QString type;         // text / image / file / combo
+    QString type;
     int32_t useCount = 0;
 };
 
@@ -22,8 +22,8 @@ struct FolderNode {
     int32_t level = 1;        // 1=主表, 2=Sheet, 3=@@分组
     QString title;
     bool collapsed = false;
-    QString sourceUrl;    // 仅 L1
-    QString spreadsheetId; // 仅 L1
+    QString sourceUrl;
+    QString spreadsheetId;
     std::vector<std::unique_ptr<FolderNode>> children;
     std::vector<SnippetItem> items;
 };
@@ -38,5 +38,5 @@ struct AppSettings {
     bool comboImageFirst = false;
     bool multilineEnabled = true;
     int32_t maxDisplayLines = 3;
-    bool voiceTrigger = true;      // 说到条目的快捷码时，在悬浮窗里提示可点击的指令
+    bool voiceTrigger = true;
 };

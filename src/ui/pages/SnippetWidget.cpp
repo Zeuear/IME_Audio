@@ -3,6 +3,7 @@
 #include <QApplication>
 #include "ui/controls/AnimatedCheckbox.h"
 #include <QEvent>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -39,24 +40,51 @@ SnippetWidget::SnippetWidget(QWidget *parent) : QWidget(parent) {
 
 void SnippetWidget::setupUi() {
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);   // 和 TermWidget、基本设置页的页边距一致
+    mainLayout->setContentsMargins(10, 10, 10, 10);
     mainLayout->setSpacing(8);
 
-    // 图标按钮统一宽度，窄窗口下两行工具栏也放得下
     constexpr int kIconBtnWidth = 36;
+    constexpr int kRowHeight = 32;
     auto makeIconBtn = [this]() {
         auto* btn = new QPushButton(this);
-        btn->setFixedWidth(kIconBtnWidth);
+        btn->setFixedSize(kIconBtnWidth, kRowHeight);
         btn->setCursor(Qt::PointingHandCursor);
         return btn;
     };
+    auto makeGroup = [this](const QList<QPushButton*>& buttons) {
+        auto* frame = new QFrame(this);
+        frame->setObjectName(QStringLiteral("snippet_group"));
+        frame->setFixedHeight(kRowHeight);
+        frame->setStyleSheet(QStringLiteral(
+            "QFrame#snippet_group { border: 1px solid palette(mid); border-radius: 6px; }"
+            "QFrame#snippet_group QPushButton { border: none; border-radius: 0; background: transparent; padding: 0; }"
+            "QFrame#snippet_group QPushButton:hover { background: rgba(128, 128, 128, 45); }"
+            "QFrame#snippet_group QPushButton:pressed, QFrame#snippet_group QPushButton:checked { background: rgba(128, 128, 128, 85); }"
+            "QFrame#snippet_group QPushButton[seg=\"first\"] { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }"
+            "QFrame#snippet_group QPushButton[seg=\"last\"] { border-top-right-radius: 5px; border-bottom-right-radius: 5px; }"
+            "QFrame#snippet_group QPushButton[seg=\"mid\"], QFrame#snippet_group QPushButton[seg=\"last\"] { border-left: 1px solid palette(mid); }"));
+        auto* layout = new QHBoxLayout(frame);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
+        for (int i = 0; i < buttons.size(); ++i) {
+            QPushButton* b = buttons.at(i);
+            b->setParent(frame);
+            b->setProperty("seg", i == 0 ? "first" : (i == buttons.size() - 1 ? "last" : "mid"));
+            layout->addWidget(b);
+        }
+        return frame;
+    };
 
-    // 第一行：来源管理 + 选项（低频设置收进弹出面板）
     auto* sourceRow = new QHBoxLayout();
+    sourceRow->setSpacing(8);
     m_addBtn = new QPushButton(this);
     m_googleBtn = new QPushButton(this);
     m_refreshBtn = makeIconBtn();
     m_optionsBtn = makeIconBtn();
+    for (QPushButton* b : { m_addBtn, m_googleBtn }) {
+        b->setFixedHeight(kRowHeight);
+        b->setCursor(Qt::PointingHandCursor);
+    }
     sourceRow->addWidget(m_addBtn);
     sourceRow->addWidget(m_googleBtn);
     sourceRow->addWidget(m_refreshBtn);
@@ -64,7 +92,6 @@ void SnippetWidget::setupUi() {
     sourceRow->addWidget(m_optionsBtn);
     mainLayout->addLayout(sourceRow);
 
-    // 选项面板：勾选项、最多行数、搜索框热键。
     // ShortcutEdit 常驻在面板里，全局热键的注册不依赖面板是否显示
     m_voiceTriggerChk = new AnimatedCheckBox(this);
     m_imageFirstChk = new AnimatedCheckBox(this);
@@ -109,9 +136,10 @@ void SnippetWidget::setupUi() {
     panelAction->setDefaultWidget(panel);
     m_optionsMenu->addAction(panelAction);
 
-    // 第二行：检索 + 视图与批量操作
     auto* toolRow = new QHBoxLayout();
+    toolRow->setSpacing(8);
     m_searchEdit = new QLineEdit(this);
+    m_searchEdit->setFixedHeight(kRowHeight);
     m_searchEdit->setClearButtonEnabled(true);
     m_searchEdit->setMinimumWidth(180);
     m_searchAction = m_searchEdit->addAction(QIcon(), QLineEdit::LeadingPosition);
@@ -122,11 +150,8 @@ void SnippetWidget::setupUi() {
     m_deleteBtn = makeIconBtn();
     m_moreBtn = makeIconBtn();
     toolRow->addWidget(m_searchEdit, 1);
-    toolRow->addWidget(m_expandBtn);
-    toolRow->addWidget(m_collapseBtn);
-    toolRow->addWidget(m_multilineBtn);
-    toolRow->addWidget(m_deleteBtn);
-    toolRow->addWidget(m_moreBtn);
+    toolRow->addWidget(makeGroup({ m_expandBtn, m_collapseBtn, m_multilineBtn }));
+    toolRow->addWidget(makeGroup({ m_deleteBtn, m_moreBtn }));
     mainLayout->addLayout(toolRow);
 
     m_moreMenu = new QMenu(this);
@@ -135,13 +160,13 @@ void SnippetWidget::setupUi() {
 
     m_treeView = new QTreeView(this);
     m_treeView->setRootIsDecorated(false);   // 展开箭头由委托在行内自己画，根级不留空白的分支列
-    m_treeView->setHeaderHidden(true);       // 整行只用第 0 列绘制，不需要表头
-    m_treeView->setIndentation(22);          // 子级相对父级的缩进
+    m_treeView->setHeaderHidden(true);
+    m_treeView->setIndentation(22);
     m_treeView->setExpandsOnDoubleClick(false);
     m_treeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-    m_treeView->setUniformRowHeights(false);   // 条目行高随内容换行变化
+    m_treeView->setUniformRowHeights(false);
     m_treeView->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     mainLayout->addWidget(m_treeView, 1);
 
@@ -202,7 +227,6 @@ void SnippetWidget::retranslateUi() {
     }
 }
 
-// 图标是单色描边 SVG，按按钮当前文字色着色。
 // QSS 主题切换后控件调色板才会更新，所以在 PaletteChange / StyleChange / 显示时都要重画
 void SnippetWidget::updateIcons() {
     if (!m_searchAction) return;   // 构造期间 PaletteChange 可能先于控件创建完成到达
@@ -346,7 +370,6 @@ void SnippetWidget::refreshTree() {
     emit storeChanged();
 }
 
-// 把 FolderNode::collapsed 应用到视图；过滤状态下全部展开
 void SnippetWidget::applyExpandState() {
     m_applyingExpand = true;
     if (!m_proxy->filterRegularExpression().pattern().isEmpty()) {
@@ -471,7 +494,6 @@ void SnippetWidget::onContextMenu(const QPoint& pos) {
     m_contextMenu->showAt(m_treeView->viewport()->mapToGlobal(pos), m_treeView, toSource(idx));
 }
 
-// 光标在这一行的哪个区域（标题 / 内容 / 快捷码 / 配图）
 SnippetTreeDelegate::Zone SnippetWidget::zoneUnderCursor(const QModelIndex& proxyIndex) const {
     QStyleOptionViewItem option;
     option.initFrom(m_treeView);
@@ -483,7 +505,6 @@ SnippetTreeDelegate::Zone SnippetWidget::zoneUnderCursor(const QModelIndex& prox
 }
 
 void SnippetWidget::onResizeTreeLayout() {
-    // 内容换行宽度随窗口变化，行高要重新算
     if (m_treeView) m_treeView->doItemsLayout();
 }
 
@@ -496,12 +517,10 @@ void SnippetWidget::onTreeClicked(const QModelIndex& proxyIndex) {
     if (!proxyIndex.isValid()) return;
     QModelIndex src = toSource(proxyIndex);
     if (!m_model->isFolder(src)) {
-        // 点配图区：弹出该条目的右键菜单（选文件 / 粘贴剪贴板图 / 清除）
         if (m_delegate && zoneUnderCursor(proxyIndex) == SnippetTreeDelegate::Zone::Image)
             m_contextMenu->showAt(QCursor::pos(), m_treeView, src);
         return;
     }
-    // 单击文件夹行 = 展开/收起（仅在没有多选修饰键时）
     if (QApplication::keyboardModifiers() & (Qt::ControlModifier | Qt::ShiftModifier)) return;
     const QModelIndex first = proxyIndex.siblingAtColumn(0);
     m_treeView->setExpanded(first, !m_treeView->isExpanded(first));
@@ -516,8 +535,8 @@ void SnippetWidget::onItemDoubleClicked(const QModelIndex& proxyIndex) {
     switch (zoneUnderCursor(proxyIndex)) {
     case SnippetTreeDelegate::Zone::Text:    col = 1; break;
     case SnippetTreeDelegate::Zone::Keyword: col = 2; break;
-    case SnippetTreeDelegate::Zone::Image:   return;   // 单击已弹出配图菜单
-    case SnippetTreeDelegate::Zone::None:    return;   // 目录行的箭头、图标、徽章：单击已负责展开收起，不重命名
+    case SnippetTreeDelegate::Zone::Image:   return;
+    case SnippetTreeDelegate::Zone::None:    return;
     default: break;
     }
     bool ok = false;

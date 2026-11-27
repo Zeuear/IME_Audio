@@ -28,7 +28,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
-    // 卡片底
     const QRect card = opt.rect.adjusted(kTileGap, kTileGap, -kTileGap, -kTileGap - 6);
     // 卡片底比外层明显亮一档，边框用文字色的半透明描边：深色主题是浅色线、浅色主题是深色线，两种都看得清
     // Base 在深色主题下是纯黑，会显得发黑，所以不用它
@@ -44,7 +43,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     p->setPen(QPen(border, selected ? 2 : 1));
     p->drawRoundedRect(QRectF(card).adjusted(0.5, 0.5, -0.5, -0.5), kCardRadius, kCardRadius);
 
-    // 状态图标（右下，与状态文字同一行）
     QString glyph;
     QColor glyphColor = pal.color(QPalette::PlaceholderText);
     switch (state) {
@@ -83,7 +81,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
         p->drawText(iconRect, Qt::AlignRight | Qt::AlignVCenter, glyph);
     }
 
-    // 文件名（最多两行）+ 状态文字
     const int left = card.left() + kPad;
     const int fullWidth = card.width() - 2 * kPad;
 
@@ -106,7 +103,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     const QString sub = QFontMetrics(subFont).elidedText(index.data(FileTaskModel::StatusTextRole).toString(), Qt::ElideRight, subWidth);
     p->drawText(QRect(left, card.top() + 50, subWidth, 18), Qt::AlignLeft | Qt::AlignVCenter, sub);
 
-    // 第三行：耗时（进行中是已用 + 预计剩余，结束后是总耗时）
     const QString timing = index.data(FileTaskModel::TimingTextRole).toString();
     if (!timing.isEmpty()) {
         QFont tf = opt.font;
@@ -117,7 +113,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
                     QFontMetrics(tf).elidedText(timing, Qt::ElideRight, fullWidth));
     }
 
-    // 进度条（仅处理中显示）
     if (state == State::Decoding || state == State::Transcribing || state == State::Downloading
         || state == State::DownloadingModel || state == State::Separating) {
         const QRectF track(left, card.bottom() - 14, fullWidth, 5);
@@ -133,7 +128,6 @@ void FileTaskDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
             const int done = index.data(FileTaskModel::ProgressRole).toInt();
             fill.setWidth(progressTotal > 0 ? track.width() * done / progressTotal : 0);
         } else {
-            // 未知进度：一小段来回滑动，由外部定时器驱动重绘
             const double t = (QDateTime::currentMSecsSinceEpoch() % 1200) / 1200.0;
             fill.setWidth(track.width() * 0.3);
             fill.moveLeft(track.left() + track.width() * (-0.3 + 1.3 * t));

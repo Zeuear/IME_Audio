@@ -22,7 +22,7 @@ QSettings openSettings()
     // 和 ConfigManager 读写同一个 ini：QSettings 保留不认识的分组，互不覆盖
     return QSettings(ConfigManager::configFilePath(), QSettings::IniFormat);
 }
-} // namespace
+}
 
 void applyToolWindowFlags(QWidget* window)
 {
@@ -41,7 +41,7 @@ void setAlwaysOnTop(QWidget* window, bool on)
     if (bool(window->windowFlags() & Qt::WindowStaysOnTopHint) == on) return;
     const bool wasVisible = window->isVisible();
     const QPoint where = window->pos();
-    window->setWindowFlag(Qt::WindowStaysOnTopHint, on);   // 会隐藏窗口
+    window->setWindowFlag(Qt::WindowStaysOnTopHint, on);
     if (wasVisible) {
         window->move(where);
         window->show();
@@ -54,7 +54,6 @@ QPoint place(const std::optional<QPoint>& saved, const QSize& size,
 {
     if (!saved) return topCenter(size, primary);
 
-    // 先看窗口中心在哪个屏幕；中心刚好滑出屏幕边缘时，取和窗口重叠最多的屏幕
     const QRect window(*saved, size);
     const QPoint center = window.center();
     const QRect* target = nullptr;
@@ -67,7 +66,6 @@ QPoint place(const std::optional<QPoint>& saved, const QSize& size,
     }
     if (!target) return topCenter(size, primary);   // 之前所在的屏幕已经拔掉，或分辨率变小后完全在屏外
 
-    // 窗口比屏幕还大时以左上角为准，不让 max 小于 min
     const int maxX = std::max(target->left(), target->right() - size.width() + 1);
     const int maxY = std::max(target->top(), target->bottom() - size.height() + 1);
     return QPoint(std::clamp(saved->x(), target->left(), maxX),
@@ -91,7 +89,6 @@ QPoint placeBelow(const QRect& anchor, const QSize& size,
     const int above = anchor.top() - kPanelGap - size.height();
     if (above >= target.top()) return QPoint(x, above);
 
-    // 上下都放不下（屏幕很矮）：贴着屏幕下沿，至少保证面板在屏幕内
     return QPoint(x, std::max(target.top(), target.bottom() - size.height() + 1));
 }
 
@@ -155,4 +152,4 @@ void restore(QWidget* window, const QString& group)
     window->move(place(loadPosition(group), window->size(), availableScreens(), primaryScreenArea()));
 }
 
-} // namespace FloatingWindow
+}

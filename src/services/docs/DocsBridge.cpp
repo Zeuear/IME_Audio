@@ -110,7 +110,6 @@ void DocsBridge::onMessage(const QString& msg)
         if (DocsBridgeProtocol::tokenMatches(o.value("token").toString(), m_tokenHash())) {
             m_authed = true;
             LOG_INFO("DocsBridge pairing ok");
-            // 让扩展知道配对通过，它才能在角标和弹窗里显示"已连接"
             m_client->sendTextMessage(QString::fromUtf8(DocsBridgeProtocol::typeMessage("ready")));
             emit linkChanged();
             return;

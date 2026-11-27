@@ -24,9 +24,7 @@ public:
 public slots:
     void loadModel(const QString &repoId, int numThreads);
     void unloadModel();
-    // 16 kHz / mono / 16-bit PCM
     void acceptAudio(const QByteArray &pcm);
-    // replayMs > 0：新流先补喂
     void resetStream(quint64 epoch, int replayMs = 0);
 
 signals:
@@ -37,7 +35,7 @@ private:
     void feed(const QByteArray &pcm);
 
     static constexpr int kReplayMaxMs = 12000;   // 最多留多久的音频供补喂，需大于断句器的切点搜索范围
-    static constexpr int kReplaySlopMs = 300;    // 切段信号到达引擎之前又喂进来的音频，补喂时多带一点
+    static constexpr int kReplaySlopMs = 300;
 
     QByteArray m_recent;
     QThread *m_thread = nullptr;

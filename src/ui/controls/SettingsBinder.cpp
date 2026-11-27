@@ -68,7 +68,7 @@ void SettingsBinder::bindIndex(QComboBox* combo, Getter<int> get, Setter<int> se
         if (i >= 0 && i < combo->count()) combo->setCurrentIndex(i);
     }, opt);
     connect(combo, &QComboBox::currentIndexChanged, this, [=](int i) {
-        if (i < 0) return;   // clear() 时会发 -1
+        if (i < 0) return;
         commit(opt, [&]() {
             if (get(m_config) == i) return false;
             set(m_config, i);

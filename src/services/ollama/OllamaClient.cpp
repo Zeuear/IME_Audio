@@ -32,7 +32,7 @@ QString describeNetworkError(QNetworkReply* reply, const QByteArray& body) {
         return QStringLiteral("无法连接 Ollama，请确认已安装并正在运行");
     return reply->errorString();
 }
-} // namespace
+}
 
 OllamaClient::OllamaClient(QNetworkAccessManager* manager, QObject* parent)
     : QObject(parent), m_manager(manager), m_baseUrl(OpenAiProvider::ollamaBaseUrl({}))

@@ -9,14 +9,7 @@
 #include <QFile>
 #include "utils/AppPaths.h"
 
-/*
-* 运行流程
-1. 加载模型   --> 显示加载页面，如果加载失败，则关闭页面
-2. 开始录音   --> 显示出录音声谱界面，如果没有声音一段时间关闭窗口，如果有声音则显示窗口, 如果有错误则关闭窗口，提示错误
-3. 转录音频   --> 显示出转录页面，转录结束后，如果关闭continue模式，则证明是按下停止之后转录的，这时关闭转录窗口，如果是开启
-                  continue模式，则会触发Process模型，如果没有声音则会自动停止，同时也会触发Recording。因为接下来还会继续录音
-4. 打印转录   --> 这个不会受影响。
-*/
+// 流程：加载模型 → 录音 → 转录（非 continue 模式是停止后转录，转完关窗；continue 模式转完继续录音，无声则自动停止）→ 打印
 
 namespace {
 
@@ -53,7 +46,7 @@ void dumpUtterance(quint64 id, const QByteArray& pcm, int sampleRate, int channe
                   .arg(double(pcm.size()) / (sampleRate * channels * bitsPerSample / 8), 0, 'f', 2));
 }
 
-} // namespace
+}
 
 WorkflowManager::WorkflowManager(const AppConfig &config, QObject *parent) : QObject(parent), m_config(config) {}
 
@@ -65,16 +58,12 @@ void WorkflowManager::initialize(IRecorder *recorder,
     m_transcription = transcription;
     m_sherpaManager = sherpManager;
 
-    // 模型加载完成
     connect(m_sherpaManager, &ISherpaModel::modelLoadFinished, this, &WorkflowManager::onModelLoadFinished);
-    // 录音层错误（VAD 缺失等）透传
     connect(m_recorder, &IRecorder::errorOccurred, this, &WorkflowManager::onRecorderError);
-    // 一句话缓冲完成，交给识别服务
     connect(m_recorder, &IRecorder::utteranceReady, this, &WorkflowManager::onUtteranceReady);
     connect(m_transcription, &ITranscription::transcriptionFinished, this, &WorkflowManager::onUtteranceTranscribed);
     connect(m_transcription, &ITranscription::transcriptionPending, this, &WorkflowManager::utterancePending);
     connect(m_transcription, &ITranscription::transcriptionTranslated, this, &WorkflowManager::utteranceTranslated);
-    // 识别结果打印
     connect(this, &WorkflowManager::transcriptionResultReady, this, &WorkflowManager::onInjectText);
 }
 
@@ -118,7 +107,6 @@ void WorkflowManager::startRecording() {
     transitionTo(WorkflowState::Loading, WorkflowEvent::StartRequested);
     m_sherpaManager->pauseIdleTimer();
 
-    // 开始录音
     if (!m_recorder->startListening()) {
         abortRecording(WorkflowEvent::ErrorOccurred);
         return;
@@ -127,7 +115,6 @@ void WorkflowManager::startRecording() {
     if (m_config.backend == AsrBackendKind::Sherpa) {
         bool initiated = m_sherpaManager->reloadModel(m_config);
         if (!initiated) {
-            // 已加载且配置相同
             proceedToRecording();
         }
     } else {
@@ -195,7 +182,6 @@ void WorkflowManager::onUtteranceReady(const QByteArray& pcmData, int sampleRate
     }
     LOG_DEBUG(QString("Utterance captured, size: %1 bytes").arg(pcmData.size()));
 
-    // 其余各态（含 Loading）统一入队转录
     m_pending++;
     const quint64 id = ++m_nextUtteranceId;
     m_utteranceIds.enqueue(id);
@@ -230,7 +216,6 @@ void WorkflowManager::onUtteranceTranscribed(bool success, const QString& rawTex
 
     if (m_pending == 0) {
         auto state = m_currentState == WorkflowState::Stopping ? WorkflowState::Recording : WorkflowState::Idle;
-        //qDebug() << "m_pending" << static_cast<int>(state);
         transitionTo(state, WorkflowEvent::AllTranscribed);
     }else if (m_currentState != WorkflowState::Stopping) {
         transitionTo(WorkflowState::Processing, WorkflowEvent::UtteranceTranscribed);

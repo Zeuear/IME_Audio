@@ -16,7 +16,6 @@ public:
     static QString modelPath();
     static bool isReady();
 
-    // 模型已就绪则立即发 ready()；正在下载时重复调用无效果
     void ensure();
     void cancel();
     bool isDownloading() const { return m_downloader != nullptr; }

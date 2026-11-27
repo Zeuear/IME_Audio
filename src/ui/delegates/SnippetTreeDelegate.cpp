@@ -15,10 +15,10 @@ namespace {
 
 constexpr int kFolderHeight = 40;
 constexpr int kItemMinHeight = 48;
-constexpr int kPad = 10;           // 行内左右留白
-constexpr int kVPad = 8;           // 条目上下留白
+constexpr int kPad = 10;
+constexpr int kVPad = 8;
 constexpr int kGap = 10;
-constexpr int kBadge = 20;         // 标题/内容徽章边长
+constexpr int kBadge = 20;
 constexpr int kKeywordW = 84;
 constexpr int kImageW = 58;
 constexpr int kImageH = 36;
@@ -63,7 +63,7 @@ int depthOf(QModelIndex index) {
     return depth;
 }
 
-} // namespace
+}
 
 // 目录行各块的位置：绘制和点击命中共用，保证“看到的标题区”就是“能触发重命名的区域”
 SnippetTreeDelegate::FolderGeom SnippetTreeDelegate::folderGeometry(const QStyleOptionViewItem& option,
@@ -72,7 +72,7 @@ SnippetTreeDelegate::FolderGeom SnippetTreeDelegate::folderGeometry(const QStyle
     const int level = index.data(SnippetTreeModel::LevelRole).toInt();
     const QRect row = option.rect.adjusted(0, 1, 0, -1);
     const int cy = row.center().y();
-    int x = row.left() + kPad + 16 + 26;   // 箭头 + 文件夹图标
+    int x = row.left() + kPad + 16 + 26;
 
     g.badgeFont = option.font;
     g.badgeFont.setBold(true);
@@ -108,7 +108,6 @@ SnippetTreeDelegate::ItemLayout SnippetTreeDelegate::layoutFor(const QRect& row,
     const int left = row.left() + kPad;
     const int right = row.right() - kPad;
 
-    // 右侧固定宽度的两块，剩下的宽度按 38 : 62 分给标题和内容
     l.image = QRect(right - kImageW + 1, 0, kImageW, kImageH);
     l.keyword = QRect(l.image.left() - kGap - kKeywordW, 0, kKeywordW, kChipH);
     const int contentRight = l.keyword.left() - kGap;
@@ -150,7 +149,6 @@ SnippetTreeDelegate::ItemLayout SnippetTreeDelegate::layoutFor(const QRect& row,
 
     l.height = qMax(kItemMinHeight, qMax(titleH, textH) + 2 * kVPad);
 
-    // 文字块在行内垂直居中；徽章与首行文字等高居中对齐
     const int top = row.top();
     const int blockH = qMax(qMax(titleH, textH), fm.lineSpacing());
     const int contentTop = top + (l.height - blockH) / 2;
@@ -181,7 +179,6 @@ QSize SnippetTreeDelegate::sizeHint(const QStyleOptionViewItem& option, const QM
 SnippetTreeDelegate::Zone SnippetTreeDelegate::zoneAt(const QStyleOptionViewItem& option, const QModelIndex& index,
                                                       const QPoint& pos) const {
     if (index.data(SnippetTreeModel::IsFolderRole).toBool()) {
-        // 箭头、图标、徽章、话术数都不是重命名区，只有标题文字所在的区域算
         return folderGeometry(option, index).title.contains(pos) ? Zone::Title : Zone::None;
     }
     const ItemLayout l = layoutFor(option.rect, option.font, index);
@@ -242,7 +239,6 @@ void SnippetTreeDelegate::paintFolder(QPainter* painter, const QStyleOptionViewI
     painter->setPen(Qt::white);
     painter->drawText(g.badge, Qt::AlignCenter, g.badgeText);
 
-    // 右侧话术数
     QFont titleFont = option.font;
     titleFont.setBold(true);
     painter->setFont(option.font);
@@ -265,7 +261,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
     const QColor muted = mix(text, base, 40);
     const ItemLayout l = layoutFor(option.rect, option.font, index);
 
-    // 卡片底：比窗口底色略亮/略深，边框更淡；选中用高亮色，悬停略加深
     const QRect card = option.rect.adjusted(0, 2, 0, -2);
     const bool selected = option.state & QStyle::State_Selected;
     const bool hovered = option.state & QStyle::State_MouseOver;
@@ -278,7 +273,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
         painter->drawRoundedRect(card, kRadius, kRadius);
     }
 
-    // 标题
     drawBadge(painter, l.badgeTitle, QCoreApplication::translate("SnippetTreeDelegate", "CN"), SnippetTreeModel::levelColor(1));
     QFont bold = option.font;
     bold.setBold(true);
@@ -289,7 +283,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
     painter->drawText(l.title, kWrapFlags, index.data(Qt::DisplayRole).toString());
     painter->restore();
 
-    // 内容
     painter->setFont(option.font);
     drawBadge(painter, l.badgeText, QCoreApplication::translate("SnippetTreeDelegate", "FL"), SnippetTreeModel::levelColor(2));
     painter->setFont(option.font);
@@ -299,7 +292,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
     painter->drawText(l.text, kWrapFlags, index.data(SnippetTreeModel::TextRole).toString());
     painter->restore();
 
-    // 快捷码芯片
     const QString keyword = index.data(SnippetTreeModel::KeywordRole).toString();
     if (keyword.isEmpty()) {
         drawGhostChip(painter, l.keyword, QCoreApplication::translate("SnippetTreeDelegate", "+ Keyword"), muted);
@@ -317,7 +309,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
                           painter->fontMetrics().elidedText("[" + keyword + "]", Qt::ElideRight, l.keyword.width() - 12));
     }
 
-    // 配图：缩略图，或“+配图”占位
     painter->setFont(option.font);
     const QVariant thumbVar = index.data(Qt::DecorationRole);
     if (thumbVar.canConvert<QPixmap>() && index.data(SnippetTreeModel::HasImageRole).toBool()) {
@@ -337,7 +328,6 @@ void SnippetTreeDelegate::paintItem(QPainter* painter, const QStyleOptionViewIte
             painter->drawRoundedRect(target.adjusted(0.5, 0.5, -0.5, -0.5), 4, 4);
         }
     } else if (index.data(SnippetTreeModel::HasImageRole).toBool()) {
-        // 配了图但读不出来（文件丢失，或远程图还没下载过）
         drawGhostChip(painter, l.image, QCoreApplication::translate("SnippetTreeDelegate", "Image missing"), muted);
     } else {
         drawGhostChip(painter, l.image, QCoreApplication::translate("SnippetTreeDelegate", "+ Image"), muted);

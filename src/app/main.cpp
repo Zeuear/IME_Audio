@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
 {
     Application a(argc, argv);
 
-    // 单例
     SingleInstanceGuard guard(AppPaths::dataDir());
     if (!guard.acquireOrNotifyExisting()) {
         return 0;

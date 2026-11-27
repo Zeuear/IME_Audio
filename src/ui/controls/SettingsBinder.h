@@ -19,14 +19,14 @@ class SettingsBinder : public QObject
 public:
     enum Effect : unsigned {
         NoEffect    = 0,
-        Recorder    = 1 << 0,   // 录音参数
-        LiveCaption = 1 << 1,   // 实时字幕
-        Hotkey      = 1 << 2,   // 快捷键及触发方式
+        Recorder    = 1 << 0,
+        LiveCaption = 1 << 1,
+        Hotkey      = 1 << 2,
     };
 
     enum class Apply {
-        Instant,    // 开关、下拉框
-        OnCommit,   // 数字、文字
+        Instant,
+        OnCommit,
     };
 
     struct Options {
@@ -43,7 +43,6 @@ public:
     void bind(QCheckBox* box, Getter<bool> get, Setter<bool> set, Options opt);
     void bind(QSpinBox* spin, Getter<int> get, Setter<int> set, Options opt);
     
-    // 文字两端空白不计
     void bind(QLineEdit* edit, Getter<QString> get, Setter<QString> set, Options opt);
     void bindIndex(QComboBox* combo, Getter<int> get, Setter<int> set, Options opt);
     void bindText(QComboBox* combo, Getter<QString> get, Setter<QString> set, Options opt);

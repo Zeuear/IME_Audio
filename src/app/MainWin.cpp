@@ -31,6 +31,7 @@
 #include "services/TranslationService.h"
 #include "services/UpdateManager.h"
 #include "services/TermsLibraryManager.h"
+#include "services/dictionary/DictionaryProfiles.h"
 #include "services/ForegroundWindow.h"
 #include "services/docs/DocsBridge.h"
 #include "ui/controls/DocsSetupDialog.h"
@@ -121,7 +122,6 @@ void MainWin::alignSettingsCards()
 {
     alignColumns({ ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
                    ui->shortcut_card_layout }, { 0, 3 });
-    // 第 2 列是左右两组之间的空隔
     for (QGridLayout* grid : { ui->device_card_layout, ui->recording_card_layout, ui->live_caption_card_layout,
                                ui->shortcut_card_layout })
         grid->setColumnMinimumWidth(2, 24);
@@ -179,16 +179,15 @@ void MainWin::initialize() {
 
     m_transcriptionService = new TranscriptionService(m_networkManager, m_sherpaManager, m_textPolishService,
                                                       m_translationService, config, this);
-    m_termsManager = new TermsLibraryManager(this);
+    m_dictionaries = new DictionaryProfiles(AppPaths::dictionariesDir(), AppPaths::termsFile(), this);
+    m_termsManager = m_dictionaries->library(DictionaryProfiles::defaultId());
     m_updateManager = new UpdateManager(m_networkManager, this);
     ui->about_page->setUpdateManager(m_updateManager);
 
     m_workflow = new WorkflowManager(config, this);
     m_workflow->initialize(m_recorderService, m_transcriptionService, m_sherpaManager);
 
-    // 初始化动画
 
-    // 声音控件
     m_liveOverlay = new LiveOverlay();
     m_liveOverlay->loadSavedPosition();
     // 没有托盘的桌面隐藏后没有地方能再叫出来，那就不给隐藏按钮
@@ -201,7 +200,7 @@ void MainWin::initialize() {
     m_termWidget = new TermWidget();
     m_fileWidget = new FileTranscribeWidget();
     m_panel = new ExpandPanel();
-    m_panel->setPages(m_transcriptWidget, m_termWidget, m_fileWidget);   // 页面归面板所有
+    m_panel->setPages(m_transcriptWidget, m_termWidget, m_fileWidget);
     m_formSwitchBtn = new QToolButton(ui->tabWidget);   // Designer 不能设置标签栏角落控件，只能在代码里加
     m_formSwitchBtn->setAutoRaise(true);
     m_formSwitchBtn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -212,7 +211,7 @@ void MainWin::initialize() {
     refreshFormSwitchIcon();
     ui->tabWidget->setCornerWidget(m_formSwitchBtn, Qt::TopRightCorner);
     connect(m_formSwitchBtn, &QToolButton::clicked, this, &MainWin::switchToBar);
-    m_panel->attachTo(m_controlBar);                 // 面板紧贴横条，横条拖到哪它跟到哪
+    m_panel->attachTo(m_controlBar);
     m_captionModel = new LiveCaptionModel(this);
     m_history = new DictationHistoryModel(this);
     m_captionEngine = new StreamingEngine();
@@ -221,7 +220,6 @@ void MainWin::initialize() {
         return TermsLibraryManager::applyReplaceRules(text, ConfigManager::instance().config().replaceRules);
     });
 
-    // 启动时检查一次更新
     QTimer::singleShot(2000, this, [this]() { 
         if (ConfigManager::instance().config().skipUpdateReminder) {
             LOG_INFO("Update available but skipped per user preference");
@@ -230,11 +228,10 @@ void MainWin::initialize() {
         m_updateManager->checkForUpdates(); 
     });
 
-    // VAD 模型随安装包分发；若缺失(旧安装包/被误删)则自动补下载，避免用户卡在
-    // "VAD 模型缺失，请先下载模型" 提示上却无从下手。
+    // VAD 模型缺失时自动补下载，避免用户卡在"请先下载模型"提示上
     m_sherpaInstaller->ensureVadModel();
     ui->gpu_backend_widget->setGpuRuntime(m_gpuRuntime);
-    m_termWidget->setTermsManager(m_termsManager);
+    m_termWidget->setDictionaryProfiles(m_dictionaries);
     m_snippetStore = new SnippetStore(AppPaths::snippetsFile());
     if (!m_snippetStore->load()) {
         LOG_WARN("Snippet library is damaged, falling back to defaults in memory");
@@ -252,24 +249,20 @@ void MainWin::initialize() {
 void MainWin::setupUiConnections(){
     auto& configManager = ConfigManager::instance();
 
-    // QTabWidget::sizeHint() 取所有页的最大值：设置页一高，外层 QScrollArea 就把整页
-    // （连工具条一起）滚走。切到实时转录时钉住外层高度，让列表用自己的滚动条。
+    // QTabWidget::sizeHint() 取各页最大值，设置页一高外层 QScrollArea 会把工具条滚走；实时转录时钉住外层高度
     connect(ui->tabWidget, &QTabWidget::currentChanged, this,
             [this](int) { syncTranscriptScrollHost(); });
     ui->settingsScrollArea->viewport()->installEventFilter(this);
 
-    // Basic Setting
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyActivated, this, &MainWin::onHotkeyPressed);
 	connect(ui->shortcut_edit, &ShortcutEdit::hotkeyReleased, this, &MainWin::onHotkeyReleased);
 
-    // 关掉实时字幕时字号和位置置灰，数值保留
     connect(ui->live_caption_checkbox, &QCheckBox::toggled, this, [this](bool on) {
         const QList<QWidget*> options{ ui->label_live_caption_font, ui->live_caption_font_spin,
                                        ui->label_live_caption_position, ui->live_caption_position_comb };
         for (QWidget* w : options) w->setEnabled(on);
     });
 
-    // 只显示当前云端后端的 Key
     connect(ui->identification_backend_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
         const auto backend = static_cast<AsrBackendKind>(index);
         const struct { AsrBackendKind kind; QList<QWidget*> row; } keyRows[] = {
@@ -303,21 +296,17 @@ void MainWin::setupUiConnections(){
         });
     }
 
-    // Local Recognition
     connect(ui->uninstall_sherpa_btn, &QPushButton::clicked, this, [this]() {
         m_sherpaInstaller->uninstallAll();
         ui->model_list_widget->refreshInstalled();
     });
 
 	connect(ui->language_comb, &QComboBox::currentIndexChanged, this, [this](int index) {
-		// 仅刷新列表并默认选中第一个模型，不触发下载
 		ui->model_list_widget->setLanguage(ui->language_comb->itemData(index).toString());
 	});
 
-	// 下载触发：仅用户在模型列表里点击时下载
 	connect(ui->model_list_widget, &ModelListWidget::modelActivated, this, &MainWin::onLocalModelActivated);
 
-    // 模型行内的下载进度：安装器已有的信号喂给 tracker，列表据此画进度条；行里的"取消 / 重试"回到安装器
     m_downloadTracker = new ModelDownloadTracker(this);
     ui->model_list_widget->setDownloadTracker(m_downloadTracker);
     connect(m_sherpaInstaller, &SherpaInstaller::installGroupStarted, m_downloadTracker, &ModelDownloadTracker::onGroupStarted);
@@ -383,10 +372,8 @@ void MainWin::setupUiConnections(){
         onGpuDetectionFinished(result);
     });
 
-    // gemini
     connect(ui->check_connection_btn, &QPushButton::clicked, this, [this]() {
         const int engine = ui->ai_engine_comb->currentIndex();
-        // Ollama 下同时重新检测服务：装好 Ollama 后点这里即可
         if (engine == 2) m_ollamaClient->checkService();
         if (!m_textPolishService->capabilities(engine).canTest) return;
 
@@ -404,7 +391,7 @@ void MainWin::setupUiConnections(){
         m_textPolishService->testConnection(params);
     });
 
-    // 测试结果必须让用户看到：以前只写了日志，点了"测试连接"界面上没有任何反应
+    // 测试结果必须让用户看到，不能只写日志
     connect(m_textPolishService, &TextPolishService::connectionTested, this, [this](bool ok, const QString& message) {
         notify(ok ? NotifyLevel::Success : NotifyLevel::Error, ok ? QStringLiteral("连接成功") : QStringLiteral("连接失败"), message);
     });
@@ -422,6 +409,7 @@ void MainWin::setupUiConnections(){
             ConfigManager::instance().save();
         }
         updateAiEngineUi();
+        refreshTranscriptLanguages();
     });
     connect(ui->translate_source_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
         if (!m_loadingSettings) updateTranslationUi();
@@ -455,11 +443,9 @@ void MainWin::setupUiConnections(){
     connect(m_translationInstaller, &TranslationModelInstaller::installGroupFinished, this, [this]() { updateTranslationUi(); });
 
     connect(ui->ai_engine_comb, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
-        // 目标语言列表随引擎变（云端几种常用语言 / 本地按已有模型）；载入设置时由 loadConfigToUI 统一重建
         if (!m_loadingSettings) rebuildTranslationLanguages();
         if (!m_loadingSettings) swapPolishModelForEngine(index);
         updateAiEngineUi();
-        // 载入设置时由 loadConfigToUI 在末尾统一拉取，避免重复请求
         if (m_loadingSettings) return;
         if (index == 2) {
             m_ollamaClient->setBaseUrl(ConfigManager::instance().config().polish.apiUrl);
@@ -473,7 +459,6 @@ void MainWin::setupUiConnections(){
         const bool listed = success && !models.isEmpty();
         if (!listed) {
             LOG_ERROR("Failed to fetch model list");
-            // Ollama 没开时仍列出推荐模型和已保存的模型，旁边的按钮提示安装 / 下载
             if (!ollama) {
                 ui->ai_model_comb->clear();
                 rebuildTranslateModelCombo({});
@@ -491,21 +476,15 @@ void MainWin::setupUiConnections(){
         rebuildPolishModelCombo(installed, listed);
     });
 
-    // 更新检查
     connect(m_updateManager, &UpdateManager::updateAvailable, this, &MainWin::onUpdateFound);
     connect(m_updateManager, &UpdateManager::downloadFinished, this, &MainWin::onUpdateDownloaded);
     connect(m_updateManager, &UpdateManager::updateError, this, [this](const QString& message) { LOG_ERROR(message); });
 
-    // 日志输出
     connect(&Logger::instance(), &Logger::newLogEntry, this, &MainWin::onNewLogEntry, Qt::QueuedConnection);
 
-    // 主要工作流
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, m_history, [this](const QString& text) { m_history->add(text); });
 
-    // 实时转录页：所有听写结果连续写成稿子；"同时输入到前台"关掉时结果只留在稿子里
-    // 要翻译的句子：识别出来先显示原文，译文好了再补到同一行（翻译慢也不用干等）。
-    // 同一句的 utteranceTranslated 在 transcriptionResultReady 之前同步发出：先把这句补完整并记下最终文字，
-    // 结果到了发现已经显示过就不再另起一行；没经过翻译的句子仍按原来的方式直接追加
+    // utteranceTranslated 在 transcriptionResultReady 之前同步发出：先补全并记下最终文字，结果到达时据此不再另起一行
     connect(m_workflow, &WorkflowManager::utterancePending, this,
             [this](quint64 seq, const QString& source) { m_transcriptWidget->appendPending(seq, source); });
     connect(m_workflow, &WorkflowManager::utteranceTranslated, this,
@@ -528,34 +507,40 @@ void MainWin::setupUiConnections(){
             [this](const QString& title) { notify(NotifyLevel::Success, title); });
     connect(m_transcriptWidget, &LiveTranscriptWidget::errorOccurred, this,
             [this](const QString& title, const QString& cause) { notify(NotifyLevel::Error, title, cause); });
-    // 只通知工作流，不写配置：持久化归设置页复选框上的绑定器（唯一来源）。
-    // 这里曾经自己 save()，而启动时 ToggleLink 的初始同步也会走到这里——此刻配置还没载入，
-    // 内存里是默认值，一保存就把用户的快捷键、API 密钥等整份覆盖掉
+    // 只通知工作流不写配置：启动时 ToggleLink 初始同步会走到这里，此时配置未载入，保存会用默认值覆盖用户设置
     connect(m_transcriptWidget, &LiveTranscriptWidget::injectToggled, this,
             [this](bool on) { m_workflow->setInjectEnabled(on); });
     m_workflow->setInjectEnabled(m_transcriptWidget->injectToForeground());
 
-    // 横条上的三个开关不自己存状态：直接连到设置页里已有的复选框，
-    // 点图标就是点那个复选框，已有的配置绑定、保存和界面联动照常触发
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Enhance), ui->enable_enhancement_checkbox);
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Translate), ui->translate_enabled_checkbox);
-    // 「输入到前台窗口」以设置卡片里的复选框为准；稿子页里那个复选框也只是遥控器
     ToggleLink::connect(m_controlBar->toggleButton(ControlBar::Toggle::Inject), ui->inject_checkbox);
     ToggleLink::connect(m_transcriptWidget->injectCheckBox(), ui->inject_checkbox);
 
-    // 横条：开始 / 停止和快捷键、稿子页走同一条入口，状态由 onStateChanged 同步
     connect(m_controlBar, &ControlBar::startRequested, this, [this]() { startDictation(); });
     connect(m_controlBar, &ControlBar::stopRequested, this, [this]() { stopDictation(); });
     connect(m_controlBar, &ControlBar::settingsRequested, this, &MainWin::switchToSettings);
-    // 展开面板：图标只"请求"，面板变成什么样由 PanelState 决定；面板变了（含自己点 tab、被隐藏）再点亮图标
     connect(m_controlBar, &ControlBar::panelRequested, this, [this](PanelState::Page clicked) {
         m_panel->showPage(PanelState::afterClick(m_panel->page(), clicked));
     });
     connect(m_panel, &ExpandPanel::pageChanged, m_controlBar, &ControlBar::setPanelPage);
     connect(m_fileWidget, &FileTranscribeWidget::busyChanged, m_controlBar, &ControlBar::setFileBusy);
     connect(m_controlBar, &ControlBar::quitRequested, this, &MainWin::onQuitApplication);
+    connect(m_transcriptWidget, &LiveTranscriptWidget::targetLanguageChosen, this, [this](const QString& key) {
+        const int i = ui->translate_language_comb->findData(key);
+        if (i >= 0) ui->translate_language_comb->setCurrentIndex(i);
+    });
+    connect(m_transcriptWidget, &LiveTranscriptWidget::swapLanguagesRequested, this, &MainWin::swapRecognitionAndTarget);
+    connect(m_transcriptWidget, &LiveTranscriptWidget::sourceLanguageChosen, this, [this](const QString& key) {
+        const int i = ui->language_comb->findData(key);
+        if (i < 0 || i == ui->language_comb->currentIndex()) return;
+        runWhenIdle([this, i]() {
+            ui->translate_source_comb->setCurrentIndex(0);
+            ui->language_comb->setCurrentIndex(i);
+            onLocalModelActivated();
+        });
+    });
     connect(m_controlBar, &ControlBar::hideRequested, this, &MainWin::hideControlBar);
-    // 没有托盘的桌面隐藏后就找不回来了，此时不提供隐藏
     m_controlBar->hideAction()->setEnabled(QSystemTrayIcon::isSystemTrayAvailable());
     m_docsBridge = new DocsBridge(this);
     connect(m_docsBridge, &DocsBridge::insertFailed, this, [this](const QString& reason) {
@@ -573,7 +558,6 @@ void MainWin::setupUiConnections(){
         m_docsDialog->raise();
         m_docsDialog->activateWindow();
     });
-    // 没导出过扩展就不开端口
     if (DocsBridge::hasToken()) m_docsBridge->setEnabled(true);
     connect(m_controlBar, &ControlBar::alwaysOnTopToggled, this, [this](bool on) {
         ConfigManager::instance().config().barAlwaysOnTop = on;
@@ -601,13 +585,11 @@ void MainWin::setupUiConnections(){
                 notify(NotifyLevel::Warning, tr("翻译失败，已使用原文"), cause);
             });
 
-    // 录音服务：可视化数据/活动通道直连 overlay（不经门面）
     connect(m_recorderService, &AudioRecorderService::levelUpdated, m_liveOverlay, &LiveOverlay::setLevel);
     connect(m_recorderService, &AudioRecorderService::spectrumUpdated, m_liveOverlay, &LiveOverlay::setSpectrumLevels);
     connect(m_recorderService, &AudioRecorderService::voiceStopped, m_liveOverlay, &LiveOverlay::onVoiceStopped);
     connect(m_recorderService, &AudioRecorderService::voiceStarted, m_liveOverlay, &LiveOverlay::onVoiceStarted);
 
-    // 实时字幕：音频 → 流式引擎(独立线程) → 中间结果 → 字幕模型；正式结果到达后替换并变深色
     connect(m_recorderService, &AudioRecorderService::audioChunk, m_captionEngine, &StreamingEngine::acceptAudio);
     connect(m_captionEngine, &StreamingEngine::partialText, m_captionModel, &LiveCaptionModel::setPartial);
     // 强制切段时切点在过去，换新流要把切点之后已经喂给旧流的音频补喂回去，否则下一句字幕开头会丢
@@ -627,7 +609,10 @@ void MainWin::setupUiConnections(){
     });
     connect(m_recorderService, &AudioRecorderService::voiceStarted, m_captionModel, [this]() { m_captionModel->setSpeaking(true); });
     connect(m_recorderService, &AudioRecorderService::voiceStopped, m_captionModel, [this]() { m_captionModel->setSpeaking(false); });
-    // 切出一句后，用字幕已识别出的这句话按读音挑词典里的热词；utteranceAccepted 先于 transcribe 触发，这时这句已是 Pending
+    // utteranceAccepted 先于 transcribe 触发，此时这句已是 Pending
+    m_transcriptionService->setGlossaryProvider([this](const QString& stored) {
+        return m_dictionaries->translationGlossary(LanguageCatalog::codeOf(currentLanguageKey()), languageCodeForStored(stored));
+    });
     m_transcriptionService->setHotwordHintProvider([this]() { return m_captionModel->pendingText(); });
     connect(m_workflow, &WorkflowManager::utteranceAccepted, m_captionModel, [this](quint64 id) { m_captionModel->onUtteranceReady(id); });
     connect(m_workflow, &WorkflowManager::utteranceFinished, m_captionModel,
@@ -638,7 +623,6 @@ void MainWin::setupUiConnections(){
         QMetaObject::invokeMethod(m_captionEngine, &StreamingEngine::unloadModel, Qt::QueuedConnection);
     });
 
-    // Sherpa 模型安装器：安装成功后经门面预热模型（不再直戳 m_sherpaManager）
     connect(m_sherpaInstaller, &SherpaInstaller::loadModel,
         this, [this](const QString& repoId, bool success, const QString& msg) {
             if (success && !repoId.isEmpty()) {
@@ -656,36 +640,17 @@ void MainWin::setupUiConnections(){
         }
     });
 
-    // 词典功能
-    connect(m_termsManager, &TermsLibraryManager::termsReloaded, this, [=]() {
-        auto rules = m_termsManager->buildAllRules();
-		AppConfig& appConfig = ConfigManager::instance().config();
-        appConfig.replaceRules = rules.replaceRules;
-        appConfig.polish.vocab = rules.aiVocab;
-
-		// 热词表
-        QString hotwords;
-        for (const QString& w : rules.hotwords) hotwords += w + '\n';
-        appConfig.sherpa.hotwords = hotwords;
-        m_transcriptionService->setHotwordEntries(rules.hotwordEntries);
-		ConfigManager::instance().save();
-
-        ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
-    });
-    // 词典在构造时就读完了，termsReloaded 当时没人接；启动后要补一次，否则改过词典前热词挑选是空的
-    m_transcriptionService->setHotwordEntries(m_termsManager->buildAllRules().hotwordEntries);
+    connect(m_dictionaries, &DictionaryProfiles::rulesChanged, this, [this]() { applyDictionaryRules(true); });
 
     connect(ui->firewall_card, &FirewallCard::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(NotifyLevel::Error, title, cause);
     });
 
-    // Ollama：模型仍在下拉框里选，下拉框旁的按钮负责下载所选模型；两个按钮共用一个 client
     for (OllamaModelButton* btn : { ui->ollama_model_btn, ui->ollama_translate_btn }) {
         btn->setClient(m_ollamaClient);
         connect(btn, &OllamaModelButton::errorOccurred, this, [this](const QString& title, const QString& cause) {
             notify(NotifyLevel::Error, title, cause);
         });
-        // 下载完成后重新拉模型列表，下拉框里的"未下载"标记随之消失
         connect(btn, &OllamaModelButton::modelInstalled, this, [this](const QString&) { requestModelList(); });
     }
     connect(m_ollamaClient, &OllamaClient::serviceChecked, this, [this](bool running, const QString&) {
@@ -713,7 +678,6 @@ void MainWin::setupUiConnections(){
         notify(level, title, cause);
     });
 
-    // 指令设置：说到话术的快捷码 → 悬浮窗旁出现按钮 → 点击粘贴到前台窗口
     connect(ui->snippet_widget, &SnippetWidget::errorOccurred, this, [this](const QString& title, const QString& cause) {
         notify(title.contains(tr("成功")) ? NotifyLevel::Success : NotifyLevel::Error, title, cause);
     });
@@ -723,10 +687,8 @@ void MainWin::setupUiConnections(){
     connect(m_suggestBar, &SnippetSuggestBar::visibilityChanged, m_liveOverlay, &LiveOverlay::setHideHeld);
 
     m_workflow->setInjectFilter([this](const QString& text) {
-        // 面板在前台时不注入
         if (m_panel && m_panel->isActiveWindow()) return true;
 
-        // 输入到谷歌文档中
         // 绑定后连接意外断开也不注入前台，否则文字会打进别的软件；用户在横条菜单停止输出后才恢复
         if (m_docsBridge->holdsOutput()) {
             m_docsBridge->sendText(text);
@@ -747,7 +709,6 @@ void MainWin::setupUiConnections(){
     connect(ui->snippet_widget, &SnippetWidget::storeChanged, m_suggestBar, &SnippetSuggestBar::dismiss);
     connect(ui->snippet_widget, &SnippetWidget::searchPopupRequested, m_searchPopup, &SnippetSearchPopup::showPopup);
 
-    // 打字前缀：勾选后才安装全局键盘钩子，取消勾选立即卸载
     auto applyPrefixTrigger = [this]() {
         const AppSettings& s = m_snippetStore->settings();
         m_prefixWatcher->setPrefixes(s.triggerPrefixes);
@@ -773,7 +734,7 @@ void MainWin::setupUiConnections(){
             [this](const QStringList& ids) { m_handledSnippetIds.unite(QSet<QString>(ids.begin(), ids.end())); });
     connect(m_captionModel, &LiveCaptionModel::changed, this, [this]() {
         const QString text = m_captionModel->plainText();
-        if (text.isEmpty()) m_handledSnippetIds.clear();   // 字幕被清空 = 下一句开始
+        if (text.isEmpty()) m_handledSnippetIds.clear();
         updateSnippetSuggestions(text);
     });
     connect(m_workflow, &WorkflowManager::transcriptionResultReady, this,
@@ -796,7 +757,6 @@ MainWin::~MainWin() {
   delete ui;
 }
 
-// 听写文本里出现话术快捷码时，在悬浮窗旁列出可点击的条目。
 // 没命中时不主动收起：字幕被下一句清掉后，用户可能正要点按钮，由指令条自己的计时器收起。
 void MainWin::updateSnippetSuggestions(const QString& spokenText) {
     if (!m_snippetStore->settings().voiceTrigger || !m_liveOverlay->isVisible()) return;
@@ -829,7 +789,6 @@ void MainWin::syncLiveCaption()
         && SherpaInstaller::isInstalled(repoId) && !m_sherpaInstaller->isInstalling(repoId);
 
     if (on) {
-        // 音频抽头等引擎报告 modelReady 之后再开，避免白白投递数据
         // 主模型优先：字幕最多用一半线程，且不超过 2
         const int threads = std::clamp(cfg.sherpa.threads / 2, 1, 2);
         QMetaObject::invokeMethod(m_captionEngine, [engine = m_captionEngine, repoId, threads]() {
@@ -852,10 +811,9 @@ void MainWin::changeEvent(QEvent* event)
         alignSettingsCards();
     }
     else if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) {
-        refreshFormSwitchIcon();   // 图标底板和线条色取自调色板，切主题要重画
+        refreshFormSwitchIcon();
     }
     else if (event->type() == QEvent::WindowStateChange) {
-        // 没有托盘时隐藏就找不回来了，退回系统的最小化
         if ((windowState() & Qt::WindowMinimized) && QSystemTrayIcon::isSystemTrayAvailable()) {
             hide();
         }
@@ -866,8 +824,7 @@ void MainWin::changeEvent(QEvent* event)
 
 void MainWin::closeEvent(QCloseEvent* event)
 {
-    // 关窗口只隐藏，不退出程序；退出走托盘右键菜单，没有托盘的桌面走横条右键菜单。
-    // 没有托盘时隐藏就找不回来，改为切到横条
+    // 关窗口只隐藏不退出；没有托盘时隐藏就找不回来，改为切到横条
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         hide();
         setWindowState(Qt::WindowMinimized);
@@ -882,8 +839,7 @@ void MainWin::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
     if (!m_fittedToScreen) {
         m_fittedToScreen = true;
-        // 首次显示时下拉框已填充、翻译已加载，尺寸才是最终值；
-        // 推迟到下一轮事件循环，原生窗口装好标题栏后 frameGeometry 才准确
+        // 推迟到下一轮事件循环：首次显示时下拉框和翻译已就绪，且标题栏装好后 frameGeometry 才准确
         QTimer::singleShot(0, this, &MainWin::fitToScreen);
     }
 }
@@ -893,7 +849,7 @@ void MainWin::fitToScreen()
     QScreen* screen = this->screen();
     if (!screen) return;
     const QRect avail = screen->availableGeometry();
-    const QSize frameExtra = frameGeometry().size() - size();   // 标题栏与边框
+    const QSize frameExtra = frameGeometry().size() - size();
 
     LOG_DEBUG(QString("Window fit | avail=%1x%2 window=%3x%4 min=%5x%6 frame=%7x%8")
                   .arg(avail.width()).arg(avail.height())
@@ -907,7 +863,6 @@ void MainWin::fitToScreen()
         resize(qMin(width(), maxW), qMin(height(), maxH));
     }
 
-    // 尺寸缩不下时也至少保证左上角可见，让标题栏能拖动
     QRect frame = frameGeometry();
     const int x = qBound(avail.left(), frame.left(), qMax(avail.left(), avail.right() - frame.width() + 1));
     const int y = qBound(avail.top(), frame.top(), qMax(avail.top(), avail.bottom() - frame.height() + 1));
@@ -937,16 +892,13 @@ void MainWin::onLocalModelActivated()
 
 	LOG_DEBUG(QString("Download %1...").arg(repoId));
 	m_sherpaInstaller->installModel(repoId);
-	// GPU 模式下顺带补齐该模型的 GPU 版（没有 GPU 版 / 已下载则什么都不做）
 	if (config.sherpa.useGpu) ensureGpuVariant(repoId);
 }
 
-// 首次加载模型的入口：useGpu 为真且 GPU 检测还没结束时先不加载，等检测结果再加载一次。
-// 否则会先按 CPU 加载、检测完又按 CUDA 重载，白白多花数秒
+// useGpu 且 GPU 检测未结束时先不加载，等检测结果再加载，避免先按 CPU 加载又按 CUDA 重载
 void MainWin::requestPreload()
 {
     const AppConfig& cfg = ConfigManager::instance().config();
-    // 检测结果统一由 GpuRuntime 持有；超时后不再等
     const bool detectionDone = m_detectionTimedOut || m_gpuRuntime->detectionDone();
     if (GpuVariant::shouldWaitForGpuDetection(m_gpuRuntime->requestedGpu(), detectionDone)) {
         if (!m_preloadDeferred) LOG_INFO("Model load deferred until GPU detection finishes");
@@ -996,7 +948,6 @@ void MainWin::onComputeModeChanged(bool toGpu)
     const QString repoId = ModelRegistry::FindByDisplayName(cfg.sherpa.languageModel, cfg.sherpa.localModelRepoId);
     LOG_INFO(QString("Compute mode -> %1, selected model=%2").arg(toGpu ? "GPU" : "CPU", repoId));
 
-    // 切回 CPU：自动下载没必要继续，取消并清掉残留
     if (!toGpu && !m_autoGpuRepoId.isEmpty()) {
         LOG_INFO(QString("Cancel auto GPU download: %1").arg(m_autoGpuRepoId));
         m_sherpaInstaller->cancelInstall(m_autoGpuRepoId);
@@ -1031,7 +982,6 @@ void MainWin::ensureGpuVariant(const QString& repoId)
     }
 }
 
-// 启动时：配置 → 控件。标准控件由 SettingsBinder 回填，其余是登记表里注明的自定义流程
 void MainWin::loadConfigToUI() {
     ConfigManager::instance().load();
     AppConfig& cfg = ConfigManager::instance().config();
@@ -1047,6 +997,7 @@ void MainWin::loadConfigToUI() {
     if (index != -1) ui->language_comb->setCurrentIndex(index);
     ui->model_list_widget->setCurrentModel(cfg.sherpa.localModelRepoId);
     ui->ai_vocabulary_edit->setText(cfg.polish.vocab);
+    applyDictionaryRules(false);
     rebuildTranslationLanguages();   // 下拉内容依赖已载入的翻译引擎，要在 loadAll 之后按配置重选
     m_workflow->setInjectEnabled(cfg.injectToForeground);
     m_loadingSettings = false;
@@ -1055,7 +1006,6 @@ void MainWin::loadConfigToUI() {
     m_controlBar->setAlwaysOnTop(cfg.barAlwaysOnTop);
     m_panel->setAlwaysOnTop(cfg.barAlwaysOnTop);
 
-    // 首次运行（未配置）：默认选中第一项，确保启动时能尝试加载
     if (cfg.sherpa.languageModel.isEmpty() && !currentLanguageKey().isEmpty())
         cfg.sherpa.languageModel = currentLanguageKey();
     if (cfg.sherpa.localModelRepoId.isEmpty() && !ui->model_list_widget->currentModel().isEmpty())
@@ -1073,14 +1023,11 @@ void MainWin::loadConfigToUI() {
     updateAiEngineUi();
     m_ollamaClient->setBaseUrl(cfg.polish.apiUrl);
     rebuildTranslateModelCombo({});
-    // 没用 Ollama 的用户不去连本机端口
     if (ui->ai_engine_comb->currentIndex() == 2) m_ollamaClient->checkService();
     requestModelList();
 }
 
-// 润色模型按引擎各记一份：换引擎时把当前模型存给旧引擎，换入新引擎自己记的那个（没有则空），
-// 并立刻清掉下拉框里旧引擎的模型。否则换到 Ollama 后，没连上 Ollama 时会把 Gemini 的模型名当"已保存的模型"
-// 补回列表并选中
+// 润色模型按引擎各记一份，换引擎时换入换出并清掉下拉框旧模型，否则 Ollama 未连上时会把 Gemini 模型名当已保存模型补回
 void MainWin::swapPolishModelForEngine(int engine) {
     PolishConfig& p = ConfigManager::instance().config().polish;
     if (m_lastAiEngine >= 0 && m_lastAiEngine != engine) p.modelByEngine[m_lastAiEngine] = p.model;
@@ -1103,7 +1050,6 @@ void MainWin::swapPolishModelForEngine(int engine) {
         ui->ai_model_comb->clear();
     }
     ui->ollama_model_btn->setModel(QString());
-    // Ollama / 没有模型列表的引擎在服务没响应前也要有内容可选：先用已记住的值和推荐模型占位，拉到列表后再重建
     rebuildPolishModelCombo({}, false);
     rebuildTranslateModelCombo({});
     applySettings(0);
@@ -1121,7 +1067,6 @@ void MainWin::requestModelList() {
     m_textPolishService->fetchModels(params);
 }
 
-// Ollama 下把还没下载的推荐模型也列进下拉框（排在最前），灰字标出；下载由旁边的按钮完成
 static QStringList withOllamaCatalog(const QStringList& installed, OllamaPurpose purpose, QStringList* missing) {
     QStringList items = installed;
     for (const QString& name : ollamaCatalogNames(purpose)) {
@@ -1162,7 +1107,6 @@ void MainWin::rebuildPolishModelCombo(const QStringList& installed, bool listed)
         ui->ai_model_comb->setCurrentIndex(std::max(0, ui->ai_model_comb->findText(config.polish.model)));
     }
     ui->ollama_model_btn->setModel(ui->ai_model_comb->currentText());
-    // 已保存的模型不在新列表里（如换了引擎）时，改用列表第一项
     if (!ui->ai_model_comb->currentText().isEmpty() && config.polish.model != ui->ai_model_comb->currentText()) {
         config.polish.model = ui->ai_model_comb->currentText();
         applySettings(0);
@@ -1177,18 +1121,15 @@ void MainWin::rebuildTranslateModelCombo(const QStringList& models) {
     const QSignalBlocker blocker(ui->translate_model_comb);
     ui->translate_model_comb->clear();
     for (const QString& m : items) {
-        // 翻译专用模型标出来，方便挑
         const QString label = TextPolishPrompts::isTranslationModel(m) ? tr("%1 (translation model)").arg(m) : m;
         ui->translate_model_comb->addItem(label, m);
         if (missing.contains(m)) markNotDownloaded(ui->translate_model_comb, ui->translate_model_comb->count() - 1);
     }
-    // 列表还没拉到（或服务暂时没开）时保留已保存的值，不能因为暂时连不上就把设置冲掉
     if (!saved.isEmpty() && ui->translate_model_comb->findData(saved) < 0) {
         ui->translate_model_comb->addItem(saved, saved);
         if (ollama) markNotDownloaded(ui->translate_model_comb, ui->translate_model_comb->count() - 1);
     }
-    // 不再有"跟随润色模型"：翻译模型始终是一个具体的模型名。没选过时（旧配置里为空 = 原来跟随润色），
-    // 沿用润色模型保持行为不变；润色模型不在列表里就挑翻译专用模型，再不行取第一项
+    // 没选过翻译模型（旧配置为空 = 跟随润色）时沿用润色模型；不在列表里则挑翻译专用模型，再取第一项
     QString chosen = saved;
     if (chosen.isEmpty() && ui->translate_model_comb->count() > 0) {
         const QString polishModel = ConfigManager::instance().config().polish.model;
@@ -1208,8 +1149,7 @@ void MainWin::rebuildTranslateModelCombo(const QStringList& models) {
 
 namespace {
 
-// key 为空表示该下拉按序号存取；非空时作为 itemData，配置里存的是它，不随界面语言变。
-// 风格和翻译目标语言的 key 也会写进提示词，所以保持原来的中文值。
+// key 非空时作为 itemData 存进配置，不随界面语言变；风格和目标语言的 key 会写进提示词，保持中文值
 struct ComboEntry {
     const char* label;
     const char* key;
@@ -1235,15 +1175,6 @@ const ComboEntry kStyleItems[] = {
     { QT_TRANSLATE_NOOP("MainWin", "Casual spoken"), "日常口語" },
     { QT_TRANSLATE_NOOP("MainWin", "Concise"), "简洁扼要" },
     { QT_TRANSLATE_NOOP("MainWin", "Custom prompt"), "自订Prompt" },
-};
-
-// 云端引擎的目标语言：键是中文名，会写进提示词
-const ComboEntry kTargetLangItems[] = {
-    { QT_TRANSLATE_NOOP("MainWin", "English"), "英文" },
-    { QT_TRANSLATE_NOOP("MainWin", "Japanese"), "日文" },
-    { QT_TRANSLATE_NOOP("MainWin", "Korean"), "韩文" },
-    { QT_TRANSLATE_NOOP("MainWin", "Traditional Chinese"), "繁体中文" },
-    { QT_TRANSLATE_NOOP("MainWin", "Simplified Chinese"), "简体中文" },
 };
 
 // 首次调用添加条目，之后只更新显示文字（setItemText 不会触发 currentIndexChanged，不会误写配置）
@@ -1286,19 +1217,25 @@ QString translationLanguageLabel(const QString& code) {
     return QStringLiteral("%1 (%2)").arg(QLocale::languageToString(QLocale(code).language()), code);
 }
 
+QString plainLanguageLabel(const QString& code) {
+    if (code == QLatin1String("zh-Hans")) return QCoreApplication::translate("MainWin", "Simplified Chinese");
+    if (code == QLatin1String("zh-Hant")) return QCoreApplication::translate("MainWin", "Traditional Chinese");
+    const QString key = LanguageCatalog::keyOfCode(code);
+    if (!key.isEmpty()) return LanguageCatalog::plainName(key);
+    return QLocale::languageToString(QLocale(code).language());
+}
+
 bool isCoreTranslationLanguage(const QString& code) {
     return !displayNameForLanguageCode(code).isEmpty();
 }
 
 } // namespace
 
-// 识别模型的语言代码，源语言选"自动"时据此推断
 QString MainWin::recognitionLanguageCode() const {
     return LanguageCatalog::codeOf(currentLanguageKey());
 }
 
-// 目标语言和源语言下拉的内容随翻译引擎变化：云端只有常用几种，本地按已有模型方向生成。
-// 当前值在新列表里找不到时只是界面回退到第一项，不改写配置里保存的值。
+// 当前值在新列表里找不到时只是界面回退到第一项，不改写配置
 void MainWin::rebuildTranslationLanguages() {
     if (!m_translationInstaller) return;
     const AppConfig& cfg = ConfigManager::instance().config();
@@ -1336,12 +1273,18 @@ void MainWin::rebuildTranslationLanguages() {
             }
         }
         else {
-            for (const ComboEntry& e : kTargetLangItems) {
-                ui->translate_language_comb->addItem(QCoreApplication::translate("MainWin", e.label),
-                                                     QString::fromUtf8(e.key));
+            for (const CloudTargetLanguage& l : cloudTargetLanguages()) {
+                ui->translate_language_comb->addItem(QCoreApplication::translate("MainWin", l.label),
+                                                     QString::fromUtf8(l.zhName));
             }
         }
-        const int saved = ui->translate_language_comb->findData(cfg.polish.targetLang);
+        QString storedKey = promptNameForStored(cfg.polish.targetLang);
+        if (local) {
+            const QString code = languageCodeForStored(cfg.polish.targetLang);
+            const QString core = displayNameForLanguageCode(code);
+            storedKey = core.isEmpty() ? code : core;
+        }
+        const int saved = ui->translate_language_comb->findData(storedKey);
         ui->translate_language_comb->setCurrentIndex(saved >= 0 ? saved : 0);
     }
 
@@ -1353,9 +1296,101 @@ void MainWin::rebuildTranslationLanguages() {
         const int saved = ui->translate_source_comb->findData(cfg.polish.translateSourceLang);
         ui->translate_source_comb->setCurrentIndex(saved >= 0 ? saved : 0);
     }
+    refreshTranscriptLanguages();
 }
 
-// 本地翻译模型的状态文字与下载按钮：未安装显示大小，已装显示就绪；不自动下载
+void MainWin::applyDictionaryRules(bool full) {
+    const auto rules = m_dictionaries->buildRecognitionRules(LanguageCatalog::codeOf(currentLanguageKey()));
+    AppConfig& appConfig = ConfigManager::instance().config();
+    appConfig.replaceRules = rules.replaceRules;
+    appConfig.polish.vocab = rules.aiVocab;
+    m_transcriptionService->setHotwordEntries(rules.hotwordEntries);
+    const bool localSherpa = appConfig.backend == AsrBackendKind::Sherpa;
+    const QString repoId = ModelRegistry::FindByDisplayName(appConfig.sherpa.languageModel, appConfig.sherpa.localModelRepoId);
+    m_transcriptionService->setFuzzyReplacement(rules.hotwordEntries, !localSherpa || !ModelRegistry::SupportsHotwords(repoId));
+    ui->ai_vocabulary_edit->setText(appConfig.polish.vocab);
+    if (!full) return;
+
+    QString hotwords;
+    for (const QString& w : rules.hotwords) hotwords += w + '\n';
+    appConfig.sherpa.hotwords = hotwords;
+    ConfigManager::instance().save();
+}
+
+void MainWin::refreshTranscriptLanguages() {
+    if (!m_transcriptWidget) return;
+    m_transcriptWidget->setTranslationEnabled(ui->translate_enabled_checkbox->isChecked());
+    const bool local = ui->ai_engine_comb->currentIndex() == kLocalTranslationEngine;
+    auto targetText = [local](const QString& text, const QString& key) {
+        return local ? plainLanguageLabel(languageCodeForStored(key)) : text;
+    };
+
+    QList<LiveTranscriptWidget::LanguageChoice> sources;
+    for (int i = 0; i < ui->language_comb->count(); ++i) {
+        const QString key = ui->language_comb->itemData(i).toString();
+        sources.append({ LanguageCatalog::plainName(key), key });
+    }
+    const QString sourceKey = currentLanguageKey();
+    m_transcriptWidget->setSourceChoices(sources, sourceKey);
+
+    QList<LiveTranscriptWidget::LanguageChoice> targets;
+    for (int i = 0; i < ui->translate_language_comb->count(); ++i) {
+        const QString key = ui->translate_language_comb->itemData(i).toString();
+        targets.append({ targetText(ui->translate_language_comb->itemText(i), key), key });
+    }
+    const QString targetKey = ui->translate_language_comb->currentData().toString();
+    m_transcriptWidget->setTargetChoices(targets, targetKey);
+    m_transcriptWidget->setLanguagePair(LanguageCatalog::plainName(sourceKey),
+                                        targetText(ui->translate_language_comb->currentText(), targetKey));
+}
+
+void MainWin::swapRecognitionAndTarget() {
+    const QString targetCode = languageCodeForStored(ui->translate_language_comb->currentData().toString());
+    const QString recCode = targetCode.startsWith(QLatin1String("zh-")) ? QStringLiteral("zh") : targetCode;
+    const QString newKey = LanguageCatalog::keyOfCode(recCode);
+    const int recIndex = newKey.isEmpty() ? -1 : ui->language_comb->findData(newKey);
+    if (recIndex < 0) {
+        notify(NotifyLevel::Warning, QStringLiteral("无法交换"),
+               QStringLiteral("本地识别暂不支持目标语言「%1」").arg(ui->translate_language_comb->currentText()));
+        return;
+    }
+    if (recIndex == ui->language_comb->currentIndex()) return;
+
+    const QString oldSource = resolveSourceCode(QStringLiteral("auto"), recognitionLanguageCode());
+    const bool local = ui->ai_engine_comb->currentIndex() == kLocalTranslationEngine;
+    const QString core = displayNameForLanguageCode(oldSource);
+    const QString key = local ? (core.isEmpty() ? oldSource : core) : promptNameForStored(oldSource);
+    runWhenIdle([this, recIndex, key]() {
+        const int targetIndex = ui->translate_language_comb->findData(key);
+        if (targetIndex >= 0) ui->translate_language_comb->setCurrentIndex(targetIndex);
+        ui->translate_source_comb->setCurrentIndex(0);
+        ui->language_comb->setCurrentIndex(recIndex);
+        onLocalModelActivated();
+    });
+}
+
+void MainWin::runWhenIdle(const std::function<void()>& apply) {
+    if (m_workflow->state() == WorkflowState::Idle) {
+        apply();
+        return;
+    }
+    m_pendingSwitch = [this, apply]() {
+        apply();
+        resumeDictationAfterSwitch();
+    };
+    stopDictation();
+}
+
+void MainWin::resumeDictationAfterSwitch() {
+    const AppConfig& cfg = ConfigManager::instance().config();
+    const QString repoId = ModelRegistry::FindByDisplayName(cfg.sherpa.languageModel, cfg.sherpa.localModelRepoId);
+    if (!repoId.isEmpty() && m_sherpaInstaller->isInstalled(repoId) && !m_sherpaInstaller->isInstalling(repoId)) {
+        startDictation();
+        return;
+    }
+    notify(NotifyLevel::Info, QStringLiteral("已停止听写"), QStringLiteral("新语言的模型下载完成后，请重新开始听写"));
+}
+
 TranslationRoute MainWin::currentTranslationRoute() const {
     const QString from = resolveSourceCode(ui->translate_source_comb->currentData().toString(), recognitionLanguageCode());
     const QString to = languageCodeForStored(ui->translate_language_comb->currentData().toString());
@@ -1402,15 +1437,13 @@ void MainWin::updateTranslationUi() {
 
     ui->translate_model_status_label->setVisible(local);
     ui->translate_model_download_btn->setVisible(local);
+    refreshTranscriptLanguages();
 }
 
-// 润色与翻译相关控件只在这里启用/隐藏：开关关闭时灰显并保留值，"不适用"的块直接隐藏。
-// 选本地模型时翻译在本机完成，没有润色，也不需要云端的 Key、地址和模型。
 void MainWin::placeModelRow(bool inPolishCard) {
     if (m_modelRowInPolishCard == inPolishCard) return;
     m_modelRowInPolishCard = inPolishCard;
-    // 控件换个网格就够了：addWidget 会自动改父控件，信号连接和 SettingsBinder 绑定都不受影响
-    // 润色卡片里放在"风格"同一行右侧（第 1 行第 2、3 列），列布局与上面的连接卡片一致
+    // addWidget 会自动改父控件，信号连接和 SettingsBinder 绑定不受影响
     auto* from = inPolishCard ? static_cast<QGridLayout*>(ui->ai_service_card_layout)
                               : static_cast<QGridLayout*>(ui->polish_card_layout);
     auto* to = inPolishCard ? static_cast<QGridLayout*>(ui->polish_card_layout)
@@ -1422,7 +1455,6 @@ void MainWin::placeModelRow(bool inPolishCard) {
     to->addWidget(ui->ai_model_row, row, 3);
 }
 
-// Ollama 没有密钥：地址独占第二行，从最左边对齐；其它引擎地址和密钥并排，地址在右半边
 void MainWin::placeUrlRow(bool alone) {
     if (m_urlRowAlone == alone) return;
     m_urlRowAlone = alone;
@@ -1461,33 +1493,26 @@ void MainWin::updateAiEngineUi() {
         for (QWidget* w : widgets) w->setVisible(on);
     };
 
-    // 引擎下拉始终显示；连接信息只对云端引擎有意义
     setVisible({ ui->label_16, ui->api_url_edit, ui->label_14, ui->ai_model_row, ui->check_connection_btn }, !local);
-    // Ollama 不需要密钥：只留地址，留空就用默认的 localhost:11434
     setVisible({ ui->label_13, ui->api_key_edit }, !local && engine != 2);
     ui->api_url_edit->setPlaceholderText(engine == 2 ? tr("Leave empty to use the default (http://localhost:11434)")
                                                      : QString());
     setEnabled({ ui->ai_model_comb, ui->label_14 }, caps.canFetchModels);
     ui->check_connection_btn->setEnabled(caps.canTest);
-    // Ollama 下模型下拉框旁多一个下载按钮（所选模型没装时才出现）
     const bool ollama = engine == 2;
-    // 润色模型只有一个控件：Gemini / OpenAI 兼容时在连接卡片里，Ollama 时挪进润色卡片，
-    // 与翻译模型在翻译卡片里对应（Ollama 的模型是本机下载的，跟着用途走更好理解）
+    // 润色模型只有一个控件：Ollama 时挪进润色卡片，其余在连接卡片里
     placeModelRow(ollama);
     placeUrlRow(ollama);
     ui->ollama_model_btn->setActive(ollama);
     ui->ollama_translate_btn->setActive(ollama);
-    // 单独指定翻译模型只对能列模型的接口有意义（OpenAI 兼容 / Ollama）
     setVisible({ ui->translate_model_label, ui->translate_model_comb }, engine == 1 || ollama);
 
     ui->polish_card->setVisible(!local);
-    // 自订指令只有风格选"自订Prompt"时才会用到，其余风格下显示出来没有作用
     const bool customStyle = ui->ai_style_comb->currentData().toString() == QStringLiteral("自订Prompt");
     setVisible({ ui->label_17, ui->custom_commands_edit }, customStyle);
     setEnabled({ ui->ai_style_comb, ui->custom_commands_edit, ui->ai_vocabulary_edit,
                  ui->label_18, ui->label_17, ui->label_20 }, polishOn && caps.canPolish);
 
-    // 翻译与润色各自独立：只开翻译时单独发一次翻译请求（见 AiStagePlan）
     setEnabled({ ui->translate_source_comb, ui->translate_source_label,
                  ui->translate_language_comb, ui->label_19, ui->translate_model_label, ui->translate_model_comb }, transOn);
     setVisible({ ui->translate_source_comb, ui->translate_source_label }, local);
@@ -1496,7 +1521,6 @@ void MainWin::updateAiEngineUi() {
 
     updateTranslationUi();
 
-    // 只列出实际会执行的步骤；润色和翻译都没开时没有额外处理，不显示这一行
     QStringList steps{ tr("Recognition") };
     if (polishOn) steps << tr("Polishing");
     if (transOn) steps << tr("Translation");
@@ -1504,7 +1528,6 @@ void MainWin::updateAiEngineUi() {
     ui->pipeline_hint_label->setText(steps.join(QStringLiteral("  →  ")));
     ui->pipeline_hint_label->setVisible(steps.size() > 2);
 
-    // 横条上的两个 AI 开关：和设置页同样的限制，并把原因写进悬停提示
     if (m_controlBar) {
         m_controlBar->toggleButton(ControlBar::Toggle::Enhance)->setEnabled(!local);
         m_controlBar->setToggleHint(ControlBar::Toggle::Enhance,
@@ -1513,8 +1536,7 @@ void MainWin::updateAiEngineUi() {
     }
 }
 
-// qss 只管写了规则的控件；自绘控件和 qss 里的 palette(...) 跟的是应用调色板。
-// Fusion 的默认调色板随系统深浅色，不设的话系统为深色时，白色主题的弹窗会是深底深字
+// Fusion 默认调色板随系统深浅色，不设的话系统深色时白色主题弹窗会是深底深字
 static QPalette themePalette(LiveOverlay::Theme theme) {
     struct Colors { QColor window, base, text, button, midlight, mid, highlight, disabledText, link; };
     Colors c;
@@ -1583,10 +1605,8 @@ void MainWin::readIni() {
   setLanguage(Language, false);
 }
 
-// ---- 外观：主题与界面语言（外观页） ----
 
 void MainWin::setupAppearanceUi() {
-    // 条目的文字在 retranslateAppearanceItems 里按当前语言设置；这里只放占位，保证个数和顺序
     for (int i = 0; i < Appearance::languageKeys().size(); ++i) ui->ui_language_comb->addItem(QString());
     for (int i = 0; i < Appearance::themeKeys().size(); ++i) ui->theme_comb->addItem(QString());
 
@@ -1651,7 +1671,6 @@ void MainWin::onHotkeyPressed() {
     LOG_DEBUG(QString("Activated:" + ui->shortcut_edit->getShortCut()));
     const bool idle = m_workflow->state() == WorkflowState::Idle;
     if (ConfigManager::instance().config().hotkeyHold) {
-        // 按住说话：按下开始，松开时由 onHotkeyReleased 结束
         if (idle && startDictation()) {
             m_holdStarted = true;
             m_holdTimer.start();
@@ -1665,7 +1684,6 @@ void MainWin::onHotkeyPressed() {
 void MainWin::onHotkeyReleased() {
     if (!m_holdStarted) return;
     m_holdStarted = false;
-    // 按得太短多半是误触，丢弃这段录音，不送去识别
     constexpr qint64 kMinHoldMs = 300;
     if (m_holdTimer.elapsed() < kMinHoldMs) {
         LOG_DEBUG("Hotkey hold too short, recording discarded");
@@ -1690,7 +1708,6 @@ bool MainWin::startDictation() {
     }
     const auto& config = ConfigManager::instance().config();
 
-    // 只有本地识别才需要本地模型；云端后端不受影响
     if (config.backend == AsrBackendKind::Sherpa) {
         const QString repoId = ModelRegistry::FindByDisplayName(config.sherpa.languageModel,
                                                                 config.sherpa.localModelRepoId);
@@ -1754,10 +1771,14 @@ void MainWin::onStateChanged(WorkflowState state)
         m_liveOverlay->hideTimerStart();
         break;
     case WorkflowState::Idle:
+        if (m_pendingSwitch) {
+            const auto pending = std::move(m_pendingSwitch);
+            m_pendingSwitch = nullptr;
+            QTimer::singleShot(0, this, pending);
+        }
         // 有字幕时多留一会儿，让用户看清最终结果；期间若又开始了新一轮录音就不能再隐藏
         QTimer::singleShot(m_liveOverlay->hasCaption() ? 1800 : 200, this, [this]() {
             if (m_workflow->state() != WorkflowState::Idle) return;
-            // 还要陪指令条留一会儿，转录已结束，不能继续闪"转录中"的圆点
             if (m_suggestBar->isVisible()) m_liveOverlay->setPaused();
             m_liveOverlay->hideOverlay();
         });
@@ -1848,7 +1869,6 @@ void MainWin::onUpdateFound(const QString& version, const QString& downloadUrl, 
     msgBox.setDefaultButton(QMessageBox::Ok);
     msgBox.setIcon(QMessageBox::Information);
 
-    // "不再提醒"复选项：勾选后持久化，后续启动不再弹更新提示
     auto* neverAgain = new AnimatedCheckBox;
     neverAgain->setLabelText(tr("Do not remind me again"));
     msgBox.setCheckBox(neverAgain);
@@ -1898,11 +1918,9 @@ void MainWin::initSystemTray()
     trayMenu = new QMenu(this);
     connect(trayMenu, &QMenu::aboutToShow, this, &MainWin::rebuildTrayMenu);
 
-    // 创建托盘图标
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setContextMenu(trayMenu);
 
-    // 设置托盘图标
     QIcon icon;
     icon.addFile(QString::fromUtf8(":/title_icon"), QSize(), QIcon::Mode::Normal, QIcon::State::Off);
     if (icon.isNull()) {
@@ -1915,7 +1933,6 @@ void MainWin::initSystemTray()
 
 void MainWin::rebuildTrayMenu()
 {
-    // 托盘只管显示与隐藏和退出，其余功能都在横条和设置窗口里
     trayMenu->clear();
     const bool shown = isVisible() || m_controlBar->isVisible();
     LOG_DEBUG(QString("Tray | menu about to show, settings=%1 bar=%2").arg(isVisible()).arg(m_controlBar->isVisible()));
@@ -1923,7 +1940,6 @@ void MainWin::rebuildTrayMenu()
     if (m_liveOverlay->userHidden()) {
         trayMenu->addAction(tr("Show dictation window"), this, [this]() {
             m_liveOverlay->restoreFromUserHide();
-            // 正在录音 / 转录时马上显示出来，空闲时等下一次说话自己弹出
             if (m_workflow->state() != WorkflowState::Idle) m_liveOverlay->showOnScreen();
         });
     }
@@ -1974,7 +1990,6 @@ bool MainWin::eventFilter(QObject* watched, QEvent* event)
 
 void MainWin::movePagesTo(bool settingsWindow)
 {
-    // 实时转录、词典、文件转录页只有一个实例，在面板和设置窗口的标签页之间借用；状态（稿子、文件转录进度等）留在实例里
     if (m_pagesInSettings == settingsWindow) return;
     if (settingsWindow) {
         m_panel->showPage(PanelState::Page::None);
@@ -1996,7 +2011,6 @@ void MainWin::movePagesTo(bool settingsWindow)
 void MainWin::refreshFormSwitchIcon()
 {
     if (!m_formSwitchBtn) return;
-    // 和横条上的图标同一套底板；悬停时 Qt 取 Active 模式的图
     const QPalette pal = palette();
     const QColor glyph = ToolIcon::stateColor(pal, ToolIcon::State::Normal);
     constexpr int kSize = 22;

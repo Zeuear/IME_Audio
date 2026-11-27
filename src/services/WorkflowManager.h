@@ -9,13 +9,13 @@
 #include "interfaces/workflow_interfaces.h"
 
 enum class WorkflowState {
-    Idle,           // 空闲，等待用户指令
-    Loading,        // 正在加载模型或初始化
-    Recording,      // 正在录音
-    Transcribing,   // 正在调用后端进行转录
-    Processing,     // 正在进行文本后处理
-    Stopping,       // 已请求停止，冲刷剩余待转录句
-    Error           // 发生错误
+    Idle,
+    Loading,
+    Recording,
+    Transcribing,
+    Processing,
+    Stopping,
+    Error
 };
 
 enum class WorkflowEvent {
@@ -56,7 +56,6 @@ public:
 signals:
     void stateChanged(WorkflowState newState);
     void transcriptionResultReady(const QString &finalText);
-    // 要翻译的句子先把原文交出来，译文好了再发补上
     void utterancePending(quint64 seq, const QString &sourceText);
     void utteranceTranslated(quint64 seq, const QString &sourceText, const QString &finalText);
     // id 供实时字幕把正式结果对回原来那一句；对不上号的结果 id 为 0

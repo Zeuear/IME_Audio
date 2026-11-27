@@ -20,14 +20,11 @@ public:
     bool canTest() const override { return true; }
 
     static QStringList parseOllamaTags(const QByteArray& json);
-    // OpenAI 兼容 /v1/models：{"data":[{"id":...}]}
     static QStringList parseOpenAiModels(const QByteArray& json);
     static bool isValidModelsResponse(const QByteArray& json);
 
-    // 以下为纯函数，供单测检查请求格式
     static QJsonArray buildMessages(const QString& inputText, const TextPolishService::RequestParams& params);
     static QByteArray buildOpenAiChatBody(const QString& inputText, const TextPolishService::RequestParams& params);
-    // withThink=false 用于不认识 think 字段的旧版 Ollama 重试
     static QByteArray buildOllamaChatBody(const QString& inputText, const TextPolishService::RequestParams& params,
                                           bool withThink = true);
     static QString extractOpenAiTextFromResponse(const QByteArray& responseJson, QString* error);

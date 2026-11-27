@@ -13,7 +13,7 @@ public:
         bool checkEnabled = true;
         bool installVisible = false;
         bool progressVisible = false;
-        int percent = 0;   // 0..100；-1 表示总大小未知（不确定进度）
+        int percent = 0;
     };
 
     State state() const { return m_state; }
@@ -32,7 +32,7 @@ public:
 
 private:
     State m_state = State::Idle;
-    QString m_version;   // 当前版本（UpToDate）或新版本（Available）
+    QString m_version;
     QString m_error;
     int m_percent = 0;
     bool m_finished = false;

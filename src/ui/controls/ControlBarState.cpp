@@ -32,4 +32,4 @@ QString formatElapsed(qint64 seconds)
     return QStringLiteral("%1:%2").arg(m, 2, 10, QLatin1Char('0')).arg(s, 2, 10, QLatin1Char('0'));
 }
 
-} // namespace ControlBarState
+}

@@ -15,6 +15,7 @@ public:
     Hit hitTest(const QRect& row, const QPoint& pos) const;
     // 原文 / 译文的矩形
     QRect sideRect(const QRect& row, bool translation) const { return translation ? translationRect(row) : originalRect(row); }
+    int dividerX(int viewportWidth) const;
 
     QSize sizeHint(const QStyleOptionViewItem& opt, const QModelIndex& index) const override;
     void paint(QPainter* p, const QStyleOptionViewItem& opt, const QModelIndex& index) const override;

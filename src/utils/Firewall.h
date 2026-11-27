@@ -8,7 +8,7 @@ namespace Firewall {
 enum class State {
     Missing,
     Blocked,
-    StalePath,   // 规则指向别的路径（程序挪过位置）
+    StalePath,
 };
 
 inline QString ruleName() { return QStringLiteral("ImeAudioBlock"); }

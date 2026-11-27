@@ -28,9 +28,7 @@ class SnippetWidget : public QWidget {
 
 signals:
     void errorOccurred(const QString& title, const QString& cause = {});
-    // 话术库内容或设置有变化（悬浮窗据此刷新）
     void storeChanged();
-    // 全局热键被按下，请求呼出话术搜索框
     void searchPopupRequested();
     // 打字前缀监听的开关或前缀列表变了，请求主窗口按最新设置重新配置监听
     void prefixTriggerChanged();
@@ -49,7 +47,7 @@ protected:
 private:
     void setupUi();
     void retranslateUi();
-    void updateIcons();   // 图标跟随当前主题文字色重新着色
+    void updateIcons();
     void onResizeTreeLayout();
     SnippetTreeDelegate::Zone zoneUnderCursor(const QModelIndex& proxyIndex) const;
 

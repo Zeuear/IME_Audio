@@ -13,11 +13,9 @@ class QProcess;
 
 // @brief 本地翻译后端：管理 translate_worker 进程，用行协议（tools/translate_worker/WorkerProtocol.h）收发。
 // 进程按需启动；崩溃或退出时所有未完成请求立刻以失败返回，下一次翻译会自动重启。
-// 启动、发送、停止是虚函数，测试里换成假实现，不需要真实的 worker。
 class BergamotWorkerClient : public ITranslationBackend {
     Q_OBJECT
 public:
-    // 路线和模型信息由外部提供，客户端不依赖下载器
     struct RouteProvider {
         std::function<TranslationRoute(const QString& from, const QString& to)> plan;
         std::function<bool(const QString& from, const QString& to)> isInstalled;
@@ -50,9 +48,9 @@ private:
     QProcess* m_process = nullptr;
     QByteArray m_stdoutBuffer;
 
-    bool m_started = false;           // 已经请求启动
-    bool m_ready = false;             // worker 已输出 READY
-    QList<QByteArray> m_queue;        // READY 之前先排队
+    bool m_started = false;
+    bool m_ready = false;
+    QList<QByteArray> m_queue;
     QSet<QString> m_loaded;           // 已发过 L 的方向，形如 "en>de"
-    QSet<qint64> m_pending;           // 等待响应的请求 id
+    QSet<qint64> m_pending;
 };

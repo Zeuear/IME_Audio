@@ -24,7 +24,6 @@ public:
     SnippetPaster(SnippetStore* store, QNetworkAccessManager* network, QObject* parent = nullptr);
 
     void paste(const QString& itemId);
-    // 拖到其它窗口用的数据，所有权交给调用方；条目没有可拖内容时返回 nullptr
     QMimeData* createDragMime(const QString& itemId) const;
 
 private:

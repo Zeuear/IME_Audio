@@ -4,9 +4,7 @@
 #include <QList>
 #include <QString>
 
-// @brief 本次运行的听写记录：最新的在最上面，最多保留 kMaxEntries 条。
-//        只存在内存里，关闭程序即清空（听写内容可能涉及隐私）。
-//        "声音识别"面板和托盘的"最近听写"菜单共用这一份。
+// @brief 本次运行的听写记录：最新在前，最多 kMaxEntries 条；仅存内存（涉及隐私），识别面板与托盘菜单共用。
 class DictationHistoryModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -26,7 +24,6 @@ public:
     void add(const QString& text, const QDateTime& time = QDateTime::currentDateTime());
     void clear();
     QString textAt(int row) const;
-    // 全部记录，按时间从早到晚、每条一行
     QString allText() const;
 
 private:

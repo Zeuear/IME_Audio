@@ -516,3 +516,24 @@ TEST(SharedPages, TranscriptPageKeepsToolbarWhenOtherTabsAreTaller) {
     pump(80);
     EXPECT_GT(contents->height(), area.viewport()->height());   // 切回设置页，外层还能继续滚
 }
+
+TEST(LiveTranscriptLayout, LanguagePillSitsOnTheColumnDivider) {
+    LiveFixture f;
+    auto* pill = f.live.findChild<QFrame*>("lang_pill");
+    ASSERT_NE(pill, nullptr);
+    auto* d = static_cast<TranscriptLineDelegate*>(f.list->itemDelegate());
+    const int divider = f.list->viewport()->mapTo(&f.live, QPoint(d->dividerX(f.list->viewport()->width()), 0)).x();
+    const int center = pill->mapTo(&f.live, pill->rect().center()).x();
+    EXPECT_NEAR(center, divider, 1);
+    const QRect pillRect(pill->mapTo(&f.live, QPoint(0, 0)), pill->size());
+    for (QPushButton* b : f.live.findChildren<QPushButton*>()) {
+        if (!b->isVisible() || pill->isAncestorOf(b)) continue;
+        EXPECT_FALSE(QRect(b->mapTo(&f.live, QPoint(0, 0)), b->size()).intersects(pillRect)) << b->text().toStdString();
+    }
+
+    f.live.resize(1200, 520);
+    pump(80);
+    const int divider2 = f.list->viewport()->mapTo(&f.live, QPoint(d->dividerX(f.list->viewport()->width()), 0)).x();
+    EXPECT_NEAR(pill->mapTo(&f.live, pill->rect().center()).x(), divider2, 1);
+    EXPECT_GT(divider2, divider);
+}

@@ -57,4 +57,4 @@ QString translationResource(const QString& languageKey, const QString& systemLoc
     return systemLocaleName == QLatin1String("zh_CN") ? kChinese : kEnglish;
 }
 
-} // namespace Appearance
+}

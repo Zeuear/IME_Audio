@@ -4,7 +4,6 @@
 
 // @brief
 // 条目很多时可输入过滤的下拉框：单击弹出列表选择，双击进入输入模式，按名称任意位置过滤。
-// 平时输入框只读，避免单击只出现光标却不弹出列表。
 class SearchableComboBox : public QComboBox {
     Q_OBJECT
 public:

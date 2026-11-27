@@ -167,3 +167,26 @@ TEST(TranslationRoutingTest, StoredTargetAndSourceResolution) {
     EXPECT_EQ(resolveSourceCode(QStringLiteral("auto"), QStringLiteral("fr")), QStringLiteral("fr"));
     EXPECT_TRUE(resolveSourceCode(QStringLiteral("auto"), {}).isEmpty());
 }
+
+TEST(TranslationRoutingTest, CloudTargetLanguagesKeepLegacyFiveFirstAndAreUnique) {
+    const auto& list = cloudTargetLanguages();
+    ASSERT_GT(list.size(), 20);
+    const char* legacy[] = { "英文", "日文", "韩文", "繁体中文", "简体中文" };
+    for (int i = 0; i < 5; ++i) EXPECT_EQ(QString::fromUtf8(list[i].zhName), QString::fromUtf8(legacy[i]));
+    QSet<QString> codes, names;
+    for (const auto& l : list) {
+        EXPECT_FALSE(codes.contains(QString::fromLatin1(l.code))) << l.code;
+        EXPECT_FALSE(names.contains(QString::fromUtf8(l.zhName))) << l.zhName;
+        codes.insert(QString::fromLatin1(l.code));
+        names.insert(QString::fromUtf8(l.zhName));
+    }
+}
+
+TEST(TranslationRoutingTest, StoredTargetConvertsBetweenCodeAndPromptName) {
+    EXPECT_EQ(promptNameForStored(QStringLiteral("fr")), QStringLiteral("法文"));
+    EXPECT_EQ(promptNameForStored(QStringLiteral("法文")), QStringLiteral("法文"));
+    EXPECT_EQ(promptNameForStored(QStringLiteral("不翻译")), QStringLiteral("不翻译"));
+    EXPECT_EQ(languageCodeForStored(QStringLiteral("法文")), QStringLiteral("fr"));
+    EXPECT_EQ(languageCodeForStored(QStringLiteral("英文")), QStringLiteral("en"));
+    EXPECT_EQ(languageCodeForStored(QStringLiteral("fr")), QStringLiteral("fr"));
+}

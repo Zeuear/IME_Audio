@@ -1,10 +1,17 @@
 #include "TermWidget.h"
+#include "ui/controls/DictionaryProfileDialog.h"
+#include "ui/delegates/DictionaryProfileDelegate.h"
 #include "ui/delegates/TermCardDelegate.h"
+#include "ui/models/DictionaryProfileModel.h"
 #include "ui/models/TermListModel.h"
+#include "services/dictionary/DictionaryLanguages.h"
+#include "services/dictionary/EntryCheck.h"
 #include <QApplication>
+#include <QButtonGroup>
 #include <QFileDialog>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QItemSelectionModel>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
@@ -12,6 +19,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSortFilterProxyModel>
 #include <QStackedWidget>
 #include <QToolButton>
@@ -23,14 +31,76 @@ TermWidget::TermWidget(QWidget *parent) : QWidget(parent) {
     setupUi();
 }
 
-void TermWidget::setupUi() {
-    auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
+QWidget* TermWidget::buildSidePanel() {
+    auto* card = new QFrame(this);
+    card->setProperty("card", true);
+    card->setFixedWidth(220);
+    auto* layout = new QVBoxLayout(card);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(8);
+
+    auto* tabs = new QFrame(card);
+    tabs->setObjectName(QStringLiteral("dict_kind_tabs"));
+    tabs->setFixedHeight(32);
+    tabs->setStyleSheet(QStringLiteral(
+        "QFrame#dict_kind_tabs { border: 1px solid palette(mid); border-radius: 6px; }"
+        "QFrame#dict_kind_tabs QPushButton { border: none; border-radius: 0; background: transparent; padding: 0 6px; }"
+        "QFrame#dict_kind_tabs QPushButton:hover { background: rgba(128, 128, 128, 45); }"
+        "QFrame#dict_kind_tabs QPushButton:checked { background: palette(highlight); color: palette(highlighted-text); }"
+        "QFrame#dict_kind_tabs QPushButton[seg=\"first\"] { border-top-left-radius: 5px; border-bottom-left-radius: 5px; }"
+        "QFrame#dict_kind_tabs QPushButton[seg=\"last\"] { border-top-right-radius: 5px; border-bottom-right-radius: 5px; }"));
+    auto* tabLayout = new QHBoxLayout(tabs);
+    tabLayout->setContentsMargins(0, 0, 0, 0);
+    tabLayout->setSpacing(0);
+    m_recognitionTab = new QPushButton(tabs);
+    m_translationTab = new QPushButton(tabs);
+    m_recognitionTab->setProperty("seg", "first");
+    m_translationTab->setProperty("seg", "last");
+    auto* group = new QButtonGroup(this);
+    group->setExclusive(true);
+    for (QPushButton* b : { m_recognitionTab, m_translationTab }) {
+        b->setCheckable(true);
+        b->setCursor(Qt::PointingHandCursor);
+        b->setFocusPolicy(Qt::NoFocus);
+        group->addButton(b);
+        tabLayout->addWidget(b, 1);
+    }
+    m_recognitionTab->setChecked(true);
+
+    m_profileList = new QListView(card);
+    m_profileList->setObjectName(QStringLiteral("dict_profile_list"));
+    m_profileList->setFrameShape(QFrame::NoFrame);
+    m_profileList->setStyleSheet(QStringLiteral("QListView#dict_profile_list { background: transparent; border: none; }"));
+    m_profileList->viewport()->setAutoFillBackground(false);
+    m_profileList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_profileList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_profileList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_profileList->setMouseTracking(true);
+    m_profileList->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_profileList->setItemDelegate(new DictionaryProfileDelegate(m_profileList));
+
+    m_newBtn = new QPushButton(card);
+    m_newBtn->setFixedHeight(32);
+    m_newBtn->setCursor(Qt::PointingHandCursor);
+
+    layout->addWidget(tabs);
+    layout->addWidget(m_profileList, 1);
+    layout->addWidget(m_newBtn);
+
+    connect(m_recognitionTab, &QPushButton::clicked, this, [this]() { selectKind(DictionaryKind::Recognition); });
+    connect(m_translationTab, &QPushButton::clicked, this, [this]() { selectKind(DictionaryKind::Translation); });
+    connect(m_newBtn, &QPushButton::clicked, this, &TermWidget::handleNewProfile);
+    connect(m_profileList, &QWidget::customContextMenuRequested, this, &TermWidget::showProfileMenu);
+    return card;
+}
+
+QWidget* TermWidget::buildContentPanel() {
+    auto* content = new QWidget(this);
+    auto* mainLayout = new QVBoxLayout(content);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(8);
 
-    // 普通工具栏：搜索 + 添加
-    // 两个工具栏页都要透明底，否则页面底色会在卡片里露出一条色带
-    auto* normalBar = new QWidget(this);
+    auto* normalBar = new QWidget(content);
     normalBar->setObjectName("term_normal_bar");
     normalBar->setStyleSheet(QStringLiteral("QWidget#term_normal_bar { background: transparent; }"));
     auto* normalLayout = new QHBoxLayout(normalBar);
@@ -56,8 +126,7 @@ void TermWidget::setupUi() {
     normalLayout->addWidget(m_addBtn);
     normalLayout->addWidget(m_moreBtn);
 
-    // 多选工具栏：左边选择，右边操作
-    auto* selectBar = new QWidget(this);
+    auto* selectBar = new QWidget(content);
     selectBar->setObjectName("term_select_bar");
     selectBar->setStyleSheet(QStringLiteral("QWidget#term_select_bar { background: transparent; }"));
     auto* selectLayout = new QHBoxLayout(selectBar);
@@ -79,48 +148,77 @@ void TermWidget::setupUi() {
     selectLayout->addWidget(m_deleteBtn);
     selectLayout->addWidget(m_doneBtn);
 
-    m_barStack = new QStackedWidget(this);
-    // QStackedWidget 本身也会被主题的 QWidget 底色刷一遍，只把两页设透明还不够
+    m_barStack = new QStackedWidget(content);
     m_barStack->setObjectName("term_bar_stack");
     m_barStack->setStyleSheet(QStringLiteral("QStackedWidget#term_bar_stack { background: transparent; }"));
     m_barStack->addWidget(normalBar);
     m_barStack->addWidget(selectBar);
     m_barStack->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-    m_list = new TermListView(this);
+    m_list = new TermListView(content);
     m_list->setObjectName("terms_list");
     m_list->setFrameShape(QFrame::NoFrame);
-    // 列表底色透明，让卡片的颜色透出来，和设置页的分组卡片保持一致
     m_list->setStyleSheet(QStringLiteral("QListView#terms_list { background: transparent; border: none; }"));
     m_list->viewport()->setAutoFillBackground(false);
     m_list->setSelectionMode(QAbstractItemView::NoSelection);
-    m_list->setEditTriggers(QAbstractItemView::NoEditTriggers);   // 双击编辑由 onDoubleClicked 自己处理
+    m_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_list->setUniformItemSizes(true);
     m_list->setMouseTracking(true);
     m_delegate = new TermCardDelegate(m_list);
     m_list->setItemDelegate(m_delegate);
 
-    // 工具栏和列表各放进一张卡片（QSS 的 card 属性），与设置页的分组卡片同款
-    auto* toolCard = new QFrame(this);
+    m_proxy = new QSortFilterProxyModel(this);
+    m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_list->setModel(m_proxy);
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+        m_proxy->setFilterFixedString(text.trimmed());
+    });
+
+    auto* toolCard = new QFrame(content);
     toolCard->setProperty("card", true);
     auto* toolLayout = new QVBoxLayout(toolCard);
     toolLayout->setContentsMargins(14, 12, 14, 12);
     toolLayout->addWidget(m_barStack);
 
-    // 列表上方的统计行：没有词条时直接给出提示，免得整页空着不知道怎么开始
-    m_statsLabel = new QLabel(this);
+    m_statsLabel = new QLabel(content);
+    m_noteLabel = new QLabel(content);
+    m_noteLabel->setWordWrap(true);
+    m_noteLabel->setEnabled(false);
 
-    auto* listCard = new QFrame(this);
+    auto* listCard = new QFrame(content);
     listCard->setProperty("card", true);
     auto* listLayout = new QVBoxLayout(listCard);
     listLayout->setContentsMargins(14, 12, 14, 8);
     listLayout->setSpacing(8);
     listLayout->addWidget(m_statsLabel);
+    listLayout->addWidget(m_noteLabel);
     listLayout->addWidget(m_list, 1);
 
     mainLayout->addWidget(toolCard);
     mainLayout->addWidget(listCard, 1);
+    return content;
+}
+
+void TermWidget::setupUi() {
+    auto* rootLayout = new QHBoxLayout(this);
+    rootLayout->setContentsMargins(10, 10, 10, 10);
+    rootLayout->setSpacing(10);
+
+    QWidget* side = buildSidePanel();
+    QWidget* content = buildContentPanel();
+
+    m_hintLabel = new QLabel(this);
+    m_hintLabel->setAlignment(Qt::AlignCenter);
+    m_hintLabel->setWordWrap(true);
+    m_hintLabel->setEnabled(false);
+
+    m_rightStack = new QStackedWidget(this);
+    m_rightStack->addWidget(content);
+    m_rightStack->addWidget(m_hintLabel);
+
+    rootLayout->addWidget(side);
+    rootLayout->addWidget(m_rightStack, 1);
 
     m_selectAnim = new QVariantAnimation(this);
     m_selectAnim->setDuration(180);
@@ -151,33 +249,138 @@ void TermWidget::setupUi() {
     retranslateUi();
 }
 
-void TermWidget::setTermsManager(TermsLibraryManager* termsManager) {
-    m_termsManager = termsManager;
-    m_model = new TermListModel(m_termsManager, this);
-    connect(m_model, &TermListModel::errorOccurred, this, [this](const QString& cause) {
-        emit errorOccurred(tr("输入有误"), cause);
+void TermWidget::setDictionaryProfiles(DictionaryProfiles* profiles) {
+    m_profiles = profiles;
+    m_profileModel = new DictionaryProfileModel(profiles, this);
+    m_profileList->setModel(m_profileModel);
+    connect(m_profileList->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& current) {
+        showProfile(current.isValid() ? current.data(DictionaryProfileModel::IdRole).toString() : QString());
     });
-    connect(m_model, &TermListModel::checkedChanged, this, &TermWidget::updateSelectBar);
-    connect(m_model, &QAbstractItemModel::rowsInserted, this, &TermWidget::updateStats);
-    connect(m_model, &QAbstractItemModel::rowsRemoved, this, &TermWidget::updateStats);
-    connect(m_model, &QAbstractItemModel::modelReset, this, &TermWidget::updateStats);
-    connect(m_model, &QAbstractItemModel::dataChanged, this, &TermWidget::updateStats);
-    updateStats();
+    connect(m_profileModel, &QAbstractItemModel::modelReset, this, &TermWidget::restoreProfileSelection);
+    selectKind(DictionaryKind::Recognition);
+}
 
-    m_proxy = new QSortFilterProxyModel(this);
-    m_proxy->setSourceModel(m_model);
-    m_proxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    m_list->setModel(m_proxy);
-    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
-        m_proxy->setFilterFixedString(text.trimmed());
-    });
+void TermWidget::selectKind(DictionaryKind kind) {
+    m_kind = kind;
+    m_recognitionTab->setChecked(kind == DictionaryKind::Recognition);
+    m_translationTab->setChecked(kind == DictionaryKind::Translation);
+    m_currentId = m_lastId[int(kind)];
+    m_profileModel->setKind(kind);
+}
+
+void TermWidget::restoreProfileSelection() {
+    int row = m_profileModel->rowOfId(m_currentId);
+    if (row < 0) row = m_profileModel->rowCount() > 0 ? 0 : -1;
+    const QString id = row >= 0 ? m_profileModel->index(row, 0).data(DictionaryProfileModel::IdRole).toString() : QString();
+    {
+        const QSignalBlocker blocker(m_profileList->selectionModel());
+        if (row >= 0) m_profileList->setCurrentIndex(m_profileModel->index(row, 0));
+        else m_profileList->clearSelection();
+    }
+    m_profileList->viewport()->update();
+    if (id != m_currentId || !m_model) showProfile(id);
+    else updateBarTexts();
+}
+
+void TermWidget::showProfile(const QString& id) {
+    if (m_model) setSelectMode(false);
+    m_currentId = id;
+    m_lastId[int(m_kind)] = id;
+
+    const DictionaryProfile* profile = id.isEmpty() ? nullptr : m_profiles->find(id);
+    TermsLibraryManager* library = profile ? m_profiles->library(id) : nullptr;
+    if (!library) {
+        m_proxy->setSourceModel(nullptr);
+        m_model = nullptr;
+        m_termsManager = nullptr;
+        m_rightStack->setCurrentIndex(1);
+        updateBarTexts();
+        return;
+    }
+
+    TermListModel*& model = m_models[id];
+    if (!model) {
+        model = new TermListModel(library, this);
+        connect(model, &TermListModel::errorOccurred, this, [this](const QString& cause) {
+            emit errorOccurred(tr("输入有误"), cause);
+        });
+        connect(model, &TermListModel::checkedChanged, this, &TermWidget::updateSelectBar);
+        connect(model, &QAbstractItemModel::rowsInserted, this, &TermWidget::updateStats);
+        connect(model, &QAbstractItemModel::rowsRemoved, this, &TermWidget::updateStats);
+        connect(model, &QAbstractItemModel::modelReset, this, &TermWidget::updateStats);
+        connect(model, &QAbstractItemModel::dataChanged, this, &TermWidget::updateStats);
+    }
+    model->setRequireHeard(profile->kind == DictionaryKind::Translation);
+    m_termsManager = library;
+    m_model = model;
+    m_proxy->setSourceModel(model);
+    m_rightStack->setCurrentIndex(0);
+    m_list->scrollToTop();
+    updateBarTexts();
+    updateStats();
+}
+
+void TermWidget::showProfileMenu(const QPoint& pos) {
+    const QModelIndex index = m_profileList->indexAt(pos);
+    QMenu menu(this);
+    if (!index.isValid()) {
+        menu.addAction(tr("+ New Dictionary"), this, &TermWidget::handleNewProfile);
+        menu.exec(m_profileList->viewport()->mapToGlobal(pos));
+        return;
+    }
+    const QString id = index.data(DictionaryProfileModel::IdRole).toString();
+    const bool enabled = index.data(DictionaryProfileModel::EnabledRole).toBool();
+    menu.addAction(tr("Edit..."), this, [this, id]() { handleEditProfile(id); });
+    menu.addAction(enabled ? tr("Disable") : tr("Enable"), this, [this, id, enabled]() { m_profiles->setEnabled(id, !enabled); });
+    if (index.data(DictionaryProfileModel::RemovableRole).toBool()) {
+        menu.addSeparator();
+        menu.addAction(tr("Delete"), this, [this, id]() { handleDeleteProfile(id); });
+    }
+    menu.exec(m_profileList->viewport()->mapToGlobal(pos));
+}
+
+void TermWidget::handleNewProfile() {
+    if (!m_profiles) return;
+    DictionaryProfileDialog dialog(m_kind, false, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    m_lastId[int(m_kind)] = m_profiles->addProfile(m_kind, dialog.name(), dialog.langA(), dialog.langB());
+    selectKind(m_kind);
+}
+
+void TermWidget::handleEditProfile(const QString& id) {
+    const DictionaryProfile* profile = m_profiles->find(id);
+    if (!profile) return;
+    DictionaryProfileDialog dialog(profile->kind, true, this);
+    dialog.setValues(profile->name, profile->langA, profile->langB);
+    if (dialog.exec() != QDialog::Accepted) return;
+    m_profiles->renameProfile(id, dialog.name());
+    m_profiles->setLanguages(id, dialog.langA(), dialog.langB());
+}
+
+void TermWidget::handleDeleteProfile(const QString& id) {
+    const DictionaryProfile* profile = m_profiles->find(id);
+    if (!profile) return;
+    const auto res = QMessageBox::question(this, tr("Confirm"),
+                                           tr("Delete dictionary \"%1\" and all its entries?").arg(profile->name),
+                                           QMessageBox::Yes | QMessageBox::No);
+    if (res != QMessageBox::Yes) return;
+    if (id == m_currentId) {
+        setSelectMode(false);
+        m_proxy->setSourceModel(nullptr);
+        m_model = nullptr;
+        m_termsManager = nullptr;
+        m_currentId.clear();
+    }
+    delete m_models.take(id);
+    for (QString& last : m_lastId) {
+        if (last == id) last.clear();
+    }
+    m_profiles->removeProfile(id);
 }
 
 void TermWidget::onClicked(const QModelIndex& proxyIndex) {
-    // 双击的第二下松开时还会再来一次 clicked，此时编辑器已打开，忽略
     if (!proxyIndex.isValid() || m_list->indexWidget(proxyIndex)) return;
 
-    // 多选中单击就是勾选，立即响应；平时单击等一个双击间隔，看是不是双击
     if (m_selectMode) {
         toggleChecked(proxyIndex);
         return;
@@ -187,7 +390,6 @@ void TermWidget::onClicked(const QModelIndex& proxyIndex) {
 }
 
 void TermWidget::onDoubleClicked(const QModelIndex& proxyIndex) {
-    // 多选中只做勾选，不进入编辑
     if (!proxyIndex.isValid() || m_selectMode) return;
     m_clickTimer->stop();
     m_pendingClick = QPersistentModelIndex();
@@ -206,7 +408,7 @@ void TermWidget::toggleChecked(const QModelIndex& proxyIndex) {
 void TermWidget::setSelectMode(bool on) {
     if (on == m_selectMode) return;
     m_selectMode = on;
-    if (!on) m_model->setChecked({});
+    if (!on && m_model) m_model->setChecked({});
     m_barStack->setCurrentIndex(on ? 1 : 0);
 
     m_selectAnim->stop();
@@ -216,21 +418,31 @@ void TermWidget::setSelectMode(bool on) {
 }
 
 void TermWidget::updateSelectBar() {
+    if (!m_model) return;
     const int n = m_model->checkedRows().size();
     m_countLabel->setText(tr("%1 selected").arg(n));
     for (QPushButton* b : { m_enableBtn, m_disableBtn, m_deleteBtn }) b->setEnabled(n > 0);
 }
 
 void TermWidget::updateStats() {
-    // 还没连上词库时 m_model 为空，此时什么都不做
-    if (!m_model || !m_statsLabel) return;
+    if (!m_statsLabel) return;
+    if (!m_model) {
+        m_statsLabel->clear();
+        return;
+    }
     const int total = m_model->rowCount();
     int enabled = 0;
     for (int i = 0; i < total; ++i) {
         if (m_model->data(m_model->index(i, 0), TermListModel::EnabledRole).toBool()) ++enabled;
     }
-    if (total == 0) m_statsLabel->setText(tr("No terms yet. Add one above, e.g. heard as → write as."));
-    else m_statsLabel->setText(tr("%1 terms · %2 enabled").arg(total).arg(enabled));
+    const DictionaryProfile* profile = m_profiles ? m_profiles->find(m_currentId) : nullptr;
+    const bool translation = profile && profile->kind == DictionaryKind::Translation;
+    if (total == 0) {
+        m_statsLabel->setText(translation ? tr("No terms yet. Add one above, e.g. source term → translation.")
+                                          : tr("No terms yet. Add one above, e.g. heard as → write as."));
+    } else {
+        m_statsLabel->setText(tr("%1 terms · %2 enabled").arg(total).arg(enabled));
+    }
 }
 
 QList<int> TermWidget::visibleSourceRows() const {
@@ -239,8 +451,64 @@ QList<int> TermWidget::visibleSourceRows() const {
     return rows;
 }
 
+void TermWidget::updateBarTexts() {
+    const DictionaryProfile* profile = m_profiles ? m_profiles->find(m_currentId) : nullptr;
+    const bool translation = profile ? profile->kind == DictionaryKind::Translation : m_kind == DictionaryKind::Translation;
+    if (translation) {
+        m_heardEdit->setPlaceholderText(tr("Source term"));
+        m_heardEdit->setToolTip(tr("The term in the source language; separate aliases with commas or /."));
+        m_correctEdit->setPlaceholderText(tr("Translation"));
+    } else {
+        m_heardEdit->setPlaceholderText(tr("Heard as (optional)"));
+        m_heardEdit->setToolTip(tr("What the recognizer mistakenly outputs; separate several with commas. "
+                                   "Leave empty to just teach the recognizer a new word, e.g. a name."));
+        m_correctEdit->setPlaceholderText(tr("Write as"));
+    }
+    m_noteLabel->setVisible(translation);
+    m_noteLabel->setText(tr("Used by AI translation (cloud and Ollama). The offline translator ignores it."));
+    m_hintLabel->setText(profile ? QString() : tr("No dictionary yet. Click \"New Dictionary\" to create one."));
+    updateStats();
+}
+
 void TermWidget::handleAdd() {
-    if (m_model->addTerm(m_heardEdit->text(), m_correctEdit->text())) {
+    if (!m_model) return;
+    const DictionaryProfile* profile = m_profiles->find(m_currentId);
+    if (!profile) return;
+
+    QString heard = m_heardEdit->text();
+    QString correct = m_correctEdit->text();
+    const bool translation = profile->kind == DictionaryKind::Translation;
+    auto check = [&]() {
+        return translation ? EntryCheck::translation(heard, correct, profile->langA, profile->langB)
+                           : EntryCheck::recognition(heard, correct, profile->langA);
+    };
+
+    EntryCheck::Result result = check();
+    if (result.verdict == EntryCheck::Verdict::Mismatch) {
+        const auto res = QMessageBox::question(this, tr("Language mismatch"),
+            tr("These words do not look like %1. Add anyway?").arg(DictionaryLanguages::label(profile->langA)),
+            QMessageBox::Yes | QMessageBox::No);
+        if (res != QMessageBox::Yes) return;
+    } else if (result.verdict == EntryCheck::Verdict::SwapSuggested) {
+        QMessageBox box(QMessageBox::Question, tr("Columns look swapped"),
+            tr("The source term looks like %1 and the translation like %2. Swap the two columns?")
+                .arg(DictionaryLanguages::label(profile->langB), DictionaryLanguages::label(profile->langA)),
+            QMessageBox::NoButton, this);
+        QPushButton* swapBtn = box.addButton(tr("Swap"), QMessageBox::AcceptRole);
+        QPushButton* keepBtn = box.addButton(tr("Add anyway"), QMessageBox::DestructiveRole);
+        box.addButton(QMessageBox::Cancel);
+        box.exec();
+        if (box.clickedButton() == swapBtn) {
+            std::swap(heard, correct);
+            result = check();
+        } else if (box.clickedButton() != keepBtn) {
+            return;
+        } else {
+            result.tag.clear();
+        }
+    }
+
+    if (m_model->addTerm(heard, correct, result.tag)) {
         m_heardEdit->clear();
         m_correctEdit->clear();
         m_heardEdit->setFocus();
@@ -276,15 +544,17 @@ void TermWidget::handleDelete() {
 }
 
 void TermWidget::handleReload() {
-    if (m_termsManager->importFromFile(m_termsManager->defaultPath())) {
+    if (!m_termsManager) return;
+    if (m_termsManager->importFromFile(m_termsManager->path())) {
         LOG_INFO("Terms reloaded successfully.");
     }
     else {
-        emit errorOccurred(tr("术语库加载失败"), tr("未找到 terms.tsv"));
+        emit errorOccurred(tr("术语库加载失败"), tr("未找到词典文件"));
     }
 }
 
 void TermWidget::handleCheckConflicts() {
+    if (!m_termsManager) return;
     QStringList conflicts = m_termsManager->checkConflicts();
     if (conflicts.isEmpty()) {
         emit errorOccurred(tr("术语冲突检查"), tr("未发现冲突"));
@@ -295,6 +565,7 @@ void TermWidget::handleCheckConflicts() {
 }
 
 void TermWidget::handleImport() {
+    if (!m_termsManager) return;
     QString path = QFileDialog::getOpenFileName(this, tr("Import TSV"), "", "TSV Files (*.tsv)");
     if (path.isEmpty()) return;
     if (m_termsManager->importFromFile(path)) {
@@ -306,6 +577,7 @@ void TermWidget::handleImport() {
 }
 
 void TermWidget::handleExport() {
+    if (!m_termsManager) return;
     QString path = QFileDialog::getSaveFileName(this, tr("Export TSV"), "", "TSV Files (*.tsv)");
     if (path.isEmpty()) return;
     if (m_termsManager->exportToFile(path)) {
@@ -335,12 +607,11 @@ void TermWidget::changeEvent(QEvent* event)
 void TermWidget::retranslateUi()
 {
     m_searchEdit->setPlaceholderText(tr("Search terms..."));
-    m_heardEdit->setPlaceholderText(tr("Heard as (optional)"));
-    m_heardEdit->setToolTip(tr("What the recognizer mistakenly outputs; separate several with commas. "
-                               "Leave empty to just teach the recognizer a new word, e.g. a name."));
-    m_correctEdit->setPlaceholderText(tr("Write as"));
     m_addBtn->setText(tr("+ Add"));
     m_moreBtn->setToolTip(tr("More"));
+    m_recognitionTab->setText(tr("Recognition"));
+    m_translationTab->setText(tr("Translation"));
+    m_newBtn->setText(tr("+ New Dictionary"));
 
     QMenu* menu = m_moreBtn->menu();
     menu->clear();
@@ -357,5 +628,5 @@ void TermWidget::retranslateUi()
     m_deleteBtn->setText(tr("Delete"));
     m_doneBtn->setText(tr("Done"));
     if (m_model) updateSelectBar();
-    updateStats();   // 统计文字也要跟着语言切换刷新
+    updateBarTexts();
 }

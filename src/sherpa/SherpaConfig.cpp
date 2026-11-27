@@ -87,7 +87,6 @@ QString ModelConfigFactory::getModelPath(const QString& repoId, const QString& s
 	return buildLocalPath(repoId, subfolder, filename);
 }
 
-// Paraformer(单文件架构,只有 model + tokens 两个文件)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildParaformer(
     const QString& repoId,
     const QString& modelFile,
@@ -101,7 +100,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildParaformer(
     return config;
 }
 
-// SenseVoice(多一个 language / use_itn 参数)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildSenseVoice(
     const QString& repoId,
     const QString& modelFile,
@@ -119,7 +117,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildSenseVoice(
     return config;
 }
 
-// ransducer builder
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildOfflineTransducer(
     const QString& repoId,
     const QString& encoderFile,
@@ -160,7 +157,6 @@ sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildOnlineTransduc
 }
 
 
-// 对应 _get_russian_pre_trained_model_ctc
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildNemoCtc(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -172,7 +168,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildNemoCtc(
 }
 
 
-// Whisper
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildWhisper(
     const QString& repoId, const QString& name, const QString& languageCode, int numThreads)
 {
@@ -186,7 +181,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildWhisper(
     return config;
 }
 
-// Moonshine
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildMoonshine(
     const QString& repoId, const MoonshineFiles& files, int numThreads)
 {
@@ -205,7 +199,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildMoonshine(
     return config;
 }
 
-// FireRedASR
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFireRedAsr(
     const QString& repoId,
     const FireRedAsrFiles& files,
@@ -219,7 +212,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFireRedAsr(
     return config;
 }
 
-// Dolphin CTC
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildDolphinCtc(const QString& repoId, bool useInt8, int numThreads)
 {
     sherpa_onnx::cxx::OfflineRecognizerConfig config;
@@ -230,7 +222,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildDolphinCtc(co
 }
 
 
-// ZipformerCtc(离线)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildZipformerCtcOffline(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -241,7 +232,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildZipformerCtcO
     return config;
 }
 
-// ZipformerCtc(流式)
 sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildZipformerCtcStreaming(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -260,7 +250,6 @@ sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildZipformerCtcSt
     return config;
 }
 
-// NemoTransducer 
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildNemoTransducer(
     const QString& repoId,
     const QString& encoderFile, const QString& decoderFile, const QString& joinerFile,
@@ -282,7 +271,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildNemoTransduce
     return config;
 }
 
-// ParaformerStreaming 流式 paraformer 只有 encoder+decoder,没有 joiner
 sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildParaformerStreaming(
     const QString& repoId,
     const QString& encoderFile, const QString& decoderFile,
@@ -296,7 +284,6 @@ sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildParaformerStre
     return config;
 }
 
-// TeleSpeechCtc(离线,方言)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildTeleSpeechCtc(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -307,7 +294,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildTeleSpeechCtc
     return config;
 }
 
-// WenetCtc(离线)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildWenetCtcOffline(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -318,7 +304,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildWenetCtcOffli
     return config;
 }
 
-// Omnilingual ASR(1600+ 语言,离线 CTC)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildOmnilingualAsr(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -329,7 +314,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildOmnilingualAs
     return config;
 }
 
-// T-one CTC(俄语流式)注意字段是 tone_ctc
 sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildTOneCtcStreaming(
     const QString& repoId, const QString& modelFile,int numThreads)
 {
@@ -341,7 +325,6 @@ sherpa_onnx::cxx::OnlineRecognizerConfig ModelConfigFactory::buildTOneCtcStreami
 }
 
 
-// FunasrNano(LLM 混合架构)
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFunasrNano(
     const QString& repoId,
     const FunasrFiles& files,
@@ -353,7 +336,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFunasrNano(
     config.model_config.funasr_nano.encoder_adaptor = getModelPath(repoId, "", files.encoderAdaptorFile).toStdString();
     config.model_config.funasr_nano.llm = getModelPath(repoId, "", files.llmFile).toStdString();
 
-    // Qwen3-0.6B 子目录下的分词器文件
     QString tokenizerJsonPath = getModelPath(repoId, files.tokenizerSubfolder, files.tokenizerJsonFile);
     getModelPath(repoId, files.tokenizerSubfolder, files.mergesFile);
     getModelPath(repoId, files.tokenizerSubfolder, files.vocabFile);
@@ -404,7 +386,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildCanary(
     return config;
 }
 
-// FireRedASR2 CTC（单文件）
 sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildFireRedAsrCtc(
     const QString& repoId, const QString& modelFile, int numThreads)
 {
@@ -432,7 +413,6 @@ sherpa_onnx::cxx::OfflineRecognizerConfig ModelConfigFactory::buildCohereTranscr
 
 QString ModelConfigFactory::cohereLanguageCode(const QString& languageName)
 {
-    // 与 tools/asr_bench/langs.py 的 COHERE_LANGS 一致
     static const QHash<QString, QString> codes = {
         {"English", "en"}, {"French", "fr"}, {"German", "de"}, {"Italian", "it"}, {"Spanish", "es"},
         {"Portuguese", "pt"}, {"Greek", "el"}, {"Dutch", "nl"}, {"Polish", "pl"}, {"Chinese", "zh"},
@@ -442,7 +422,6 @@ QString ModelConfigFactory::cohereLanguageCode(const QString& languageName)
 }
 
 
-// 多个语言表共用的多语言模型
 namespace {
 const std::pair<QString, ModelDescriptor> kParakeetV3 =
     {"csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
@@ -462,8 +441,7 @@ const std::pair<QString, ModelDescriptor> kFunasrSenseVoice =
         {ModelArch::SenseVoice, "SenseVoice (Funasr-Nano 多语言)"}};
 const std::pair<QString, ModelDescriptor> kFunasrNano =
     {"csukuangfj/sherpa-onnx-funasr-nano-int8-2025-12-30", {ModelArch::FunasrNano}};
-// GPU 变体（fp16）所在的 Hugging Face 账号。空串 = 还没上传：不登记变体，CPU 行也不指向它们，
-// 避免列表里出现下载必然失败的选项。账号确定后只改这里
+// GPU 变体（fp16）所在的 HF 账号；空串 = 还没上传，不登记变体，避免列表出现必然下载失败的选项
 const QString kQwen3GpuOwner = "Sporer";
 QString qwen3GpuRepo(const QString& size)
 {
@@ -476,8 +454,7 @@ const std::pair<QString, ModelDescriptor> kQwen3Asr = [] {
     return std::make_pair(QString("k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25"), d);
 }();
 
-// GPU 变体（fp16）：不是列表里的行，而是 CPU 行的"加速组件"，只登记进模型表供安装与加载使用。
-// 权重是单文件、按文件清单下载；没有 .int8 后缀。1.7B 只有 fp16，本期不做
+// GPU 变体是 CPU 行的"加速组件"，只登记进模型表供安装与加载；权重单文件按清单下载，无 .int8 后缀
 struct GpuVariantRow {
     QString cpuRepoId;
     std::pair<QString, ModelDescriptor> row;
@@ -505,7 +482,6 @@ const std::pair<QString, ModelDescriptor> kWhisperBase =
 const std::pair<QString, ModelDescriptor> kOmnilingual300M =
     {"csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (small)"}};
-// 2026 新增：在 tools/asr_bench 测出分数前先放在各表末尾。
 // FireRedASR2 CTC 已测（中文 90.2 / RTF 0.58，粤语 92.3 / 0.66），准确度与速度都不如现有模型，未列入
 // 约 2.9 GB，CPU 上偏慢，更适合文件转录；必须指定语种，没有自动识别
 const std::pair<QString, ModelDescriptor> kCohereTranscribe =
@@ -515,8 +491,7 @@ const std::pair<QString, ModelDescriptor> kOmnilingual1B =
         {ModelArch::OmnilingualAsr, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Omnilingual (多语言) (base)"}};
 }
 
-// 各语言表按 tools/asr_bench 的 FLEURS 实测得分从高到低排列（第一项即切换语言时的默认选中）；
-// 同语言已有更好选择时，得分低于 50 的模型不列入
+// 各语言表按 FLEURS 实测得分从高到低排列（首项为切换语言时的默认选中）；已有更好选择时不列得分低于 50 的模型
 const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"k2-fsa/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25",
@@ -525,8 +500,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ChineseModels() {
             {ModelArch::FunasrNano}},
         {"csukuangfj/sherpa-onnx-zipformer-ctc-zh-int8-2025-07-03",
             {ModelArch::ZipformerCtcOffline, SingleFileModelFiles{.modelFile = "model.int8.onnx"}}},
-        //{"csukuangfj/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16",
-        //    {ModelArch::FireRedAsr}},
         {"csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
             {ModelArch::SenseVoice}},
         {"csukuangfj/sherpa-onnx-paraformer-zh-2024-03-09",
@@ -1035,11 +1008,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& HebrewModels() {
     return table;
 }
 
-//  - Parakeet v3：NVIDIA 模型卡 "Supported Languages" 的 25 种欧洲语言
-//  - FastConformer：模型名 be-de-en-es-fr-hr-it-pl-ru-uk 即其语种
-//  - Funasr-Nano：FunAudioLLM/Fun-ASR-MLT-Nano-2512 模型页的 31 种语言
-//  - Omnilingual：官方 lang_ids.py（1668 项）逐一核对，只有 nn、sa 无对应项
-//  - Whisper 多语言版：OpenAI 的 99 种语言（yue 仅 large-v3 支持、ga 不在其中，base 不收）
 
 const std::vector<std::pair<QString, ModelDescriptor>>& WhisperOmniModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
@@ -1050,7 +1018,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& WhisperOmniModels() {
     return table;
 }
 
-// Parakeet v3 与 Funasr-Nano 共同覆盖的欧洲语种
 const std::vector<std::pair<QString, ModelDescriptor>>& EuropeanMultiModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kParakeetV3,
@@ -1081,7 +1048,6 @@ const std::vector<std::pair<QString, ModelDescriptor>>& WhisperOnlyModels() {
     return table;
 }
 
-// 以下是模型组合独一份的语种
 const std::vector<std::pair<QString, ModelDescriptor>>& CroatianModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         kParakeetV3,
@@ -1273,9 +1239,7 @@ const std::vector<std::pair<QString, ModelDescriptor>>& StreamingCaptionModels()
                 .decoderFile = "decoder-epoch-29-avg-9-with-averaged-model.onnx",
                 .joinerFile = "joiner-epoch-29-avg-9-with-averaged-model.int8.onnx"
             }, "Zipformer 流式 (法)"}},
-        // 以上中/英、英、法三个 2023 版已被下面的模型取代，保留登记：用户已下载的文件仍能被识别和卸载。
-        // 下面按 tools/asr_bench 流式基准（results/streaming_leaderboard.md）选出。
-        // Kroko 社区模型为 CC-BY-SA 许可，原样下载使用，"关于"里注明来源；仓库只提供 fp32。
+        // 上面 2023 版已被取代，仍保留登记：用户已下载的文件仍能被识别和卸载。
         {"csukuangfj/sherpa-onnx-streaming-paraformer-bilingual-zh-en", {
             ModelArch::ParaformerStreaming,
             ParaformerStreamingFiles{
@@ -1359,7 +1323,7 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
         // 先放伴随模型：语言表里的同名条目（多语种流式模型）随后覆盖它，保持原有行为
         for (const auto& pair : StreamingCaptionModels()) {
             ModelDescriptor d = pair.second;
-            d.hasBuiltinPunctuation = true;   // 不绑神经标点
+            d.hasBuiltinPunctuation = true;
             t.insert(pair.first, d);
         }
         for (const auto& entry : LanguageTables()) {
@@ -1367,7 +1331,6 @@ const QMap<QString, ModelDescriptor>& ModelRegistry::Table()
             for (const auto& pair : sub) {
                 ModelDescriptor d = pair.second;
 
-                // 排除标点符号
                 d.language = entry.languageName;   
                 if (d.arch == ModelArch::SenseVoice || 
                     d.arch == ModelArch::Canary || 
@@ -1454,7 +1417,6 @@ const ModelDescriptor* ModelRegistry::Find(const QString& repoId)
 }
 
 namespace {
-// 从模型表取配对关系；表很小，每次现建即可
 QList<GpuVariant::Link> gpuLinks(const QMap<QString, ModelDescriptor>& table)
 {
     QList<GpuVariant::Link> links;
@@ -1583,6 +1545,12 @@ static bool ArchSupportsHotwords(ModelArch arch) {
     default:
         return false; 
     }
+}
+
+bool ModelRegistry::SupportsHotwords(const QString& repoId)
+{
+    const ModelDescriptor* desc = Find(repoId);
+    return desc && ArchSupportsHotwords(desc->arch);
 }
 
 ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThreads, bool useGpu, bool allowHotwords)
@@ -1850,8 +1818,7 @@ ModelRegistry::Result ModelRegistry::GetConfig(const QString& repoId, int numThr
     }, configVar);
 
     result.repoId = repoId;
-    // 创建识别器失败时上面返回的是 monostate；此时不能报告"已加载"，
-    // 否则上层会带着一个空识别器进入可转录状态，表现为静默无输出。
+    // 创建失败时上面返回 monostate，不能报告"已加载"，否则上层带空识别器进入可转录态、静默无输出。
     result.isLoaded = !std::holds_alternative<std::monostate>(result.recognizer);
     return result;
 }
