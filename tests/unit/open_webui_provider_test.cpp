@@ -410,7 +410,7 @@ TEST_F(OpenWebUiProviderTest, ChatReportsRefusedConnection) {
     const Outcome out = runPolish(translateParams(QStringLiteral("http://127.0.0.1:%1").arg(port)));
     ASSERT_TRUE(out.done);
     EXPECT_FALSE(out.ok);
-    EXPECT_TRUE(out.error.contains(QStringLiteral("连接被拒绝")));
+    EXPECT_TRUE(out.error.contains(QStringLiteral("连接被拒绝"))) << out.error.toStdString();
 }
 
 TEST_F(OpenWebUiProviderTest, PolishWithoutTranslateOnlyPassesTextThrough) {

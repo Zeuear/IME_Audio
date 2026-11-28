@@ -83,8 +83,8 @@ void post(QNetworkAccessManager* mgr, const Job& job, int attempt, int timeouts,
             done(false, {}, plan.error);
             return;
         }
-        LOG_WARN(QString("Open WebUI request failed (attempt %1, HTTP %2, net %3), retrying in %4 ms")
-                     .arg(attempt + 1).arg(status).arg(int(reply->error())).arg(plan.delayMs));
+        LOG_WARN(QString("Open WebUI request failed (attempt %1, HTTP %2, net %3: %4), retrying in %5 ms")
+                     .arg(attempt + 1).arg(status).arg(int(reply->error())).arg(reply->errorString()).arg(plan.delayMs));
         QTimer::singleShot(plan.delayMs, mgr, [mgr, job, attempt, plan, done]() {
             post(mgr, job, attempt + 1, plan.timeouts, done);
         });
