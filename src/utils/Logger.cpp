@@ -1,4 +1,8 @@
 #include "Logger.h"
+#include <QDateTime>
+#include <QDebug>
+#include <QFile>
+#include <QTextStream>
 
 Logger& Logger::instance() {
     static Logger _instance;

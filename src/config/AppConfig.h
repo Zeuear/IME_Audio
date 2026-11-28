@@ -2,7 +2,6 @@
 #include <QMap>
 #include <QString>
 #include <QKeySequence>
-#include <QApplication>
 #include "utils/AppPaths.h"
 #include "translation/LanguageRouting.h"
 

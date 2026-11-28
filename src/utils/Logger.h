@@ -3,11 +3,7 @@
 
 #include <QObject>
 #include <QString>
-#include <QFile>
-#include <QTextStream>
-#include <QDateTime>
 #include <QMutex>
-#include <QDebug>
 
 class Logger :public QObject {
     Q_OBJECT

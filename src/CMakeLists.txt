@@ -50,6 +50,13 @@ target_include_directories(${TARGET_NAME} PRIVATE
     "${CMAKE_SOURCE_DIR}/third_party/rapidfuzz")
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMINMAX)
 
+# 预编译头：Qt 公共头在每个 cpp 里重复解析是最大的编译开销。-DIMEAUDIO_USE_PCH=OFF 可关掉，
+# 用来确认没有 cpp 靠预编译头漏写 #include。只对 C++ 源生效，macOS 的 .mm 不受影响
+option(IMEAUDIO_USE_PCH "Use precompiled header for Qt common headers" ON)
+if(IMEAUDIO_USE_PCH AND COMMAND target_precompile_headers)  # 需要 CMake 3.16+
+    target_precompile_headers(${TARGET_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/pch.h>")
+endif()
+
 
 # ============================================================
 # 第三方依赖与运行时资源（各自的细节见 cmake/ 下同名文件）
