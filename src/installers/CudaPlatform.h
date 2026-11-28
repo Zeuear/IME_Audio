@@ -3,6 +3,10 @@
 #include <QStringList>
 #include <QVector>
 
+#if defined(Q_OS_WIN) && !defined(IMEAUDIO_SHERPA_VERSION)
+#error "IMEAUDIO_SHERPA_VERSION 由 cmake/SherpaOnnx.cmake 经 sherpa_onnx 目标提供，请链接 sherpa_onnx"
+#endif
+
 struct CudaLibCandidate {
     QString libName;
     QString version;
@@ -49,9 +53,11 @@ inline const CudaPlatformSpec& cudaPlatformSpec()
         s.cudnnArchiveUrl = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/"
                             "windows-x86_64/cudnn-windows-x86_64-9.6.0.74_cuda12-archive.zip";
 
-        s.sherpaArchiveFileName = "sherpa-onnx-v1.13.4.tar.bz2";
-        s.sherpaArchiveUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.4/"
-                             "sherpa-onnx-v1.13.4-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2";
+        // 版本与包名由 cmake/SherpaOnnx.cmake 统一提供，必须和链接的 onnxruntime.dll 同一版，
+        // 否则安装器的 provider 版本校验会失败
+        s.sherpaArchiveFileName = "sherpa-onnx-v" IMEAUDIO_SHERPA_VERSION ".tar.bz2";
+        s.sherpaArchiveUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v" IMEAUDIO_SHERPA_VERSION "/"
+                             IMEAUDIO_SHERPA_WIN_CUDA_ARCHIVE;
 #elif defined(Q_OS_LINUX)
         // Linux 使用发行版包管理器安装 CUDA，本程序只负责检测。
         s.detectable = true;

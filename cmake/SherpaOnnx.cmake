@@ -4,7 +4,12 @@
 # 依赖 Platform.cmake（IMEAUDIO_OSX_ARCH）。
 
 set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
+# 升级 sherpa-onnx 只改这里：版本号 + Windows CUDA 包名里的 ORT 后缀。
+# 版本号会经 IMEAUDIO_SHERPA_VERSION 传给 C++（GPU 安装器据此下载同版本的 CUDA provider），
+# 不要在别处再写死。榜单里的 "sherpa_onnx" 是 asr_bench 测量时的实际版本，不跟随这里。
 set(SHERPA_ONNX_VERSION "1.13.4")
+# 上游从 1.13.8 起 Windows CUDA 包名多了 "-onnxruntime<版本>"（1.13.4 没有），升级时对照发布页填写。
+set(SHERPA_ONNX_WIN_CUDA_ORT_SUFFIX "")
 
 # 标记文件:用来判断"是否已经是我们下载并整理好的目录",
 # 避免每次 configure 都重新检查/下载,同时避免和"用户自己手动放置的目录"混淆
@@ -19,7 +24,7 @@ if(WIN32)
     set(_sherpa_platform_dir "windows")
     # 统一用 CUDA 版包里的 onnxruntime / sherpa-onnx DLL：它在没有 CUDA 的机器上照样跑 CPU，
     # GPU 安装器只需补 onnxruntime_providers_*（启动时不加载，不会因占用换不掉），CPU / GPU 永远同一版 ORT
-    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-cuda-12.x-cudnn-9.x-win-x64-cuda.tar.bz2")
+    set(_sherpa_archive_name "sherpa-onnx-v${SHERPA_ONNX_VERSION}-cuda-12.x-cudnn-9.x${SHERPA_ONNX_WIN_CUDA_ORT_SUFFIX}-win-x64-cuda.tar.bz2")
 
 elseif(APPLE)
     set(_sherpa_platform_dir "macos")
@@ -131,6 +136,12 @@ endif()
 add_library(sherpa_onnx INTERFACE)
 target_include_directories(sherpa_onnx INTERFACE "${SHERPA_ONNX_ROOT}/include")
 target_link_directories(sherpa_onnx INTERFACE "${SHERPA_ONNX_ROOT}/lib/${_sherpa_platform_dir}")
+
+# 把版本信息交给 C++，避免 CudaPlatform.h 里再写死一份
+target_compile_definitions(sherpa_onnx INTERFACE IMEAUDIO_SHERPA_VERSION="${SHERPA_ONNX_VERSION}")
+if(WIN32)
+    target_compile_definitions(sherpa_onnx INTERFACE IMEAUDIO_SHERPA_WIN_CUDA_ARCHIVE="${_sherpa_archive_name}")
+endif()
 
 if(WIN32)
     target_link_libraries(sherpa_onnx INTERFACE sherpa-onnx-cxx-api sherpa-onnx-c-api)
