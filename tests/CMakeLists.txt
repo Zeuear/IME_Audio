@@ -330,6 +330,9 @@ else()
     )
 endif()
 
+# 测试不链接 sherpa-onnx 运行库，但编进来的 GpuRuntime.cpp 要读 sherpa 版本宏（见 cmake/SherpaOnnx.cmake），
+# 所以只取目标上的编译定义，不取库
+target_compile_definitions(imeaudio_tests PRIVATE $<TARGET_PROPERTY:sherpa_onnx,INTERFACE_COMPILE_DEFINITIONS>)
 target_compile_definitions(imeaudio_tests PRIVATE IME_AUDIO_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 target_compile_definitions(imeaudio_tests PRIVATE IME_AUDIO_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../resources")
 
