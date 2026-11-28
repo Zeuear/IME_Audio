@@ -48,9 +48,13 @@ jobs:
             libx11-dev libxext-dev libxtst-dev
 
       - name: Build
+        # 必须给出具体并发数：--parallel 不带数字时 Makefile 会用不限数量的 make -j，
+        # 在只有 3~4 核的 runner 上把内存和 CPU 吃满，runner 与服务器失联后任务被终止（exit 143）
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: ${{ startsWith(matrix.os, 'macos') && '3' || '4' }}
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release --parallel
+          cmake --build build --config Release
 
       - name: Run unit tests
         run: |
