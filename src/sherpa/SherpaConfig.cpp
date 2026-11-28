@@ -832,6 +832,17 @@ const std::vector<std::pair<QString, ModelDescriptor>>& ArmenianModels() {
     return table;
 }
 
+// 孟加拉语：SayedShaun FastConformer-CTC 的 int8 转换（CC-BY-4.0），FLEURS 实测 WER 14.3%，优于 Omnilingual 1B 的 21.0%
+const std::vector<std::pair<QString, ModelDescriptor>>& BengaliModels() {
+    static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        {"Sporer/sherpa-onnx-nemo-fastconformer-ctc-bn-int8",
+            {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "Nemo CTC (Bengali)"}},
+        kOmnilingual1B,
+        kOmnilingual300M,
+    };
+    return table;
+}
+
 const std::vector<std::pair<QString, ModelDescriptor>>& TagalogModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
         {"LukeJacob2023/sherpa-onnx-stt_tl_fastconformer_hybrid_large",
@@ -1126,7 +1137,7 @@ const QVector<ModelRegistry::LanguageTableEntry>& LanguageTables() {
         {"Bashkir",                &WhisperOmniModels},
         {"Belarusian",             &BelarusianModels},
         {"Bulgarian",              &EuropeanMultiModels},
-        {"Bengali",                &WhisperOmniModels},
+        {"Bengali",                &BengaliModels},
         {"Breton",                 &WhisperOmniModels},
         {"Bosnian",                &WhisperOmniModels},
         {"Catalan",                &WhisperOmniModels},
