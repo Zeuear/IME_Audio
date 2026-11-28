@@ -7,9 +7,9 @@ set(SHERPA_ONNX_ROOT "${CMAKE_SOURCE_DIR}/third_party/sherpa-onnx")
 # 升级 sherpa-onnx 只改这里：版本号 + Windows CUDA 包名里的 ORT 后缀。
 # 版本号会经 IMEAUDIO_SHERPA_VERSION 传给 C++（GPU 安装器据此下载同版本的 CUDA provider），
 # 不要在别处再写死。榜单里的 "sherpa_onnx" 是 asr_bench 测量时的实际版本，不跟随这里。
-set(SHERPA_ONNX_VERSION "1.13.4")
+set(SHERPA_ONNX_VERSION "1.13.8")
 # 上游从 1.13.8 起 Windows CUDA 包名多了 "-onnxruntime<版本>"（1.13.4 没有），升级时对照发布页填写。
-set(SHERPA_ONNX_WIN_CUDA_ORT_SUFFIX "")
+set(SHERPA_ONNX_WIN_CUDA_ORT_SUFFIX "-onnxruntime1.28.2")
 
 # 标记文件:用来判断"是否已经是我们下载并整理好的目录",
 # 避免每次 configure 都重新检查/下载,同时避免和"用户自己手动放置的目录"混淆
