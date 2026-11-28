@@ -43,6 +43,17 @@ QString connectionMessage(int networkError, bool loopback) {
     }
 }
 
+// macOS 上 Qt 把“连接被拒绝”报成 UnknownNetworkError(99)，只有 errorString 里写着 Connection refused，
+// 不认出来就会被当成可重试的未知错误，最后给用户一句笼统的“无法连接”
+int effectiveNetworkError(const QNetworkReply* reply) {
+    const int error = int(reply->error());
+    if (error == QNetworkReply::UnknownNetworkError &&
+        reply->errorString().contains(QLatin1String("refused"), Qt::CaseInsensitive)) {
+        return QNetworkReply::ConnectionRefusedError;
+    }
+    return error;
+}
+
 bool isTimeout(int networkError) {
     return networkError == QNetworkReply::TimeoutError || networkError == QNetworkReply::OperationCanceledError;
 }
@@ -77,14 +88,14 @@ void post(QNetworkAccessManager* mgr, const Job& job, int attempt, int timeouts,
             done(error.isEmpty(), text, error);
             return;
         }
-        const auto plan = OpenWebUiProvider::planRetry(attempt, timeouts, status, int(reply->error()), body,
+        const auto plan = OpenWebUiProvider::planRetry(attempt, timeouts, status, effectiveNetworkError(reply), body,
                                                        reply->rawHeader("Retry-After"), job.timeoutMs, job.loopback);
         if (!plan.retry) {
             done(false, {}, plan.error);
             return;
         }
         LOG_WARN(QString("Open WebUI request failed (attempt %1, HTTP %2, net %3: %4), retrying in %5 ms")
-                     .arg(attempt + 1).arg(status).arg(int(reply->error())).arg(reply->errorString()).arg(plan.delayMs));
+                     .arg(attempt + 1).arg(status).arg(effectiveNetworkError(reply)).arg(reply->errorString()).arg(plan.delayMs));
         QTimer::singleShot(plan.delayMs, mgr, [mgr, job, attempt, plan, done]() {
             post(mgr, job, attempt + 1, plan.timeouts, done);
         });
@@ -310,7 +321,7 @@ void OpenWebUiProvider::fetchModels(const QString& baseUrl, QNetworkAccessManage
             } else if (status > 0) {
                 done(false, {}, QStringLiteral("模型列表请求失败（HTTP %1），请检查 API 地址；也可手动填写模型").arg(status));
             } else {
-                done(false, {}, connectionMessage(int(reply->error()), loopback));
+                done(false, {}, connectionMessage(effectiveNetworkError(reply), loopback));
             }
             return;
         }

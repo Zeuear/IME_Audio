@@ -21,13 +21,16 @@
 namespace {
 
 // 不引入 Qt6::Test：只需要让动画和计时器跑一会儿
-void pumpEvents(int ms) {
+// 动画按真实时间推进，CI 机器忙时固定等待时长不稳，所以改成最多等 timeoutMs、条件成立就返回
+template <typename Pred>
+bool waitUntil(Pred done, int timeoutMs = 4000) {
     QElapsedTimer timer;
     timer.start();
-    while (timer.elapsed() < ms) {
+    while (!done() && timer.elapsed() < timeoutMs) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         QThread::msleep(5);
     }
+    return done();
 }
 
 QPushButton* tabButton(TermWidget& w, const QString& text) {
@@ -124,12 +127,12 @@ TEST(TermWidgetTest, BatchImportButtonSlidesOutOnHoverOnly) {
     QWidget* group = batch->parentWidget();
     QEnterEvent enter(QPointF(5, 5), QPointF(5, 5), QPointF(5, 5));
     QCoreApplication::sendEvent(group, &enter);
-    pumpEvents(400);
+    EXPECT_TRUE(waitUntil([&] { return batch->width() > 20; }))
+        << "width=" << batch->width() << " maxWidth=" << batch->maximumWidth() << " visible=" << batch->isVisible();
     EXPECT_TRUE(batch->isVisible());
-    EXPECT_GT(batch->width(), 20);
 
     QEvent leave(QEvent::Leave);
     QCoreApplication::sendEvent(group, &leave);
-    pumpEvents(900);
-    EXPECT_FALSE(batch->isVisible());
+    EXPECT_TRUE(waitUntil([&] { return !batch->isVisible(); }))
+        << "width=" << batch->width() << " maxWidth=" << batch->maximumWidth();
 }
