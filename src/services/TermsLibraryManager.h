@@ -39,6 +39,8 @@
 
         void updateItem(int index, const TermItem& newItem);
         void addItem(const TermItem& item);
+        // 批量导入用：整批追加后只保存一次、只重建一次规则
+        void addItems(const QVector<TermItem>& items);
         void removeItem(int index);
         // 批量操作只发一次 termsReloaded，避免每条都重建规则、写一次文件
         void setEnabled(const QList<int>& rows, bool enabled);

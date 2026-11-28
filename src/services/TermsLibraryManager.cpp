@@ -112,6 +112,12 @@ void TermsLibraryManager::addItem(const TermItem& item) {
     emit termsReloaded();
 }
 
+void TermsLibraryManager::addItems(const QVector<TermItem>& items) {
+    if (items.isEmpty()) return;
+    m_items += items;
+    emit termsReloaded();
+}
+
 void TermsLibraryManager::removeItem(int index) {
     if (index >= 0 && index < m_items.size()) {
         m_items.removeAt(index);
@@ -186,11 +192,31 @@ QString TermsLibraryManager::applyReplaceRules(const QString& text, const QStrin
     return result;
 }
 
+// 分隔符在括号里不算：词典里常有「触犯（诫命、条例）」这样括号内带顿号的整词。
+// 只有括号能闭合才算括号，没闭合的左括号不会吞掉后面的内容
 QStringList TermsLibraryManager::splitWords(const QString& text) {
-    QString normalized = text;
-    normalized.replace("，", ",").replace("、", ",").replace(";", ",").replace("；", ",").replace("/", ",");
-    QStringList list = normalized.split(',', Qt::SkipEmptyParts);
-    for (QString& s : list) s = s.trimmed();
+    static const QString kSeparators = QStringLiteral(",，、;；/");
+    static const QString kOpen = QStringLiteral("(（[【");
+    static const QString kClose = QStringLiteral(")）]】");
+
+    QStringList list;
+    QString current;
+    QList<QChar> expect;   // 正在等待的右括号
+    for (int i = 0; i < text.size(); ++i) {
+        const QChar c = text[i];
+        const int open = kOpen.indexOf(c);
+        if (open >= 0 && text.indexOf(kClose[open], i + 1) >= 0) {
+            expect.append(kClose[open]);
+        } else if (!expect.isEmpty() && c == expect.last()) {
+            expect.removeLast();
+        } else if (expect.isEmpty() && kSeparators.contains(c)) {
+            list << current.trimmed();
+            current.clear();
+            continue;
+        }
+        current += c;
+    }
+    list << current.trimmed();
     list.removeAll(QString());
     return list;
 }

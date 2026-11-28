@@ -42,6 +42,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/language_script_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/dictionary_profiles_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/entry_check_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit/glossary_import_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/fuzzy_replacer_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/glossary_matcher_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/text_postprocessor_test.cpp
@@ -129,6 +130,11 @@ set(TEST_DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryMatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryMatcher.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/EntryCheck.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryImport.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/dictionary/GlossaryImport.h
+    # 批量导入窗口（Q_OBJECT，.h 交给 AUTOMOC）
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/BatchImportDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ui/controls/BatchImportDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/PinyinTable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/hotword/HotwordSelector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/services/TextPostProcessor.cpp

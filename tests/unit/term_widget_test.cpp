@@ -1,17 +1,34 @@
 #include <gtest/gtest.h>
 
 #include <QAbstractItemModel>
+#include <QDialogButtonBox>
+#include <QEnterEvent>
 #include <QListView>
 #include <QPushButton>
 #include <QTemporaryDir>
+#include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QThread>
 
+#include "services/dictionary/DictionaryLanguages.h"
 #include "services/dictionary/DictionaryProfiles.h"
+#include "ui/controls/BatchImportDialog.h"
 #include "ui/pages/TermWidget.h"
 
 // 词典页左侧「语音识别 / 翻译」两个标签各有自己的配置列表；切回标签时右侧必须显示该标签选中配置的词条。
 // QApplication 由 support/widget_app_environment.cpp 提供。
 
 namespace {
+
+// 不引入 Qt6::Test：只需要让动画和计时器跑一会儿
+void pumpEvents(int ms) {
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < ms) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        QThread::msleep(5);
+    }
+}
 
 QPushButton* tabButton(TermWidget& w, const QString& text) {
     for (QPushButton* b : w.findChildren<QPushButton*>()) {
@@ -61,4 +78,58 @@ TEST(TermWidgetTest, SwitchingBackToRecognitionShowsDefaultDictionaryTerms) {
     EXPECT_EQ(visibleTermRows(widget), 3) << "切回语音识别后仍显示翻译词典的词条";
     translation->click();
     EXPECT_EQ(visibleTermRows(widget), 5);
+}
+
+TEST(BatchImportDialogTest, RecognisesLinesAndEnablesImportOnlyWithEntries) {
+    BatchImportDialog dialog(true, QStringLiteral("zh"), QStringLiteral("en"));
+    auto* ok = dialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Ok);
+    EXPECT_FALSE(ok->isEnabled());
+    dialog.setText(QStringLiteral("显卡 => GPU\n处理器 -> CPU\nbad line"));
+    EXPECT_EQ(dialog.entries().size(), 2);
+    EXPECT_TRUE(ok->isEnabled());
+}
+
+TEST(BatchImportDialogTest, SuggestsSwappingWhenColumnsAreBackwards) {
+    BatchImportDialog dialog(true, QStringLiteral("zh"), QStringLiteral("bg"));
+    dialog.setText(QStringLiteral("Бог => 神\nИсус => 耶稣\nСветия Дух => 圣灵"));
+    EXPECT_TRUE(dialog.swapColumns());
+    dialog.setText(QStringLiteral("神 => Бог\n耶稣 => Исус"));
+    EXPECT_FALSE(dialog.swapColumns());
+}
+
+TEST(DictionaryLanguagesTest, CodeFromNameAcceptsChineseEnglishAndCodes) {
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("中文")), "zh");
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("保加利亚语")), "bg");
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("保加利亚文")), "bg");
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("Bulgarian")), "bg");
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("bg")), "bg");
+    EXPECT_EQ(DictionaryLanguages::codeFromName(QStringLiteral("西班牙语")), "es");
+    EXPECT_TRUE(DictionaryLanguages::codeFromName(QStringLiteral("火星语")).isEmpty());
+}
+
+// 鼠标移到「添加」上才滑出「批量导入」，移开后收回
+TEST(TermWidgetTest, BatchImportButtonSlidesOutOnHoverOnly) {
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    DictionaryProfiles profiles(dir.filePath("dictionaries"), dir.filePath("terms.tsv"));
+    TermWidget widget;
+    widget.setDictionaryProfiles(&profiles);
+    widget.resize(900, 500);
+    widget.show();
+
+    QPushButton* batch = tabButton(widget, QStringLiteral("Batch Import"));
+    ASSERT_NE(batch, nullptr);
+    EXPECT_FALSE(batch->isVisible());
+
+    QWidget* group = batch->parentWidget();
+    QEnterEvent enter(QPointF(5, 5), QPointF(5, 5), QPointF(5, 5));
+    QCoreApplication::sendEvent(group, &enter);
+    pumpEvents(400);
+    EXPECT_TRUE(batch->isVisible());
+    EXPECT_GT(batch->width(), 20);
+
+    QEvent leave(QEvent::Leave);
+    QCoreApplication::sendEvent(group, &leave);
+    pumpEvents(900);
+    EXPECT_FALSE(batch->isVisible());
 }

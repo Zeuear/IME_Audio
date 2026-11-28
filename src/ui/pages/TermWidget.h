@@ -8,11 +8,14 @@
 #include <QWidget>
 #include "services/TermsLibraryManager.h"
 #include "services/dictionary/DictionaryProfiles.h"
+#include "services/dictionary/GlossaryImport.h"
 
 class QLabel;
 class QLineEdit;
 class TermListView;
 class QListView;
+class QMimeData;
+class QPropertyAnimation;
 class QPushButton;
 class QSortFilterProxyModel;
 class QStackedWidget;
@@ -39,6 +42,10 @@ public:
 protected:
     void changeEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     void setupUi();
@@ -71,6 +78,15 @@ private:
     void handleCheckConflicts();
     void handleImport();
     void handleExport();
+    void handleBatchImport();
+
+    // 批量导入：文本或拖入的文件 → 词条 → 合并进词典
+    void importEntries(const DictionaryProfile& profile, const QList<GlossaryImport::Entry>& entries, bool swap);
+    void importDroppedFile(const QString& path);
+    void importGlossaryPackage(const GlossaryImport::Parsed& parsed);
+    void notifyImportResult(const GlossaryImport::Summary& summary);
+    static QString importableFile(const QMimeData* mime);
+    void setBatchExpanded(bool expanded);
 
     DictionaryProfiles* m_profiles = nullptr;
     DictionaryKind m_kind = DictionaryKind::Recognition;
@@ -99,6 +115,10 @@ private:
     QLineEdit* m_heardEdit = nullptr;
     QLineEdit* m_correctEdit = nullptr;
     QPushButton* m_addBtn = nullptr;
+    QPushButton* m_batchBtn = nullptr;   // 鼠标移到「添加」上才展开
+    QWidget* m_addGroup = nullptr;
+    QPropertyAnimation* m_batchAnim = nullptr;
+    QTimer* m_batchCollapseTimer = nullptr;
     QToolButton* m_moreBtn = nullptr;
     QPushButton* m_selectAllBtn = nullptr;
     QPushButton* m_reverseBtn = nullptr;

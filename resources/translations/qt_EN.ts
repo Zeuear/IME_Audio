@@ -74,6 +74,79 @@
     </message>
 </context>
 <context>
+    <name>BatchImportDialog</name>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="16"/>
+        <source>Batch Import</source>
+        <translation>Batch Import</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="23"/>
+        <source>One entry per line: source =&gt; translation. Also accepted: -&gt;, =, tab, comma, &quot;source: translation&quot;, several rules on one line (a=&gt;b;c=&gt;d), JSON such as {&quot;source&quot;: &quot;translation&quot;}, and exported TSV. Separate several source words with commas or /.</source>
+        <translation>One entry per line: source =&gt; translation. Also accepted: -&gt;, =, tab, comma, &quot;source: translation&quot;, several rules on one line (a=&gt;b;c=&gt;d), JSON such as {&quot;source&quot;: &quot;translation&quot;}, and exported TSV. Separate several source words with commas or /.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="26"/>
+        <source>One entry per line: heard as =&gt; write as. Also accepted: -&gt;, =, tab, comma, several rules on one line (a=&gt;b;c=&gt;d), JSON, and exported TSV. A line with a single word just teaches the recognizer that word. Separate several &quot;heard as&quot; words with commas or /.</source>
+        <translation>One entry per line: heard as =&gt; write as. Also accepted: -&gt;, =, tab, comma, several rules on one line (a=&gt;b;c=&gt;d), JSON, and exported TSV. A line with a single word just teaches the recognizer that word. Separate several &quot;heard as&quot; words with commas or /.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="37"/>
+        <source>Open File...</source>
+        <translation>Open File...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="38"/>
+        <source>Swap the two columns</source>
+        <translation>Swap the two columns</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="52"/>
+        <source>Import</source>
+        <translation>Import</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="85"/>
+        <source>Open File</source>
+        <translation>Open File</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="86"/>
+        <source>Dictionary files (*.json *.tsv *.csv *.txt);;All files (*)</source>
+        <translation>Dictionary files (*.json *.tsv *.csv *.txt);;All files (*)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="108"/>
+        <source>%1 entries recognised</source>
+        <translation>%1 entries recognised</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="109"/>
+        <source> · %1 lines skipped</source>
+        <translation> · %1 lines skipped</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="110"/>
+        <source> · columns will be swapped</source>
+        <translation> · columns will be swapped</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="115"/>
+        <source>Line %1: %2 (%3)</source>
+        <translation>Line %1: %2 (%3)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="116"/>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/controls/BatchImportDialog.cpp" line="118"/>
+        <source>... and %1 more</source>
+        <translation>... and %1 more</translation>
+    </message>
+</context>
+<context>
     <name>ControlBar</name>
     <message>
         <location filename="../../src/ui/controls/ControlBar.cpp" line="392"/>
@@ -204,12 +277,12 @@
 <context>
     <name>DictionaryLanguages</name>
     <message>
-        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="35"/>
+        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="66"/>
         <source>%1 ↔ %2</source>
         <translation>%1 ↔ %2</translation>
     </message>
     <message>
-        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="37"/>
+        <location filename="../../src/services/dictionary/DictionaryLanguages.cpp" line="68"/>
         <source>Any language</source>
         <translation>Any language</translation>
     </message>
@@ -257,6 +330,7 @@
     <name>DictionaryProfiles</name>
     <message>
         <location filename="../../src/services/dictionary/DictionaryProfiles.cpp" line="97"/>
+        <location filename="../../src/ui/models/DictionaryProfileModel.cpp" line="43"/>
         <source>Default</source>
         <translation type="unfinished"></translation>
     </message>
@@ -750,6 +824,40 @@
         <location filename="../../src/ui/controls/FirewallCard.cpp" line="68"/>
         <source>Block</source>
         <translation>Block</translation>
+    </message>
+</context>
+<context>
+    <name>GlossaryImport</name>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="139"/>
+        <source>Missing the written / translated side</source>
+        <translation>Missing the written / translated side</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="143"/>
+        <source>Missing the source term</source>
+        <translation>Missing the source term</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="168"/>
+        <source>No separator found (use =&gt;, -&gt;, tab, = or comma)</source>
+        <translation>No separator found (use =&gt;, -&gt;, tab, = or comma)</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="173"/>
+        <source>Cannot tell where &quot;heard as&quot; ends; use =&gt; between the two sides</source>
+        <translation>Cannot tell where &quot;heard as&quot; ends; use =&gt; between the two sides</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="205"/>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="217"/>
+        <source>Entry is missing a source or a translation</source>
+        <translation>Entry is missing a source or a translation</translation>
+    </message>
+    <message>
+        <location filename="../../src/services/dictionary/GlossaryImport.cpp" line="319"/>
+        <source>Cannot open file</source>
+        <translation>Cannot open file</translation>
     </message>
 </context>
 <context>
@@ -1748,7 +1856,7 @@
 <context>
     <name>MainWin</name>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1239"/>
+        <location filename="../../src/app/MainWin.ui" line="1236"/>
         <source>Theme</source>
         <translation>Theme</translation>
     </message>
@@ -1828,7 +1936,7 @@
         <translation type="unfinished">Model</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1000"/>
+        <location filename="../../src/app/MainWin.ui" line="997"/>
         <source>Custom Commands</source>
         <translation type="unfinished">Custom Commands</translation>
     </message>
@@ -1843,28 +1951,28 @@
         <translation type="unfinished">API Key</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="924"/>
+        <location filename="../../src/app/MainWin.cpp" line="1206"/>
         <source>Allow local self-signed certificate</source>
         <translation>Allow local self-signed certificate</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="927"/>
+        <location filename="../../src/app/MainWin.ui" line="924"/>
         <source>Only applies to localhost and loopback addresses</source>
         <translation>Only applies to localhost and loopback addresses</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="961"/>
-        <location filename="../../src/app/MainWin.cpp" line="1540"/>
+        <location filename="../../src/app/MainWin.ui" line="958"/>
+        <location filename="../../src/app/MainWin.cpp" line="1543"/>
         <source>Polishing</source>
         <translation>Polishing</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="980"/>
+        <location filename="../../src/app/MainWin.ui" line="977"/>
         <source>Style</source>
         <translation type="unfinished">Style</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="990"/>
+        <location filename="../../src/app/MainWin.ui" line="987"/>
         <source>AI vocabulary</source>
         <translation type="unfinished">AI vocabulary</translation>
     </message>
@@ -1916,23 +2024,23 @@
         <translation type="unfinished">AI Engine</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1037"/>
-        <location filename="../../src/app/MainWin.cpp" line="1541"/>
+        <location filename="../../src/app/MainWin.ui" line="1034"/>
+        <location filename="../../src/app/MainWin.cpp" line="1544"/>
         <source>Translation</source>
         <translation>Translation</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1066"/>
+        <location filename="../../src/app/MainWin.ui" line="1063"/>
         <source>Source language</source>
         <translation>Source language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1056"/>
+        <location filename="../../src/app/MainWin.ui" line="1053"/>
         <source>Target language</source>
         <translation>Target language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1086"/>
+        <location filename="../../src/app/MainWin.ui" line="1083"/>
         <source>Download</source>
         <translation type="unfinished">Download</translation>
     </message>
@@ -1983,7 +2091,7 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.ui" line="568"/>
-        <location filename="../../src/app/MainWin.cpp" line="1716"/>
+        <location filename="../../src/app/MainWin.cpp" line="1719"/>
         <source>Idle</source>
         <translation>Idle</translation>
     </message>
@@ -1993,22 +2101,22 @@
         <translation>Inject to Foreground</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1174"/>
+        <location filename="../../src/app/MainWin.ui" line="1171"/>
         <source>Command Settings</source>
         <translation>Command Settings</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1229"/>
+        <location filename="../../src/app/MainWin.ui" line="1226"/>
         <source>Interface Language</source>
         <translation>Interface Language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1645"/>
+        <location filename="../../src/app/MainWin.cpp" line="1648"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1647"/>
+        <location filename="../../src/app/MainWin.cpp" line="1650"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
@@ -2018,7 +2126,7 @@
         <translation>English</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1646"/>
+        <location filename="../../src/app/MainWin.cpp" line="1649"/>
         <source>Gray</source>
         <translation>Gray</translation>
     </message>
@@ -2028,22 +2136,22 @@
         <translation type="unfinished">Shortcut Key</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1125"/>
+        <location filename="../../src/app/MainWin.ui" line="1122"/>
         <source>Translation model</source>
         <translation>Translation model</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1184"/>
+        <location filename="../../src/app/MainWin.ui" line="1181"/>
         <source>Software Settings</source>
         <translation>Software Settings</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1287"/>
+        <location filename="../../src/app/MainWin.ui" line="1284"/>
         <source>Logs</source>
         <translation>Logs</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.ui" line="1301"/>
+        <location filename="../../src/app/MainWin.ui" line="1298"/>
         <source>About</source>
         <translation type="unfinished">About</translation>
     </message>
@@ -2084,13 +2192,13 @@
     </message>
     <message>
         <location filename="../../src/app/MainWin.cpp" line="209"/>
-        <location filename="../../src/app/MainWin.cpp" line="1205"/>
+        <location filename="../../src/app/MainWin.cpp" line="1208"/>
         <source>Compact mode</source>
         <translation>Compact mode</translation>
     </message>
     <message>
         <location filename="../../src/app/MainWin.cpp" line="210"/>
-        <location filename="../../src/app/MainWin.cpp" line="1206"/>
+        <location filename="../../src/app/MainWin.cpp" line="1209"/>
         <source>Switch to the compact toolbar</source>
         <translation>Switch to the compact toolbar</translation>
     </message>
@@ -2151,77 +2259,77 @@
         <translation>Conflict</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1095"/>
+        <location filename="../../src/app/MainWin.cpp" line="1096"/>
         <source>Not downloaded yet</source>
         <translation>Not downloaded yet</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1134"/>
+        <location filename="../../src/app/MainWin.cpp" line="1135"/>
         <source>%1 (translation model)</source>
         <translation>%1 (translation model)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1169"/>
+        <location filename="../../src/app/MainWin.cpp" line="1170"/>
         <source>Local (Sherpa)</source>
         <translation>Local (Sherpa)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1170"/>
+        <location filename="../../src/app/MainWin.cpp" line="1171"/>
         <source>Gemini voice input</source>
         <translation>Gemini voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1171"/>
+        <location filename="../../src/app/MainWin.cpp" line="1172"/>
         <source>Groq voice input</source>
         <translation>Groq voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1172"/>
+        <location filename="../../src/app/MainWin.cpp" line="1173"/>
         <source>Gladia voice input</source>
         <translation>Gladia voice input</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1176"/>
+        <location filename="../../src/app/MainWin.cpp" line="1177"/>
         <source>Google Gemini API</source>
         <translation>Google Gemini API</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1177"/>
+        <location filename="../../src/app/MainWin.cpp" line="1178"/>
         <source>Local / custom (OpenAI compatible)</source>
         <translation>Local / custom (OpenAI compatible)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1178"/>
+        <location filename="../../src/app/MainWin.cpp" line="1179"/>
         <source>Ollama (local)</source>
         <translation>Ollama (local)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1179"/>
+        <location filename="../../src/app/MainWin.cpp" line="1180"/>
         <source>Local model (offline translation)</source>
         <translation>Local model (offline translation)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1184"/>
+        <location filename="../../src/app/MainWin.cpp" line="1185"/>
         <source>Smart default</source>
         <translation>Smart default</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1185"/>
+        <location filename="../../src/app/MainWin.cpp" line="1186"/>
         <source>Business formal</source>
         <translation>Business formal</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1186"/>
+        <location filename="../../src/app/MainWin.cpp" line="1187"/>
         <source>Casual spoken</source>
         <translation>Casual spoken</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1187"/>
+        <location filename="../../src/app/MainWin.cpp" line="1188"/>
         <source>Concise</source>
         <translation>Concise</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1188"/>
+        <location filename="../../src/app/MainWin.cpp" line="1189"/>
         <source>Custom prompt</source>
         <translation>Custom prompt</translation>
     </message>
@@ -2411,32 +2519,32 @@
         <translation>Urdu</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1225"/>
-        <location filename="../../src/app/MainWin.cpp" line="1233"/>
+        <location filename="../../src/app/MainWin.cpp" line="1228"/>
+        <location filename="../../src/app/MainWin.cpp" line="1236"/>
         <location filename="../../src/translation/LanguageRouting.cpp" line="82"/>
         <source>Traditional Chinese</source>
         <translation>Traditional Chinese</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1224"/>
-        <location filename="../../src/app/MainWin.cpp" line="1232"/>
+        <location filename="../../src/app/MainWin.cpp" line="1227"/>
+        <location filename="../../src/app/MainWin.cpp" line="1235"/>
         <location filename="../../src/translation/LanguageRouting.cpp" line="83"/>
         <source>Simplified Chinese</source>
         <translation>Simplified Chinese</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1209"/>
-        <location filename="../../src/app/MainWin.cpp" line="2014"/>
+        <location filename="../../src/app/MainWin.cpp" line="1212"/>
+        <location filename="../../src/app/MainWin.cpp" line="2017"/>
         <source>Live Transcript</source>
         <translation>Live Transcript</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1511"/>
+        <location filename="../../src/app/MainWin.cpp" line="1514"/>
         <source>Leave empty to use the default (http://localhost:11434)</source>
         <translation>Leave empty to use the default (http://localhost:11434)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1539"/>
+        <location filename="../../src/app/MainWin.cpp" line="1542"/>
         <source>Recognition</source>
         <translation>Recognition</translation>
     </message>
@@ -2466,170 +2574,170 @@
         <translation>About %1 GB. CPU stays in use during the download, then it switches automatically</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1180"/>
+        <location filename="../../src/app/MainWin.cpp" line="1181"/>
         <source>Open WebUI (translation only)</source>
         <translation>Open WebUI (translation only)</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1210"/>
-        <location filename="../../src/app/MainWin.cpp" line="2015"/>
+        <location filename="../../src/app/MainWin.cpp" line="1213"/>
+        <location filename="../../src/app/MainWin.cpp" line="2018"/>
         <source>Dictionary</source>
         <translation>Dictionary</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1211"/>
-        <location filename="../../src/app/MainWin.cpp" line="2016"/>
+        <location filename="../../src/app/MainWin.cpp" line="1214"/>
+        <location filename="../../src/app/MainWin.cpp" line="2019"/>
         <source>File Transcription</source>
         <translation>File Transcription</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1282"/>
+        <location filename="../../src/app/MainWin.cpp" line="1285"/>
         <source>Quality not evaluated</source>
         <translation>Quality not evaluated</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1305"/>
+        <location filename="../../src/app/MainWin.cpp" line="1308"/>
         <source>Auto</source>
         <translation>Auto</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1423"/>
+        <location filename="../../src/app/MainWin.cpp" line="1426"/>
         <source>Source and target are the same language</source>
         <translation>Source and target are the same language</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1426"/>
+        <location filename="../../src/app/MainWin.cpp" line="1429"/>
         <source>Cannot detect the source language; choose one manually</source>
         <translation>Cannot detect the source language; choose one manually</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1427"/>
+        <location filename="../../src/app/MainWin.cpp" line="1430"/>
         <source>This language pair is not supported</source>
         <translation>This language pair is not supported</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1430"/>
+        <location filename="../../src/app/MainWin.cpp" line="1433"/>
         <source>Model ready</source>
         <translation>Model ready</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1436"/>
-        <location filename="../../src/app/MainWin.cpp" line="1436"/>
+        <location filename="../../src/app/MainWin.cpp" line="1439"/>
+        <location filename="../../src/app/MainWin.cpp" line="1439"/>
         <source>Downloading model...</source>
         <translation>Downloading model...</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1440"/>
+        <location filename="../../src/app/MainWin.cpp" line="1443"/>
         <source>Model download required: %1 MB</source>
         <translation>Model download required: %1 MB</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1498"/>
+        <location filename="../../src/app/MainWin.cpp" line="1501"/>
         <source>Not available in this version yet</source>
         <translation>Not available in this version yet</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1512"/>
+        <location filename="../../src/app/MainWin.cpp" line="1515"/>
         <source>Open WebUI address, e.g. http://127.0.0.1:8081</source>
         <translation>Open WebUI address, e.g. http://127.0.0.1:8081</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1542"/>
+        <location filename="../../src/app/MainWin.cpp" line="1545"/>
         <source>Output</source>
         <translation>Output</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1549"/>
+        <location filename="../../src/app/MainWin.cpp" line="1552"/>
         <source>Not available with the local translation engine</source>
         <translation>Not available with the local translation engine</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1550"/>
+        <location filename="../../src/app/MainWin.cpp" line="1553"/>
         <source>Not available with the Open WebUI engine</source>
         <translation>Not available with the Open WebUI engine</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1642"/>
+        <location filename="../../src/app/MainWin.cpp" line="1645"/>
         <source>Follow system</source>
         <translation>Follow system</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1716"/>
+        <location filename="../../src/app/MainWin.cpp" line="1719"/>
         <source>Recording</source>
         <translation>Recording</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1732"/>
+        <location filename="../../src/app/MainWin.cpp" line="1735"/>
         <source>本地模型未安装</source>
         <translation>Local model not installed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1732"/>
+        <location filename="../../src/app/MainWin.cpp" line="1735"/>
         <source>请先在&quot;本地识别&quot;页下载当前语言的模型</source>
         <translation>Download the model for the current language on the Local Recognition page first</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1738"/>
+        <location filename="../../src/app/MainWin.cpp" line="1741"/>
         <source>模型正在下载</source>
         <translation>Model is downloading</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1738"/>
+        <location filename="../../src/app/MainWin.cpp" line="1741"/>
         <source>下载完成后即可开始听写</source>
         <translation>You can start dictating once the download finishes</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1879"/>
+        <location filename="../../src/app/MainWin.cpp" line="1882"/>
         <source>Update Available</source>
         <translation type="unfinished">Update Available</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1880"/>
+        <location filename="../../src/app/MainWin.cpp" line="1883"/>
         <source>A new version (%1) is available!</source>
         <translation type="unfinished">A new version (%1) is available!</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1881"/>
+        <location filename="../../src/app/MainWin.cpp" line="1884"/>
         <source>Would you like to download and install it now?</source>
         <translation type="unfinished">Would you like to download and install it now?</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1889"/>
+        <location filename="../../src/app/MainWin.cpp" line="1892"/>
         <source>Do not remind me again</source>
         <translation type="unfinished">Do not remind me again</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1907"/>
+        <location filename="../../src/app/MainWin.cpp" line="1910"/>
         <source>Restart Required</source>
         <translation type="unfinished">Restart Required</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1908"/>
+        <location filename="../../src/app/MainWin.cpp" line="1911"/>
         <source>Update downloaded successfully. The application will now close and restart to apply the update. Continue?</source>
         <translation type="unfinished">Update downloaded successfully. The application will now close and restart to apply the update. Continue?</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1917"/>
+        <location filename="../../src/app/MainWin.cpp" line="1920"/>
         <source>更新失败</source>
         <translation type="unfinished">Update failed</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1955"/>
+        <location filename="../../src/app/MainWin.cpp" line="1958"/>
         <source>隐藏</source>
         <translation>Hide</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1955"/>
+        <location filename="../../src/app/MainWin.cpp" line="1958"/>
         <source>显示</source>
         <translation>Show</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1957"/>
+        <location filename="../../src/app/MainWin.cpp" line="1960"/>
         <source>Show dictation window</source>
         <translation>Show dictation window</translation>
     </message>
     <message>
-        <location filename="../../src/app/MainWin.cpp" line="1962"/>
+        <location filename="../../src/app/MainWin.cpp" line="1965"/>
         <source>退出</source>
         <translation>Quit</translation>
     </message>
@@ -2734,48 +2842,48 @@
 <context>
     <name>ModelRegistry</name>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1561"/>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1848"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1572"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1859"/>
         <source>Model not registered in ModelRegistry: %1</source>
         <translation type="unfinished">Model not registered in ModelRegistry: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1565"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1576"/>
         <source>This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</source>
         <translation type="unfinished">This model only has a TorchScript(.pt) version, which is not supported by cxx-api: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1729"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1740"/>
         <source>Qwen3-ASR model files not found, please install the model first: %1</source>
         <translation type="unfinished">Qwen3-ASR model files not found, please install the model first: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1758"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1769"/>
         <source>Hotwords applied for arch=%1, score=%2</source>
         <translation type="unfinished">Hotwords applied for arch=%1, score=%2</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1761"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1772"/>
         <source>Hotwords configured but architecture does not support contextual biasing, ignored: %1</source>
         <translation type="unfinished">Hotwords configured but architecture does not support contextual biasing, ignored: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1811"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1822"/>
         <source>Failed to create recognizer on CPU: %1</source>
         <translation type="unfinished">Failed to create recognizer on CPU: %1</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1814"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1825"/>
         <source>Failed to create recognizer on CPU due to an unknown error.</source>
         <translation type="unfinished">Failed to create recognizer on CPU due to an unknown error.</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1866"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1877"/>
         <source>ModelDescriptor.files type mismatch for %1, using default values</source>
         <translation type="unfinished">ModelDescriptor.files type mismatch for %1, using default values</translation>
     </message>
     <message>
-        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1987"/>
+        <location filename="../../src/sherpa/SherpaConfig.cpp" line="1998"/>
         <source>BuildManifest: unsupported or unmapped ModelArch for %1</source>
         <translation type="unfinished">BuildManifest: unsupported or unmapped ModelArch for %1</translation>
     </message>
@@ -3636,251 +3744,344 @@
 <context>
     <name>TermWidget</name>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="618"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="818"/>
         <source>Reload Terms</source>
         <translation>Reload Terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="624"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="825"/>
         <source>Select All</source>
         <translation>Select All</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="625"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="826"/>
         <source>Reverse Select</source>
         <translation>Reverse Select</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="569"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="621"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="610"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="822"/>
         <source>Import TSV</source>
         <translation>Import TSV</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="581"/>
         <location filename="../../src/ui/pages/TermWidget.cpp" line="622"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="823"/>
         <source>Export TSV</source>
         <translation>Export TSV</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="305"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="345"/>
         <source>输入有误</source>
         <translation>Invalid input</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="327"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="614"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="368"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="814"/>
         <source>+ New Dictionary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="333"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="374"/>
         <source>Edit...</source>
         <translation>Edit...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="364"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="405"/>
         <source>Delete dictionary &quot;%1&quot; and all its entries?</source>
         <translation>Delete dictionary &quot;%1&quot; and all its entries?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="423"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="464"/>
         <source>%1 selected</source>
         <translation>%1 selected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="441"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="482"/>
         <source>No terms yet. Add one above, e.g. source term → translation.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="442"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="483"/>
         <source>No terms yet. Add one above, e.g. heard as → write as.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="444"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="485"/>
         <source>%1 terms · %2 enabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="458"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="499"/>
         <source>Source term</source>
         <translation>Source term</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="459"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="500"/>
         <source>The term in the source language; separate aliases with commas or /.</source>
         <translation>The term in the source language; separate aliases with commas or /.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="460"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="613"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="501"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="813"/>
         <source>Translation</source>
         <translation>Translation</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="469"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="510"/>
         <source>No dictionary yet. Click &quot;New Dictionary&quot; to create one.</source>
         <translation>No dictionary yet. Click &quot;New Dictionary&quot; to create one.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="488"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="529"/>
         <source>Language mismatch</source>
         <translation>Language mismatch</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="489"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="530"/>
         <source>These words do not look like %1. Add anyway?</source>
         <translation>These words do not look like %1. Add anyway?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="493"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="534"/>
         <source>Columns look swapped</source>
         <translation>Columns look swapped</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="494"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="535"/>
         <source>The source term looks like %1 and the translation like %2. Swap the two columns?</source>
         <translation>The source term looks like %1 and the translation like %2. Swap the two columns?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="497"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="538"/>
         <source>Swap</source>
         <translation>Swap</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="498"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="539"/>
         <source>Add anyway</source>
         <translation>Add anyway</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="552"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="593"/>
         <source>术语库加载失败</source>
         <translation>Failed to load the terms library</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="560"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="601"/>
         <source>术语冲突检查</source>
         <translation>Term conflict check</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="560"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="601"/>
         <source>未发现冲突</source>
         <translation>No conflicts found</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="563"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="604"/>
         <source>检测到术语冲突</source>
         <translation>Term conflicts detected</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="572"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="613"/>
         <source>术语库导入成功</source>
         <translation>Terms imported</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="575"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="616"/>
         <source>术语库导入失败</source>
         <translation>Failed to import terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="575"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="587"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="616"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="628"/>
         <source>文件读写失败，请检查路径与权限</source>
         <translation>File read/write failed; check the path and permissions</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="584"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="625"/>
         <source>术语库导出成功</source>
         <translation>Terms exported</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="587"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="628"/>
         <source>术语库导出失败</source>
         <translation>Failed to export terms</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="609"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="663"/>
+        <source>新增 %1 条</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="664"/>
+        <source>重复跳过 %1 条</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="665"/>
+        <source>缺少必填栏跳过 %1 条</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="666"/>
+        <source>%1 条的文字与词典语言不符（已导入，未标记语言）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="667"/>
+        <source>批量导入完成</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="667"/>
+        <source>没有新增词条</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="667"/>
+        <source>，</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="727"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="738"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="752"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="758"/>
+        <source>导入失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="727"/>
+        <source>无法读取文件，请检查路径与权限</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="738"/>
+        <source>请先选择或新建一个词典，再拖入文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="753"/>
+        <source>无法识别词典语言「%1 → %2」。请先新建对应语言的翻译词典，再用「批量导入」导入。</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="758"/>
+        <source>文件里没有可导入的词条</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="762"/>
+        <source>Imported dictionary</source>
+        <translation>Imported dictionary</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="774"/>
+        <source>Import &quot;%1&quot; (%2 entries, %3 ↔ %4) as a new translation dictionary?</source>
+        <translation>Import &quot;%1&quot; (%2 entries, %3 ↔ %4) as a new translation dictionary?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="776"/>
+        <source>A dictionary named &quot;%1&quot; already exists. Merge %2 entries into it? Existing terms are kept.</source>
+        <translation>A dictionary named &quot;%1&quot; already exists. Merge %2 entries into it? Existing terms are kept.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="778"/>
+        <source>Import Dictionary</source>
+        <translation>Import Dictionary</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="808"/>
         <source>Search terms...</source>
         <translation>Search terms...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="462"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="503"/>
         <source>Heard as (optional)</source>
         <translation>Heard as (optional)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="463"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="504"/>
         <source>What the recognizer mistakenly outputs; separate several with commas. Leave empty to just teach the recognizer a new word, e.g. a name.</source>
         <translation>What the recognizer mistakenly outputs; separate several with commas. Leave empty to just teach the recognizer a new word, e.g. a name.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="465"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="506"/>
         <source>Write as</source>
         <translation>Write as</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="468"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="509"/>
         <source>Used by AI translation (cloud and Ollama). The offline translator and Open WebUI ignore it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="552"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="593"/>
         <source>未找到词典文件</source>
         <translation>未找到词典文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="610"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="809"/>
         <source>+ Add</source>
         <translation>+ Add</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="611"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="810"/>
+        <source>Batch Import</source>
+        <translation>Batch Import</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="811"/>
         <source>More</source>
         <translation>More</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="334"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="626"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="375"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="827"/>
         <source>Enable</source>
         <translation>Enable</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="334"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="627"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="375"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="828"/>
         <source>Disable</source>
         <translation>Disable</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="337"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="628"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="378"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="829"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="612"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="812"/>
         <source>Recognition</source>
         <translation type="unfinished">Recognition</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="629"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="821"/>
+        <source>Batch Import...</source>
+        <translation>Batch Import...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="830"/>
         <source>Done</source>
         <translation>Done</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="363"/>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="539"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="404"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="580"/>
         <source>Confirm</source>
         <translation>Confirm</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="539"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="580"/>
         <source>Delete %1 selected rows?</source>
         <translation>Delete %1 selected rows?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/TermWidget.cpp" line="619"/>
+        <location filename="../../src/ui/pages/TermWidget.cpp" line="819"/>
         <source>Check Conflicts</source>
         <translation>Check Conflicts</translation>
     </message>

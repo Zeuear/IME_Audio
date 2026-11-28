@@ -1,4 +1,5 @@
 #include "TermWidget.h"
+#include "ui/controls/BatchImportDialog.h"
 #include "ui/controls/DictionaryProfileDialog.h"
 #include "ui/delegates/DictionaryProfileDelegate.h"
 #include "ui/delegates/TermCardDelegate.h"
@@ -6,9 +7,13 @@
 #include "ui/models/TermListModel.h"
 #include "services/dictionary/DictionaryLanguages.h"
 #include "services/dictionary/EntryCheck.h"
+#include "services/dictionary/LanguageScript.h"
 #include <QApplication>
 #include <QButtonGroup>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QItemSelectionModel>
@@ -17,17 +22,21 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QMenu>
+#include <QMimeData>
 #include <QMessageBox>
+#include <QPropertyAnimation>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSortFilterProxyModel>
 #include <QStackedWidget>
 #include <QToolButton>
+#include <QUrl>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
 #include "utils/Logger.h"
 
 TermWidget::TermWidget(QWidget *parent) : QWidget(parent) {
+    setAcceptDrops(true);
     setupUi();
 }
 
@@ -110,6 +119,30 @@ QWidget* TermWidget::buildContentPanel() {
     m_heardEdit = new QLineEdit(normalBar);
     m_correctEdit = new QLineEdit(normalBar);
     m_addBtn = new QPushButton(normalBar);
+    // 「批量导入」平时藏着，鼠标移到「添加」上才滑出来，不占平时的位置
+    m_batchBtn = new QPushButton(normalBar);
+    m_batchBtn->setCursor(Qt::PointingHandCursor);
+    m_batchBtn->setFocusPolicy(Qt::NoFocus);
+    m_batchBtn->setMaximumWidth(0);
+    m_batchBtn->hide();
+    m_addGroup = new QWidget(normalBar);
+    auto* groupLayout = new QHBoxLayout(m_addGroup);
+    groupLayout->setContentsMargins(0, 0, 0, 0);
+    groupLayout->setSpacing(6);
+    groupLayout->addWidget(m_batchBtn);
+    groupLayout->addWidget(m_addBtn);
+    m_addGroup->installEventFilter(this);
+    m_batchAnim = new QPropertyAnimation(m_batchBtn, "maximumWidth", this);
+    m_batchAnim->setDuration(160);
+    m_batchAnim->setEasingCurve(QEasingCurve::OutCubic);
+    connect(m_batchAnim, &QPropertyAnimation::finished, this, [this]() {
+        if (m_batchBtn->maximumWidth() == 0) m_batchBtn->hide();
+    });
+    // 稍等一下再收回，鼠标从「添加」移到刚滑出的按钮时不会闪
+    m_batchCollapseTimer = new QTimer(this);
+    m_batchCollapseTimer->setSingleShot(true);
+    m_batchCollapseTimer->setInterval(350);
+    connect(m_batchCollapseTimer, &QTimer::timeout, this, [this]() { setBatchExpanded(false); });
     m_moreBtn = new QToolButton(normalBar);
     m_moreBtn->setText(QStringLiteral("⋯"));
     m_moreBtn->setPopupMode(QToolButton::InstantPopup);
@@ -123,7 +156,7 @@ QWidget* TermWidget::buildContentPanel() {
     addArrow->setFixedWidth(28);
     normalLayout->addWidget(addArrow);
     normalLayout->addWidget(m_correctEdit, 1);
-    normalLayout->addWidget(m_addBtn);
+    normalLayout->addWidget(m_addGroup);
     normalLayout->addWidget(m_moreBtn);
 
     auto* selectBar = new QWidget(content);
@@ -229,6 +262,12 @@ void TermWidget::setupUi() {
     });
 
     connect(m_addBtn, &QPushButton::clicked, this, &TermWidget::handleAdd);
+    connect(m_batchBtn, &QPushButton::clicked, this, &TermWidget::handleBatchImport);
+    // 输入框默认会把拖进来的文件当文本插进去（路径），换成词典导入
+    for (QWidget* w : { static_cast<QWidget*>(m_searchEdit), static_cast<QWidget*>(m_heardEdit),
+                        static_cast<QWidget*>(m_correctEdit), m_list->viewport() }) {
+        w->installEventFilter(this);
+    }
     connect(m_heardEdit, &QLineEdit::returnPressed, this, &TermWidget::handleAdd);
     connect(m_correctEdit, &QLineEdit::returnPressed, this, &TermWidget::handleAdd);
     connect(m_selectAllBtn, &QPushButton::clicked, this, &TermWidget::handleSelectAll);
@@ -590,6 +629,164 @@ void TermWidget::handleExport() {
     }
 }
 
+void TermWidget::setBatchExpanded(bool expanded) {
+    m_batchCollapseTimer->stop();
+    m_batchAnim->stop();
+    if (expanded) m_batchBtn->show();
+    m_batchAnim->setStartValue(m_batchBtn->maximumWidth());
+    m_batchAnim->setEndValue(expanded ? m_batchBtn->sizeHint().width() : 0);
+    m_batchAnim->start();
+}
+
+void TermWidget::handleBatchImport() {
+    setBatchExpanded(false);
+    const DictionaryProfile* profile = m_profiles ? m_profiles->find(m_currentId) : nullptr;
+    if (!profile) return;
+    BatchImportDialog dialog(profile->kind == DictionaryKind::Translation, profile->langA, profile->langB, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    importEntries(*profile, dialog.entries(), dialog.swapColumns());
+}
+
+void TermWidget::importEntries(const DictionaryProfile& profile, const QList<GlossaryImport::Entry>& entries, bool swap) {
+    TermsLibraryManager* library = m_profiles->library(profile.id);
+    if (!library) return;
+    const GlossaryImport::Summary summary = GlossaryImport::mergeInto(
+        *library, entries, profile.kind == DictionaryKind::Translation, profile.langA, profile.langB, swap);
+    LOG_INFO(QStringLiteral("Dictionary batch import: added=%1 duplicates=%2 invalid=%3 mismatched=%4")
+                 .arg(summary.added).arg(summary.duplicates).arg(summary.invalid).arg(summary.mismatched));
+    notifyImportResult(summary);
+    if (summary.added > 0 && profile.id == m_shownId) m_list->scrollToBottom();
+}
+
+void TermWidget::notifyImportResult(const GlossaryImport::Summary& summary) {
+    QStringList parts;
+    parts << tr("新增 %1 条").arg(summary.added);
+    if (summary.duplicates > 0) parts << tr("重复跳过 %1 条").arg(summary.duplicates);
+    if (summary.invalid > 0) parts << tr("缺少必填栏跳过 %1 条").arg(summary.invalid);
+    if (summary.mismatched > 0) parts << tr("%1 条的文字与词典语言不符（已导入，未标记语言）").arg(summary.mismatched);
+    emit errorOccurred(summary.added > 0 ? tr("批量导入完成") : tr("没有新增词条"), parts.join(tr("，")));
+}
+
+// 只认词典相关的文本文件；先看后缀，不读内容
+QString TermWidget::importableFile(const QMimeData* mime) {
+    if (!mime || !mime->hasUrls()) return {};
+    for (const QUrl& url : mime->urls()) {
+        if (!url.isLocalFile()) continue;
+        const QString suffix = QFileInfo(url.toLocalFile()).suffix().toLower();
+        if (suffix == QLatin1String("json") || suffix == QLatin1String("tsv")
+            || suffix == QLatin1String("csv") || suffix == QLatin1String("txt")) {
+            return url.toLocalFile();
+        }
+    }
+    return {};
+}
+
+void TermWidget::dragEnterEvent(QDragEnterEvent* event) {
+    if (m_profiles && !importableFile(event->mimeData()).isEmpty()) event->acceptProposedAction();
+    else QWidget::dragEnterEvent(event);
+}
+
+void TermWidget::dragMoveEvent(QDragMoveEvent* event) {
+    if (m_profiles && !importableFile(event->mimeData()).isEmpty()) event->acceptProposedAction();
+    else QWidget::dragMoveEvent(event);
+}
+
+void TermWidget::dropEvent(QDropEvent* event) {
+    const QString path = importableFile(event->mimeData());
+    if (path.isEmpty() || !m_profiles) {
+        QWidget::dropEvent(event);
+        return;
+    }
+    event->acceptProposedAction();
+    // 等拖放结束再弹窗，别在拖放事件里开模态对话框
+    QTimer::singleShot(0, this, [this, path]() { importDroppedFile(path); });
+}
+
+bool TermWidget::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_addGroup) {
+        if (event->type() == QEvent::Enter) setBatchExpanded(true);
+        else if (event->type() == QEvent::Leave && m_batchBtn->maximumWidth() > 0) m_batchCollapseTimer->start();
+        return QWidget::eventFilter(watched, event);
+    }
+    const QEvent::Type type = event->type();
+    if (type == QEvent::DragEnter || type == QEvent::DragMove || type == QEvent::Drop) {
+        auto* drag = static_cast<QDropEvent*>(event);
+        if (m_profiles && !importableFile(drag->mimeData()).isEmpty()) {
+            if (type == QEvent::Drop) dropEvent(drag);
+            else drag->acceptProposedAction();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+void TermWidget::importDroppedFile(const QString& path) {
+    QString error;
+    const GlossaryImport::Parsed parsed = GlossaryImport::parseFile(path, true, &error);
+    if (!error.isEmpty()) {
+        emit errorOccurred(tr("导入失败"), tr("无法读取文件，请检查路径与权限"));
+        return;
+    }
+    if (parsed.format == QLatin1String("aurapro-glossary")) {
+        importGlossaryPackage(parsed);
+        return;
+    }
+
+    // 其它格式导入到当前词典；先放进批量导入窗口让用户看一眼识别得对不对
+    const DictionaryProfile* profile = m_profiles->find(m_currentId);
+    if (!profile) {
+        emit errorOccurred(tr("导入失败"), tr("请先选择或新建一个词典，再拖入文件"));
+        return;
+    }
+    BatchImportDialog dialog(profile->kind == DictionaryKind::Translation, profile->langA, profile->langB, this);
+    dialog.setText(GlossaryImport::readTextFile(path));
+    if (dialog.exec() != QDialog::Accepted) return;
+    importEntries(*profile, dialog.entries(), dialog.swapColumns());
+}
+
+// aurapro-glossary 自带名称和语言对：同名同语言的翻译词典直接合并，否则新建一本
+void TermWidget::importGlossaryPackage(const GlossaryImport::Parsed& parsed) {
+    const QString a = DictionaryLanguages::codeFromName(parsed.sourceLang);
+    const QString b = DictionaryLanguages::codeFromName(parsed.glossaryLang);
+    if (a.isEmpty() || b.isEmpty() || a == b) {
+        emit errorOccurred(tr("导入失败"),
+            tr("无法识别词典语言「%1 → %2」。请先新建对应语言的翻译词典，再用「批量导入」导入。")
+                .arg(parsed.sourceLang, parsed.glossaryLang));
+        return;
+    }
+    if (parsed.entries.isEmpty()) {
+        emit errorOccurred(tr("导入失败"), tr("文件里没有可导入的词条"));
+        return;
+    }
+
+    const QString name = parsed.name.isEmpty() ? tr("Imported dictionary") : parsed.name;
+    QString id;
+    for (const DictionaryProfile& p : m_profiles->profiles(DictionaryKind::Translation)) {
+        const QString pa = LanguageScript::family(p.langA);
+        const QString pb = LanguageScript::family(p.langB);
+        if (p.name == name && ((pa == a && pb == b) || (pa == b && pb == a))) {
+            id = p.id;
+            break;
+        }
+    }
+
+    const QString question = id.isEmpty()
+        ? tr("Import \"%1\" (%2 entries, %3 ↔ %4) as a new translation dictionary?")
+              .arg(name).arg(parsed.entries.size()).arg(DictionaryLanguages::label(a), DictionaryLanguages::label(b))
+        : tr("A dictionary named \"%1\" already exists. Merge %2 entries into it? Existing terms are kept.")
+              .arg(name).arg(parsed.entries.size());
+    if (QMessageBox::question(this, tr("Import Dictionary"), question, QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes) return;
+
+    if (id.isEmpty()) id = m_profiles->addProfile(DictionaryKind::Translation, name, a, b);
+    m_lastId[int(DictionaryKind::Translation)] = id;
+    selectKind(DictionaryKind::Translation);
+
+    const DictionaryProfile* profile = m_profiles->find(id);
+    if (!profile) return;
+    const bool swap = GlossaryImport::looksSwapped(parsed.entries, profile->langA, profile->langB);
+    importEntries(*profile, parsed.entries, swap);
+}
+
 void TermWidget::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_Escape && m_selectMode) {
         setSelectMode(false);
@@ -610,6 +807,7 @@ void TermWidget::retranslateUi()
 {
     m_searchEdit->setPlaceholderText(tr("Search terms..."));
     m_addBtn->setText(tr("+ Add"));
+    m_batchBtn->setText(tr("Batch Import"));
     m_moreBtn->setToolTip(tr("More"));
     m_recognitionTab->setText(tr("Recognition"));
     m_translationTab->setText(tr("Translation"));
@@ -620,6 +818,7 @@ void TermWidget::retranslateUi()
     menu->addAction(tr("Reload Terms"), this, &TermWidget::handleReload);
     menu->addAction(tr("Check Conflicts"), this, &TermWidget::handleCheckConflicts);
     menu->addSeparator();
+    menu->addAction(tr("Batch Import..."), this, &TermWidget::handleBatchImport);
     menu->addAction(tr("Import TSV"), this, &TermWidget::handleImport);
     menu->addAction(tr("Export TSV"), this, &TermWidget::handleExport);
 
