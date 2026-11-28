@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QElapsedTimer>
+#include <QScrollBar>
 #include <QEnterEvent>
 #include <QListView>
 #include <QMouseEvent>
@@ -506,8 +507,16 @@ TEST(SharedPages, TranscriptPageKeepsToolbarWhenOtherTabsAreTaller) {
     tabs->setCurrentWidget(live);
     LiveTranscriptWidget::fitHostScrolling(&area, true);
     pump(80);
+    // 布局在慢机器上要几轮事件才稳定，固定等 80ms 不可靠；最多再等 3 秒，成立就继续
+    QElapsedTimer settle;
+    settle.start();
+    while (contents->height() > area.viewport()->height() && settle.elapsed() < 3000) pump(50);
     EXPECT_EQ(area.verticalScrollBarPolicy(), Qt::ScrollBarAlwaysOff);
-    EXPECT_LE(contents->height(), area.viewport()->height());
+    EXPECT_LE(contents->height(), area.viewport()->height())
+        << "contents=" << contents->width() << "x" << contents->height()
+        << " viewport=" << area.viewport()->width() << "x" << area.viewport()->height()
+        << " hbar=" << area.horizontalScrollBar()->isVisible()
+        << " contentsMinW=" << contents->minimumSizeHint().width();
     auto* list = live->findChild<QListView*>(QStringLiteral("live_transcript_list"));
     ASSERT_NE(list, nullptr);
     EXPECT_LT(list->height(), area.viewport()->height());
