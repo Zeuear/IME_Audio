@@ -75,7 +75,7 @@ jobs:
             -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }}
 
       - name: Build Project
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release --parallel
 
       # ---- WINDOWS 打包 ----
       - name: Deploy & Package (Windows)

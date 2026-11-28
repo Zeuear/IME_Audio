@@ -31,6 +31,8 @@ if(WIN32)
     if(MSVC)
         add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
         add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+        # 单个目标内多个源文件并行编译；不加时 MSVC 逐文件串行，多核闲置
+        add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/MP>")
     endif()
 endif()
 
