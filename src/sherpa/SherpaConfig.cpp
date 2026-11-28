@@ -997,8 +997,12 @@ const std::vector<std::pair<QString, ModelDescriptor>>& IndonesianModels() {
     return table;
 }
 
+// 印地语：IndicConformer 600M 的 CTC 分支（已烘焙印地语词表掩码），FLEURS 实测 WER 10.9%，Omnilingual 1B 为 18.4%。
+// 需要 sherpa-onnx 1.13.5 及以上，1.13.4 上部分句子会因归一化精度问题整句输出为空
 const std::vector<std::pair<QString, ModelDescriptor>>& HindiModels() {
     static const std::vector<std::pair<QString, ModelDescriptor>> table = {
+        {"Sporer/sherpa-onnx-indic-conformer-600m-ctc-hi-int8",
+            {ModelArch::NemoCtc, SingleFileModelFiles{.modelFile = "model.int8.onnx"}, "IndicConformer CTC (Hindi)"}},
         kQwen3Asr,
         kFunasrSenseVoice,
         kFunasrNano,

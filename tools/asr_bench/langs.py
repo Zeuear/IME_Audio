@@ -73,7 +73,7 @@ LANGS: dict[str, Lang] = {
     "Dutch":      Lang("nl_nl", "wer", ["parakeet-tdt-v3", "qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
     "Turkish":    Lang("tr_tr", "wer", ["qwen3-asr", "whisper-base"] + _OM, new=True),
     "Indonesian": Lang("id_id", "wer", ["qwen3-asr", "zipformer-streaming-8lang", "whisper-base"] + _FU + _OM, new=True),
-    "Hindi":      Lang("hi_in", "wer", ["qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
+    "Hindi":      Lang("hi_in", "wer", ["indic600-hi", "qwen3-asr", "whisper-base"] + _FU + _OM, new=True),
     "Persian":    Lang("fa_ir", "wer", ["omnilingual-1b", "omnilingual-300m", "whisper-base"], new=True),
     "Hebrew":     Lang("he_il", "wer", ["whisper-base", "whisper-small", "omnilingual-300m", "omnilingual-1b"], new=True),
 
@@ -311,6 +311,7 @@ MODELS: dict[str, Model] = {
                                            "decoder-epoch-75-avg-11-chunk-16-left-128.onnx",
                                            "joiner-epoch-75-avg-11-chunk-16-left-128.int8.onnx"),
                                        2, "Streaming Zipformer 8-lang"),
+    "indic600-hi": Model("Sporer/sherpa-onnx-indic-conformer-600m-ctc-hi-int8", "nemo_ctc", _CTC_INT8, 4, "IndicConformer 600M CTC hi"),
     "nemo-ctc-bn": Model("Sporer/sherpa-onnx-nemo-fastconformer-ctc-bn-int8", "nemo_ctc", _CTC_INT8, 2, "NeMo FastConformer CTC bn"),
     "shenava-rizeh-fa": Model("mah92/sherpa-onnx-nemo-ctc-fa-shenava-rizeh-v1.0-non-streaming-int8-2026-06-26", "nemo_ctc",
                               _CTC_INT8, 2, "Shenava Rizeh fa (32M)", in_app=False),
